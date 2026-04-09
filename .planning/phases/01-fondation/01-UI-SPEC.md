@@ -57,13 +57,14 @@ All sizes are exact — do not substitute.
 | Role | Font | Size | Weight | Line Height | Usage |
 |------|------|------|--------|-------------|-------|
 | Display | Playfair Display | 28px | 700 | 1.2 | Page titles (e.g. "Connexion", logo lockup) |
-| Heading | Playfair Display | 20px | 600 | 1.2 | Section headings, card titles |
+| Heading | Playfair Display | 20px | 700 | 1.2 | Section headings, card titles |
 | Body | DM Sans | 16px | 400 | 1.5 | Form labels, paragraph text, sidebar nav items |
 | Label / Caption | DM Sans | 14px | 400 | 1.4 | Helper text, error messages, badge text |
 
 Rules:
+- Exactly 2 font weights in use: 400 (body/label) and 700 (all headings + CTA buttons).
 - Never mix Playfair Display at body size — it is reserved for headings and display only.
-- Bold variant of DM Sans (700) is used exclusively for CTA button labels.
+- Bold variant of DM Sans (700) is used for CTA button labels.
 - Letter-spacing on Playfair Display headings: -0.01em (tighten slightly for legibility at 20–28px).
 
 ---
@@ -201,6 +202,7 @@ Sidebar nav item states:
 Header bar (inside content area):
 - h-14, bg-white, border-b border-[hsl(210,20%,82%)]
 - Right side: user avatar/name, logout icon button
+- Logout icon button: `aria-label="Se déconnecter"` (required — icon-only button has no visible text)
 
 ---
 
