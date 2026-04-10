@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to execute
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-04-10T09:10:24.091Z"
+status: Ready to plan
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-04-10T20:58:14.715Z"
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 0
+  completed_plans: 2
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-04-08)
 
 ## Current Position
 
-Phase: 01 (fondation) — EXECUTING
-Plan: 2 of 2
+Phase: 2
+Plan: Not started
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Plan: 2 of 2
 
 *Updated after each plan completion*
 | Phase 01-fondation P01 | 4min | 3 tasks | 30 files |
+| Phase 01-fondation P02 | 4min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -60,6 +61,7 @@ Recent decisions affecting current work:
 - RLS Supabase comme couche de sécurité principale sur toutes les tables
 - @dnd-kit pour Gantt (Phase 4) et Kanban (Phase 5)
 - [Phase 01-fondation]: Manual Next.js scaffolding instead of create-next-app for automation compatibility
+- [Phase 01-fondation]: DashboardShell client wrapper bridges server-fetched permissions to client Sidebar/Header
 
 ### Pending Todos
 
@@ -71,6 +73,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-10T09:10:24.087Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-04-10T09:17:30.528Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None

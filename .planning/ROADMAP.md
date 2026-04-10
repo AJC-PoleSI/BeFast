@@ -31,10 +31,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. La sidebar affiche uniquement les items accessibles au rôle connecté
   4. Les routes protégées redirigent vers /login si l'utilisateur n'est pas authentifié
   5. L'interface est entièrement en français avec la palette #0D1B2A / #C9A84C et les fontes Playfair Display + DM Sans
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 01-01-PLAN.md — Projet Next.js 14, design system BeFast, utilitaires Supabase, encryption, migrations SQL
+- [x] 01-01-PLAN.md — Projet Next.js 14, design system BeFast, utilitaires Supabase, encryption, migrations SQL
 - [ ] 01-02-PLAN.md — Auth (login, inscription, reset), middleware, sidebar, RoleGuard, ecran attente
 
 **UI hint**: yes
@@ -107,7 +107,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fondation | 0/2 | Not started | - |
+| 1. Fondation | 1/2 | In Progress|  |
 | 2. Profils & Documents | 0/TBD | Not started | - |
 | 3. Missions | 0/TBD | Not started | - |
 | 4. Études | 0/TBD | Not started | - |
