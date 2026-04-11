@@ -7,23 +7,23 @@
 
 ### Authentification & Accès
 
-- [ ] **AUTH-01** : L'utilisateur peut créer un compte avec email et mot de passe (auto-inscription)
-- [ ] **AUTH-02** : L'administrateur assigne un rôle à un compte nouvellement créé
-- [ ] **AUTH-03** : Un compte sans rôle assigné voit un écran d'attente après connexion
-- [ ] **AUTH-04** : L'utilisateur peut se connecter avec email + mot de passe
-- [ ] **AUTH-05** : L'utilisateur peut réinitialiser son mot de passe par email
+- [x] **AUTH-01** : L'utilisateur peut créer un compte avec email et mot de passe (auto-inscription)
+- [x] **AUTH-02** : L'administrateur assigne un rôle à un compte nouvellement créé
+- [x] **AUTH-03** : Un compte sans rôle assigné voit un écran d'attente après connexion
+- [x] **AUTH-04** : L'utilisateur peut se connecter avec email + mot de passe
+- [x] **AUTH-05** : L'utilisateur peut réinitialiser son mot de passe par email
 - [ ] **AUTH-06** : La session persiste entre les rechargements de page
-- [ ] **AUTH-07** : Les routes protégées redirigent vers /login si non authentifié
+- [x] **AUTH-07** : Les routes protégées redirigent vers /login si non authentifié
 - [ ] **AUTH-08** : L'email de confirmation Supabase peut être désactivé (admin crée manuellement ou auto-inscription avec validation admin)
 
 ### Rôles & Permissions
 
-- [ ] **ROLE-01** : 4 rôles par défaut existent : membre_agc, ancien_membre_agc, intervenant, administrateur
-- [ ] **ROLE-02** : Chaque rôle a des permissions par page (booléen par page)
-- [ ] **ROLE-03** : L'admin peut créer des rôles personnalisés avec permissions configurables
-- [ ] **ROLE-04** : L'admin peut modifier les permissions d'un rôle existant
-- [ ] **ROLE-05** : La sidebar affiche uniquement les items accessibles selon le rôle de l'utilisateur connecté
-- [ ] **ROLE-06** : Un composant RoleGuard bloque l'accès aux pages non autorisées côté client
+- [x] **ROLE-01** : 4 rôles par défaut existent : membre_agc, ancien_membre_agc, intervenant, administrateur
+- [x] **ROLE-02** : Chaque rôle a des permissions par page (booléen par page)
+- [x] **ROLE-03** : L'admin peut créer des rôles personnalisés avec permissions configurables
+- [x] **ROLE-04** : L'admin peut modifier les permissions d'un rôle existant
+- [x] **ROLE-05** : La sidebar affiche uniquement les items accessibles selon le rôle de l'utilisateur connecté
+- [x] **ROLE-06** : Un composant RoleGuard bloque l'accès aux pages non autorisées côté client
 
 ### Profil Utilisateur
 
@@ -115,7 +115,7 @@
 - [ ] **SEC-01** : RLS activé sur toutes les tables Supabase
 - [ ] **SEC-02** : Le service_role_key n'est utilisé que côté serveur (API Routes), jamais côté client
 - [ ] **SEC-03** : Bucket Storage `documents-personnes` configuré en privé
-- [ ] **SEC-04** : Le middleware Next.js protège toutes les routes dashboard
+- [x] **SEC-04** : Le middleware Next.js protège toutes les routes dashboard
 - [ ] **SEC-05** : La clé ENCRYPTION_KEY n'est jamais exposée au client (pas de NEXT_PUBLIC_)
 - [ ] **SEC-06** : next.config.js inclut `output: 'standalone'` pour compatibilité Docker
 
@@ -124,9 +124,9 @@
 - [ ] **UX-01** : Interface 100% en français (labels, messages d'erreur, textes)
 - [ ] **UX-02** : Palette : bleu marine #0D1B2A + or #C9A84C + blanc cassé #F5F0E8 + bleu interactif #4A90D9
 - [ ] **UX-03** : Fonts : Playfair Display (titres) + DM Sans (corps) via next/font
-- [ ] **UX-04** : Sidebar avec items actifs surlignés en or #C9A84C, icônes Lucide
-- [ ] **UX-05** : Badges statuts colorés : ouverte (vert), en_cours (bleu), terminée (gris), annulée (rouge), en_attente (orange)
-- [ ] **UX-06** : Design responsive (mobile et desktop)
+- [x] **UX-04** : Sidebar avec items actifs surlignés en or #C9A84C, icônes Lucide
+- [x] **UX-05** : Badges statuts colorés : ouverte (vert), en_cours (bleu), terminée (gris), annulée (rouge), en_attente (orange)
+- [x] **UX-06** : Design responsive (mobile et desktop)
 
 ## v2 Requirements
 
