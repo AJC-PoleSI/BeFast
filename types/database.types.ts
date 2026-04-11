@@ -64,6 +64,113 @@ export interface DocumentPersonne {
   updated_at: string
 }
 
+// ---- Phase 3 & 4 types ----
+
+export type ClientType = "ao" | "cs" | "prospection"
+
+export interface Client {
+  id: string
+  nom: string
+  email: string | null
+  telephone: string | null
+  type: ClientType
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type EtudeStatut =
+  | "prospection"
+  | "en_cours_prospection"
+  | "signee"
+  | "en_cours"
+  | "terminee"
+
+export interface Etude {
+  id: string
+  nom: string
+  numero: string
+  client_id: string | null
+  suiveur_id: string | null
+  budget: number | null
+  commentaire: string | null
+  statut: EtudeStatut
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EtudeWithRelations extends Etude {
+  clients: Client | null
+  suiveur: Pick<Personne, "id" | "prenom" | "nom" | "email"> | null
+}
+
+export type MissionType = "chef_projet" | "intervenant"
+export type MissionVoie = "finance" | "marketing" | "audit" | "rse"
+export type MissionClasse = "premaster" | "m1" | "m2"
+export type MissionStatut = "ouverte" | "pourvue" | "terminee" | "annulee"
+
+export interface Mission {
+  id: string
+  etude_id: string | null
+  nom: string
+  description: string | null
+  type: MissionType
+  voie: MissionVoie | null
+  classe: MissionClasse | null
+  langues: string[]
+  date_debut: string | null
+  date_fin: string | null
+  remuneration: number | null
+  nb_jeh: number
+  nb_intervenants: number
+  statut: MissionStatut
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface MissionWithEtude extends Mission {
+  etudes: Pick<Etude, "id" | "nom" | "numero"> | null
+}
+
+export type CandidatureStatut = "en_attente" | "acceptee" | "refusee"
+
+export interface Candidature {
+  id: string
+  mission_id: string
+  personne_id: string
+  motivation: string
+  classe: MissionClasse | null
+  langues: { langue: string; niveau: string }[]
+  statut: CandidatureStatut
+  reponse_date: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CandidatureWithPersonne extends Candidature {
+  personnes: Pick<Personne, "id" | "prenom" | "nom" | "email" | "promo"> | null
+}
+
+export interface CandidatureWithMission extends Candidature {
+  missions: Pick<Mission, "id" | "nom" | "statut"> | null
+}
+
+export interface EcheancierBloc {
+  id: string
+  etude_id: string
+  nom: string
+  semaine_debut: number
+  duree_semaines: number
+  jeh: number
+  couleur: string
+  ordre: number
+  created_at: string
+  updated_at: string
+}
+
 export interface NavItem {
   label: string
   href: string

@@ -1,0 +1,503 @@
+"use client"
+
+import { useEffect, useState, useCallback } from "react"
+import { useParams } from "next/navigation"
+import { useUser } from "@/hooks/useUser"
+import { createClient } from "@/lib/supabase/client"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import {
+  ArrowLeft,
+  DollarSign,
+  User,
+  Briefcase,
+  Calendar,
+  Plus,
+  Trash2,
+  Loader2,
+  BarChart3,
+  ListChecks,
+} from "lucide-react"
+import Link from "next/link"
+import { toast } from "sonner"
+import type {
+  EtudeWithRelations,
+  Mission,
+  EcheancierBloc,
+} from "@/types/database.types"
+
+const STATUT_COLORS: Record<string, string> = {
+  prospection: "bg-purple-100 text-purple-700 border-purple-200",
+  en_cours_prospection: "bg-amber-100 text-amber-700 border-amber-200",
+  signee: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  en_cours: "bg-blue-100 text-blue-700 border-blue-200",
+  terminee: "bg-gray-100 text-gray-600 border-gray-200",
+}
+const STATUT_LABELS: Record<string, string> = {
+  prospection: "Prospection",
+  en_cours_prospection: "En cours de prospection",
+  signee: "Signée",
+  en_cours: "En cours",
+  terminee: "Terminée",
+}
+const MISSION_STATUT_COLORS: Record<string, string> = {
+  ouverte: "bg-emerald-100 text-emerald-700",
+  pourvue: "bg-blue-100 text-blue-700",
+  terminee: "bg-gray-100 text-gray-600",
+  annulee: "bg-red-100 text-red-600",
+}
+const MISSION_STATUT_LABELS: Record<string, string> = {
+  ouverte: "Ouverte", pourvue: "Pourvue", terminee: "Terminée", annulee: "Annulée",
+}
+
+const GANTT_COLORS = [
+  "#C9A84C", "#4A90D9", "#6366F1", "#EC4899", "#14B8A6", "#F97316", "#8B5CF6",
+]
+
+export default function EtudeDetailPage() {
+  const params = useParams()
+  const etudeId = params.etudeId as string
+  const { loading: authLoading } = useUser()
+
+  const [etude, setEtude] = useState<EtudeWithRelations | null>(null)
+  const [missions, setMissions] = useState<Mission[]>([])
+  const [blocs, setBlocs] = useState<EcheancierBloc[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Mission creation modal
+  const [showMissionModal, setShowMissionModal] = useState(false)
+  const [missionForm, setMissionForm] = useState({
+    nom: "", description: "", type: "intervenant", voie: "", classe: "",
+    date_debut: "", date_fin: "", remuneration: "", nb_jeh: "0", nb_intervenants: "1",
+  })
+  const [creatingMission, setCreatingMission] = useState(false)
+
+  // Bloc creation
+  const [showBlocModal, setShowBlocModal] = useState(false)
+  const [blocForm, setBlocForm] = useState({
+    nom: "", semaine_debut: "1", duree_semaines: "1", jeh: "0",
+  })
+  const [creatingBloc, setCreatingBloc] = useState(false)
+
+  const nbWeeks = 12
+
+  const fetchData = useCallback(async () => {
+    const supabase = createClient()
+
+    const { data: e } = await supabase
+      .from("etudes")
+      .select("*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)")
+      .eq("id", etudeId)
+      .single()
+    setEtude(e as unknown as EtudeWithRelations | null)
+
+    const { data: m } = await supabase
+      .from("missions")
+      .select("*")
+      .eq("etude_id", etudeId)
+      .order("created_at", { ascending: true })
+    setMissions((m as Mission[]) || [])
+
+    const { data: b } = await supabase
+      .from("echeancier_blocs")
+      .select("*")
+      .eq("etude_id", etudeId)
+      .order("ordre", { ascending: true })
+    setBlocs((b as EcheancierBloc[]) || [])
+
+    setLoading(false)
+  }, [etudeId])
+
+  useEffect(() => {
+    if (!authLoading) fetchData()
+  }, [authLoading, fetchData])
+
+  const handleCreateMission = async () => {
+    if (!missionForm.nom.trim()) { toast.error("Nom requis"); return }
+    setCreatingMission(true)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    const { error } = await supabase.from("missions").insert({
+      etude_id: etudeId,
+      nom: missionForm.nom,
+      description: missionForm.description || null,
+      type: missionForm.type,
+      voie: missionForm.voie || null,
+      classe: missionForm.classe || null,
+      date_debut: missionForm.date_debut || null,
+      date_fin: missionForm.date_fin || null,
+      remuneration: missionForm.remuneration ? parseFloat(missionForm.remuneration) : null,
+      nb_jeh: parseInt(missionForm.nb_jeh) || 0,
+      nb_intervenants: parseInt(missionForm.nb_intervenants) || 1,
+      created_by: user?.id,
+    })
+
+    if (error) { toast.error("Erreur") } else {
+      toast.success("Mission créée")
+      setShowMissionModal(false)
+      setMissionForm({ nom: "", description: "", type: "intervenant", voie: "", classe: "", date_debut: "", date_fin: "", remuneration: "", nb_jeh: "0", nb_intervenants: "1" })
+      fetchData()
+    }
+    setCreatingMission(false)
+  }
+
+  const handleCreateBloc = async () => {
+    if (!blocForm.nom.trim()) { toast.error("Nom requis"); return }
+    setCreatingBloc(true)
+    const supabase = createClient()
+    const { error } = await supabase.from("echeancier_blocs").insert({
+      etude_id: etudeId,
+      nom: blocForm.nom,
+      semaine_debut: parseInt(blocForm.semaine_debut) || 1,
+      duree_semaines: parseInt(blocForm.duree_semaines) || 1,
+      jeh: parseInt(blocForm.jeh) || 0,
+      couleur: GANTT_COLORS[blocs.length % GANTT_COLORS.length],
+      ordre: blocs.length,
+    })
+    if (error) { toast.error("Erreur") } else {
+      toast.success("Bloc ajouté")
+      setShowBlocModal(false)
+      setBlocForm({ nom: "", semaine_debut: "1", duree_semaines: "1", jeh: "0" })
+      fetchData()
+    }
+    setCreatingBloc(false)
+  }
+
+  const handleDeleteBloc = async (blocId: string) => {
+    const supabase = createClient()
+    const { error } = await supabase.from("echeancier_blocs").delete().eq("id", blocId)
+    if (error) toast.error("Erreur")
+    else { toast.success("Bloc supprimé"); fetchData() }
+  }
+
+  if (loading || authLoading) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-48 w-full rounded-xl" />
+      </div>
+    )
+  }
+
+  if (!etude) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground">Étude introuvable.</p>
+      </div>
+    )
+  }
+
+  const totalJeh = blocs.reduce((sum, b) => sum + (b.jeh || 0), 0)
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6">
+      <Link href="/etudes">
+        <Button variant="ghost" size="sm" className="text-muted-foreground">
+          <ArrowLeft className="h-4 w-4 mr-1.5" />
+          Retour aux études
+        </Button>
+      </Link>
+
+      {/* Header card */}
+      <div className="bg-white rounded-xl border border-border shadow-sm p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <span className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-0.5 rounded">
+                #{etude.numero}
+              </span>
+              <h1 className="font-heading text-2xl font-bold">{etude.nom}</h1>
+              <Badge variant="outline" className={STATUT_COLORS[etude.statut]}>
+                {STATUT_LABELS[etude.statut]}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {etude.clients && (
+            <div className="rounded-lg bg-muted/30 p-3">
+              <div className="text-xs text-muted-foreground mb-1">Client</div>
+              <p className="font-medium text-sm">{etude.clients.nom}</p>
+              <p className="text-xs text-muted-foreground uppercase">{etude.clients.type}</p>
+            </div>
+          )}
+          {etude.suiveur && (
+            <div className="rounded-lg bg-muted/30 p-3">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                <User className="h-3 w-3" /> Suiveur
+              </div>
+              <p className="font-medium text-sm">{etude.suiveur.prenom} {etude.suiveur.nom}</p>
+            </div>
+          )}
+          {etude.budget && (
+            <div className="rounded-lg bg-muted/30 p-3">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                <DollarSign className="h-3 w-3" /> Budget
+              </div>
+              <p className="font-medium text-sm">{Number(etude.budget).toLocaleString("fr-FR")}€</p>
+            </div>
+          )}
+          <div className="rounded-lg bg-muted/30 p-3">
+            <div className="text-xs text-muted-foreground mb-1">Total JEH</div>
+            <p className="font-medium text-sm">{totalJeh}</p>
+          </div>
+        </div>
+
+        {etude.commentaire && (
+          <p className="mt-4 text-sm text-muted-foreground">{etude.commentaire}</p>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="missions">
+        <TabsList className="w-full sm:w-auto">
+          <TabsTrigger value="missions" className="gap-1.5">
+            <ListChecks className="h-4 w-4" /> Missions ({missions.length})
+          </TabsTrigger>
+          <TabsTrigger value="echeancier" className="gap-1.5">
+            <BarChart3 className="h-4 w-4" /> Échéancier
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Missions tab */}
+        <TabsContent value="missions">
+          <div className="space-y-3">
+            <div className="flex justify-end">
+              <Button onClick={() => setShowMissionModal(true)} className="bg-gold text-navy font-semibold hover:bg-gold/90" size="sm">
+                <Plus className="h-4 w-4 mr-1.5" /> Créer une mission
+              </Button>
+            </div>
+
+            {missions.length === 0 ? (
+              <div className="bg-white rounded-xl border border-border p-8 text-center text-muted-foreground text-sm">
+                Aucune mission créée pour cette étude.
+              </div>
+            ) : (
+              missions.map((m) => (
+                <Link key={m.id} href={`/missions/${m.id}`} className="block bg-white rounded-xl border border-border shadow-sm p-4 hover:shadow-md hover:border-gold/30 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium text-sm">{m.nom}</span>
+                      <Badge variant="outline" className={`text-xs ${MISSION_STATUT_COLORS[m.statut]}`}>
+                        {MISSION_STATUT_LABELS[m.statut]}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {m.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {m.nb_jeh} JEH · {m.nb_intervenants} intervenant{m.nb_intervenants > 1 ? "s" : ""}
+                    </div>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Échéancier tab */}
+        <TabsContent value="echeancier">
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button onClick={() => setShowBlocModal(true)} className="bg-gold text-navy font-semibold hover:bg-gold/90" size="sm">
+                <Plus className="h-4 w-4 mr-1.5" /> Ajouter un bloc
+              </Button>
+            </div>
+
+            {/* Gantt chart */}
+            <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <div className="min-w-[800px]">
+                  {/* Week headers */}
+                  <div className="flex border-b border-border">
+                    <div className="w-48 shrink-0 px-4 py-2 bg-muted/30 text-xs font-medium text-muted-foreground">
+                      Phase
+                    </div>
+                    {Array.from({ length: nbWeeks }).map((_, i) => (
+                      <div key={i} className="flex-1 px-1 py-2 text-center text-xs text-muted-foreground border-l border-border/50 bg-muted/10">
+                        S{i + 1}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Bloc rows */}
+                  {blocs.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground text-sm">
+                      Aucun bloc. Ajoutez des phases à l&apos;échéancier.
+                    </div>
+                  ) : (
+                    blocs.map((bloc) => (
+                      <div key={bloc.id} className="flex border-b border-border/50 group">
+                        <div className="w-48 shrink-0 px-4 py-3 flex items-center justify-between text-sm">
+                          <div>
+                            <span className="font-medium">{bloc.nom}</span>
+                            <span className="text-xs text-muted-foreground ml-2">{bloc.jeh} JEH</span>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteBloc(bloc.id)}
+                            className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <div className="flex-1 flex relative py-2">
+                          {Array.from({ length: nbWeeks }).map((_, i) => (
+                            <div key={i} className="flex-1 border-l border-border/20" />
+                          ))}
+                          {/* Gantt bar */}
+                          <div
+                            className="absolute top-2 bottom-2 rounded-md shadow-sm flex items-center justify-center text-white text-xs font-medium transition-all"
+                            style={{
+                              left: `${((bloc.semaine_debut - 1) / nbWeeks) * 100}%`,
+                              width: `${(bloc.duree_semaines / nbWeeks) * 100}%`,
+                              backgroundColor: bloc.couleur || "#C9A84C",
+                              minWidth: "40px",
+                            }}
+                          >
+                            {bloc.duree_semaines > 1 && `${bloc.duree_semaines}s`}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Mission creation modal */}
+      <Dialog open={showMissionModal} onOpenChange={setShowMissionModal}>
+        <DialogContent className="max-w-lg">
+          <DialogClose onClose={() => setShowMissionModal(false)} />
+          <DialogHeader>
+            <DialogTitle>Créer une mission</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="space-y-2">
+              <Label>Nom *</Label>
+              <Input value={missionForm.nom} onChange={(e) => setMissionForm({ ...missionForm, nom: e.target.value })} placeholder="Nom de la mission" />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea value={missionForm.description} onChange={(e) => setMissionForm({ ...missionForm, description: e.target.value })} placeholder="Description détaillée..." />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <select value={missionForm.type} onChange={(e) => setMissionForm({ ...missionForm, type: e.target.value })} className="w-full h-10 px-3 rounded-md border border-input bg-white text-sm">
+                  <option value="intervenant">Intervenant</option>
+                  <option value="chef_projet">Chef de projet</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Voie</Label>
+                <select value={missionForm.voie} onChange={(e) => setMissionForm({ ...missionForm, voie: e.target.value })} className="w-full h-10 px-3 rounded-md border border-input bg-white text-sm">
+                  <option value="">—</option>
+                  <option value="finance">Finance</option>
+                  <option value="marketing">Marketing</option>
+                  <option value="audit">Audit</option>
+                  <option value="rse">RSE</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label>Classe</Label>
+                <select value={missionForm.classe} onChange={(e) => setMissionForm({ ...missionForm, classe: e.target.value })} className="w-full h-10 px-3 rounded-md border border-input bg-white text-sm">
+                  <option value="">—</option>
+                  <option value="premaster">Premaster</option>
+                  <option value="m1">M1</option>
+                  <option value="m2">M2</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>JEH</Label>
+                <Input type="number" value={missionForm.nb_jeh} onChange={(e) => setMissionForm({ ...missionForm, nb_jeh: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Intervenants</Label>
+                <Input type="number" value={missionForm.nb_intervenants} onChange={(e) => setMissionForm({ ...missionForm, nb_intervenants: e.target.value })} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Date début</Label>
+                <Input type="date" value={missionForm.date_debut} onChange={(e) => setMissionForm({ ...missionForm, date_debut: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Date fin</Label>
+                <Input type="date" value={missionForm.date_fin} onChange={(e) => setMissionForm({ ...missionForm, date_fin: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Rémunération (€)</Label>
+              <Input type="number" value={missionForm.remuneration} onChange={(e) => setMissionForm({ ...missionForm, remuneration: e.target.value })} placeholder="0" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowMissionModal(false)}>Annuler</Button>
+            <Button onClick={handleCreateMission} disabled={creatingMission || !missionForm.nom.trim()} className="bg-gold text-navy font-semibold hover:bg-gold/90">
+              {creatingMission ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-1.5 h-4 w-4" />}
+              Créer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bloc creation modal */}
+      <Dialog open={showBlocModal} onOpenChange={setShowBlocModal}>
+        <DialogContent>
+          <DialogClose onClose={() => setShowBlocModal(false)} />
+          <DialogHeader>
+            <DialogTitle>Ajouter un bloc à l&apos;échéancier</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label>Nom du bloc *</Label>
+              <Input value={blocForm.nom} onChange={(e) => setBlocForm({ ...blocForm, nom: e.target.value })} placeholder="Ex: Phase de cadrage" />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label>Semaine début</Label>
+                <Input type="number" min="1" max={nbWeeks} value={blocForm.semaine_debut} onChange={(e) => setBlocForm({ ...blocForm, semaine_debut: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Durée (semaines)</Label>
+                <Input type="number" min="1" value={blocForm.duree_semaines} onChange={(e) => setBlocForm({ ...blocForm, duree_semaines: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>JEH</Label>
+                <Input type="number" min="0" value={blocForm.jeh} onChange={(e) => setBlocForm({ ...blocForm, jeh: e.target.value })} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowBlocModal(false)}>Annuler</Button>
+            <Button onClick={handleCreateBloc} disabled={creatingBloc || !blocForm.nom.trim()} className="bg-gold text-navy font-semibold hover:bg-gold/90">
+              {creatingBloc ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-1.5 h-4 w-4" />}
+              Ajouter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
