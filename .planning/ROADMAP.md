@@ -49,7 +49,13 @@ Plans:
   3. Un utilisateur peut uploader, visualiser et supprimer chacun des 5 types de documents via des URLs signées (expiration 1h)
   4. Les fichiers uploadés sont inaccessibles sans URL signée (bucket privé, RLS activé)
   5. L'admin peut consulter et modifier le profil de n'importe quel membre
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Migration SQL, types, schemas Zod, API Routes (profil, chiffrement, avatar, documents)
+- [ ] 02-02-PLAN.md — Page profil UI (tabs, info card, sensitive modal, document grid, avatar upload)
+- [ ] 02-03-PLAN.md — Vue admin profil /dashboard/profil/[userId], checkpoint verification securite
+
 **UI hint**: yes
 
 ### Phase 3: Missions
@@ -108,7 +114,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Fondation | 1/2 | In Progress|  |
-| 2. Profils & Documents | 0/TBD | Not started | - |
+| 2. Profils & Documents | 0/3 | Not started | - |
 | 3. Missions | 0/TBD | Not started | - |
 | 4. Études | 0/TBD | Not started | - |
 | 5. Prospection & Statistiques | 0/TBD | Not started | - |
