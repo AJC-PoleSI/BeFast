@@ -22,6 +22,7 @@ const emptyPermissions: Permissions = {
   statistiques: false,
   administration: false,
   documents: false,
+  nouvelle_mission: false,
 }
 
 export function useUser(): UseUserReturn {
