@@ -31,7 +31,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Tableau de bord", href: "/dashboard", icon: "LayoutDashboard", permission: "dashboard" },
+  { label: "Accueil", href: "/dashboard", icon: "LayoutDashboard", permission: "dashboard" },
   { label: "Mon Profil", href: "/profil", icon: "User", permission: "profil" },
   { label: "Missions", href: "/missions", icon: "Briefcase", permission: "missions" },
   { label: "Mes Documents", href: "/documents", icon: "FileText", permission: "documents" },
@@ -67,31 +67,45 @@ export function Sidebar({ permissions, userName, open, onClose }: SidebarProps) 
         )}
       </div>
       <Separator className="border-white/10" />
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {filteredItems.map((item) => {
-          const Icon = ICON_MAP[item.icon]
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onClose}
-              className={`flex items-center gap-3 h-11 px-4 rounded-md text-base transition-colors ${
-                isActive
-                  ? "bg-gold/20 text-gold font-medium"
-                  : "text-ivory/70 hover:bg-white/5 hover:text-ivory"
-              }`}
-            >
-              {Icon && (
-                <Icon
-                  size={20}
-                  className={isActive ? "text-gold" : ""}
-                />
-              )}
-              {item.label}
-            </Link>
-          )
-        })}
+      <nav className="flex-1 px-3 py-4 space-y-1 flex flex-col">
+        <div className="flex-1 space-y-1">
+          {filteredItems.map((item) => {
+            const Icon = ICON_MAP[item.icon]
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
+                className={`flex items-center gap-3 h-11 px-4 rounded-md text-base transition-colors ${
+                  isActive
+                    ? "bg-gold/20 text-gold font-medium"
+                    : "text-ivory/70 hover:bg-white/5 hover:text-ivory"
+                }`}
+              >
+                {Icon && (
+                  <Icon
+                    size={20}
+                    className={isActive ? "text-gold" : ""}
+                  />
+                )}
+                {item.label}
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* "New Mission" button — hidden for intervenants (only missions, no etudes/admin/prospection) */}
+        {permissions && (permissions.etudes || permissions.administration || permissions.prospection) && (
+          <Link
+            href="/etudes/nouvelle"
+            onClick={onClose}
+            className="w-full flex items-center justify-center gap-2 h-10 px-4 rounded-md bg-gold/20 text-gold font-medium text-base hover:bg-gold/30 transition-colors mt-4"
+          >
+            <span className="text-lg leading-none">+</span>
+            Nouvelle mission
+          </Link>
+        )}
       </nav>
     </div>
   )
