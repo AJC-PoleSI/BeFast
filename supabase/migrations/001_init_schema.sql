@@ -35,7 +35,8 @@ INSERT INTO public.profils_types (nom, slug, permissions, est_defaut) VALUES
   ('Membre AGC', 'membre_agc', '{"dashboard":true,"profil":true,"missions":true,"etudes":true,"documents":true}', true),
   ('Ancien Membre AGC', 'ancien_membre_agc', '{"dashboard":true,"profil":true,"documents":true}', true),
   ('Intervenant', 'intervenant', '{"dashboard":true,"profil":true,"missions":true,"documents":true}', true),
-  ('Administrateur', 'administrateur', '{"dashboard":true,"profil":true,"missions":true,"etudes":true,"prospection":true,"statistiques":true,"administration":true,"documents":true}', true);
+  ('Chef de Projet', 'chef_de_projet', '{"dashboard":true,"profil":true,"missions":true,"etudes":true,"documents":true,"nouvelle_mission":true}', true),
+  ('Administrateur', 'administrateur', '{"dashboard":true,"profil":true,"missions":true,"etudes":true,"prospection":true,"statistiques":true,"administration":true,"documents":true,"nouvelle_mission":true}', true);
 
 -- Trigger pour creer un profil personne quand un user s'inscrit
 CREATE OR REPLACE FUNCTION public.handle_new_user()

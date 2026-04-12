@@ -95,8 +95,8 @@ export function Sidebar({ permissions, userName, open, onClose }: SidebarProps) 
           })}
         </div>
 
-        {/* "New Mission" button — hidden for intervenants (only missions, no etudes/admin/prospection) */}
-        {permissions && (permissions.etudes || permissions.administration || permissions.prospection) && (
+        {/* "Nouvelle mission" — visible uniquement pour Chef de Projet et Administrateur */}
+        {permissions && permissions.nouvelle_mission && (
           <Link
             href="/etudes/nouvelle"
             onClick={onClose}

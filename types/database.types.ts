@@ -7,6 +7,7 @@ export type PermissionKey =
   | "statistiques"
   | "administration"
   | "documents"
+  | "nouvelle_mission"
 
 export type Permissions = Record<PermissionKey, boolean>
 
