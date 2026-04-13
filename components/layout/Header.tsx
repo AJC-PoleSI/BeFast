@@ -27,12 +27,13 @@ export function Header({ userName, onMenuToggle }: HeaderProps) {
     <header className="fixed top-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-6 z-30"
       style={{ width: "calc(100% - 16rem)" }}>
       {/* Left */}
-      <div className="flex items-center gap-4">
-        {/* Mobile menu */}
+      <div className="flex items-center gap-2">
+        {/* Menu toggle button (always visible) */}
         <button
           onClick={onMenuToggle}
-          className="lg:hidden p-2 rounded-md hover:bg-slate-100 text-slate-500"
+          className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#00236f] transition-colors"
           aria-label="Menu"
+          title="Retourner au menu"
         >
           <span className="material-symbols-outlined text-xl">menu</span>
         </button>
@@ -88,24 +89,32 @@ export function Header({ userName, onMenuToggle }: HeaderProps) {
           <span className="material-symbols-outlined text-xl">chat_bubble_outline</span>
         </button>
 
-        {/* User avatar + sign out */}
-        <form action={signOut} className="ml-2">
-          <button
-            type="submit"
-            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
-            title="Se déconnecter"
-          >
-            <div className="w-7 h-7 rounded-full bg-[#00236f] flex items-center justify-center text-white text-xs font-bold font-manrope">
-              {initials}
-            </div>
+        {/* User profile + logout section */}
+        <div className="flex items-center gap-3 ml-3 pl-3 border-l border-slate-200">
+          {/* User info */}
+          <div className="text-right hidden sm:block">
             {userName && (
-              <span className="text-sm text-slate-700 font-medium hidden sm:block max-w-[120px] truncate">
-                {userName}
-              </span>
+              <div className="text-sm text-slate-700 font-medium">{userName}</div>
             )}
-            <span className="material-symbols-outlined text-slate-400 text-base">logout</span>
-          </button>
-        </form>
+          </div>
+
+          {/* User avatar */}
+          <div className="w-8 h-8 rounded-full bg-[#00236f] flex items-center justify-center text-white text-xs font-bold font-manrope">
+            {initials}
+          </div>
+
+          {/* Logout button */}
+          <form action={signOut} className="">
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-colors text-sm font-medium"
+              title="Se déconnecter"
+            >
+              <span className="material-symbols-outlined text-base">logout</span>
+              <span className="hidden sm:inline">Déconnexion</span>
+            </button>
+          </form>
+        </div>
       </div>
     </header>
   )
