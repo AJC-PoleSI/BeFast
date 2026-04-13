@@ -37,6 +37,15 @@ export function Header({ userName, onMenuToggle }: HeaderProps) {
           <span className="material-symbols-outlined text-xl">menu</span>
         </button>
 
+        {/* Home button */}
+        <Link
+          href="/dashboard"
+          className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#00236f] transition-colors"
+          title="Accueil"
+        >
+          <span className="material-symbols-outlined text-xl">home</span>
+        </Link>
+
         <span className="font-manrope font-black text-[#00236f] text-lg hidden sm:block">BeFast Management</span>
 
         {/* Search */}
