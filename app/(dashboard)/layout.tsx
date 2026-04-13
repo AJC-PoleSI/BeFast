@@ -30,16 +30,7 @@ export default async function DashboardLayout({
     ? [profile.prenom, profile.nom].filter(Boolean).join(" ") || profile.email
     : user.email ?? null
 
-  // If no role assigned, only allow /attente page
-  const hasRole = !!profile?.profil_type_id
-  if (!hasRole) {
-    return (
-      <>
-        {children}
-      </>
-    )
-  }
-
+  // Always render shell with header; permissions control sidebar/nav
   return (
     <DashboardShell permissions={permissions} userName={userName}>
       {children}
