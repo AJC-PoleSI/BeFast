@@ -41,10 +41,11 @@ export function Header({ userName, onMenuToggle }: HeaderProps) {
         {/* Home button */}
         <Link
           href="/dashboard"
-          className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-[#00236f] transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#00236f]/10 hover:bg-[#00236f]/20 text-[#00236f] transition-colors font-medium text-sm"
           title="Accueil"
         >
-          <span className="material-symbols-outlined text-xl">home</span>
+          <span className="material-symbols-outlined text-base">home</span>
+          <span className="hidden sm:inline">Accueil</span>
         </Link>
 
         <span className="font-manrope font-black text-[#00236f] text-lg hidden sm:block">BeFast Management</span>
