@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { signOut } from "@/lib/actions/auth"
 import { useState, useRef, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 interface HeaderProps {
   userName: string | null
@@ -30,6 +30,12 @@ export function Header({ userName, onMenuToggle }: HeaderProps) {
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
+
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    window.location.href = "/login"
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-30">
@@ -85,15 +91,13 @@ export function Header({ userName, onMenuToggle }: HeaderProps) {
             <div className="border-t border-slate-100" />
 
             {/* Logout */}
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors text-left"
-              >
-                <span className="material-symbols-outlined text-red-500 text-lg">logout</span>
-                <span className="text-sm font-medium text-red-600">Déconnexion</span>
-              </button>
-            </form>
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors text-left"
+            >
+              <span className="material-symbols-outlined text-red-500 text-lg">logout</span>
+              <span className="text-sm font-medium text-red-600">Déconnexion</span>
+            </button>
           </div>
         )}
       </div>

@@ -1,219 +1,301 @@
 "use client"
 
 import { useState } from "react"
+import { Building2, Save, FileSignature, MapPin, Receipt, Wallet } from "lucide-react"
 
-const SOURCE_DATA = [
-  { label: "Appels d'Offres", pct: 45, color: "bg-[#00236f]" },
-  { label: "Clients Sortants", pct: 30, color: "bg-[#1e3a8a]" },
-  { label: "Prospection Directe", pct: 25, color: "bg-[#d0d8ff]" },
-]
-
-export default function AdministrationPage() {
+export default function StructureSettingsPage() {
   const [structureForm, setStructureForm] = useState({
-    raison_sociale: "",
-    numero_mission: "",
-    iban: "",
-    siret: "",
-    code_ape: "",
-    presidence: "",
-    urssaf: "",
+    raison_sociale: "BeFast Junior Conseil",
+    siret: "123 456 789 00012",
+    code_ape: "7022Z",
+    tva_intracom: "FR 12 123456789",
+    urssaf: "1234567",
+    
+    adresse: "8 Route de la Jonelière",
+    code_postal: "44300",
+    ville: "Nantes",
+    email_contact: "contact@befast-jc.com",
+    tel_contact: "02 40 37 34 34",
+    
+    presidence_titre: "Monsieur",
+    presidence_nom: "Dupont",
+    presidence_prenom: "Jean",
+    tresorerie_titre: "Madame",
+    tresorerie_nom: "Martin",
+    tresorerie_prenom: "Alice",
+
+    iban: "FR76 1234 5678 9012 3456 7890 123",
+    bic: "XXXXFRYY",
+    frais_dossier: "50",
+    tjh_moyen: "400"
   })
 
   const handleChange = (field: string, val: string) =>
     setStructureForm((prev) => ({ ...prev, [field]: val }))
 
   return (
-    <div className="space-y-6">
-      {/* Hero header */}
-      <div className="bg-gradient-to-r from-[#00236f] to-[#1e3a8a] rounded-2xl p-7 text-white">
-        <p className="text-xs font-medium text-blue-200 uppercase tracking-widest mb-2">
-          Strategic Center / Admin Console
-        </p>
-        <h1 className="text-2xl font-manrope font-black mb-1">Administration</h1>
-        <p className="text-blue-200 text-sm">Console d'administration et paramètres de structure</p>
+    <div className="p-8 h-full overflow-y-auto">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-manrope font-black text-[#00236f]">Paramètres de la Structure</h1>
+          <p className="text-slate-500 text-sm mt-1">Configurez les informations légales et administratives de votre Junior.</p>
+        </div>
+        <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-all shadow-sm">
+          <Save className="w-4 h-4" />
+          Enregistrer
+        </button>
       </div>
 
-      {/* KPI stats row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">CA Réalisé vs Prévisionnel</p>
-          <div className="flex items-end gap-4">
-            <div>
-              <p className="text-2xl font-manrope font-black text-[#00236f]">—</p>
-              <p className="text-xs text-slate-400 mt-0.5">Réalisé</p>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-8">
+        
+        {/* LÉGAL & IDENTITÉ */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="bg-slate-50 px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+            <Building2 className="w-5 h-5 text-[#00236f]" />
+            <h2 className="font-bold text-slate-800">Identité Légale</h2>
+          </div>
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Raison Sociale</label>
+              <input
+                type="text"
+                value={structureForm.raison_sociale}
+                onChange={(e) => handleChange("raison_sociale", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 focus:border-[#00236f] transition-all"
+              />
             </div>
-            <div className="text-slate-200 text-2xl pb-1">/</div>
             <div>
-              <p className="text-2xl font-manrope font-black text-slate-400">—</p>
-              <p className="text-xs text-slate-400 mt-0.5">Prévisionnel</p>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Numéro SIRET</label>
+              <input
+                type="text"
+                value={structureForm.siret}
+                onChange={(e) => handleChange("siret", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Code APE</label>
+              <input
+                type="text"
+                value={structureForm.code_ape}
+                onChange={(e) => handleChange("code_ape", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Numéro TVA</label>
+              <input
+                type="text"
+                value={structureForm.tva_intracom}
+                onChange={(e) => handleChange("tva_intracom", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Numéro URSSAF</label>
+              <input
+                type="text"
+                value={structureForm.urssaf}
+                onChange={(e) => handleChange("urssaf", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+              />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Missions</p>
-          <p className="text-2xl font-manrope font-black text-[#00236f]">—</p>
-          <p className="text-xs text-slate-400 mt-0.5">En cours</p>
-        </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Intervenants</p>
-          <p className="text-2xl font-manrope font-black text-[#00236f]">—</p>
-          <p className="text-xs text-slate-400 mt-0.5">Actifs</p>
-        </div>
-      </div>
-
-      {/* Main 2-col grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left col — span-2 */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Structure settings form */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
-              <span className="material-symbols-outlined text-[#00236f] text-xl">business</span>
-              <h2 className="font-manrope font-bold text-[#00236f] text-base">Paramètres de la structure</h2>
+        {/* COORDONNÉES */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="bg-slate-50 px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+            <MapPin className="w-5 h-5 text-[#00236f]" />
+            <h2 className="font-bold text-slate-800">Coordonnées</h2>
+          </div>
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Adresse du Siège</label>
+              <input
+                type="text"
+                value={structureForm.adresse}
+                onChange={(e) => handleChange("adresse", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+              />
             </div>
-            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                { field: "raison_sociale", label: "Raison sociale" },
-                { field: "numero_mission", label: "Numéro mission" },
-                { field: "iban", label: "IBAN" },
-                { field: "siret", label: "SIRET" },
-                { field: "code_ape", label: "Code APE" },
-                { field: "presidence", label: "Présidence" },
-                { field: "urssaf", label: "URSSAF" },
-              ].map(({ field, label }) => (
-                <div key={field}>
-                  <label className="block text-xs font-medium text-slate-500 mb-1.5">{label}</label>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Code Postal</label>
+              <input
+                type="text"
+                value={structureForm.code_postal}
+                onChange={(e) => handleChange("code_postal", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Ville</label>
+              <input
+                type="text"
+                value={structureForm.ville}
+                onChange={(e) => handleChange("ville", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Email de Contact</label>
+              <input
+                type="email"
+                value={structureForm.email_contact}
+                onChange={(e) => handleChange("email_contact", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Téléphone</label>
+              <input
+                type="tel"
+                value={structureForm.tel_contact}
+                onChange={(e) => handleChange("tel_contact", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ORGANIGRAMME DU MANDAT */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="bg-slate-50 px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+            <FileSignature className="w-5 h-5 text-[#00236f]" />
+            <h2 className="font-bold text-slate-800">Organigramme du Mandat (Signataires)</h2>
+          </div>
+          <div className="p-5 space-y-6">
+            
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-[#00236f]">Présidence</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-6 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">Titre</label>
+                  <select
+                    value={structureForm.presidence_titre}
+                    onChange={(e) => handleChange("presidence_titre", e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+                  >
+                    <option value="Monsieur">Monsieur</option>
+                    <option value="Madame">Madame</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">Nom</label>
                   <input
                     type="text"
-                    value={structureForm[field as keyof typeof structureForm]}
-                    onChange={(e) => handleChange(field, e.target.value)}
-                    placeholder="—"
-                    className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                    value={structureForm.presidence_nom}
+                    onChange={(e) => handleChange("presidence_nom", e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm"
                   />
                 </div>
-              ))}
-            </div>
-            <div className="px-6 pb-5 flex justify-end">
-              <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors">
-                <span className="material-symbols-outlined text-lg">save</span>
-                Enregistrer
-              </button>
-            </div>
-          </div>
-
-          {/* Access rights matrix */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
-              <span className="material-symbols-outlined text-[#00236f] text-xl">admin_panel_settings</span>
-              <h2 className="font-manrope font-bold text-[#00236f] text-base">Gestion des droits d'accès</h2>
-            </div>
-            <div className="p-6 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100">
-                    <th className="text-left text-xs font-semibold text-slate-500 pb-3 pr-4">Module</th>
-                    <th className="text-center text-xs font-semibold text-slate-500 pb-3 px-3">Intervenant</th>
-                    <th className="text-center text-xs font-semibold text-slate-500 pb-3 px-3">Chef de Projet</th>
-                    <th className="text-center text-xs font-semibold text-slate-500 pb-3 px-3">Administrateur</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {[
-                    { module: "Dashboard", intervenant: true, chef: true, admin: true },
-                    { module: "Profil", intervenant: true, chef: true, admin: true },
-                    { module: "Missions", intervenant: true, chef: true, admin: true },
-                    { module: "Documents", intervenant: true, chef: true, admin: true },
-                    { module: "Études", intervenant: false, chef: true, admin: true },
-                    { module: "Prospection", intervenant: false, chef: true, admin: true },
-                    { module: "Administration", intervenant: false, chef: false, admin: true },
-                    { module: "Nouvelle mission", intervenant: false, chef: true, admin: true },
-                  ].map((row) => (
-                    <tr key={row.module} className="hover:bg-slate-50">
-                      <td className="py-3 pr-4 font-medium text-slate-700">{row.module}</td>
-                      {[row.intervenant, row.chef, row.admin].map((allowed, i) => (
-                        <td key={i} className="py-3 px-3 text-center">
-                          <span className={`material-symbols-outlined text-lg ${allowed ? "text-emerald-500" : "text-slate-200"}`}>
-                            {allowed ? "check_circle" : "cancel"}
-                          </span>
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Audit log */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
-              <span className="material-symbols-outlined text-[#00236f] text-xl">history</span>
-              <h2 className="font-manrope font-bold text-[#00236f] text-base">Journal d'audit</h2>
-            </div>
-            <div className="p-6">
-              <div className="flex flex-col items-center justify-center py-8 text-slate-300">
-                <span className="material-symbols-outlined text-5xl mb-2">receipt_long</span>
-                <p className="text-sm text-slate-400">Aucun événement récent</p>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">Prénom</label>
+                  <input
+                    type="text"
+                    value={structureForm.presidence_prenom}
+                    onChange={(e) => handleChange("presidence_prenom", e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Right col — span-1 */}
-        <div className="space-y-4">
-          {/* Sources chart */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <h2 className="font-manrope font-bold text-[#00236f] text-base mb-4">Sources des Études</h2>
-            <div className="space-y-3">
-              {SOURCE_DATA.map((src) => (
-                <div key={src.label}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-slate-600">{src.label}</span>
-                    <span className="text-xs font-bold text-[#00236f]">{src.pct}%</span>
-                  </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${src.color}`}
-                      style={{ width: `${src.pct}%` }}
-                    />
-                  </div>
+            <hr className="border-slate-100" />
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-[#00236f]">Trésorerie</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-6 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">Titre</label>
+                  <select
+                    value={structureForm.tresorerie_titre}
+                    onChange={(e) => handleChange("tresorerie_titre", e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+                  >
+                    <option value="Monsieur">Monsieur</option>
+                    <option value="Madame">Madame</option>
+                  </select>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Import/Export dark card */}
-          <div className="bg-[#00236f] rounded-xl p-5 text-white">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-[#d0d8ff] text-xl">import_export</span>
-              <h2 className="font-manrope font-bold text-base">Import / Export</h2>
-            </div>
-            <div className="space-y-2 mb-4">
-              {[
-                { label: "Rapport mensuel", icon: "table_chart" },
-                { label: "Liste des membres", icon: "group" },
-                { label: "Études actives", icon: "school" },
-              ].map((item) => (
-                <button
-                  key={item.label}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-left"
-                >
-                  <span className="material-symbols-outlined text-[#d0d8ff] text-lg">{item.icon}</span>
-                  <span className="text-sm font-medium">{item.label}</span>
-                  <span className="material-symbols-outlined text-blue-300 text-base ml-auto">download</span>
-                </button>
-              ))}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">Nom</label>
+                  <input
+                    type="text"
+                    value={structureForm.tresorerie_nom}
+                    onChange={(e) => handleChange("tresorerie_nom", e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">Prénom</label>
+                  <input
+                    type="text"
+                    value={structureForm.tresorerie_prenom}
+                    onChange={(e) => handleChange("tresorerie_prenom", e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm"
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Drag-drop zone */}
-            <div className="border-2 border-dashed border-white/20 rounded-xl p-4 text-center hover:border-white/40 transition-colors cursor-pointer">
-              <span className="material-symbols-outlined text-[#d0d8ff] text-3xl mb-1 block">cloud_upload</span>
-              <p className="text-xs text-blue-200">Glissez un fichier ici pour l'importer</p>
-            </div>
           </div>
         </div>
+
+        {/* DONNÉES FI */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="bg-slate-50 px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+            <Wallet className="w-5 h-5 text-[#00236f]" />
+            <h2 className="font-bold text-slate-800">Données Financières</h2>
+          </div>
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">IBAN</label>
+              <input
+                type="text"
+                value={structureForm.iban}
+                onChange={(e) => handleChange("iban", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">BIC</label>
+              <input
+                type="text"
+                value={structureForm.bic}
+                onChange={(e) => handleChange("bic", e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Frais de Dossier (€)</label>
+              <div className="relative">
+                <Receipt className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                <input
+                  type="number"
+                  value={structureForm.frais_dossier}
+                  onChange={(e) => handleChange("frais_dossier", e.target.value)}
+                  className="w-full h-10 pl-10 pr-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">TJH Moyen Visé (€)</label>
+              <div className="relative">
+                <Receipt className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                <input
+                  type="number"
+                  value={structureForm.tjh_moyen}
+                  onChange={(e) => handleChange("tjh_moyen", e.target.value)}
+                  className="w-full h-10 pl-10 pr-3 rounded-lg border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+                />
+              </div>
+            </div>
+            
+          </div>
+        </div>
+
       </div>
     </div>
   )
