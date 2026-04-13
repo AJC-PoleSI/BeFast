@@ -2,12 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { getMissions } from "@/lib/actions/missions"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, Plus, Filter } from "lucide-react"
+import Link from "next/link"
 import type { MissionWithEtude } from "@/types/database.types"
 
 interface FilterState {
@@ -35,6 +31,11 @@ const CLASSES = [
   { value: "m2", label: "M2" },
 ]
 
+const TYPE_COLORS: Record<string, string> = {
+  chef_projet: "bg-[#d0d8ff] text-[#00236f]",
+  intervenant: "bg-purple-100 text-purple-700",
+}
+
 export default function MissionsPage() {
   const [missions, setMissions] = useState<MissionWithEtude[]>([])
   const [loading, setLoading] = useState(true)
@@ -45,21 +46,15 @@ export default function MissionsPage() {
     const loadMissions = async () => {
       setLoading(true)
       const result = await getMissions(activeFilters)
-      if (result.data) {
-        setMissions(result.data)
-      }
+      if (result.data) setMissions(result.data)
       setLoading(false)
     }
     loadMissions()
   }, [activeFilters])
 
-  const handleSearch = (search: string) => {
-    setFilters({ ...filters, search })
-  }
-
-  const handleFilterChange = (key: string, value: string | undefined) => {
+  const handleSearch = (search: string) => setFilters({ ...filters, search })
+  const handleFilterChange = (key: string, value: string | undefined) =>
     setFilters({ ...filters, [key]: value })
-  }
 
   const applyFilters = () => {
     const newFilters: FilterState = {}
@@ -82,210 +77,257 @@ export default function MissionsPage() {
       )
     : missions
 
+  const featured = filteredMissions[0]
+  const secondary = filteredMissions[1]
+  const rest = filteredMissions.slice(2, 5)
+
   return (
     <div className="space-y-6">
-      {/* Page Header */}
+      {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-heading font-bold text-navy">Missions</h1>
-          <p className="text-muted-foreground mt-1">
-            Découvrez et candidatez aux missions disponibles
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">
+            Mission Catalog
           </p>
+          <h1 className="text-2xl font-manrope font-black text-[#00236f]">Missions</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Découvrez et candidatez aux missions disponibles</p>
         </div>
-        <Button className="w-full sm:w-auto bg-navy hover:bg-navy/90 gap-2">
-          <Plus size={18} />
-          Nouvelle mission
-        </Button>
       </div>
 
       {/* Search & Filters */}
-      <Card className="border-border shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">Filtrer les missions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Rechercher une mission..."
-                className="pl-10"
-                value={filters.search || ""}
-                onChange={(e) => handleSearch(e.target.value)}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-navy">Type</label>
-                <select
-                  className="w-full px-3 py-2 border border-border rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gold/50"
-                  value={filters.type || ""}
-                  onChange={(e) => handleFilterChange("type", e.target.value || undefined)}
-                >
-                  <option value="">Tous les types</option>
-                  {MISSION_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-navy">Voie</label>
-                <select
-                  className="w-full px-3 py-2 border border-border rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gold/50"
-                  value={filters.voie || ""}
-                  onChange={(e) => handleFilterChange("voie", e.target.value || undefined)}
-                >
-                  <option value="">Toutes les voies</option>
-                  {VOIES.map((voie) => (
-                    <option key={voie.value} value={voie.value}>
-                      {voie.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-navy">Classe</label>
-                <select
-                  className="w-full px-3 py-2 border border-border rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-gold/50"
-                  value={filters.classe || ""}
-                  onChange={(e) => handleFilterChange("classe", e.target.value || undefined)}
-                >
-                  <option value="">Toutes les classes</option>
-                  {CLASSES.map((classe) => (
-                    <option key={classe.value} value={classe.value}>
-                      {classe.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <Button
-                onClick={applyFilters}
-                className="flex-1 bg-gold hover:bg-gold/90 text-navy gap-2"
-              >
-                <Filter size={16} />
-                Appliquer
-              </Button>
-              <Button
-                onClick={resetFilters}
-                variant="outline"
-                className="flex-1"
-              >
-                Réinitialiser
-              </Button>
-            </div>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search */}
+          <div className="relative flex-1">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+            <input
+              type="search"
+              placeholder="Rechercher une mission..."
+              className="w-full h-10 pl-9 pr-4 rounded-lg border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 bg-slate-50"
+              value={filters.search || ""}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Type */}
+          <select
+            className="h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+            value={filters.type || ""}
+            onChange={(e) => handleFilterChange("type", e.target.value || undefined)}
+          >
+            <option value="">Tous types</option>
+            {MISSION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+
+          {/* Voie */}
+          <select
+            className="h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+            value={filters.voie || ""}
+            onChange={(e) => handleFilterChange("voie", e.target.value || undefined)}
+          >
+            <option value="">Toutes voies</option>
+            {VOIES.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
+          </select>
+
+          {/* Classe */}
+          <select
+            className="h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+            value={filters.classe || ""}
+            onChange={(e) => handleFilterChange("classe", e.target.value || undefined)}
+          >
+            <option value="">Toutes classes</option>
+            {CLASSES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+
+          <button
+            onClick={applyFilters}
+            className="h-10 px-5 rounded-lg bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-lg">filter_list</span>
+            Filtrer
+          </button>
+          <button
+            onClick={resetFilters}
+            className="h-10 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            Réinitialiser
+          </button>
+        </div>
+      </div>
 
       {loading ? (
         <div className="space-y-4">
-          <Skeleton className="h-80 w-full rounded-xl" />
-          <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-72 w-full rounded-xl" />
+          <div className="grid grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-48 rounded-xl" />)}
+          </div>
+        </div>
+      ) : filteredMissions.length === 0 ? (
+        /* No results */
+        <div className="bg-[#00236f] rounded-xl p-10 text-white text-center">
+          <span className="material-symbols-outlined text-5xl text-[#d0d8ff] mb-3 block">search_off</span>
+          <h3 className="font-manrope font-black text-xl mb-2">Aucune mission trouvée</h3>
+          <p className="text-blue-200 text-sm max-w-sm mx-auto">Essayez de modifier vos critères de recherche ou de filtrage.</p>
+          <button
+            onClick={resetFilters}
+            className="mt-4 px-5 py-2.5 rounded-xl bg-white text-[#00236f] font-semibold text-sm hover:bg-blue-50 transition-colors"
+          >
+            Voir toutes les missions
+          </button>
         </div>
       ) : (
-        <>
-          {/* Featured Mission */}
-          {filteredMissions.length > 0 && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredMissions.map((mission) => (
-                  <Card
-                    key={mission.id}
-                    className="border-border shadow-sm hover:shadow-md hover:border-gold/30 transition-all cursor-pointer"
-                  >
-                    <CardContent className="p-6">
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="font-heading font-semibold text-navy text-lg">
-                            {mission.nom}
-                          </h3>
-                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                            {mission.description}
-                          </p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          {mission.type && (
-                            <Badge variant="outline" className="text-xs">
-                              {mission.type === "chef_projet"
-                                ? "Chef de projet"
-                                : "Intervenant"}
-                            </Badge>
+        <div className="space-y-4">
+          {/* Bento row 1: featured (col-8) + secondary (col-4) */}
+          {(featured || secondary) && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              {featured && (
+                <Link href={`/missions/${featured.id}`} className="lg:col-span-8">
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#00236f]/30 transition-all p-6 h-full cursor-pointer">
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div className="flex-1">
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {featured.type && (
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[featured.type] || "bg-slate-100 text-slate-600"}`}>
+                              {featured.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
+                            </span>
                           )}
-                          {mission.voie && (
-                            <Badge variant="secondary" className="text-xs">
-                              {mission.voie}
-                            </Badge>
-                          )}
-                          {mission.classe && (
-                            <Badge
-                              variant="outline"
-                              className="text-xs border-gold/30"
-                            >
-                              {mission.classe}
-                            </Badge>
+                          {featured.voie && (
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                              {featured.voie}
+                            </span>
                           )}
                         </div>
-
-                        <div className="grid grid-cols-3 gap-2 pt-4 border-t border-border">
-                          {mission.remuneration && (
-                            <div>
-                              <p className="text-xs text-muted-foreground">
-                                Budget
-                              </p>
-                              <p className="text-sm font-semibold text-gold">
-                                €{mission.remuneration.toLocaleString()}
-                              </p>
-                            </div>
-                          )}
-                          <div>
-                            <p className="text-xs text-muted-foreground">JEH</p>
-                            <p className="text-sm font-semibold text-navy">
-                              {mission.nb_jeh}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">
-                              Postes
-                            </p>
-                            <p className="text-sm font-semibold text-navy">
-                              {mission.nb_intervenants}
-                            </p>
-                          </div>
-                        </div>
+                        <h2 className="text-xl font-manrope font-black text-[#00236f] mb-2">{featured.nom}</h2>
+                        <p className="text-sm text-slate-500 line-clamp-3">{featured.description}</p>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      <div className="w-14 h-14 rounded-xl bg-[#d0d8ff] flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[#00236f] text-2xl">assignment</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6 pt-4 border-t border-slate-100">
+                      {featured.remuneration && (
+                        <div>
+                          <p className="text-xs text-slate-400">Budget</p>
+                          <p className="text-lg font-manrope font-black text-[#00236f]">€{featured.remuneration.toLocaleString()}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs text-slate-400">JEH</p>
+                        <p className="text-lg font-manrope font-black text-[#00236f]">{featured.nb_jeh}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">Postes</p>
+                        <p className="text-lg font-manrope font-black text-[#00236f]">{featured.nb_intervenants}</p>
+                      </div>
+                      <div className="ml-auto">
+                        <span className="flex items-center gap-1 px-4 py-2 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors">
+                          Candidater
+                          <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              )}
+
+              {secondary && (
+                <Link href={`/missions/${secondary.id}`} className="lg:col-span-4">
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#00236f]/30 transition-all p-5 h-full cursor-pointer flex flex-col">
+                    <div className="flex-1">
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {secondary.type && (
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[secondary.type] || "bg-slate-100 text-slate-600"}`}>
+                            {secondary.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-manrope font-bold text-[#00236f] text-base mb-2">{secondary.nom}</h3>
+                      <p className="text-sm text-slate-500 line-clamp-3">{secondary.description}</p>
+                    </div>
+                    <div className="flex items-center gap-4 pt-4 border-t border-slate-100 mt-4">
+                      {secondary.remuneration && (
+                        <p className="text-base font-manrope font-black text-[#00236f]">€{secondary.remuneration.toLocaleString()}</p>
+                      )}
+                      <p className="text-sm text-slate-500">{secondary.nb_jeh} JEH</p>
+                    </div>
+                  </div>
+                </Link>
+              )}
             </div>
           )}
 
-          {filteredMissions.length === 0 && (
-            <Card className="border-border border-dashed py-12">
-              <CardContent className="flex flex-col items-center justify-center text-center">
-                <div className="h-12 w-12 rounded-full bg-gold/10 flex items-center justify-center mb-4">
-                  <Filter className="h-6 w-6 text-gold" />
-                </div>
-                <h3 className="font-heading font-semibold text-navy mb-2">
-                  Aucune mission trouvée
-                </h3>
-                <p className="text-muted-foreground max-w-sm">
-                  Essayez de modifier vos critères de recherche ou de filtrage pour
-                  trouver des missions adaptées.
-                </p>
-              </CardContent>
-            </Card>
+          {/* Row of 3 smaller cards */}
+          {rest.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {rest.map((mission) => (
+                <Link key={mission.id} href={`/missions/${mission.id}`}>
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#00236f]/30 transition-all p-5 cursor-pointer h-full">
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {mission.type && (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[mission.type] || "bg-slate-100 text-slate-600"}`}>
+                          {mission.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
+                        </span>
+                      )}
+                      {mission.voie && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">{mission.voie}</span>
+                      )}
+                    </div>
+                    <h3 className="font-manrope font-bold text-[#00236f] text-sm mb-1.5">{mission.nom}</h3>
+                    <p className="text-xs text-slate-500 line-clamp-2 mb-4">{mission.description}</p>
+                    <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
+                      {mission.remuneration && (
+                        <p className="text-sm font-bold text-[#00236f]">€{mission.remuneration.toLocaleString()}</p>
+                      )}
+                      <p className="text-xs text-slate-400">{mission.nb_jeh} JEH</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           )}
-        </>
+
+          {/* CTA navy card */}
+          <div className="bg-[#00236f] rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-white">
+            <div>
+              <h3 className="font-manrope font-black text-lg mb-1">Vous ne trouvez pas votre mission ?</h3>
+              <p className="text-blue-200 text-sm">Contactez l'équipe pour des opportunités sur mesure.</p>
+            </div>
+            <a
+              href="mailto:contact@befast.fr"
+              className="shrink-0 px-5 py-2.5 rounded-xl bg-white text-[#00236f] text-sm font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-lg">mail</span>
+              Nous contacter
+            </a>
+          </div>
+
+          {/* Remaining missions beyond first 5 */}
+          {filteredMissions.length > 5 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredMissions.slice(5).map((mission) => (
+                <Link key={mission.id} href={`/missions/${mission.id}`}>
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#00236f]/30 transition-all p-5 cursor-pointer h-full">
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {mission.type && (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[mission.type] || "bg-slate-100 text-slate-600"}`}>
+                          {mission.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-manrope font-bold text-[#00236f] text-sm mb-1.5">{mission.nom}</h3>
+                    <p className="text-xs text-slate-500 line-clamp-2 mb-4">{mission.description}</p>
+                    <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
+                      {mission.remuneration && (
+                        <p className="text-sm font-bold text-[#00236f]">€{mission.remuneration.toLocaleString()}</p>
+                      )}
+                      <p className="text-xs text-slate-400">{mission.nb_jeh} JEH</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

@@ -2,34 +2,18 @@
 
 import { useState, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import {
-  CheckCircle2,
-  Upload,
-  ExternalLink,
-  ShieldCheck,
-  FileText,
-  CreditCard,
-  GraduationCap,
-  Heart,
-  Wallet,
-  Loader2,
-  AlertCircle,
-} from "lucide-react"
 
 const DOCUMENTS = [
-  { key: "carte_identite", label: "Carte d'identité", icon: CreditCard, required: true },
-  { key: "carte_etudiante", label: "Carte étudiante", icon: GraduationCap, required: true },
-  { key: "carte_vitale", label: "Carte vitale", icon: Heart, required: true },
-  { key: "rib", label: "RIB (Relevé d'Identité Bancaire)", icon: Wallet, required: true },
-  { key: "autre", label: "Autre document", icon: FileText, required: false },
+  { key: "carte_identite", label: "Carte d'identité", icon: "badge", required: true },
+  { key: "carte_etudiante", label: "Carte étudiante", icon: "school", required: true },
+  { key: "carte_vitale", label: "Carte vitale", icon: "health_and_safety", required: true },
+  { key: "preuve_lydia", label: "Preuve Lydia", icon: "account_balance_wallet", required: false },
+  { key: "rib", label: "RIB (Relevé d'Identité Bancaire)", icon: "account_balance", required: true },
 ]
 
 interface DocState {
   status: "idle" | "uploading" | "done" | "error"
   fileName?: string
-  url?: string
 }
 
 export default function DocumentsPage() {
@@ -40,163 +24,181 @@ export default function DocumentsPage() {
 
   async function handleUpload(docKey: string, file: File) {
     setDocStates((prev) => ({ ...prev, [docKey]: { status: "uploading" } }))
-
     try {
       const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
+      const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Non authentifié")
-
       const ext = file.name.split(".").pop()
       const path = `${user.id}/${docKey}.${ext}`
-
       const { error } = await supabase.storage
         .from("documents-personnes")
         .upload(path, file, { upsert: true })
-
       if (error) throw error
-
-      setDocStates((prev) => ({
-        ...prev,
-        [docKey]: { status: "done", fileName: file.name },
-      }))
-    } catch (err) {
-      setDocStates((prev) => ({
-        ...prev,
-        [docKey]: { status: "error", fileName: file.name },
-      }))
+      setDocStates((prev) => ({ ...prev, [docKey]: { status: "done", fileName: file.name } }))
+    } catch {
+      setDocStates((prev) => ({ ...prev, [docKey]: { status: "error", fileName: file.name } }))
     }
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-4 text-[#0D1B2A] font-bold text-sm tracking-widest uppercase">
-          <div className="h-[1px] w-8 bg-[#0D1B2A]/30" />
-          Mon espace
-        </div>
-        <h1 className="text-4xl font-extrabold text-[#0D1B2A] tracking-tight font-headline">
-          Mes documents
-        </h1>
-        <p className="text-slate-500 text-sm max-w-xl">
+    <div className="space-y-6">
+      {/* Page header */}
+      <div>
+        <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">
+          Mon espace / Documents
+        </p>
+        <h1 className="text-2xl font-manrope font-black text-[#00236f]">Mes documents</h1>
+        <p className="text-sm text-slate-500 mt-0.5">
           Déposez vos documents administratifs requis pour participer aux missions.
-          Tous les fichiers sont chiffrés et stockés de manière sécurisée.
         </p>
       </div>
 
-      {/* Filigrane Banner */}
-      <Card className="p-6 bg-[#0D1B2A] text-white border-0">
-        <div className="flex items-start gap-4">
-          <ShieldCheck className="w-8 h-8 text-[#C9A84C] shrink-0 mt-1" />
-          <div className="flex-1">
-            <h3 className="font-bold text-lg mb-1">Sécurisez vos documents avec le filigrane officiel</h3>
-            <p className="text-slate-300 text-sm mb-4">
-              Avant de déposer vos pièces d'identité, nous recommandons d'ajouter un filigrane
-              via le service officiel de l'État pour protéger vos documents contre la fraude.
-            </p>
-            <Button
-              asChild
-              className="bg-[#C9A84C] hover:bg-[#C9A84C]/90 text-[#0D1B2A] font-bold gap-2"
-            >
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Documents list — col-span-8 */}
+        <div className="lg:col-span-8 space-y-4">
+          {/* Filigrane banner */}
+          <div className="bg-[#00236f] rounded-xl p-5 flex flex-col sm:flex-row items-start gap-4 text-white">
+            <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-white text-2xl">verified_user</span>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-manrope font-bold text-base mb-1">
+                Sécurisez vos documents avec le filigrane officiel
+              </h3>
+              <p className="text-blue-200 text-sm mb-3">
+                Avant de déposer vos pièces d'identité, nous recommandons d'ajouter un filigrane
+                via le service officiel de l'État.
+              </p>
               <a
                 href="https://www.service-public.fr/particuliers/vosdroits/R61460"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-[#00236f] text-sm font-semibold hover:bg-blue-50 transition-colors"
               >
-                <ExternalLink className="w-4 h-4" />
+                <span className="material-symbols-outlined text-lg">open_in_new</span>
                 Ajouter un filigrane (service-public.fr)
               </a>
-            </Button>
+            </div>
+          </div>
+
+          {/* Document upload slots */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100">
+              <h2 className="font-manrope font-bold text-[#00236f] text-base">Mes pièces justificatives</h2>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {DOCUMENTS.map((doc) => {
+                const state = docStates[doc.key]
+                return (
+                  <div
+                    key={doc.key}
+                    className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 cursor-pointer transition-colors group"
+                    onClick={() => fileInputRefs.current[doc.key]?.click()}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                      state.status === "done" ? "bg-emerald-100"
+                      : state.status === "error" ? "bg-red-100"
+                      : "bg-slate-100 group-hover:bg-[#d0d8ff]"
+                    }`}>
+                      <span className={`material-symbols-outlined text-xl ${
+                        state.status === "done" ? "text-emerald-600"
+                        : state.status === "error" ? "text-red-500"
+                        : "text-slate-500 group-hover:text-[#00236f]"
+                      }`}>
+                        {state.status === "done" ? "check_circle" : state.status === "error" ? "error" : doc.icon}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800">{doc.label}</p>
+                      <p className="text-xs text-slate-400">
+                        {state.fileName || (doc.required ? "Requis · PDF, JPG, PNG" : "Optionnel · PDF, JPG, PNG")}
+                      </p>
+                    </div>
+                    <div className="shrink-0">
+                      {state.status === "idle" && (
+                        <span className="material-symbols-outlined text-slate-300 group-hover:text-[#00236f] text-xl transition-colors">cloud_upload</span>
+                      )}
+                      {state.status === "uploading" && (
+                        <span className="material-symbols-outlined text-[#00236f] text-xl animate-spin">autorenew</span>
+                      )}
+                      {state.status === "done" && (
+                        <span className="material-symbols-outlined text-emerald-500 text-xl">check_circle</span>
+                      )}
+                      {state.status === "error" && (
+                        <span className="material-symbols-outlined text-red-500 text-xl">error</span>
+                      )}
+                    </div>
+                    <input
+                      ref={(el) => { fileInputRefs.current[doc.key] = el }}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="hidden"
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleUpload(doc.key, file)
+                      }}
+                    />
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
-      </Card>
 
-      {/* Documents List */}
-      <div className="space-y-3">
-        {DOCUMENTS.map((doc) => {
-          const Icon = doc.icon
-          const state = docStates[doc.key]
-
-          return (
-            <Card
-              key={doc.key}
-              className="p-5 flex items-center justify-between gap-4 hover:border-[#C9A84C]/40 transition-colors cursor-pointer group"
-              onClick={() => fileInputRefs.current[doc.key]?.click()}
-            >
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                  state.status === "done"
-                    ? "bg-green-100"
-                    : state.status === "error"
-                    ? "bg-red-100"
-                    : "bg-slate-100 group-hover:bg-[#0D1B2A]/10"
-                }`}>
-                  <Icon className={`w-5 h-5 ${
-                    state.status === "done"
-                      ? "text-green-600"
-                      : state.status === "error"
-                      ? "text-red-500"
-                      : "text-slate-500 group-hover:text-[#0D1B2A]"
-                  }`} />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="font-semibold text-[#0D1B2A] text-sm">{doc.label}</p>
-                  {state.fileName && (
-                    <p className="text-xs text-slate-500 truncate">{state.fileName}</p>
-                  )}
-                  {!state.fileName && (
-                    <p className="text-xs text-slate-400">
-                      {doc.required ? "Requis" : "Optionnel"} · PDF, JPG, PNG
-                    </p>
-                  )}
-                </div>
+        {/* Right column — col-span-4 */}
+        <div className="lg:col-span-4 space-y-4">
+          {/* Progress */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <h2 className="font-manrope font-bold text-[#00236f] text-base mb-4">Progression</h2>
+            <div className="space-y-2">
+              {DOCUMENTS.map((doc) => {
+                const state = docStates[doc.key]
+                return (
+                  <div key={doc.key} className="flex items-center gap-3">
+                    <span className={`material-symbols-outlined text-lg ${
+                      state.status === "done" ? "text-emerald-500" : "text-slate-300"
+                    }`}>
+                      {state.status === "done" ? "check_circle" : "radio_button_unchecked"}
+                    </span>
+                    <span className={`text-sm ${state.status === "done" ? "text-slate-800 font-medium" : "text-slate-400"}`}>
+                      {doc.label}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
+                <span>Complétude</span>
+                <span className="font-bold text-[#00236f]">
+                  {Object.values(docStates).filter((s) => s.status === "done").length}/{DOCUMENTS.length}
+                </span>
               </div>
-
-              {/* Status indicator */}
-              <div className="shrink-0">
-                {state.status === "idle" && (
-                  <Upload className="w-5 h-5 text-slate-400 group-hover:text-[#0D1B2A] transition-colors" />
-                )}
-                {state.status === "uploading" && (
-                  <Loader2 className="w-5 h-5 text-[#C9A84C] animate-spin" />
-                )}
-                {state.status === "done" && (
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                )}
-                {state.status === "error" && (
-                  <AlertCircle className="w-5 h-5 text-red-500" />
-                )}
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#00236f] rounded-full transition-all"
+                  style={{
+                    width: `${(Object.values(docStates).filter((s) => s.status === "done").length / DOCUMENTS.length) * 100}%`
+                  }}
+                />
               </div>
+            </div>
+          </div>
 
-              {/* Hidden file input */}
-              <input
-                ref={(el) => { fileInputRefs.current[doc.key] = el }}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleUpload(doc.key, file)
-                }}
-              />
-            </Card>
-          )
-        })}
-      </div>
-
-      {/* RGPD Notice */}
-      <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
-        <ShieldCheck className="w-5 h-5 text-[#0D1B2A] shrink-0 mt-0.5" />
-        <p className="text-xs text-slate-500 leading-relaxed">
-          Vos documents sont chiffrés (AES-256) et stockés sur des serveurs sécurisés
-          conformes au RGPD. Seuls les administrateurs habilités peuvent y accéder dans
-          le cadre du traitement de vos missions.
-        </p>
+          {/* Security notice */}
+          <div className="bg-[#00236f] rounded-xl p-5 text-white">
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined text-[#d0d8ff] text-2xl shrink-0">shield</span>
+              <div>
+                <p className="font-manrope font-bold text-sm mb-1">Stockage sécurisé</p>
+                <p className="text-xs text-blue-200 leading-relaxed">
+                  Chiffrement AES-256. Conformité RGPD. Accès réservé aux administrateurs habilités dans le cadre du traitement de vos missions.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

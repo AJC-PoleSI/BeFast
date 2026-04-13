@@ -19,7 +19,7 @@ export function DashboardShell({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-[#f7f9fb]">
       <Sidebar
         permissions={permissions}
         userName={userName}
@@ -31,8 +31,10 @@ export function DashboardShell({
           userName={userName}
           onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
         />
-        <main className="flex-1 overflow-y-auto bg-[#F5F0E8] p-8">
-          {children}
+        <main className="flex-1 overflow-y-auto bg-[#f7f9fb] pt-16">
+          <div className="max-w-7xl mx-auto px-8 py-8">
+            {children}
+          </div>
         </main>
       </div>
     </div>

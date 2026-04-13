@@ -1,8 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Menu, LogOut, Home } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { usePathname } from "next/navigation"
 import { signOut } from "@/lib/actions/auth"
 
 interface HeaderProps {
@@ -11,41 +10,92 @@ interface HeaderProps {
 }
 
 export function Header({ userName, onMenuToggle }: HeaderProps) {
-  return (
-    <header className="h-14 bg-white border-b border-border flex items-center justify-between px-4">
-      <div className="flex items-center gap-2">
-        {/* Home button */}
-        <Link
-          href="/dashboard"
-          className="p-2 rounded-md hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Accueil"
-        >
-          <Home size={20} />
-        </Link>
+  const pathname = usePathname()
 
-        {/* Mobile menu toggle */}
+  const NAV_LINKS = [
+    { label: "KPIs", href: "/dashboard" },
+    { label: "Ressources", href: "/documents" },
+    { label: "Rapports", href: "/statistiques" },
+  ]
+
+  // Get initials for avatar
+  const initials = userName
+    ? userName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "U"
+
+  return (
+    <header className="fixed top-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-6 z-30"
+      style={{ width: "calc(100% - 16rem)" }}>
+      {/* Left */}
+      <div className="flex items-center gap-4">
+        {/* Mobile menu */}
         <button
           onClick={onMenuToggle}
-          className="lg:hidden p-2 rounded-md hover:bg-gray-100"
+          className="lg:hidden p-2 rounded-md hover:bg-slate-100 text-slate-500"
           aria-label="Menu"
         >
-          <Menu size={20} />
+          <span className="material-symbols-outlined text-xl">menu</span>
         </button>
+
+        <span className="font-manrope font-black text-[#00236f] text-lg hidden sm:block">BeFast Management</span>
+
+        {/* Search */}
+        <div className="relative hidden md:block">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+          <input
+            type="search"
+            placeholder="Rechercher..."
+            className="h-9 pl-9 pr-4 rounded-full bg-slate-100 border-0 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 w-56"
+          />
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        {userName && (
-          <span className="text-sm text-foreground">{userName}</span>
-        )}
-        <form action={signOut}>
-          <Button
+      {/* Right */}
+      <div className="flex items-center gap-1">
+        {/* Nav links */}
+        <nav className="hidden lg:flex items-center gap-1 mr-3">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                pathname === link.href
+                  ? "text-[#00236f] bg-[#d0d8ff]"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Notifications */}
+        <button className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors">
+          <span className="material-symbols-outlined text-xl">notifications</span>
+        </button>
+
+        {/* Chat */}
+        <button className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors">
+          <span className="material-symbols-outlined text-xl">chat_bubble_outline</span>
+        </button>
+
+        {/* User avatar + sign out */}
+        <form action={signOut} className="ml-2">
+          <button
             type="submit"
-            variant="ghost"
-            size="icon"
-            aria-label="Se d&eacute;connecter"
+            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
+            title="Se déconnecter"
           >
-            <LogOut size={18} />
-          </Button>
+            <div className="w-7 h-7 rounded-full bg-[#00236f] flex items-center justify-center text-white text-xs font-bold font-manrope">
+              {initials}
+            </div>
+            {userName && (
+              <span className="text-sm text-slate-700 font-medium hidden sm:block max-w-[120px] truncate">
+                {userName}
+              </span>
+            )}
+            <span className="material-symbols-outlined text-slate-400 text-base">logout</span>
+          </button>
         </form>
       </div>
     </header>

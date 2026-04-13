@@ -1,33 +1,55 @@
 "use client"
 
+import { useState, useEffect, useCallback } from "react"
 import { useUser } from "@/hooks/useUser"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { AvatarUpload } from "./_components/AvatarUpload"
-import { ProfileInfoForm } from "./_components/ProfileInfoForm"
-import { SensitiveFieldsCard } from "./_components/SensitiveFieldsCard"
-import { DocumentsGrid } from "./_components/DocumentsGrid"
-import { User, FileText, Mail, Calendar, Lock, Phone, MapPin } from "lucide-react"
-import type { ProfileFormValues } from "./_lib/schemas"
+import { ProfileHeader } from "./_components/profile-header"
+import { ProfileInfoCard } from "./_components/profile-info-card"
+import { SensitiveFieldCard } from "./_components/sensitive-field-card"
+import { DocumentGrid } from "./_components/document-grid"
+import type { DocumentPersonne, PersonneWithRole } from "@/types/database.types"
 
 export default function ProfilPage() {
-  const { profile, loading } = useUser()
+  const { profile: initialProfile, loading } = useUser()
+  const [profile, setProfile] = useState<PersonneWithRole | null>(null)
+  const [documents, setDocuments] = useState<DocumentPersonne[]>([])
+  const [docsLoading, setDocsLoading] = useState(true)
+
+  useEffect(() => {
+    if (initialProfile) setProfile(initialProfile)
+  }, [initialProfile])
+
+  const fetchDocuments = useCallback(async () => {
+    setDocsLoading(true)
+    try {
+      const res = await fetch("/api/profil/documents")
+      const data = await res.json()
+      if (res.ok) setDocuments(data.documents || [])
+    } catch {
+      // silent
+    } finally {
+      setDocsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchDocuments()
+  }, [fetchDocuments])
 
   if (loading) {
     return (
-      <div className="space-y-6 max-w-5xl mx-auto">
-        <div className="flex items-center gap-6">
-          <Skeleton className="h-24 w-24 rounded-full" />
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-16 w-16 rounded-full" />
           <div className="space-y-2">
-            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-6 w-48" />
             <Skeleton className="h-4 w-64" />
           </div>
         </div>
-        <Skeleton className="h-64 w-full rounded-xl" />
-        <Skeleton className="h-48 w-full rounded-xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <Skeleton className="lg:col-span-8 h-96 rounded-xl" />
+          <Skeleton className="lg:col-span-4 h-96 rounded-xl" />
+        </div>
       </div>
     )
   }
@@ -35,302 +57,101 @@ export default function ProfilPage() {
   if (!profile) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-muted-foreground">Profil introuvable.</p>
+        <p className="text-slate-400">Profil introuvable.</p>
       </div>
     )
   }
 
-  const initials = [profile.prenom?.[0], profile.nom?.[0]]
-    .filter(Boolean)
-    .join("")
-    .toUpperCase() || "?"
-
-  const fullName =
-    [profile.prenom, profile.nom].filter(Boolean).join(" ") || profile.email
-
-  const roleName = profile.profils_types?.nom || "Non assigné"
-
-  const initialValues: ProfileFormValues = {
-    prenom: profile.prenom || "",
-    nom: profile.nom || "",
-    portable: profile.portable || "",
-    promo: profile.promo || "",
-    adresse: profile.adresse || "",
-    ville: profile.ville || "",
-    code_postal: profile.code_postal || "",
-    pole: profile.pole || "",
-  }
-
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-heading font-bold text-navy">Mon profil</h1>
-        <p className="text-muted-foreground mt-1">
-          Gérez vos informations personnelles et documents
-        </p>
+      {/* Page header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">
+            Mon espace / Profil
+          </p>
+          <h1 className="text-2xl font-manrope font-black text-[#00236f]">Tableau de Bord Personnel</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+            <span className="material-symbols-outlined text-lg">download</span>
+            Exporter Données
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors">
+            <span className="material-symbols-outlined text-lg">edit</span>
+            Modifier le Profil
+          </button>
+        </div>
       </div>
 
-      {/* Profile Header Card */}
-      <Card className="border-border shadow-sm overflow-hidden">
-        {/* Background Banner */}
-        <div className="h-32 bg-gradient-to-r from-navy via-navy/90 to-navy/70 relative">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNDOUE4NEMiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE4SDI0djEyaDEyVjE4em0tMiAydjhoLThWMjBoOHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
+      {/* Profile header card */}
+      <ProfileHeader
+        profile={profile}
+        onAvatarUpdate={(url) =>
+          setProfile((prev) => prev ? { ...prev, avatar_url: url } : prev)
+        }
+      />
+
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left column — col-span-8 */}
+        <div className="lg:col-span-8 space-y-6">
+          <ProfileInfoCard
+            profile={profile}
+            onUpdate={(updated) => setProfile(updated)}
+          />
+          <SensitiveFieldCard
+            profile={profile}
+            isOwnProfile={true}
+          />
         </div>
 
-        {/* Content */}
-        <CardContent className="p-6 -mt-16 relative z-10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
-            {/* Avatar */}
-            <AvatarUpload
-              currentUrl={profile.avatar_url}
-              initials={initials}
-            />
-
-            {/* Info */}
-            <div className="flex-1 pt-4 sm:pt-0">
-              <h1 className="text-3xl font-heading font-bold text-navy">
-                {fullName}
-              </h1>
-
-              <div className="flex flex-wrap items-center gap-3 mt-4">
-                <Badge
-                  className="bg-gold/10 text-gold border-gold/20 font-medium"
-                  variant="outline"
-                >
-                  {roleName}
-                </Badge>
-
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Mail size={16} className="text-gold" />
-                  {profile.email}
+        {/* Right column — col-span-4 */}
+        <div className="lg:col-span-4 space-y-4">
+          {/* Documents card */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="font-manrope font-bold text-[#00236f] text-base">Mes documents</h2>
+              <a
+                href="https://www.service-public.fr/particuliers/vosdroits/R61460"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#00236f] text-white text-xs font-semibold hover:bg-[#1e3a8a] transition-colors"
+              >
+                <span className="material-symbols-outlined text-sm">verified_user</span>
+                Filigrane
+              </a>
+            </div>
+            <div className="p-3">
+              {docsLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-14 w-full rounded-lg" />
+                  ))}
                 </div>
+              ) : (
+                <DocumentGrid
+                  documents={documents}
+                  onDocumentsChange={fetchDocuments}
+                />
+              )}
+            </div>
+          </div>
 
-                {profile.promo && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar size={16} className="text-gold" />
-                    Promo {profile.promo}
-                  </div>
-                )}
-              </div>
-
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-border">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase">
-                    Créé le
-                  </p>
-                  <p className="text-sm font-semibold text-navy mt-1">
-                    {new Date(profile.created_at).toLocaleDateString("fr-FR")}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase">
-                    Actif
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className={`h-2 w-2 rounded-full ${profile.actif ? "bg-green-500" : "bg-gray-400"}`} />
-                    <p className="text-sm font-semibold text-navy">
-                      {profile.actif ? "Oui" : "Non"}
-                    </p>
-                  </div>
-                </div>
-                {profile.pole && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase">
-                      Pôle
-                    </p>
-                    <p className="text-sm font-semibold text-navy mt-1">
-                      {profile.pole}
-                    </p>
-                  </div>
-                )}
-                {profile.portable && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase">
-                      Téléphone
-                    </p>
-                    <p className="text-sm font-semibold text-navy mt-1">
-                      {profile.portable}
-                    </p>
-                  </div>
-                )}
+          {/* Security banner */}
+          <div className="bg-[#00236f] rounded-xl p-4 text-white">
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined text-[#d0d8ff] text-2xl shrink-0">shield</span>
+              <div>
+                <p className="font-manrope font-bold text-sm mb-1">Documents sécurisés</p>
+                <p className="text-xs text-blue-200 leading-relaxed">
+                  Chiffrement AES-256. Conformité RGPD. Accès réservé aux administrateurs habilités.
+                </p>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs */}
-      <Tabs defaultValue="informations" className="space-y-4">
-        <TabsList className="grid w-full sm:w-auto grid-cols-3 lg:grid-cols-3">
-          <TabsTrigger value="informations" className="gap-2">
-            <User size={16} />
-            <span className="hidden sm:inline">Informations</span>
-            <span className="sm:hidden">Info</span>
-          </TabsTrigger>
-          <TabsTrigger value="documents" className="gap-2">
-            <FileText size={16} />
-            <span className="hidden sm:inline">Documents</span>
-            <span className="sm:hidden">Docs</span>
-          </TabsTrigger>
-          <TabsTrigger value="securite" className="gap-2">
-            <Lock size={16} />
-            <span className="hidden sm:inline">Sécurité</span>
-            <span className="sm:hidden">Sec</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Informations Tab */}
-        <TabsContent value="informations" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Form */}
-            <div className="lg:col-span-2">
-              <ProfileInfoForm initialValues={initialValues} />
-            </div>
-
-            {/* Contact Info Sidebar */}
-            <div className="space-y-4">
-              <Card className="border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base">Coordonnées</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {profile.portable && (
-                    <div className="flex items-start gap-3">
-                      <Phone size={16} className="text-gold mt-0.5 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground">Téléphone</p>
-                        <p className="text-sm font-medium text-navy break-all">
-                          {profile.portable}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {profile.adresse && (
-                    <div className="flex items-start gap-3 pt-4 border-t border-border">
-                      <MapPin size={16} className="text-gold mt-0.5 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground">Adresse</p>
-                        <p className="text-sm font-medium text-navy">
-                          {profile.adresse}
-                        </p>
-                        {(profile.code_postal || profile.ville) && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {[profile.code_postal, profile.ville]
-                              .filter(Boolean)
-                              .join(" ")}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {!profile.portable && !profile.adresse && (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Aucune information de contact
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="border-gold/30 bg-gold/5 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base text-gold">Conseil</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Gardez vos informations à jour pour que l'équipe puisse vous contacter facilement.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Documents Tab */}
-        <TabsContent value="documents" className="space-y-6">
-          <Card className="border-border shadow-sm">
-            <CardHeader>
-              <CardTitle>Mes documents</CardTitle>
-              <CardDescription>
-                Téléchargez vos documents d'identité et documents importants
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DocumentsGrid />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Sécurité Tab */}
-        <TabsContent value="securite" className="space-y-6">
-          <SensitiveFieldsCard
-            hasNss={!!profile.nss_encrypted}
-            hasIban={!!profile.iban_encrypted}
-          />
-
-          <Card className="border-blue-200 bg-blue-50 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base text-blue-900">
-                Chiffrage de données
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-start gap-3">
-                <Lock size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-blue-900">
-                    Données sensibles chiffrées
-                  </p>
-                  <p className="text-sm text-blue-700 mt-1">
-                    Vos numéro de sécurité sociale et IBAN sont chiffrés en bout à bout.
-                    Seul vous et l'administration peuvent y accéder.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">Historique</CardTitle>
-              <CardDescription>
-                Informations sur votre compte
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-medium">
-                    Date de création
-                  </p>
-                  <p className="text-sm font-semibold text-navy mt-2">
-                    {new Date(profile.created_at).toLocaleDateString("fr-FR", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-medium">
-                    Dernière mise à jour
-                  </p>
-                  <p className="text-sm font-semibold text-navy mt-2">
-                    {new Date(profile.updated_at).toLocaleDateString("fr-FR", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   )
 }
