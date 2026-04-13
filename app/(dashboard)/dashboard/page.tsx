@@ -70,11 +70,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">
-          Strategic Command / Dashboard
-        </p>
-        <h1 className="text-2xl font-manrope font-black text-[#00236f]">Tableau de bord</h1>
-        <p className="text-sm text-slate-500 mt-0.5">{greeting}</p>
+        <p className="text-sm text-slate-500">{greeting}</p>
       </div>
 
       {/* Stats cards */}
