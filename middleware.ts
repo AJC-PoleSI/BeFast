@@ -31,8 +31,8 @@ export async function middleware(request: NextRequest) {
     })
 
     const {
-      data: { user },
-    } = await supabase.auth.getUser()
+      data: { session },
+    } = await supabase.auth.getSession()
 
     const publicPaths = [
       "/login",
@@ -44,14 +44,14 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname.startsWith(p)
     )
 
-    if (!user && !isPublicPath) {
+    if (!session && !isPublicPath) {
       const url = request.nextUrl.clone()
       url.pathname = "/login"
       return NextResponse.redirect(url)
     }
 
     if (
-      user &&
+      session &&
       (request.nextUrl.pathname === "/login" ||
         request.nextUrl.pathname === "/inscription")
     ) {
@@ -59,18 +59,10 @@ export async function middleware(request: NextRequest) {
       url.pathname = "/dashboard"
       return NextResponse.redirect(url)
     }
-  } catch (error) {
-    // If auth check fails, allow public paths through, redirect others to login
-    const publicPaths = [
-      "/login",
-      "/inscription",
-      "/mot-de-passe-oublie",
-      "/auth/callback",
-    ]
-    const isPublicPath = publicPaths.some((p) =>
-      request.nextUrl.pathname.startsWith(p)
-    )
-
+  } catch (_error) {
+    // Si l'auth échoue, laisser passer les chemins publics
+    const publicPaths = ["/login", "/inscription", "/mot-de-passe-oublie", "/auth/callback"]
+    const isPublicPath = publicPaths.some((p) => request.nextUrl.pathname.startsWith(p))
     if (!isPublicPath) {
       const url = request.nextUrl.clone()
       url.pathname = "/login"
