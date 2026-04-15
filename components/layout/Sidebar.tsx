@@ -74,18 +74,6 @@ export function Sidebar({ permissions, userName, open, onClose }: SidebarProps) 
 
       {/* Bottom section */}
       <div className="px-3 pb-5 space-y-2">
-        {/* Nouvelle mission */}
-        {permissions && permissions.nouvelle_mission && (
-          <Link
-            href="/etudes/nouvelle"
-            onClick={onClose}
-            className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#00236f] to-[#1e3a8a] text-white text-sm font-semibold font-manrope hover:opacity-90 transition-opacity"
-          >
-            <span className="material-symbols-outlined text-lg">add_circle</span>
-            Nouvelle mission
-          </Link>
-        )}
-
         <Link
           href="/parametres"
           className="flex items-center gap-3 py-2.5 pl-4 pr-3 rounded-lg text-sm text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
