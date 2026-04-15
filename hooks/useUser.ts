@@ -21,6 +21,7 @@ const emptyPermissions: Permissions = {
   prospection: false,
   statistiques: false,
   administration: false,
+  membres: false,
   documents: false,
   nouvelle_mission: false,
 }

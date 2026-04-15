@@ -6,6 +6,7 @@ export type PermissionKey =
   | "prospection"
   | "statistiques"
   | "administration"
+  | "membres"
   | "documents"
   | "nouvelle_mission"
 
