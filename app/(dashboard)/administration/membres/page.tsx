@@ -2,19 +2,19 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Search, MoreVertical, Loader } from "lucide-react"
-import { getAllMembers, updateMemberRole } from "@/lib/actions/members"
-import type { PersonneWithRole } from "@/types/database.types"
+import { getAllMembers, updateMemberRole, getAllRoles } from "@/lib/actions/members"
+import type { PersonneWithRole, ProfilType } from "@/types/database.types"
 
 const ROLE_MAP: Record<string, { label: string; color: string }> = {
-  administrateur:    { label: "Administrateur",         color: "bg-red-50 text-red-700 border-red-200" },
-  chef_projet_ajc:   { label: "Chef.fe de projet AJC",  color: "bg-blue-50 text-blue-700 border-blue-200" },
-  ancien_membre_agc: { label: "Ancien Membre",           color: "bg-slate-100 text-slate-600 border-slate-200" },
-  intervenant:       { label: "Intervenant",             color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  chef_de_projet:    { label: "Chef de Projet",          color: "bg-amber-50 text-amber-700 border-amber-200" },
+  administrateur:  { label: "Administrateur",        color: "bg-red-50 text-red-700 border-red-200" },
+  chef_projet_ajc: { label: "Chef.fe de projet AJC", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  ancien_mandat:   { label: "Ancien Mandat",          color: "bg-slate-100 text-slate-600 border-slate-200" },
+  intervenant:     { label: "Intervenant",            color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
 }
 
-function RoleDropdown({ member, onRoleChange, updating }: {
+function RoleDropdown({ member, roles, onRoleChange, updating }: {
   member: PersonneWithRole
+  roles: ProfilType[]
   onRoleChange: (id: string, role: string) => void
   updating: string | null
 }) {
@@ -46,18 +46,18 @@ function RoleDropdown({ member, onRoleChange, updating }: {
             Changer le rôle
           </p>
           <div className="p-1.5">
-            {Object.entries(ROLE_MAP).map(([roleSlug, roleData]) => (
+            {roles.map((r) => (
               <button
-                key={roleSlug}
-                onClick={() => { setOpen(false); onRoleChange(member.id, roleSlug) }}
+                key={r.slug}
+                onClick={() => { setOpen(false); onRoleChange(member.id, r.slug) }}
                 className={`w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-2 ${
-                  member.profils_types?.slug === roleSlug ? "font-semibold text-[#00236f]" : "text-slate-700"
+                  member.profils_types?.slug === r.slug ? "font-semibold text-[#00236f]" : "text-slate-700"
                 }`}
               >
-                {member.profils_types?.slug === roleSlug && (
+                {member.profils_types?.slug === r.slug && (
                   <span className="material-symbols-outlined text-base text-[#00236f]">check</span>
                 )}
-                {roleData.label}
+                {r.nom}
               </button>
             ))}
           </div>
@@ -69,6 +69,7 @@ function RoleDropdown({ member, onRoleChange, updating }: {
 
 export default function MemberManagementPage() {
   const [members, setMembers] = useState<PersonneWithRole[]>([])
+  const [allRoles, setAllRoles] = useState<ProfilType[]>([])
   const [filteredMembers, setFilteredMembers] = useState<PersonneWithRole[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -77,9 +78,10 @@ export default function MemberManagementPage() {
   const [updating, setUpdating] = useState<string | null>(null)
 
   async function loadMembers() {
-    const result = await getAllMembers()
-    if (result.error) { setError(result.error); setLoading(false); return }
-    setMembers(result.data ?? [])
+    const [membersResult, rolesResult] = await Promise.all([getAllMembers(), getAllRoles()])
+    if (membersResult.error) { setError(membersResult.error); setLoading(false); return }
+    setMembers(membersResult.data ?? [])
+    setAllRoles(rolesResult.data ?? [])
     setLoading(false)
   }
 
@@ -114,7 +116,7 @@ export default function MemberManagementPage() {
         {/* TOOLBAR */}
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between gap-3 bg-slate-50">
           <div className="flex bg-white border border-slate-200 rounded-lg p-1 flex-wrap gap-1">
-            {["Tous", ...Object.keys(ROLE_MAP)].map((f) => (
+            {["Tous", ...allRoles.map(r => r.slug)].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -122,7 +124,7 @@ export default function MemberManagementPage() {
                   filter === f ? "bg-[#00236f] text-white" : "text-slate-500 hover:text-slate-700"
                 }`}
               >
-                {f === "Tous" ? "Tous" : ROLE_MAP[f]?.label}
+                {f === "Tous" ? "Tous" : (allRoles.find(r => r.slug === f)?.nom ?? f)}
               </button>
             ))}
           </div>
@@ -194,8 +196,8 @@ export default function MemberManagementPage() {
                       </td>
                       <td className="px-6 py-4">
                         {m.profils_types ? (
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${ROLE_MAP[m.profils_types.slug]?.color ?? "bg-slate-100 text-slate-500 border-slate-200"}`}>
-                            {ROLE_MAP[m.profils_types.slug]?.label ?? m.profils_types.nom}
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${ROLE_MAP[m.profils_types.slug]?.color ?? "bg-purple-50 text-purple-700 border-purple-200"}`}>
+                            {m.profils_types.nom}
                           </span>
                         ) : (
                           <span className="text-xs text-slate-400 italic">Aucun rôle</span>
@@ -207,6 +209,7 @@ export default function MemberManagementPage() {
                       <td className="px-6 py-4 text-right">
                         <RoleDropdown
                           member={m}
+                          roles={allRoles}
                           onRoleChange={handleRoleChange}
                           updating={updating}
                         />
