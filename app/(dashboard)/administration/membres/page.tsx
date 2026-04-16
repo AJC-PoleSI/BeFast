@@ -54,10 +54,14 @@ export default function MemberManagementPage() {
   async function handleRoleChange(personneId: string, newRole: string) {
     setUpdating(personneId)
     const result = await updateMemberRole(personneId, newRole)
-    if (result.success) {
-      setMembers(members.map(m =>
-        m.id === personneId ? { ...m, profils_types: result.profil } : m
-      ))
+    if (result.success && result.profil) {
+      // Reload to get full profil_type data
+      const supabase = createClient()
+      const { data } = await supabase
+        .from("personnes")
+        .select("*, profils_types(*)")
+        .order("created_at", { ascending: false })
+      if (data) setMembers(data as PersonneWithRole[])
     }
     setUpdating(null)
   }
