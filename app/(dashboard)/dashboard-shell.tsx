@@ -7,12 +7,14 @@ import type { Permissions } from "@/types/database.types"
 
 interface DashboardShellProps {
   permissions: Permissions | null
+  isAdmin?: boolean
   userName: string | null
   children: React.ReactNode
 }
 
 export function DashboardShell({
   permissions,
+  isAdmin,
   userName,
   children,
 }: DashboardShellProps) {
@@ -22,6 +24,7 @@ export function DashboardShell({
     <div className="flex h-screen bg-[#f7f9fb]">
       <Sidebar
         permissions={permissions}
+        isAdmin={isAdmin}
         userName={userName}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}

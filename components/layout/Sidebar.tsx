@@ -11,24 +11,28 @@ const NAV_ITEMS: (NavItem & { materialIcon: string })[] = [
   { label: "Mes Documents", href: "/documents", icon: "FileText", materialIcon: "folder_open", permission: "documents" },
   { label: "Études", href: "/etudes", icon: "GraduationCap", materialIcon: "school", permission: "etudes" },
   { label: "Prospection", href: "/prospection", icon: "TrendingUp", materialIcon: "timeline", permission: "prospection" },
-  { label: "Membres", href: "/administration/membres", icon: "Users", materialIcon: "group", permission: "membres" },
-  { label: "Statistiques", href: "/administration/statistiques", icon: "BarChart3", materialIcon: "bar_chart", permission: "statistiques" },
+  { label: "Membres", href: "/membres", icon: "Users", materialIcon: "group", permission: "membres" },
+  { label: "Statistiques", href: "/statistiques", icon: "BarChart3", materialIcon: "bar_chart", permission: "statistiques" },
   { label: "Administration", href: "/administration", icon: "Settings", materialIcon: "admin_panel_settings", permission: "administration" },
 ]
 
 interface SidebarProps {
   permissions: Permissions | null
+  isAdmin?: boolean
   userName: string | null
   open?: boolean
   onClose?: () => void
 }
 
-export function Sidebar({ permissions, userName, open, onClose }: SidebarProps) {
+export function Sidebar({ permissions, isAdmin, userName, open, onClose }: SidebarProps) {
   const pathname = usePathname()
 
-  const filteredItems = NAV_ITEMS.filter(
-    (item) => permissions && permissions[item.permission] === true
-  )
+  const filteredItems = NAV_ITEMS.filter((item) => {
+    if (item.href === "/administration") {
+      return !!isAdmin
+    }
+    return permissions && permissions[item.permission] === true
+  })
 
   const nav = (
     <div className="flex flex-col h-screen w-64 bg-slate-100 border-r border-slate-200">

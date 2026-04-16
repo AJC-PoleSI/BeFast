@@ -5,12 +5,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import type { PermissionKey } from "@/types/database.types"
 
 interface RoleGuardProps {
-  permission: PermissionKey
+  permission?: PermissionKey
+  requireAdmin?: boolean
   children: React.ReactNode
 }
 
-export function RoleGuard({ permission, children }: RoleGuardProps) {
-  const { permissions, loading } = useUser()
+export function RoleGuard({ permission, requireAdmin, children }: RoleGuardProps) {
+  const { permissions, loading, isAdmin } = useUser()
 
   if (loading) {
     return (
@@ -22,7 +23,22 @@ export function RoleGuard({ permission, children }: RoleGuardProps) {
     )
   }
 
-  if (!permissions || permissions[permission] !== true) {
+  if (requireAdmin && !isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="font-heading text-[20px] font-bold mb-2">
+            Acc&egrave;s non autoris&eacute;
+          </h2>
+          <p className="text-muted-foreground">
+            Espace r&eacute;serv&eacute; aux administrateurs.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (permission && (!permissions || permissions[permission] !== true)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">

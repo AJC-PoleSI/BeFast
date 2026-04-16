@@ -32,7 +32,7 @@ export default async function DashboardLayout({
 
   // Always render shell with header; permissions control sidebar/nav
   return (
-    <DashboardShell permissions={permissions} userName={userName}>
+    <DashboardShell permissions={permissions} isAdmin={isAdmin} userName={userName}>
       {children}
     </DashboardShell>
   )
