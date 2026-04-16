@@ -26,6 +26,7 @@ export default async function DashboardLayout({
 
   const profile = personne as PersonneWithRole | null
   const permissions = profile?.profils_types?.permissions ?? null
+  const isAdmin = profile?.profils_types?.slug === "administrateur"
   const userName = profile
     ? [profile.prenom, profile.nom].filter(Boolean).join(" ") || profile.email
     : user.email ?? null
