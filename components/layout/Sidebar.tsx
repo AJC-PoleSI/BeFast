@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import type { Permissions, NavItem } from "@/types/database.types"
 
 const NAV_ITEMS: (NavItem & { materialIcon: string })[] = [
-  { label: "Accueil", href: "/dashboard", icon: "LayoutDashboard", materialIcon: "dashboard", permission: "dashboard" },
+  { label: "Accueil",      href: "/dashboard", icon: "LayoutDashboard", materialIcon: "dashboard", permission: "dashboard" },
   { label: "Mon Profil", href: "/profil", icon: "User", materialIcon: "person", permission: "profil" },
   { label: "Missions", href: "/missions", icon: "Briefcase", materialIcon: "assignment", permission: "missions" },
   { label: "Mes Documents", href: "/documents", icon: "FileText", materialIcon: "folder_open", permission: "documents" },
