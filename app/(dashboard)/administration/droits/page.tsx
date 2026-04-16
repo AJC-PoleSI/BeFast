@@ -51,6 +51,7 @@ function ToggleSwitch({ checked, onChange, disabled }: {
 export default function DroitsPage() {
   const [roles, setRoles] = useState<ProfilType[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedRole, setSelectedRole] = useState<ProfilType | null>(null)
   const [permissions, setPermissions] = useState<Record<PermKey, boolean>>({} as any)
   const [saving, setSaving] = useState(false)
@@ -58,14 +59,35 @@ export default function DroitsPage() {
 
   useEffect(() => {
     async function load() {
-      const result = await getAllRoles()
-      if (result.data) {
+      try {
+        console.log("[DroitsPage] Loading roles...")
+        const result = await getAllRoles()
+
+        if (result.error) {
+          console.error("[DroitsPage] Error:", result.error)
+          setError(result.error)
+          setLoading(false)
+          return
+        }
+
+        if (!result.data) {
+          console.warn("[DroitsPage] No roles returned")
+          setError("Aucun rôle disponible")
+          setLoading(false)
+          return
+        }
+
+        console.log(`[DroitsPage] Loaded ${result.data.length} roles`)
         setRoles(result.data as ProfilType[])
         // Auto-select first non-admin role
         const first = (result.data as ProfilType[]).find(r => r.slug !== "administrateur") ?? result.data[0]
         if (first) selectRole(first as ProfilType)
+        setLoading(false)
+      } catch (err) {
+        console.error("[DroitsPage] Exception:", err)
+        setError("Erreur lors du chargement des rôles")
+        setLoading(false)
       }
-      setLoading(false)
     }
     load()
   }, [])
@@ -113,6 +135,17 @@ export default function DroitsPage() {
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <Loader className="w-6 h-6 animate-spin text-slate-300" />
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-2">
+          <span className="material-symbols-outlined text-4xl">error_outline</span>
+          <p className="text-sm font-semibold text-slate-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-4 py-2 text-sm bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300"
+          >
+            Réessayer
+          </button>
         </div>
       ) : (
         <div className="flex gap-6 flex-1 min-h-0">

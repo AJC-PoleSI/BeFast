@@ -142,12 +142,21 @@ export default function MemberManagementPage() {
         <div className="overflow-x-auto flex-1">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <Loader className="w-6 h-6 animate-spin text-slate-300" />
+              <div className="text-center">
+                <Loader className="w-8 h-8 animate-spin text-slate-300 mx-auto mb-2" />
+                <p className="text-sm text-slate-400">Chargement des utilisateurs...</p>
+              </div>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-2">
-              <span className="material-symbols-outlined text-4xl">lock</span>
-              <p className="text-sm">{error}</p>
+              <span className="material-symbols-outlined text-4xl">error_outline</span>
+              <p className="text-sm font-semibold text-slate-600">{error}</p>
+              <button
+                onClick={loadMembers}
+                className="mt-2 px-4 py-2 text-sm bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300"
+              >
+                Réessayer
+              </button>
             </div>
           ) : (
             <table className="w-full text-sm text-left">
