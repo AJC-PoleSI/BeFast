@@ -156,8 +156,9 @@ export async function POST(request: Request) {
       .single()
 
     if (dbError) {
+      console.error("Database error (upsert):", dbError)
       return NextResponse.json(
-        { error: "Erreur lors de l'enregistrement du document" },
+        { error: `Erreur DB: ${dbError.message}` },
         { status: 500 }
       )
     }
