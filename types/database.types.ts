@@ -33,6 +33,9 @@ export interface Personne {
   ville: string | null
   code_postal: string | null
   pole: string | null
+  etablissement: "Audencia Nantes" | "Audencia Bachelor" | "Audencia Paris" | null
+  scolarite: "Pré-Master" | "Master 1" | "Master 2" | null
+  date_naissance: string | null // ISO date format YYYY-MM-DD
   nss_encrypted: string | null
   iban_encrypted: string | null
   encryption_key_version: number
@@ -178,4 +181,28 @@ export interface NavItem {
   href: string
   icon: string
   permission: PermissionKey
+}
+
+export type CustomFieldType = "text" | "select" | "date" | "number"
+
+export interface CustomField {
+  id: string
+  name: string
+  slug: string
+  type: CustomFieldType
+  required: boolean
+  options: { values: string[] } | null
+  description: string | null
+  ordre: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CustomFieldValue {
+  id: string
+  user_id: string
+  field_id: string
+  value: string | null
+  created_at: string
+  updated_at: string
 }

@@ -1,5 +1,17 @@
 import { z } from "zod"
 
+export const ETABLISSEMENTS = [
+  "Audencia Nantes",
+  "Audencia Bachelor",
+  "Audencia Paris",
+] as const
+
+export const SCOLARITES = [
+  "Pré-Master",
+  "Master 1",
+  "Master 2",
+] as const
+
 export const profileSchema = z.object({
   prenom: z.string().min(1, "Le prénom est requis"),
   nom: z.string().min(1, "Le nom est requis"),
@@ -9,6 +21,9 @@ export const profileSchema = z.object({
   ville: z.string().optional().or(z.literal("")),
   code_postal: z.string().optional().or(z.literal("")),
   pole: z.string().optional().or(z.literal("")),
+  etablissement: z.enum([...ETABLISSEMENTS, ""]).optional(),
+  scolarite: z.enum([...SCOLARITES, ""]).optional(),
+  date_naissance: z.string().optional().or(z.literal("")),
 })
 
 export type ProfileFormValues = z.infer<typeof profileSchema>
@@ -70,3 +85,21 @@ export const DOC_TYPE_ICONS: Record<string, string> = {
   preuve_lydia: "Wallet",
   rib: "Landmark",
 }
+
+// Custom fields schemas
+export const customFieldSchema = z.object({
+  name: z.string().min(1, "Le nom du champ est requis").max(100),
+  slug: z.string().min(1).max(50).regex(/^[a-z0-9_]+$/, "Le slug doit contenir uniquement des minuscules, chiffres et underscores"),
+  type: z.enum(["text", "select", "date", "number"]),
+  required: z.boolean().default(false),
+  options: z.array(z.string()).optional(), // For select type
+  description: z.string().optional().or(z.literal("")),
+  ordre: z.number().int().default(0),
+})
+
+export type CustomFieldFormValues = z.infer<typeof customFieldSchema>
+
+export const customFieldValueSchema = z.object({
+  fieldId: z.string().uuid("ID du champ invalide"),
+  value: z.string().optional().or(z.literal("")),
+})

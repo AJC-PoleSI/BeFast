@@ -1,6 +1,7 @@
 import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { profileSchema } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 import { NextResponse } from "next/server"
 
@@ -50,9 +51,20 @@ export async function PATCH(request: Request) {
       updateId = targetUserId
     }
 
-    const { data, error } = await supabase
+    // Filter out empty strings for optional fields
+    const dataToUpdate = Object.entries(parsed.data).reduce((acc, [key, value]) => {
+      if (value === "") {
+        acc[key] = null
+      } else {
+        acc[key] = value
+      }
+      return acc
+    }, {} as Record<string, any>)
+
+    const admin = createAdminClient()
+    const { data, error } = await admin
       .from("personnes")
-      .update(parsed.data)
+      .update(dataToUpdate)
       .eq("id", updateId)
       .select()
       .single()

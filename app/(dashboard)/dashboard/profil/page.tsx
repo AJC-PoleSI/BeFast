@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ProfileHeader } from "./_components/profile-header"
 import { ProfileInfoCard } from "./_components/profile-info-card"
 import { SensitiveFieldCard } from "./_components/sensitive-field-card"
+import { DynamicFieldsCard } from "./_components/dynamic-fields-card"
 import { DocumentGrid } from "./_components/document-grid"
 import type { DocumentPersonne, PersonneWithRole } from "@/types/database.types"
 
@@ -104,6 +105,7 @@ export default function ProfilPage() {
             profile={profile}
             isOwnProfile={true}
           />
+          <DynamicFieldsCard isOwnProfile={true} />
         </div>
 
         {/* Right column — col-span-4 */}

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import type { PersonneWithRole } from "@/types/database.types"
 import type { ProfileFormValues } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
+import { ETABLISSEMENTS, SCOLARITES } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 
 const POLES = [
   "Developpement",
@@ -44,6 +45,9 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly }: ProfileInfoCard
     ville: profile.ville || "",
     code_postal: profile.code_postal || "",
     pole: profile.pole || "",
+    etablissement: (profile.etablissement as any) || "",
+    scolarite: (profile.scolarite as any) || "",
+    date_naissance: (profile.date_naissance as any) || "",
   })
 
   const handleChange = (field: keyof ProfileFormValues, val: string) => {
@@ -60,6 +64,9 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly }: ProfileInfoCard
       ville: profile.ville || "",
       code_postal: profile.code_postal || "",
       pole: profile.pole || "",
+      etablissement: (profile.etablissement as any) || "",
+      scolarite: (profile.scolarite as any) || "",
+      date_naissance: (profile.date_naissance as any) || "",
     })
     setEditing(false)
   }
@@ -149,6 +156,61 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly }: ProfileInfoCard
             ) : (
               <p className="text-sm px-3 py-2 rounded-lg bg-slate-50 min-h-[36px] flex items-center text-slate-700">
                 {values.pole || <span className="text-slate-300 italic text-xs">Non renseigné</span>}
+              </p>
+            )}
+          </div>
+
+          {/* Établissement */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">Établissement</label>
+            {editing ? (
+              <select
+                value={values.etablissement || ""}
+                onChange={(e) => handleChange("etablissement", e.target.value)}
+                className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+              >
+                <option value="">-- Aucun --</option>
+                {ETABLISSEMENTS.map((e) => <option key={e} value={e}>{e}</option>)}
+              </select>
+            ) : (
+              <p className="text-sm px-3 py-2 rounded-lg bg-slate-50 min-h-[36px] flex items-center text-slate-700">
+                {values.etablissement || <span className="text-slate-300 italic text-xs">Non renseigné</span>}
+              </p>
+            )}
+          </div>
+
+          {/* Scolarité */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">Scolarité</label>
+            {editing ? (
+              <select
+                value={values.scolarite || ""}
+                onChange={(e) => handleChange("scolarite", e.target.value)}
+                className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+              >
+                <option value="">-- Aucun --</option>
+                {SCOLARITES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            ) : (
+              <p className="text-sm px-3 py-2 rounded-lg bg-slate-50 min-h-[36px] flex items-center text-slate-700">
+                {values.scolarite || <span className="text-slate-300 italic text-xs">Non renseigné</span>}
+              </p>
+            )}
+          </div>
+
+          {/* Date de Naissance */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">Date de Naissance</label>
+            {editing ? (
+              <input
+                type="date"
+                value={values.date_naissance || ""}
+                onChange={(e) => handleChange("date_naissance", e.target.value)}
+                className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+              />
+            ) : (
+              <p className="text-sm px-3 py-2 rounded-lg bg-slate-50 min-h-[36px] flex items-center text-slate-700">
+                {values.date_naissance ? new Date(values.date_naissance).toLocaleDateString('fr-FR') : <span className="text-slate-300 italic text-xs">Non renseigné</span>}
               </p>
             )}
           </div>
