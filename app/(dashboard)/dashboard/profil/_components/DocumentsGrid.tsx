@@ -58,9 +58,9 @@ function StatusBadge({ status }: StatusBadgeProps) {
       </span>
     )
   }
-  // pending
+  // pending (neutral)
   return (
-    <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
+    <span className="inline-flex items-center gap-1 text-xs text-slate-500 font-medium">
       <Clock className="h-3 w-3 shrink-0" />
       En attente
     </span>
@@ -70,13 +70,15 @@ function StatusBadge({ status }: StatusBadgeProps) {
 interface DocumentsGridProps {
   targetUserId?: string
   readOnly?: boolean
+  isAdminView?: boolean
 }
 
-export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridProps) {
+export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = false }: DocumentsGridProps) {
   const [documents, setDocuments] = useState<DocumentPersonne[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [updating, setUpdating] = useState<string | null>(null)
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -98,6 +100,27 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
   useEffect(() => {
     fetchDocuments()
   }, [fetchDocuments])
+
+  const handleUpdateStatus = async (docId: string, status: "approved" | "rejected") => {
+    setUpdating(docId)
+    try {
+      const res = await fetch(`/api/admin/documents/${docId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      })
+      if (res.ok) {
+        toast.success(status === "approved" ? "Document validé" : "Document refusé")
+        fetchDocuments()
+      } else {
+        toast.error("Erreur lors de la mise à jour")
+      }
+    } catch {
+      toast.error("Erreur réseau")
+    } finally {
+      setUpdating(null)
+    }
+  }
 
   const handleUpload = async (docType: string, file: File) => {
     if (file.size > MAX_FILE_SIZE) {
@@ -210,9 +233,9 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
       {/* Header */}
       <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
         <h2 className="font-manrope font-bold text-[#00236f] text-base">
-          {readOnly ? "Documents" : "Mes documents"}
+          {isAdminView ? "Documents soumis" : readOnly ? "Documents" : "Mes documents"}
         </h2>
-        {!readOnly && (
+        {!readOnly && !isAdminView && (
           <a
             href="https://filigrane.beta.gouv.fr/"
             target="_blank"
@@ -231,6 +254,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
           const Icon = DOC_ICONS[docType] || FileText
           const isUploading = uploading === docType
           const isDeleting = deleting === existing?.id
+          const isUpdating = updating === existing?.id
 
           // Row border/bg based on status
           const rowStyle = existing
@@ -238,8 +262,8 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
               ? "border-emerald-200 bg-emerald-50/40"
               : existing.status === "rejected"
               ? "border-red-200 bg-red-50/30"
-              : "border-amber-200 bg-amber-50/30"
-            : "border-slate-200 bg-white"
+              : "border-slate-200 bg-slate-50/50" // pending (neutral)
+            : "border-amber-200 bg-amber-50/30" // missing (orange)
 
           // Icon bg/color
           const iconStyle = existing
@@ -247,8 +271,8 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
               ? "bg-emerald-100 text-emerald-600"
               : existing.status === "rejected"
               ? "bg-red-100 text-red-500"
-              : "bg-amber-100 text-amber-600"
-            : "bg-slate-100 text-slate-400"
+              : "bg-slate-100 text-slate-500" // pending
+            : "bg-amber-100 text-amber-600" // missing
 
           return (
             <div
@@ -268,7 +292,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
                     {existing ? (
                       <StatusBadge status={existing.status} />
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-xs text-slate-400 font-medium">
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
                         <AlertCircle className="h-3 w-3 shrink-0" />
                         Manquant
                       </span>
@@ -288,16 +312,38 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
                     >
                       <Eye className="h-3.5 w-3.5" />
                     </button>
-                    <button
-                      onClick={() => handleDownload(existing)}
-                      title="Télécharger"
-                      className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                    </button>
+                    {isAdminView && existing.status === "pending" && (
+                      <div className="flex items-center gap-1 ml-1 pl-1 border-l border-slate-200">
+                        <button
+                          onClick={() => handleUpdateStatus(existing.id, "approved")}
+                          disabled={isUpdating}
+                          title="Valider"
+                          className="h-7 w-7 flex items-center justify-center rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                        >
+                          {isUpdating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                        </button>
+                        <button
+                          onClick={() => handleUpdateStatus(existing.id, "rejected")}
+                          disabled={isUpdating}
+                          title="Refuser"
+                          className="h-7 w-7 flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        >
+                          {isUpdating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    )}
+                    {!isAdminView && (
+                      <button
+                        onClick={() => handleDownload(existing)}
+                        title="Télécharger"
+                        className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </>
                 )}
-                {existing && !readOnly && (
+                {existing && !readOnly && !isAdminView && (
                   <button
                     onClick={() => handleDelete(existing)}
                     disabled={isDeleting}
@@ -311,7 +357,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
                     )}
                   </button>
                 )}
-                {!readOnly && (
+                {!readOnly && !isAdminView && (
                   <label
                     title={existing ? "Remplacer" : "Uploader"}
                     className={`h-7 w-7 flex items-center justify-center rounded-lg cursor-pointer transition-colors bg-[#00236f] text-white hover:bg-[#1e3a8a] ${
@@ -344,3 +390,4 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
     </div>
   )
 }
+

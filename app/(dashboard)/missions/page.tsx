@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react"
 import { getMissions } from "@/lib/actions/missions"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { useUser } from "@/hooks/useUser"
+import { AlertCircle, ShieldAlert } from "lucide-react"
 import Link from "next/link"
 import type { MissionWithEtude } from "@/types/database.types"
 
@@ -37,12 +40,15 @@ const TYPE_COLORS: Record<string, string> = {
 }
 
 export default function MissionsPage() {
+  const { user, loading: userLoading } = useUser()
   const [missions, setMissions] = useState<MissionWithEtude[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<FilterState>({})
   const [activeFilters, setActiveFilters] = useState<FilterState>({})
 
   useEffect(() => {
+    if (user?.account_status !== "validated") return
+
     const loadMissions = async () => {
       setLoading(true)
       const result = await getMissions(activeFilters)
@@ -50,7 +56,36 @@ export default function MissionsPage() {
       setLoading(false)
     }
     loadMissions()
-  }, [activeFilters])
+  }, [activeFilters, user?.account_status])
+
+  if (userLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-72 w-full rounded-xl" />
+      </div>
+    )
+  }
+
+  if (user?.account_status !== "validated") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4 text-amber-600">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-manrope font-black text-[#00236f] mb-2">Accès restreint</h2>
+        <p className="text-slate-500 max-w-md mx-auto mb-6">
+          Votre compte est en cours de validation par l'administration. 
+          L'accès au catalogue des missions sera disponible une fois votre profil validé.
+        </p>
+        <Link href="/documents">
+          <Button className="bg-[#00236f] hover:bg-[#1e3a8a] text-white rounded-xl px-6">
+            Vérifier mes documents
+          </Button>
+        </Link>
+      </div>
+    )
+  }
 
   const handleSearch = (search: string) => setFilters({ ...filters, search })
   const handleFilterChange = (key: string, value: string | undefined) =>

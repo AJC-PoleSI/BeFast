@@ -120,7 +120,7 @@ export default function AdminProfilePage() {
         <div className="flex items-center gap-2 px-6 py-3 bg-amber-50 border-b border-amber-200 text-amber-700 text-sm">
           <Shield className="h-4 w-4" />
           <span className="font-medium">
-            Vue administrateur — Modification du profil de {fullName}
+            Vue administrateur — Profil complet de {fullName}
           </span>
         </div>
 
@@ -133,92 +133,109 @@ export default function AdminProfilePage() {
               </AvatarFallback>
             </Avatar>
 
-            <div>
-              <h1 className="font-heading text-xl font-bold">{fullName}</h1>
-              <div className="flex flex-wrap items-center gap-3 mt-1">
-                <Badge
-                  variant="secondary"
-                  className="bg-gold/10 text-gold border-gold/20"
-                >
-                  {roleName}
-                </Badge>
-                <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <Mail className="h-3.5 w-3.5" />
-                  {profile.email}
-                </span>
-                {profile.promo && (
-                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Calendar className="h-3.5 w-3.5" />
-                    Promo {profile.promo}
-                  </span>
-                )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h1 className="font-heading text-xl font-bold">{fullName}</h1>
+                  <div className="flex flex-wrap items-center gap-3 mt-1">
+                    <Badge
+                      variant="secondary"
+                      className="bg-gold/10 text-gold border-gold/20"
+                    >
+                      {roleName}
+                    </Badge>
+                    <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Mail className="h-3.5 w-3.5" />
+                      {profile.email}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-slate-500">Statut du compte :</span>
+                    {profile.account_status === "validated" ? (
+                      <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200">
+                        Validé
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200">
+                        En attente
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {profile.account_status === "validated" ? (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-8 text-xs border-amber-200 text-amber-700 hover:bg-amber-50"
+                        onClick={() => handleUpdateAccountStatus("pending_validation")}
+                      >
+                        Suspendre
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="sm" 
+                        className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => handleUpdateAccountStatus("validated")}
+                      >
+                        Valider le compte
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="informations">
-        <TabsList className="w-full sm:w-auto">
-          <TabsTrigger value="informations" className="gap-1.5">
-            <User className="h-4 w-4" />
-            Informations
-          </TabsTrigger>
-          <TabsTrigger value="documents" className="gap-1.5">
-            <FileText className="h-4 w-4" />
-            Documents
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="informations">
-          <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl border border-border shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <User className="h-5 w-5 text-gold" />
+              <h3 className="font-heading text-lg font-semibold">Informations personnelles</h3>
+            </div>
             <ProfileInfoForm
               initialValues={initialValues}
               targetUserId={userId}
             />
+          </div>
 
-            {/* Sensitive fields - read-only info for admin */}
-            <div className="bg-white rounded-xl border border-border shadow-sm p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Shield className="h-5 w-5 text-gold" />
-                <h3 className="font-heading text-lg font-semibold">
-                  Données sensibles
-                </h3>
-              </div>
-              <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
-                <p>
-                  Les données sensibles (NSS, IBAN) ne sont modifiables que par
-                  le membre lui-même. Elles sont chiffrées en AES-256 et ne
-                  peuvent pas être consultées.
-                </p>
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <span className="text-xs font-medium text-foreground">
-                      N° Sécurité Sociale
-                    </span>
-                    <p className="text-xs mt-1">
-                      {profile.nss_encrypted ? "✓ Renseigné" : "✗ Non renseigné"}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-xs font-medium text-foreground">
-                      IBAN
-                    </span>
-                    <p className="text-xs mt-1">
-                      {profile.iban_encrypted ? "✓ Renseigné" : "✗ Non renseigné"}
-                    </p>
-                  </div>
+          {/* Sensitive fields - read-only info for admin */}
+          <div className="bg-white rounded-xl border border-border shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Shield className="h-5 w-5 text-gold" />
+              <h3 className="font-heading text-lg font-semibold">
+                Données sensibles
+              </h3>
+            </div>
+            <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
+              <p>
+                Chiffrées en AES-256.
+              </p>
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div>
+                  <span className="text-xs font-medium text-foreground">NSS</span>
+                  <p className="text-xs mt-1">{profile.nss_encrypted ? "✓" : "✗"}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-medium text-foreground">IBAN</span>
+                  <p className="text-xs mt-1">{profile.iban_encrypted ? "✓" : "✗"}</p>
                 </div>
               </div>
             </div>
           </div>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="documents">
-          <DocumentsGrid targetUserId={userId} readOnly />
-        </TabsContent>
-      </Tabs>
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
+            <DocumentsGrid targetUserId={userId} readOnly isAdminView />
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
