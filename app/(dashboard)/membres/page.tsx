@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Search, MoreVertical, Loader, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { getAllMembers, updateMemberRole, getAllRoles } from "@/lib/actions/members"
+import { useUser } from "@/hooks/useUser"
 import type { PersonneWithRole, ProfilType } from "@/types/database.types"
 
 const ROLE_MAP: Record<string, { label: string; color: string }> = {
@@ -13,11 +14,12 @@ const ROLE_MAP: Record<string, { label: string; color: string }> = {
   intervenant:     { label: "Intervenant",            color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
 }
 
-function RoleDropdown({ member, roles, onRoleChange, updating }: {
+function RoleDropdown({ member, roles, onRoleChange, updating, currentUserIsAdmin }: {
   member: PersonneWithRole
   roles: ProfilType[]
   onRoleChange: (id: string, role: string) => void
   updating: string | null
+  currentUserIsAdmin: boolean
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -47,7 +49,9 @@ function RoleDropdown({ member, roles, onRoleChange, updating }: {
             Changer le rôle
           </p>
           <div className="p-1.5">
-            {roles.map((r) => (
+            {roles
+              .filter((r) => r.slug !== "administrateur" || currentUserIsAdmin)
+              .map((r) => (
               <button
                 key={r.slug}
                 onClick={() => { setOpen(false); onRoleChange(member.id, r.slug) }}
@@ -69,6 +73,7 @@ function RoleDropdown({ member, roles, onRoleChange, updating }: {
 }
 
 export default function MemberManagementPage() {
+  const { isAdmin } = useUser()
   const [members, setMembers] = useState<PersonneWithRole[]>([])
   const [allRoles, setAllRoles] = useState<ProfilType[]>([])
   const [filteredMembers, setFilteredMembers] = useState<PersonneWithRole[]>([])
@@ -222,6 +227,7 @@ export default function MemberManagementPage() {
                             roles={allRoles}
                             onRoleChange={handleRoleChange}
                             updating={updating}
+                            currentUserIsAdmin={isAdmin}
                           />
                         </div>
                       </td>

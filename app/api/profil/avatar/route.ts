@@ -68,10 +68,13 @@ export async function POST(request: Request) {
       data: { publicUrl },
     } = admin.storage.from("avatars").getPublicUrl(filePath)
 
+    // Append cache-buster so browser reloads the image even if the filename is identical
+    const urlWithCache = `${publicUrl}?t=${Date.now()}`
+
     // Update personnes.avatar_url
     const { error: updateError } = await admin
       .from("personnes")
-      .update({ avatar_url: publicUrl })
+      .update({ avatar_url: urlWithCache })
       .eq("id", user.id)
 
     if (updateError) {
@@ -81,7 +84,7 @@ export async function POST(request: Request) {
       )
     }
 
-    return NextResponse.json({ success: true, url: publicUrl })
+    return NextResponse.json({ success: true, url: urlWithCache })
   } catch {
     return NextResponse.json(
       { error: "Une erreur est survenue." },
