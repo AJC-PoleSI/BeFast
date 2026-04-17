@@ -271,8 +271,8 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
               ? "bg-emerald-100 text-emerald-600"
               : existing.status === "rejected"
               ? "bg-red-100 text-red-500"
-              : "bg-orange-100 text-orange-600" // pending
-            : "bg-slate-100 text-slate-400" // missing
+              : "bg-orange-100 text-orange-600" // pending (orange)
+            : "bg-slate-50 text-slate-300" // missing (white)
 
           return (
             <div
@@ -307,10 +307,10 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
                   <>
                     <button
                       onClick={() => handleView(existing)}
-                      title="Consulter"
-                      className="h-7 w-7 flex items-center justify-center rounded-lg text-[#00236f] hover:bg-[#d0d8ff] transition-colors"
+                      title="Consulter le document"
+                      className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-[#00236f] hover:bg-slate-50 shadow-sm transition-all mr-1"
                     >
-                      <Eye className="h-3.5 w-3.5" />
+                      <Eye className="h-4 w-4" />
                     </button>
                     {isAdminView && existing.status === "pending" && (
                       <div className="flex items-center gap-1 ml-1 pl-1 border-l border-slate-200">
