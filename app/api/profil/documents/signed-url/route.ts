@@ -43,16 +43,18 @@ export async function POST(request: Request) {
     }
 
     if (doc.personne_id !== user.id) {
-      // Check if admin
-      const { data: adminProfile } = await supabase
+      // Check if admin OR has voir_documents_membres permission
+      const { data: requesterProfile } = await supabase
         .from("personnes")
-        .select("profils_types(slug)")
+        .select("profils_types(slug, permissions)")
         .eq("id", user.id)
         .single()
 
-      const slug = (adminProfile?.profils_types as { slug?: string } | null)
-        ?.slug
-      if (slug !== "administrateur") {
+      const profileType = requesterProfile?.profils_types as { slug?: string; permissions?: Record<string, boolean> } | null
+      const isAdmin = profileType?.slug === "administrateur"
+      const canViewMemberDocs = profileType?.permissions?.["voir_documents_membres"] === true
+
+      if (!isAdmin && !canViewMemberDocs) {
         return NextResponse.json(
           { error: "Accès non autorisé" },
           { status: 403 }

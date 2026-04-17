@@ -9,18 +9,20 @@ type PermKey =
   | "dashboard" | "profil" | "missions" | "etudes"
   | "prospection" | "statistiques" | "administration"
   | "membres" | "documents" | "nouvelle_mission"
+  | "voir_documents_membres"
 
 const PERM_LABELS: Record<PermKey, { label: string; description: string; icon: string }> = {
-  dashboard:        { label: "Tableau de bord",  description: "Accès à la page d'accueil",              icon: "dashboard" },
-  profil:           { label: "Mon Profil",        description: "Voir et modifier son propre profil",      icon: "person" },
-  missions:         { label: "Missions",          description: "Consulter et candidater aux missions",    icon: "assignment" },
-  etudes:           { label: "Études",            description: "Accès aux études en cours",               icon: "school" },
-  documents:        { label: "Documents",         description: "Gérer ses propres documents",             icon: "folder_open" },
-  prospection:      { label: "Prospection",       description: "Accès aux outils de prospection",        icon: "timeline" },
-  statistiques:     { label: "Statistiques",      description: "Voir les statistiques financières",       icon: "bar_chart" },
-  membres:          { label: "Gestion membres",   description: "Voir et gérer la liste des membres",     icon: "group" },
-  administration:   { label: "Administration",    description: "Accès complet au panneau admin",          icon: "admin_panel_settings" },
-  nouvelle_mission: { label: "Créer une mission", description: "Créer de nouvelles missions/études",     icon: "add_circle" },
+  dashboard:               { label: "Tableau de bord",           description: "Accès à la page d'accueil",                         icon: "dashboard" },
+  profil:                  { label: "Mon Profil",                 description: "Voir et modifier son propre profil",                 icon: "person" },
+  missions:                { label: "Missions",                   description: "Consulter et candidater aux missions",               icon: "assignment" },
+  etudes:                  { label: "Études",                     description: "Accès aux études en cours",                          icon: "school" },
+  documents:               { label: "Mes Documents",              description: "Gérer ses propres pièces justificatives",            icon: "folder_open" },
+  voir_documents_membres:  { label: "Documents des membres",      description: "Consulter et télécharger les documents des autres membres", icon: "folder_shared" },
+  prospection:             { label: "Prospection",                description: "Accès aux outils de prospection",                   icon: "timeline" },
+  statistiques:            { label: "Statistiques",               description: "Voir les statistiques financières",                  icon: "bar_chart" },
+  membres:                 { label: "Gestion membres",            description: "Voir et gérer la liste des membres",                icon: "group" },
+  administration:          { label: "Administration",             description: "Accès complet au panneau admin",                    icon: "admin_panel_settings" },
+  nouvelle_mission:        { label: "Créer une mission",          description: "Créer de nouvelles missions/études",                icon: "add_circle" },
 }
 
 const ALL_PERMS = Object.keys(PERM_LABELS) as PermKey[]

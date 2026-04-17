@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react"
 import {
   Upload,
+  Download,
   FileText,
   Trash2,
   ExternalLink,
@@ -125,24 +126,36 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
     }
   }
 
-  const handleView = async (doc: DocumentPersonne) => {
+  const getSignedUrl = async (filePath: string): Promise<string | null> => {
     try {
       const res = await fetch("/api/profil/documents/signed-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filePath: doc.file_path }),
+        body: JSON.stringify({ filePath }),
       })
-
       const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || "Erreur")
-        return
-      }
-
-      window.open(data.url, "_blank")
+      if (!res.ok) { toast.error(data.error || "Erreur"); return null }
+      return data.url as string
     } catch {
       toast.error("Erreur réseau")
+      return null
     }
+  }
+
+  const handleView = async (doc: DocumentPersonne) => {
+    const url = await getSignedUrl(doc.file_path)
+    if (url) window.open(url, "_blank")
+  }
+
+  const handleDownload = async (doc: DocumentPersonne) => {
+    const url = await getSignedUrl(doc.file_path)
+    if (!url) return
+    const a = document.createElement("a")
+    a.href = url
+    a.download = doc.file_name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   if (loading) {
@@ -226,13 +239,22 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
               {/* Right: actions */}
               <div className="flex items-center gap-1 shrink-0 ml-2">
                 {existing && (
-                  <button
-                    onClick={() => handleView(existing)}
-                    title="Consulter"
-                    className="h-7 w-7 flex items-center justify-center rounded-lg text-[#00236f] hover:bg-[#d0d8ff] transition-colors"
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleView(existing)}
+                      title="Consulter"
+                      className="h-7 w-7 flex items-center justify-center rounded-lg text-[#00236f] hover:bg-[#d0d8ff] transition-colors"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDownload(existing)}
+                      title="Télécharger"
+                      className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </button>
+                  </>
                 )}
                 {existing && !readOnly && (
                   <button

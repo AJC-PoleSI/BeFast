@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, MoreVertical, Loader } from "lucide-react"
+import { Search, MoreVertical, Loader, ExternalLink } from "lucide-react"
+import Link from "next/link"
 import { getAllMembers, updateMemberRole, getAllRoles } from "@/lib/actions/members"
 import type { PersonneWithRole, ProfilType } from "@/types/database.types"
 
@@ -207,12 +208,22 @@ export default function MemberManagementPage() {
                         {new Date(m.created_at).toLocaleDateString("fr-FR")}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <RoleDropdown
-                          member={m}
-                          roles={allRoles}
-                          onRoleChange={handleRoleChange}
-                          updating={updating}
-                        />
+                        <div className="flex items-center justify-end gap-1">
+                          <Link
+                            href={`/dashboard/profil/${m.id}`}
+                            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#00236f] hover:bg-[#d0d8ff] rounded-lg transition-colors"
+                            title="Voir profil & documents"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Profil
+                          </Link>
+                          <RoleDropdown
+                            member={m}
+                            roles={allRoles}
+                            onRoleChange={handleRoleChange}
+                            updating={updating}
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))

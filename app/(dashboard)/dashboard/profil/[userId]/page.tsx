@@ -26,7 +26,7 @@ import type { ProfileFormValues } from "../_lib/schemas"
 export default function AdminProfilePage() {
   const params = useParams()
   const userId = params.userId as string
-  const { isAdmin, loading: authLoading } = useUser()
+  const { isAdmin, permissions, loading: authLoading } = useUser()
 
   const [profile, setProfile] = useState<PersonneWithRole | null>(null)
   const [loading, setLoading] = useState(true)
@@ -43,13 +43,15 @@ export default function AdminProfilePage() {
     setLoading(false)
   }, [userId])
 
+  const canViewMemberDocs = isAdmin || permissions?.voir_documents_membres === true
+
   useEffect(() => {
-    if (!authLoading && isAdmin) {
+    if (!authLoading && canViewMemberDocs) {
       fetchProfile()
-    } else if (!authLoading && !isAdmin) {
+    } else if (!authLoading && !canViewMemberDocs) {
       setLoading(false)
     }
-  }, [authLoading, isAdmin, fetchProfile])
+  }, [authLoading, canViewMemberDocs, fetchProfile])
 
   if (authLoading || loading) {
     return (
@@ -61,15 +63,13 @@ export default function AdminProfilePage() {
     )
   }
 
-  if (!isAdmin) {
+  if (!canViewMemberDocs) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <h2 className="font-heading text-xl font-bold mb-2">
-            Accès non autorisé
-          </h2>
+          <h2 className="font-heading text-xl font-bold mb-2">Accès non autorisé</h2>
           <p className="text-muted-foreground">
-            Seuls les administrateurs peuvent accéder à cette page.
+            Vous n'avez pas la permission de consulter les documents des membres.
           </p>
         </div>
       </div>
