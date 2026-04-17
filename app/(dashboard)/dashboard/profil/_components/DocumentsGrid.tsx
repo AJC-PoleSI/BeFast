@@ -110,7 +110,11 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
         body: JSON.stringify({ status })
       })
       if (res.ok) {
-        toast.success(status === "approved" ? "Document validé" : "Document refusé")
+        toast.success(status === "approved" ? "Document validé ✓" : "Document refusé")
+        // Optimistic update
+        setDocuments((prev) =>
+          prev.map((d) => (d.id === docId ? { ...d, status } : d))
+        )
         fetchDocuments()
       } else {
         toast.error("Erreur lors de la mise à jour")
@@ -150,6 +154,16 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
       }
 
       toast.success(`${DOC_TYPE_LABELS[docType]} uploadé(e) — en attente de validation`)
+
+      // Optimistic update: inject the returned document immediately so the
+      // row switches to amber "En attente" without waiting for a full refetch.
+      if (data.document) {
+        setDocuments((prev) => {
+          const others = prev.filter((d) => d.type !== docType)
+          return [...others, data.document as DocumentPersonne]
+        })
+      }
+      // Then do a background refetch to stay in sync
       fetchDocuments()
     } catch {
       toast.error("Erreur réseau")

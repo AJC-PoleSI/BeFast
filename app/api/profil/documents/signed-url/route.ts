@@ -44,7 +44,8 @@ export async function POST(request: Request) {
 
     if (doc.personne_id !== user.id) {
       // Check if admin OR has voir_documents_membres permission
-      const { data: requesterProfile } = await supabase
+      // Use admin client to bypass RLS on personnes table
+      const { data: requesterProfile } = await admin
         .from("personnes")
         .select("profils_types(slug, permissions)")
         .eq("id", user.id)
