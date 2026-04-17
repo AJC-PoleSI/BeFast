@@ -44,7 +44,7 @@ interface StatusBadgeProps {
 function StatusBadge({ status }: StatusBadgeProps) {
   if (status === "approved") {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-emerald-600 font-bold">
         <CheckCircle2 className="h-3 w-3 shrink-0" />
         Validé
       </span>
@@ -52,15 +52,15 @@ function StatusBadge({ status }: StatusBadgeProps) {
   }
   if (status === "rejected") {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-red-500 font-medium">
+      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-red-500 font-bold">
         <XCircle className="h-3 w-3 shrink-0" />
         Refusé
       </span>
     )
   }
-  // pending (neutral)
+  // pending (orange)
   return (
-    <span className="inline-flex items-center gap-1 text-xs text-slate-500 font-medium">
+    <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-orange-600 font-bold">
       <Clock className="h-3 w-3 shrink-0" />
       En attente
     </span>
@@ -262,8 +262,8 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
               ? "border-emerald-200 bg-emerald-50/40"
               : existing.status === "rejected"
               ? "border-red-200 bg-red-50/30"
-              : "border-slate-200 bg-slate-50/50" // pending (neutral)
-            : "border-amber-200 bg-amber-50/30" // missing (orange)
+              : "border-orange-200 bg-orange-50/30" // pending (orange)
+            : "border-slate-200 bg-white" // missing (white)
 
           // Icon bg/color
           const iconStyle = existing
@@ -271,8 +271,8 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
               ? "bg-emerald-100 text-emerald-600"
               : existing.status === "rejected"
               ? "bg-red-100 text-red-500"
-              : "bg-slate-100 text-slate-500" // pending
-            : "bg-amber-100 text-amber-600" // missing
+              : "bg-orange-100 text-orange-600" // pending
+            : "bg-slate-100 text-slate-400" // missing
 
           return (
             <div
@@ -292,7 +292,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
                     {existing ? (
                       <StatusBadge status={existing.status} />
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-slate-400 font-bold">
                         <AlertCircle className="h-3 w-3 shrink-0" />
                         Manquant
                       </span>

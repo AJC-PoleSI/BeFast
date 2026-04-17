@@ -40,14 +40,16 @@ const TYPE_COLORS: Record<string, string> = {
 }
 
 export default function MissionsPage() {
-  const { profile, loading: userLoading } = useUser()
+  const { profile, loading: userLoading, isAdmin } = useUser()
   const [missions, setMissions] = useState<MissionWithEtude[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<FilterState>({})
   const [activeFilters, setActiveFilters] = useState<FilterState>({})
 
+  const isAccessAllowed = isAdmin || profile?.account_status === "validated"
+
   useEffect(() => {
-    if (profile?.account_status !== "validated") return
+    if (!isAccessAllowed) return
 
     const loadMissions = async () => {
       setLoading(true)
@@ -56,7 +58,7 @@ export default function MissionsPage() {
       setLoading(false)
     }
     loadMissions()
-  }, [activeFilters, profile?.account_status])
+  }, [activeFilters, isAccessAllowed])
 
   if (userLoading) {
     return (
@@ -67,7 +69,7 @@ export default function MissionsPage() {
     )
   }
 
-  if (profile?.account_status !== "validated") {
+  if (!isAccessAllowed) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
         <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4 text-amber-600">
