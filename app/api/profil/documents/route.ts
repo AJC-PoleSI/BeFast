@@ -148,6 +148,7 @@ export async function POST(request: Request) {
           file_name: file.name,
           file_size: file.size,
           mime_type: file.type,
+          status: "pending",
         },
         { onConflict: "personne_id,type" }
       )

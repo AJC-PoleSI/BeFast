@@ -8,16 +8,17 @@ import {
   Trash2,
   ExternalLink,
   Loader2,
-  CheckCircle2,
-  AlertCircle,
   IdCard,
   GraduationCap,
   HeartPulse,
   Wallet,
   Landmark,
   Eye,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import type { DocumentPersonne, DocumentType } from "@/types/database.types"
 import {
@@ -34,6 +35,36 @@ const DOC_ICONS: Record<string, LucideIcon> = {
   carte_vitale: HeartPulse,
   preuve_lydia: Wallet,
   rib: Landmark,
+}
+
+interface StatusBadgeProps {
+  status: "pending" | "approved" | "rejected"
+}
+
+function StatusBadge({ status }: StatusBadgeProps) {
+  if (status === "approved") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+        <CheckCircle2 className="h-3 w-3 shrink-0" />
+        Validé
+      </span>
+    )
+  }
+  if (status === "rejected") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-red-500 font-medium">
+        <XCircle className="h-3 w-3 shrink-0" />
+        Refusé
+      </span>
+    )
+  }
+  // pending
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
+      <Clock className="h-3 w-3 shrink-0" />
+      En attente
+    </span>
+  )
 }
 
 interface DocumentsGridProps {
@@ -95,7 +126,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
         return
       }
 
-      toast.success(`${DOC_TYPE_LABELS[docType]} uploadé(e)`)
+      toast.success(`${DOC_TYPE_LABELS[docType]} uploadé(e) — en attente de validation`)
       fetchDocuments()
     } catch {
       toast.error("Erreur réseau")
@@ -160,11 +191,11 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="space-y-2 p-3">
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="h-48 rounded-xl bg-white border border-border animate-pulse"
+            className="h-14 rounded-xl bg-white border border-border animate-pulse"
           />
         ))}
       </div>
@@ -178,61 +209,71 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
     <div>
       {/* Header */}
       <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h2 className="font-manrope font-bold text-[#00236f] text-base">Mes documents</h2>
-        <a
-          href="https://filigrane.beta.gouv.fr/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#00236f] text-white text-xs font-semibold hover:bg-[#1e3a8a] transition-colors"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          Filigrane
-        </a>
+        <h2 className="font-manrope font-bold text-[#00236f] text-base">
+          {readOnly ? "Documents" : "Mes documents"}
+        </h2>
+        {!readOnly && (
+          <a
+            href="https://filigrane.beta.gouv.fr/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#00236f] text-white text-xs font-semibold hover:bg-[#1e3a8a] transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Filigrane
+          </a>
+        )}
       </div>
 
       <div className="p-3 space-y-2">
         {VALID_DOC_TYPES.map((docType) => {
-
           const existing = docMap.get(docType)
           const Icon = DOC_ICONS[docType] || FileText
           const isUploading = uploading === docType
           const isDeleting = deleting === existing?.id
 
+          // Row border/bg based on status
+          const rowStyle = existing
+            ? existing.status === "approved"
+              ? "border-emerald-200 bg-emerald-50/40"
+              : existing.status === "rejected"
+              ? "border-red-200 bg-red-50/30"
+              : "border-amber-200 bg-amber-50/30"
+            : "border-slate-200 bg-white"
+
+          // Icon bg/color
+          const iconStyle = existing
+            ? existing.status === "approved"
+              ? "bg-emerald-100 text-emerald-600"
+              : existing.status === "rejected"
+              ? "bg-red-100 text-red-500"
+              : "bg-amber-100 text-amber-600"
+            : "bg-slate-100 text-slate-400"
+
           return (
             <div
               key={docType}
-              className={`flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all ${
-                existing
-                  ? "border-emerald-200 bg-emerald-50/40"
-                  : "border-slate-200 bg-white"
-              }`}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all ${rowStyle}`}
             >
               {/* Left: icon + label + badge */}
               <div className="flex items-center gap-2.5 min-w-0">
-                <div
-                  className={`h-8 w-8 rounded-lg shrink-0 flex items-center justify-center ${
-                    existing ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400"
-                  }`}
-                >
+                <div className={`h-8 w-8 rounded-lg shrink-0 flex items-center justify-center ${iconStyle}`}>
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-slate-700 truncate">
                     {DOC_TYPE_LABELS[docType]}
                   </p>
-                  {existing ? (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                      <span className="text-xs text-emerald-600 truncate max-w-[100px]">
-                        {existing.file_name}
+                  <div className="flex items-center gap-1 mt-0.5">
+                    {existing ? (
+                      <StatusBadge status={existing.status} />
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs text-slate-400 font-medium">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        Manquant
                       </span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <AlertCircle className="h-3 w-3 text-amber-400 shrink-0" />
-                      <span className="text-xs text-amber-500">Manquant</span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -273,11 +314,9 @@ export function DocumentsGrid({ targetUserId, readOnly = false }: DocumentsGridP
                 {!readOnly && (
                   <label
                     title={existing ? "Remplacer" : "Uploader"}
-                    className={`h-7 w-7 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${
-                      existing
-                        ? "text-slate-400 hover:bg-slate-100"
-                        : "bg-[#00236f] text-white hover:bg-[#1e3a8a]"
-                    } ${isUploading ? "opacity-50 pointer-events-none" : ""}`}
+                    className={`h-7 w-7 flex items-center justify-center rounded-lg cursor-pointer transition-colors bg-[#00236f] text-white hover:bg-[#1e3a8a] ${
+                      isUploading ? "opacity-50 pointer-events-none" : ""
+                    }`}
                   >
                     {isUploading ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />

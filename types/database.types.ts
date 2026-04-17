@@ -43,6 +43,7 @@ export interface Personne {
   profil_type_id: string | null
   avatar_url: string | null
   actif: boolean
+  account_status: "pending_validation" | "validated"
   created_at: string
   updated_at: string
 }
@@ -58,12 +59,15 @@ export type DocumentType =
   | "preuve_lydia"
   | "rib"
 
+export type DocumentStatus = "pending" | "approved" | "rejected"
+
 export interface DocumentPersonne {
   id: string
   personne_id: string
   type: DocumentType
   file_path: string
   file_name: string
+  status: DocumentStatus
   file_size: number | null
   mime_type: string | null
   created_at: string
@@ -206,4 +210,16 @@ export interface CustomFieldValue {
   value: string | null
   created_at: string
   updated_at: string
+}
+
+export type NotificationType = "new_user" | "document_uploaded" | string
+
+export interface Notification {
+  id: string
+  type: NotificationType
+  title: string
+  message: string | null
+  data: Record<string, unknown> | null
+  read: boolean
+  created_at: string
 }
