@@ -58,7 +58,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
       </span>
     )
   }
-  // pending (orange)
+  // Par défaut : En attente (Orange)
   return (
     <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-orange-600 font-bold">
       <Clock className="h-3 w-3 shrink-0" />
@@ -85,7 +85,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
       const url = targetUserId
         ? `/api/profil/documents?targetUserId=${targetUserId}`
         : "/api/profil/documents"
-      const res = await fetch(url)
+      const res = await fetch(url, { cache: "no-store" })
       const data = await res.json()
       if (res.ok) {
         setDocuments(data.documents || [])
