@@ -32,7 +32,7 @@ export function DynamicFieldsCard({ isOwnProfile = true }: DynamicFieldsCardProp
       const data = await res.json()
       if (res.ok) {
         setFields(data.fields || [])
-        const initialValues: Record<string, string> = {}
+        const initialValues: Record<string, string> = {};
         (data.fields || []).forEach((field: CustomField) => {
           initialValues[field.id] = field.value || ""
         })

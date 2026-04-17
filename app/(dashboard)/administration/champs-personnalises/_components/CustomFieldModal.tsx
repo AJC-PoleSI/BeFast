@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
-import { z } from "zod"
 import { customFieldSchema } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 
 interface CustomField {
@@ -91,7 +90,7 @@ export function CustomFieldModal({
       const parsed = customFieldSchema.safeParse(dataToValidate)
 
       if (!parsed.success) {
-        toast.error("Données invalides: " + parsed.error.errors[0].message)
+        toast.error("Données invalides: " + parsed.error.issues[0].message)
         return
       }
 
@@ -169,7 +168,7 @@ export function CustomFieldModal({
               placeholder="numero_etudiant"
             />
             <p className="text-xs text-slate-400 mt-1">
-              Utilisé dans les templates: {"{{"}{{ formData.slug }}{"}"}
+              Utilisé dans les templates: {`{{${formData.slug}}}`}
             </p>
           </div>
 

@@ -2,16 +2,7 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-
-interface CustomField {
-  id: string
-  name: string
-  slug: string
-  type: string
-  required: boolean
-  description?: string
-  ordre: number
-}
+import type { CustomField } from "@/types/database.types"
 
 interface CustomFieldsTableProps {
   fields: CustomField[]

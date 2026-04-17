@@ -4,24 +4,26 @@ import { useState, useEffect, useCallback } from "react"
 import { useUser } from "@/hooks/useUser"
 import { CustomFieldsTable } from "./_components/CustomFieldsTable"
 import { CustomFieldModal } from "./_components/CustomFieldModal"
+import type { CustomField as DBCustomField } from "@/types/database.types"
 
-interface CustomField {
-  id: string
+// Modal-friendly type (options as string array)
+interface CustomFieldForm {
+  id?: string
   name: string
   slug: string
   type: "text" | "select" | "date" | "number"
   required: boolean
-  options?: any
+  options?: string[]
   description?: string
-  ordre: number
+  ordre?: number
 }
 
 export default function CustomFieldsPage() {
   const { isAdmin, loading } = useUser()
-  const [fields, setFields] = useState<CustomField[]>([])
+  const [fields, setFields] = useState<DBCustomField[]>([])
   const [fieldsLoading, setFieldsLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
-  const [selectedField, setSelectedField] = useState<CustomField | undefined>()
+  const [selectedField, setSelectedField] = useState<CustomFieldForm | undefined>()
 
   const fetchFields = useCallback(async () => {
     setFieldsLoading(true)
@@ -44,9 +46,10 @@ export default function CustomFieldsPage() {
     }
   }, [loading, isAdmin, fetchFields])
 
-  const handleEdit = (field: CustomField) => {
+  const handleEdit = (field: DBCustomField) => {
     setSelectedField({
       ...field,
+      description: field.description ?? undefined,
       options: field.options?.values || [],
     })
     setModalOpen(true)

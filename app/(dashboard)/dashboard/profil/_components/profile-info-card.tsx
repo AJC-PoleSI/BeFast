@@ -89,7 +89,13 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly }: ProfileInfoCard
         return
       }
       toast.success("Profil mis à jour avec succès.")
-      onUpdate({ ...profile, ...values })
+      onUpdate({
+        ...profile,
+        ...values,
+        etablissement: (values.etablissement || null) as any,
+        scolarite: (values.scolarite || null) as any,
+        date_naissance: values.date_naissance || null,
+      })
       setEditing(false)
     } catch {
       toast.error("Erreur réseau")
