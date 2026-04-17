@@ -1,41 +1,22 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { useUser } from "@/hooks/useUser"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ProfileHeader } from "./_components/profile-header"
 import { ProfileInfoCard } from "./_components/profile-info-card"
 import { SensitiveFieldCard } from "./_components/sensitive-field-card"
 import { DynamicFieldsCard } from "./_components/dynamic-fields-card"
-import { DocumentGrid } from "./_components/document-grid"
-import type { DocumentPersonne, PersonneWithRole } from "@/types/database.types"
+import { DocumentsGrid } from "./_components/DocumentsGrid"
+import type { PersonneWithRole } from "@/types/database.types"
 
 export default function ProfilPage() {
   const { profile: initialProfile, loading } = useUser()
   const [profile, setProfile] = useState<PersonneWithRole | null>(null)
-  const [documents, setDocuments] = useState<DocumentPersonne[]>([])
-  const [docsLoading, setDocsLoading] = useState(true)
 
   useEffect(() => {
     if (initialProfile) setProfile(initialProfile)
   }, [initialProfile])
-
-  const fetchDocuments = useCallback(async () => {
-    setDocsLoading(true)
-    try {
-      const res = await fetch("/api/profil/documents")
-      const data = await res.json()
-      if (res.ok) setDocuments(data.documents || [])
-    } catch {
-      // silent
-    } finally {
-      setDocsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchDocuments()
-  }, [fetchDocuments])
 
   if (loading) {
     return (
@@ -112,33 +93,7 @@ export default function ProfilPage() {
         <div className="lg:col-span-4 space-y-4">
           {/* Documents card */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="font-manrope font-bold text-[#00236f] text-base">Mes documents</h2>
-              <a
-                href="https://www.service-public.fr/particuliers/vosdroits/R61460"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#00236f] text-white text-xs font-semibold hover:bg-[#1e3a8a] transition-colors"
-              >
-                <span className="material-symbols-outlined text-sm">verified_user</span>
-                Filigrane
-              </a>
-            </div>
-            <div className="p-3">
-              {docsLoading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Skeleton key={i} className="h-14 w-full rounded-lg" />
-                  ))}
-                </div>
-              ) : (
-                <DocumentGrid
-                  documents={documents}
-                  onDocumentsChange={fetchDocuments}
-                />
-              )}
-            </div>
-          </div>
+            <DocumentsGrid /></div>
 
           {/* Security banner */}
           <div className="bg-[#00236f] rounded-xl p-4 text-white">
