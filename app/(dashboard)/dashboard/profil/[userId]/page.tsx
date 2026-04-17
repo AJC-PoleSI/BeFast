@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { ProfileInfoForm } from "../_components/ProfileInfoForm"
 import { DocumentsGrid } from "../_components/DocumentsGrid"
+import { toast } from "sonner"
 import {
   ArrowLeft,
   User,
@@ -42,6 +43,24 @@ export default function AdminProfilePage() {
     setProfile(data as PersonneWithRole | null)
     setLoading(false)
   }, [userId])
+
+  const handleUpdateAccountStatus = async (status: "pending_validation" | "validated") => {
+    try {
+      const res = await fetch(`/api/admin/personnes/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ account_status: status })
+      })
+      if (res.ok) {
+        toast.success(status === "validated" ? "Compte validé" : "Compte suspendu")
+        fetchProfile()
+      } else {
+        toast.error("Erreur lors de la mise à jour")
+      }
+    } catch {
+      toast.error("Erreur réseau")
+    }
+  }
 
   const canViewMemberDocs = isAdmin || permissions?.voir_documents_membres === true
 
