@@ -58,7 +58,13 @@ export async function GET(request: Request) {
       )
     }
 
-    return NextResponse.json({ documents: data })
+    // Normalize: if status column not yet migrated, default to "pending"
+    const normalized = (data ?? []).map((doc: Record<string, unknown>) => ({
+      ...doc,
+      status: doc.status ?? "pending",
+    }))
+
+    return NextResponse.json({ documents: normalized })
   } catch {
     return NextResponse.json(
       { error: "Une erreur est survenue." },
@@ -137,7 +143,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Upsert document record
+    // Step 1: upsert core fields (works even if migration 007 not yet applied)
     const { data, error: dbError } = await admin
       .from("documents_personnes")
       .upsert(
@@ -148,7 +154,6 @@ export async function POST(request: Request) {
           file_name: file.name,
           file_size: file.size,
           mime_type: file.type,
-          status: "pending",
         },
         { onConflict: "personne_id,type" }
       )
@@ -163,7 +168,16 @@ export async function POST(request: Request) {
       )
     }
 
-    return NextResponse.json({ success: true, document: data })
+    // Step 2: try to set status = pending (requires migration 007)
+    // Fails gracefully if the column doesn't exist yet
+    const { data: withStatus } = await admin
+      .from("documents_personnes")
+      .update({ status: "pending" })
+      .eq("id", data.id)
+      .select()
+      .single()
+
+    return NextResponse.json({ success: true, document: withStatus ?? data })
   } catch {
     return NextResponse.json(
       { error: "Une erreur est survenue." },
