@@ -251,24 +251,31 @@ export default function AdminMembersPage() {
                         <div className="flex items-center justify-end gap-2">
                           <Link
                             href={`/dashboard/profil/${m.id}`}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                              m.account_status === "validated"
-                                ? "text-[#00236f] hover:bg-[#d0d8ff]"
-                                : "bg-[#00236f] text-white hover:bg-[#1e3a8a] shadow-sm"
-                            }`}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-[#00236f] hover:bg-[#d0d8ff]"
                           >
-                            {m.account_status === "validated" ? (
-                              <>
-                                <ExternalLink className="w-3.5 h-3.5" />
-                                Voir Profil
-                              </>
-                            ) : (
-                              <>
-                                <ShieldCheck className="w-3.5 h-3.5" />
-                                Valider le compte
-                              </>
-                            )}
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Voir Profil
                           </Link>
+                          {m.account_status !== "validated" && (
+                            <button
+                              onClick={async () => {
+                                setUpdating(m.id)
+                                const res = await fetch(`/api/admin/personnes/${m.id}`, {
+                                  method: "PATCH",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ account_status: "validated" }),
+                                })
+                                if (res.ok) await loadMembers()
+                                else alert("Erreur lors de la validation")
+                                setUpdating(null)
+                              }}
+                              disabled={updating === m.id}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-[#00236f] text-white hover:bg-[#1e3a8a] shadow-sm disabled:opacity-50"
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                              Valider le compte
+                            </button>
+                          )}
                           <RoleDropdown
                             member={m}
                             roles={allRoles}
