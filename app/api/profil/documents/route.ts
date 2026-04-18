@@ -26,16 +26,23 @@ export async function GET(request: Request) {
     let queryId = user.id
 
     if (targetUserId && targetUserId !== user.id) {
-      // Verify admin role
-      const { data: adminProfile } = await supabase
+      // Verify admin role OR voir_documents_membres permission
+      // Use admin client to bypass RLS
+      const admin2 = createAdminClient()
+      const { data: requesterProfile } = await admin2
         .from("personnes")
-        .select("profils_types(slug)")
+        .select("profils_types(slug, permissions)")
         .eq("id", user.id)
         .single()
 
-      const slug = (adminProfile?.profils_types as { slug?: string } | null)
-        ?.slug
-      if (slug !== "administrateur") {
+      const profileType = requesterProfile?.profils_types as
+        | { slug?: string; permissions?: Record<string, boolean> }
+        | null
+      const isAdmin = profileType?.slug === "administrateur"
+      const canViewMemberDocs =
+        profileType?.permissions?.["voir_documents_membres"] === true
+
+      if (!isAdmin && !canViewMemberDocs) {
         return NextResponse.json(
           { error: "Accès non autorisé" },
           { status: 403 }
@@ -49,7 +56,7 @@ export async function GET(request: Request) {
       .from("documents_personnes")
       .select("*")
       .eq("personne_id", queryId)
-      .order("created_at", { ascending: false })
+      .order("updated_at", { ascending: false })
 
     if (error) {
       return NextResponse.json(
