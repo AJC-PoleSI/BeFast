@@ -203,13 +203,24 @@ export async function deleteEcheancierBloc(id: string) {
 
 export async function getMembers() {
   const supabase = createClient()
-  // Show all active members (fallback). Role-based filtering can be re-enabled
-  // once chef_projet_ajc role is assigned to at least one user.
-  const { data, error } = await supabase
+  // Get membre_ajc role id
+  const { data: roleData } = await supabase
+    .from("profils_types")
+    .select("id")
+    .eq("slug", "membre_ajc")
+    .maybeSingle()
+
+  let query = supabase
     .from("personnes")
     .select("id, prenom, nom, email")
     .eq("actif", true)
     .order("nom", { ascending: true })
+
+  if (roleData?.id) {
+    query = query.eq("profil_type_id", roleData.id)
+  }
+
+  const { data, error } = await query
 
   if (error) return { error: error.message }
   const members = (data ?? []).map(({ id, prenom, nom, email }) => ({ id, prenom, nom, email }))
