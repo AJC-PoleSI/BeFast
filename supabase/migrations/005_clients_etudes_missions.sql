@@ -1,197 +1,159 @@
--- Migration 005: clients, etudes, missions, candidatures
+-- Migration 005: clients, etudes, missions, candidatures, echeancier_blocs
 
 -- ============================================================
 -- CLIENTS
 -- ============================================================
-CREATE TABLE public.clients (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nom TEXT NOT NULL,
-  email TEXT,
-  telephone TEXT,
-  type TEXT NOT NULL CHECK (type IN ('ao', 'cs', 'prospection')),
-  notes TEXT,
-  created_by UUID REFERENCES public.personnes(id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE IF NOT EXISTS public.clients (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nom         TEXT NOT NULL,
+  secteur     TEXT,
+  contact_nom TEXT,
+  contact_email TEXT,
+  contact_phone TEXT,
+  type        TEXT CHECK (type IN ('ao','cs','prospection')),
+  actif       BOOLEAN NOT NULL DEFAULT true,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "authenticated read clients"
-  ON public.clients FOR SELECT TO authenticated USING (true);
-CREATE POLICY "agc members manage clients"
-  ON public.clients FOR ALL TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.personnes p
-      JOIN public.profils_types pt ON pt.id = p.profil_type_id
-      WHERE p.id = auth.uid() AND pt.slug IN ('membre_agc', 'administrateur')
-    )
-  );
-
-CREATE TRIGGER clients_updated_at BEFORE UPDATE ON public.clients
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='clients' AND policyname='authenticated read clients') THEN
+    CREATE POLICY "authenticated read clients" ON public.clients FOR SELECT TO authenticated USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='clients' AND policyname='admin manage clients') THEN
+    CREATE POLICY "admin manage clients" ON public.clients FOR ALL TO authenticated
+      USING (EXISTS (SELECT 1 FROM public.personnes p JOIN public.profils_types pt ON pt.id = p.profil_type_id WHERE p.id = auth.uid() AND pt.slug = 'administrateur'))
+      WITH CHECK (EXISTS (SELECT 1 FROM public.personnes p JOIN public.profils_types pt ON pt.id = p.profil_type_id WHERE p.id = auth.uid() AND pt.slug = 'administrateur'));
+  END IF;
+END $$;
 
 -- ============================================================
 -- ETUDES
 -- ============================================================
-CREATE TABLE public.etudes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nom TEXT NOT NULL,
-  numero TEXT NOT NULL UNIQUE,
-  client_id UUID REFERENCES public.clients(id),
-  suiveur_id UUID REFERENCES public.personnes(id),
-  budget NUMERIC(12, 2),
-  commentaire TEXT,
-  statut TEXT NOT NULL DEFAULT 'prospection'
-    CHECK (statut IN ('prospection', 'en_cours_prospection', 'signee', 'en_cours', 'terminee')),
-  created_by UUID REFERENCES public.personnes(id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE IF NOT EXISTS public.etudes (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  numero      TEXT UNIQUE,
+  nom         TEXT NOT NULL,
+  client_id   UUID REFERENCES public.clients(id) ON DELETE SET NULL,
+  suiveur_id  UUID REFERENCES public.personnes(id) ON DELETE SET NULL,
+  statut      TEXT NOT NULL DEFAULT 'prospect' CHECK (statut IN ('prospect','en_cours','terminee','annulee')),
+  type        TEXT CHECK (type IN ('ao','cs','prospection')),
+  budget_ht   NUMERIC(12,2),
+  description TEXT,
+  date_debut  DATE,
+  date_fin    DATE,
+  created_by  UUID REFERENCES public.personnes(id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.etudes ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "authenticated read etudes"
-  ON public.etudes FOR SELECT TO authenticated USING (true);
-CREATE POLICY "agc members manage etudes"
-  ON public.etudes FOR ALL TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.personnes p
-      JOIN public.profils_types pt ON pt.id = p.profil_type_id
-      WHERE p.id = auth.uid() AND pt.slug IN ('membre_agc', 'administrateur')
-    )
-  );
-
-CREATE TRIGGER etudes_updated_at BEFORE UPDATE ON public.etudes
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='etudes' AND policyname='authenticated read etudes') THEN
+    CREATE POLICY "authenticated read etudes" ON public.etudes FOR SELECT TO authenticated USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='etudes' AND policyname='authenticated insert etudes') THEN
+    CREATE POLICY "authenticated insert etudes" ON public.etudes FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='etudes' AND policyname='authenticated update etudes') THEN
+    CREATE POLICY "authenticated update etudes" ON public.etudes FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='etudes' AND policyname='admin delete etudes') THEN
+    CREATE POLICY "admin delete etudes" ON public.etudes FOR DELETE TO authenticated
+      USING (EXISTS (SELECT 1 FROM public.personnes p JOIN public.profils_types pt ON pt.id = p.profil_type_id WHERE p.id = auth.uid() AND pt.slug = 'administrateur'));
+  END IF;
+END $$;
 
 -- ============================================================
 -- MISSIONS
 -- ============================================================
-CREATE TABLE public.missions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  etude_id UUID REFERENCES public.etudes(id) ON DELETE CASCADE,
-  nom TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS public.missions (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  etude_id    UUID NOT NULL REFERENCES public.etudes(id) ON DELETE CASCADE,
+  nom         TEXT NOT NULL,
+  type        TEXT NOT NULL DEFAULT 'intervenant' CHECK (type IN ('chef_projet','intervenant')),
+  voie        TEXT CHECK (voie IN ('finance','marketing','audit','rse')),
+  classe      TEXT CHECK (classe IN ('premaster','m1','m2')),
   description TEXT,
-  type TEXT NOT NULL CHECK (type IN ('chef_projet', 'intervenant')),
-  voie TEXT CHECK (voie IN ('finance', 'marketing', 'audit', 'rse')),
-  classe TEXT CHECK (classe IN ('premaster', 'm1', 'm2')),
-  langues TEXT[] DEFAULT '{}',
-  date_debut DATE,
-  date_fin DATE,
-  remuneration NUMERIC(10, 2),
-  nb_jeh INTEGER DEFAULT 0,
-  nb_intervenants INTEGER DEFAULT 1,
-  statut TEXT NOT NULL DEFAULT 'ouverte'
-    CHECK (statut IN ('ouverte', 'pourvue', 'terminee', 'annulee')),
-  created_by UUID REFERENCES public.personnes(id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  nb_jours    NUMERIC(6,1),
+  taux_jour   NUMERIC(10,2),
+  date_debut  DATE,
+  date_fin    DATE,
+  statut      TEXT NOT NULL DEFAULT 'ouverte' CHECK (statut IN ('ouverte','pourvue','terminee','annulee')),
+  intervenant_id UUID REFERENCES public.personnes(id) ON DELETE SET NULL,
+  created_by  UUID REFERENCES public.personnes(id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.missions ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "authenticated read missions"
-  ON public.missions FOR SELECT TO authenticated USING (true);
-CREATE POLICY "agc members manage missions"
-  ON public.missions FOR ALL TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.personnes p
-      JOIN public.profils_types pt ON pt.id = p.profil_type_id
-      WHERE p.id = auth.uid() AND pt.slug IN ('membre_agc', 'administrateur')
-    )
-  );
-
-CREATE TRIGGER missions_updated_at BEFORE UPDATE ON public.missions
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='missions' AND policyname='authenticated read missions') THEN
+    CREATE POLICY "authenticated read missions" ON public.missions FOR SELECT TO authenticated USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='missions' AND policyname='authenticated write missions') THEN
+    CREATE POLICY "authenticated write missions" ON public.missions FOR ALL TO authenticated USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
+  END IF;
+END $$;
 
 -- ============================================================
 -- CANDIDATURES
 -- ============================================================
-CREATE TABLE public.candidatures (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  mission_id UUID NOT NULL REFERENCES public.missions(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS public.candidatures (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  mission_id  UUID NOT NULL REFERENCES public.missions(id) ON DELETE CASCADE,
   personne_id UUID NOT NULL REFERENCES public.personnes(id) ON DELETE CASCADE,
-  motivation TEXT NOT NULL,
-  classe TEXT CHECK (classe IN ('premaster', 'm1', 'm2')),
-  langues JSONB DEFAULT '[]'::jsonb,
-  statut TEXT NOT NULL DEFAULT 'en_attente'
-    CHECK (statut IN ('en_attente', 'acceptee', 'refusee')),
-  reponse_date TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  classe      TEXT CHECK (classe IN ('premaster','m1','m2')),
+  message     TEXT,
+  statut      TEXT NOT NULL DEFAULT 'en_attente' CHECK (statut IN ('en_attente','acceptee','refusee')),
+  created_by  UUID REFERENCES public.personnes(id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE(mission_id, personne_id)
 );
 
 ALTER TABLE public.candidatures ENABLE ROW LEVEL SECURITY;
 
--- Users can read their own candidatures
-CREATE POLICY "users read own candidatures"
-  ON public.candidatures FOR SELECT TO authenticated
-  USING (auth.uid() = personne_id);
-
--- Users can insert their own candidatures
-CREATE POLICY "users insert own candidatures"
-  ON public.candidatures FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = personne_id);
-
--- AGC members can read all candidatures
-CREATE POLICY "agc read all candidatures"
-  ON public.candidatures FOR SELECT TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.personnes p
-      JOIN public.profils_types pt ON pt.id = p.profil_type_id
-      WHERE p.id = auth.uid() AND pt.slug IN ('membre_agc', 'administrateur')
-    )
-  );
-
--- AGC members can update candidatures (accept/reject)
-CREATE POLICY "agc update candidatures"
-  ON public.candidatures FOR UPDATE TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.personnes p
-      JOIN public.profils_types pt ON pt.id = p.profil_type_id
-      WHERE p.id = auth.uid() AND pt.slug IN ('membre_agc', 'administrateur')
-    )
-  );
-
-CREATE TRIGGER candidatures_updated_at BEFORE UPDATE ON public.candidatures
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='candidatures' AND policyname='user read own candidatures') THEN
+    CREATE POLICY "user read own candidatures" ON public.candidatures FOR SELECT TO authenticated
+      USING (personne_id = auth.uid() OR EXISTS (SELECT 1 FROM public.personnes p JOIN public.profils_types pt ON pt.id = p.profil_type_id WHERE p.id = auth.uid() AND pt.slug = 'administrateur'));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='candidatures' AND policyname='user manage own candidatures') THEN
+    CREATE POLICY "user manage own candidatures" ON public.candidatures FOR ALL TO authenticated
+      USING (personne_id = auth.uid()) WITH CHECK (personne_id = auth.uid());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='candidatures' AND policyname='admin manage candidatures') THEN
+    CREATE POLICY "admin manage candidatures" ON public.candidatures FOR ALL TO authenticated
+      USING (EXISTS (SELECT 1 FROM public.personnes p JOIN public.profils_types pt ON pt.id = p.profil_type_id WHERE p.id = auth.uid() AND pt.slug = 'administrateur'))
+      WITH CHECK (EXISTS (SELECT 1 FROM public.personnes p JOIN public.profils_types pt ON pt.id = p.profil_type_id WHERE p.id = auth.uid() AND pt.slug = 'administrateur'));
+  END IF;
+END $$;
 
 -- ============================================================
--- ECHEANCIER BLOCKS (for Gantt)
+-- ECHEANCIER BLOCS
 -- ============================================================
-CREATE TABLE public.echeancier_blocs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  etude_id UUID NOT NULL REFERENCES public.etudes(id) ON DELETE CASCADE,
-  nom TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS public.echeancier_blocs (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  etude_id    UUID NOT NULL REFERENCES public.etudes(id) ON DELETE CASCADE,
+  nom         TEXT NOT NULL,
   semaine_debut INTEGER NOT NULL DEFAULT 1,
   duree_semaines INTEGER NOT NULL DEFAULT 1,
-  jeh INTEGER DEFAULT 0,
-  couleur TEXT DEFAULT '#C9A84C',
-  ordre INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  couleur     TEXT DEFAULT '#00236f',
+  ordre       INTEGER DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.echeancier_blocs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "authenticated read echeancier"
-  ON public.echeancier_blocs FOR SELECT TO authenticated USING (true);
-CREATE POLICY "agc manage echeancier"
-  ON public.echeancier_blocs FOR ALL TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.personnes p
-      JOIN public.profils_types pt ON pt.id = p.profil_type_id
-      WHERE p.id = auth.uid() AND pt.slug IN ('membre_agc', 'administrateur')
-    )
-  );
-
-CREATE TRIGGER echeancier_blocs_updated_at BEFORE UPDATE ON public.echeancier_blocs
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='echeancier_blocs' AND policyname='authenticated manage blocs') THEN
+    CREATE POLICY "authenticated manage blocs" ON public.echeancier_blocs FOR ALL TO authenticated
+      USING (auth.uid() IS NOT NULL) WITH CHECK (auth.uid() IS NOT NULL);
+  END IF;
+END $$;

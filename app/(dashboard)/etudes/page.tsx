@@ -51,7 +51,7 @@ export default function EtudesPage() {
   const [showModal, setShowModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-  const [form, setForm] = useState({ nom: "", numero: "", statut: "prospection", budget: "", budget_ht: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
+  const [form, setForm] = useState({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
   const [tvaRate, setTvaRate] = useState(20)
   const [clients, setClients] = useState<Client[]>([])
   const [membres, setMembres] = useState<{ id: string; prenom: string | null; nom: string | null }[]>([])
@@ -306,7 +306,7 @@ export default function EtudesPage() {
                 setSubmitting(false)
                 if (result.error) { setFormError(result.error); return }
                 setShowModal(false)
-                setForm({ nom: "", numero: "", statut: "prospection", budget: "", budget_ht: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
+                setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
                 // Refresh list
                 const fresh = await getEtudes()
                 if (fresh.data) setEtudes(fresh.data)
