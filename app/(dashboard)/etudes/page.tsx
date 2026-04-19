@@ -1,11 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getEtudes, createEtude } from "@/lib/actions/etudes"
+import { getEtudes, createEtude, getClients, getMembers } from "@/lib/actions/etudes"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 import { X, Loader2 } from "lucide-react"
-import type { EtudeWithRelations } from "@/types/database.types"
+import type { EtudeWithRelations, Client } from "@/types/database.types"
 
 const STATUT_CONFIG: Record<string, { label: string; chipClass: string; dotClass: string }> = {
   prospection: {
@@ -51,13 +51,19 @@ export default function EtudesPage() {
   const [showModal, setShowModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-  const [form, setForm] = useState({ nom: "", numero: "", statut: "prospection", budget: "", commentaire: "" })
+  const [form, setForm] = useState({ nom: "", numero: "", statut: "prospection", budget: "", commentaire: "", client_id: "", suiveur_id: "" })
+  const [clients, setClients] = useState<Client[]>([])
+  const [membres, setMembres] = useState<{ id: string; prenom: string | null; nom: string | null }[]>([])
 
   useEffect(() => {
     const loadEtudes = async () => {
       setLoading(true)
-      const result = await getEtudes()
-      if (result.data) setEtudes(result.data)
+      const [etudesResult, clientsResult, membresResult] = await Promise.all([
+        getEtudes(), getClients(), getMembers()
+      ])
+      if (etudesResult.data) setEtudes(etudesResult.data)
+      if (clientsResult.data) setClients(clientsResult.data as Client[])
+      if (membresResult.data) setMembres(membresResult.data)
       setLoading(false)
     }
     loadEtudes()
@@ -290,11 +296,13 @@ export default function EtudesPage() {
                   statut: form.statut,
                   budget: form.budget ? Number(form.budget) : undefined,
                   commentaire: form.commentaire || undefined,
+                  client_id: form.client_id || undefined,
+                  suiveur_id: form.suiveur_id || undefined,
                 })
                 setSubmitting(false)
                 if (result.error) { setFormError(result.error); return }
                 setShowModal(false)
-                setForm({ nom: "", numero: "", statut: "prospection", budget: "", commentaire: "" })
+                setForm({ nom: "", numero: "", statut: "prospection", budget: "", commentaire: "", client_id: "", suiveur_id: "" })
                 // Refresh list
                 const fresh = await getEtudes()
                 if (fresh.data) setEtudes(fresh.data)
@@ -303,7 +311,7 @@ export default function EtudesPage() {
             >
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nom de l'étude *</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nom de l&apos;étude *</label>
                   <input
                     required
                     value={form.nom}
@@ -332,7 +340,29 @@ export default function EtudesPage() {
                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                   />
                 </div>
-                <div className="col-span-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Client</label>
+                  <select
+                    value={form.client_id}
+                    onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                  >
+                    <option value="">— Sélectionner —</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Suiveur</label>
+                  <select
+                    value={form.suiveur_id}
+                    onChange={e => setForm(f => ({ ...f, suiveur_id: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                  >
+                    <option value="">— Sélectionner —</option>
+                    {membres.map(m => <option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}
+                  </select>
+                </div>
+                <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Statut</label>
                   <select
                     value={form.statut}

@@ -85,14 +85,15 @@ export default function EtudeDetailPage() {
   })
   const [creatingMission, setCreatingMission] = useState(false)
 
-  // Bloc creation
+  // Bloc creation / editing
   const [showBlocModal, setShowBlocModal] = useState(false)
+  const [editingBlocId, setEditingBlocId] = useState<string | null>(null)
   const [blocForm, setBlocForm] = useState({
     nom: "", semaine_debut: "1", duree_semaines: "1", jeh: "0",
   })
   const [creatingBloc, setCreatingBloc] = useState(false)
 
-  const nbWeeks = 12
+  const [nbWeeks, setNbWeeks] = useState(12)
 
   const fetchData = useCallback(async () => {
     const supabase = createClient()
@@ -155,22 +156,31 @@ export default function EtudeDetailPage() {
     setCreatingMission(false)
   }
 
-  const handleCreateBloc = async () => {
+  const handleSaveBloc = async () => {
     if (!blocForm.nom.trim()) { toast.error("Nom requis"); return }
     setCreatingBloc(true)
     const supabase = createClient()
-    const { error } = await supabase.from("echeancier_blocs").insert({
-      etude_id: etudeId,
+    const payload = {
       nom: blocForm.nom,
       semaine_debut: parseInt(blocForm.semaine_debut) || 1,
       duree_semaines: parseInt(blocForm.duree_semaines) || 1,
       jeh: parseInt(blocForm.jeh) || 0,
-      couleur: GANTT_COLORS[blocs.length % GANTT_COLORS.length],
-      ordre: blocs.length,
-    })
+    }
+    let error
+    if (editingBlocId) {
+      ;({ error } = await supabase.from("echeancier_blocs").update(payload).eq("id", editingBlocId))
+    } else {
+      ;({ error } = await supabase.from("echeancier_blocs").insert({
+        ...payload,
+        etude_id: etudeId,
+        couleur: GANTT_COLORS[blocs.length % GANTT_COLORS.length],
+        ordre: blocs.length,
+      }))
+    }
     if (error) { toast.error("Erreur") } else {
-      toast.success("Bloc ajouté")
+      toast.success(editingBlocId ? "Bloc modifié" : "Bloc ajouté")
       setShowBlocModal(false)
+      setEditingBlocId(null)
       setBlocForm({ nom: "", semaine_debut: "1", duree_semaines: "1", jeh: "0" })
       fetchData()
     }
@@ -314,7 +324,20 @@ export default function EtudeDetailPage() {
         {/* Échéancier tab */}
         <TabsContent value="echeancier">
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Semaines :</span>
+                <select
+                  value={nbWeeks}
+                  onChange={e => setNbWeeks(Number(e.target.value))}
+                  className="h-8 px-2 text-sm border border-input rounded-md bg-white"
+                >
+                  {[4, 6, 8, 10, 12, 16, 20, 24, 30, 36, 52].map(n => (
+                    <option key={n} value={n}>{n} semaines</option>
+                  ))}
+                </select>
+              </div>
               <Button onClick={() => setShowBlocModal(true)} className="bg-gold text-navy font-semibold hover:bg-gold/90" size="sm">
                 <Plus className="h-4 w-4 mr-1.5" /> Ajouter un bloc
               </Button>
@@ -345,10 +368,22 @@ export default function EtudeDetailPage() {
                     blocs.map((bloc) => (
                       <div key={bloc.id} className="flex border-b border-border/50 group">
                         <div className="w-48 shrink-0 px-4 py-3 flex items-center justify-between text-sm">
-                          <div>
-                            <span className="font-medium">{bloc.nom}</span>
+                          <button
+                            className="text-left"
+                            onClick={() => {
+                              setEditingBlocId(bloc.id)
+                              setBlocForm({
+                                nom: bloc.nom,
+                                semaine_debut: String(bloc.semaine_debut),
+                                duree_semaines: String(bloc.duree_semaines),
+                                jeh: String(bloc.jeh ?? 0),
+                              })
+                              setShowBlocModal(true)
+                            }}
+                          >
+                            <span className="font-medium hover:underline">{bloc.nom}</span>
                             <span className="text-xs text-muted-foreground ml-2">{bloc.jeh} JEH</span>
-                          </div>
+                          </button>
                           <button
                             onClick={() => handleDeleteBloc(bloc.id)}
                             className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all"
@@ -463,11 +498,11 @@ export default function EtudeDetailPage() {
       </Dialog>
 
       {/* Bloc creation modal */}
-      <Dialog open={showBlocModal} onOpenChange={setShowBlocModal}>
+      <Dialog open={showBlocModal} onOpenChange={(open) => { setShowBlocModal(open); if (!open) setEditingBlocId(null) }}>
         <DialogContent>
-          <DialogClose onClose={() => setShowBlocModal(false)} />
+          <DialogClose onClose={() => { setShowBlocModal(false); setEditingBlocId(null) }} />
           <DialogHeader>
-            <DialogTitle>Ajouter un bloc à l&apos;échéancier</DialogTitle>
+            <DialogTitle>{editingBlocId ? "Modifier le bloc" : "Ajouter un bloc à l'échéancier"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-2">
@@ -490,10 +525,10 @@ export default function EtudeDetailPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowBlocModal(false)}>Annuler</Button>
-            <Button onClick={handleCreateBloc} disabled={creatingBloc || !blocForm.nom.trim()} className="bg-gold text-navy font-semibold hover:bg-gold/90">
-              {creatingBloc ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-1.5 h-4 w-4" />}
-              Ajouter
+            <Button variant="ghost" onClick={() => { setShowBlocModal(false); setEditingBlocId(null) }}>Annuler</Button>
+            <Button onClick={handleSaveBloc} disabled={creatingBloc || !blocForm.nom.trim()} className="bg-gold text-navy font-semibold hover:bg-gold/90">
+              {creatingBloc && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingBlocId ? "Enregistrer" : "Ajouter"}
             </Button>
           </DialogFooter>
         </DialogContent>
