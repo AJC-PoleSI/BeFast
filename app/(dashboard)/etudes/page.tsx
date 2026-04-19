@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getEtudes } from "@/lib/actions/etudes"
+import { getEtudes, createEtude } from "@/lib/actions/etudes"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
+import { X, Loader2 } from "lucide-react"
 import type { EtudeWithRelations } from "@/types/database.types"
 
 const STATUT_CONFIG: Record<string, { label: string; chipClass: string; dotClass: string }> = {
@@ -47,6 +48,10 @@ export default function EtudesPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatut, setSelectedStatut] = useState<string | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [form, setForm] = useState({ nom: "", numero: "", statut: "prospection", budget: "", commentaire: "" })
 
   useEffect(() => {
     const loadEtudes = async () => {
@@ -92,7 +97,10 @@ export default function EtudesPage() {
           <h1 className="text-2xl font-manrope font-black text-[#00236f]">Études</h1>
           <p className="text-sm text-slate-500 mt-0.5">Gestion des études et projets clients</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors">
+        <button
+          onClick={() => { setShowModal(true); setFormError(null) }}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors"
+        >
           <span className="material-symbols-outlined text-lg">add_circle</span>
           Nouvelle étude
         </button>
@@ -256,6 +264,118 @@ export default function EtudesPage() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modale Nouvelle étude ── */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100">
+              <h2 className="font-manrope font-bold text-[#00236f] text-lg">Nouvelle étude</h2>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                setSubmitting(true)
+                setFormError(null)
+                const result = await createEtude({
+                  nom: form.nom,
+                  numero: form.numero,
+                  statut: form.statut,
+                  budget: form.budget ? Number(form.budget) : undefined,
+                  commentaire: form.commentaire || undefined,
+                })
+                setSubmitting(false)
+                if (result.error) { setFormError(result.error); return }
+                setShowModal(false)
+                setForm({ nom: "", numero: "", statut: "prospection", budget: "", commentaire: "" })
+                // Refresh list
+                const fresh = await getEtudes()
+                if (fresh.data) setEtudes(fresh.data)
+              }}
+              className="p-6 space-y-4"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nom de l'étude *</label>
+                  <input
+                    required
+                    value={form.nom}
+                    onChange={e => setForm(f => ({ ...f, nom: e.target.value }))}
+                    placeholder="Ex : Étude marketing Q3"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Numéro *</label>
+                  <input
+                    required
+                    value={form.numero}
+                    onChange={e => setForm(f => ({ ...f, numero: e.target.value }))}
+                    placeholder="Ex : 2024-001"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Budget (€)</label>
+                  <input
+                    type="number"
+                    value={form.budget}
+                    onChange={e => setForm(f => ({ ...f, budget: e.target.value }))}
+                    placeholder="Ex : 5000"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Statut</label>
+                  <select
+                    value={form.statut}
+                    onChange={e => setForm(f => ({ ...f, statut: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                  >
+                    <option value="prospection">Prospection</option>
+                    <option value="en_cours_prospection">En cours de prospection</option>
+                    <option value="signee">Signée</option>
+                    <option value="en_cours">En cours</option>
+                    <option value="terminee">Terminée</option>
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Commentaire</label>
+                  <textarea
+                    value={form.commentaire}
+                    onChange={e => setForm(f => ({ ...f, commentaire: e.target.value }))}
+                    rows={3}
+                    placeholder="Notes, contexte..."
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 resize-none"
+                  />
+                </div>
+              </div>
+
+              {formError && (
+                <p className="text-xs text-red-500 font-medium">{formError}</p>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-[#00236f] text-white rounded-lg hover:bg-[#1e3a8a] transition-colors disabled:opacity-50"
+                >
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Créer l'étude
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
