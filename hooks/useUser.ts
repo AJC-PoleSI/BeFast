@@ -25,6 +25,8 @@ const emptyPermissions: Permissions = {
   documents: false,
   nouvelle_mission: false,
   voir_documents_membres: false,
+  assigner_intervenants: false,
+  parametres_structure: false,
 }
 
 export function useUser(): UseUserReturn {

@@ -39,6 +39,8 @@ export async function createEtude(formData: {
   client_id?: string
   suiveur_id?: string
   budget?: number
+  budget_ht?: number
+  type?: string
   commentaire?: string
   statut?: string
 }) {
@@ -203,10 +205,26 @@ export async function getMembers() {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("personnes")
-    .select("id, prenom, nom, email")
+    .select("id, prenom, nom, email, profils_types!inner(slug)")
+    .eq("profils_types.slug", "chef_projet_ajc")
     .eq("actif", true)
     .order("nom", { ascending: true })
 
   if (error) return { error: error.message }
-  return { data }
+  const members = (data ?? []).map(({ id, prenom, nom, email }) => ({ id, prenom, nom, email }))
+  return { data: members }
+}
+
+export async function getParametre(key: string) {
+  const supabase = createClient()
+  const { data } = await supabase.from("parametres").select("value").eq("key", key).single()
+  return data?.value ?? null
+}
+
+export async function setParametre(key: string, value: string) {
+  const supabase = createClient()
+  const { error } = await supabase.from("parametres").upsert({ key, value }).eq("key", key)
+  if (error) return { error: error.message }
+  revalidatePath("/administration")
+  return { success: true }
 }

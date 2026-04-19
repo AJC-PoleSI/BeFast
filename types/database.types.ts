@@ -10,6 +10,8 @@ export type PermissionKey =
   | "documents"
   | "nouvelle_mission"
   | "voir_documents_membres"
+  | "assigner_intervenants"
+  | "parametres_structure"
 
 export type Permissions = Record<PermissionKey, boolean>
 
@@ -76,6 +78,8 @@ export interface DocumentPersonne {
 
 // ---- Phase 3 & 4 types ----
 
+export type EtudeType = "ao" | "cs" | "prospection"
+
 export type ClientType = "ao" | "cs" | "prospection"
 
 export interface Client {
@@ -103,6 +107,8 @@ export interface Etude {
   numero: string
   client_id: string | null
   suiveur_id: string | null
+  type: EtudeType | null
+  budget_ht: number | null
   budget: number | null
   commentaire: string | null
   statut: EtudeStatut
@@ -209,6 +215,12 @@ export interface CustomFieldValue {
   field_id: string
   value: string | null
   created_at: string
+  updated_at: string
+}
+
+export interface Parametre {
+  key: string
+  value: string
   updated_at: string
 }
 
