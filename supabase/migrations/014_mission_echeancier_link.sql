@@ -2,7 +2,8 @@
 
 -- Ajout des champs manquants sur missions
 ALTER TABLE public.missions
-  ADD COLUMN IF NOT EXISTS remuneration NUMERIC(10,2);
+  ADD COLUMN IF NOT EXISTS remuneration NUMERIC(10,2),
+  ADD COLUMN IF NOT EXISTS suiveur_id UUID REFERENCES public.personnes(id) ON DELETE SET NULL;
 
 -- Ajout du lien mission -> bloc échéancier
 ALTER TABLE public.echeancier_blocs

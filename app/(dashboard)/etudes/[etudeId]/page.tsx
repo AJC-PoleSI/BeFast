@@ -81,8 +81,9 @@ export default function EtudeDetailPage() {
   const [showMissionModal, setShowMissionModal] = useState(false)
   const [missionForm, setMissionForm] = useState({
     nom: "", description: "", type: "intervenant", voie: "", classe: "",
-    date_debut: "", date_fin: "", remuneration: "", nb_jeh: "0", nb_intervenants: "1",
+    date_debut: "", date_fin: "", remuneration: "", nb_jeh: "0", nb_intervenants: "1", suiveur_id: "",
   })
+  const [missionSuiveurs, setMissionSuiveurs] = useState<{ id: string; prenom: string; nom: string }[]>([])
   const [creatingMission, setCreatingMission] = useState(false)
 
   // Bloc creation / editing
@@ -107,10 +108,10 @@ export default function EtudeDetailPage() {
 
     const { data: m } = await supabase
       .from("missions")
-      .select("*")
+      .select("*, suiveur:personnes!missions_suiveur_id_fkey(id, prenom, nom)")
       .eq("etude_id", etudeId)
       .order("created_at", { ascending: true })
-    setMissions((m as Mission[]) || [])
+    setMissions((m as any[]) || [])
 
     const { data: b } = await supabase
       .from("echeancier_blocs")
@@ -126,13 +127,26 @@ export default function EtudeDetailPage() {
     if (!authLoading) fetchData()
   }, [authLoading, fetchData])
 
+  // Charger la liste des suiveurs potentiels
+  useEffect(() => {
+    const sb = createClient()
+    ;(async () => {
+      const { data: excl } = await sb.from("profils_types").select("id").in("slug", ["intervenant", "membre_en_attente"])
+      const exclIds = (excl ?? []).map((r: any) => r.id)
+      let q = sb.from("personnes").select("id, prenom, nom").eq("actif", true).order("nom")
+      if (exclIds.length > 0) q = q.not("profil_type_id", "in", `(${exclIds.join(",")})`)
+      const { data } = await q
+      setMissionSuiveurs((data as any[]) ?? [])
+    })()
+  }, [])
+
   const handleCreateMission = async () => {
     if (!missionForm.nom.trim()) { toast.error("Nom requis"); return }
     setCreatingMission(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    const { error } = await supabase.from("missions").insert({
+    const { data: newMission, error } = await supabase.from("missions").insert({
       etude_id: etudeId,
       nom: missionForm.nom,
       description: missionForm.description || null,
@@ -144,13 +158,32 @@ export default function EtudeDetailPage() {
       remuneration: missionForm.remuneration ? parseFloat(missionForm.remuneration) : null,
       nb_jeh: parseInt(missionForm.nb_jeh) || 0,
       nb_intervenants: parseInt(missionForm.nb_intervenants) || 1,
+      suiveur_id: missionForm.suiveur_id || null,
       created_by: user?.id,
-    })
+    }).select().single()
 
-    if (error) { toast.error("Erreur") } else {
+    if (error) { toast.error(error.message || "Erreur") } else {
+      // Auto-create bloc in échéancier
+      if (newMission) {
+        const maxSemaine = blocs.reduce(
+          (max, b) => Math.max(max, (b.semaine_debut ?? 1) + (b.duree_semaines ?? 1) - 1),
+          0
+        )
+        const jehTotal = (parseInt(missionForm.nb_jeh) || 0) * (parseInt(missionForm.nb_intervenants) || 1)
+        await supabase.from("echeancier_blocs").insert({
+          etude_id: etudeId,
+          mission_id: newMission.id,
+          nom: missionForm.nom,
+          semaine_debut: maxSemaine + 1,
+          duree_semaines: Math.max(1, Math.ceil(jehTotal / 5)),
+          jeh: jehTotal || null,
+          couleur: GANTT_COLORS[blocs.length % GANTT_COLORS.length],
+          ordre: blocs.length,
+        })
+      }
       toast.success("Mission créée")
       setShowMissionModal(false)
-      setMissionForm({ nom: "", description: "", type: "intervenant", voie: "", classe: "", date_debut: "", date_fin: "", remuneration: "", nb_jeh: "0", nb_intervenants: "1" })
+      setMissionForm({ nom: "", description: "", type: "intervenant", voie: "", classe: "", date_debut: "", date_fin: "", remuneration: "", nb_jeh: "0", nb_intervenants: "1", suiveur_id: "" })
       fetchData()
     }
     setCreatingMission(false)
@@ -299,25 +332,43 @@ export default function EtudeDetailPage() {
                 Aucune mission créée pour cette étude.
               </div>
             ) : (
-              missions.map((m) => (
-                <Link key={m.id} href={`/missions/${m.id}`} className="block bg-white rounded-xl border border-border shadow-sm p-4 hover:shadow-md hover:border-gold/30 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Briefcase className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium text-sm">{m.nom}</span>
-                      <Badge variant="outline" className={`text-xs ${MISSION_STATUT_COLORS[m.statut]}`}>
-                        {MISSION_STATUT_LABELS[m.statut]}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {m.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
-                      </span>
+              missions.map((m: any) => {
+                const suiv = m.suiveur
+                const tarif = m.remuneration ?? m.taux_jour
+                return (
+                  <Link key={m.id} href={`/missions/${m.id}`} className="block bg-white rounded-xl border border-border shadow-sm p-4 hover:shadow-md hover:border-gold/30 transition-all">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">{m.nom}</span>
+                        <Badge variant="outline" className={`text-xs ${MISSION_STATUT_COLORS[m.statut]}`}>
+                          {MISSION_STATUT_LABELS[m.statut]}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {m.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
+                        </span>
+                        {etude?.numero && (
+                          <span className="text-xs font-mono text-slate-400">#{etude.numero}</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
+                        {tarif != null && (
+                          <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />{tarif}€/JEH</span>
+                        )}
+                        {suiv && (
+                          <span className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {suiv.prenom} {suiv.nom}
+                          </span>
+                        )}
+                        <span>
+                          {m.nb_jeh} × {m.nb_intervenants} = <span className="font-semibold text-[#00236f]">{(m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)} JEH</span>
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {m.nb_jeh} × {m.nb_intervenants} = <span className="font-semibold text-[#00236f]">{(m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)} JEH total</span>
-                    </div>
-                  </div>
-                </Link>
-              ))
+                  </Link>
+                )
+              })
             )}
           </div>
         </TabsContent>
@@ -417,7 +468,8 @@ export default function EtudeDetailPage() {
                                 window.removeEventListener("mousemove", onMove)
                                 window.removeEventListener("mouseup", onUp)
                                 if (finalSemaine !== startSemaine) {
-                                  await supabase.from("echeancier_blocs")
+                                  const sb = createClient()
+                                  await sb.from("echeancier_blocs")
                                     .update({ semaine_debut: finalSemaine })
                                     .eq("id", bloc.id)
                                 }
@@ -463,6 +515,19 @@ export default function EtudeDetailPage() {
             <div className="space-y-2">
               <Label>Description</Label>
               <Textarea value={missionForm.description} onChange={(e) => setMissionForm({ ...missionForm, description: e.target.value })} placeholder="Description détaillée..." />
+            </div>
+            <div className="space-y-2">
+              <Label>Suiveur</Label>
+              <select
+                value={missionForm.suiveur_id}
+                onChange={(e) => setMissionForm({ ...missionForm, suiveur_id: e.target.value })}
+                className="w-full h-10 px-3 rounded-md border border-input bg-white text-sm"
+              >
+                <option value="">— Sélectionner —</option>
+                {missionSuiveurs.map(s => (
+                  <option key={s.id} value={s.id}>{s.prenom} {s.nom}</option>
+                ))}
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
