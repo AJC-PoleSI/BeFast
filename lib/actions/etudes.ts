@@ -192,6 +192,23 @@ export async function upsertEcheancierBloc(bloc: {
   return { data }
 }
 
+export async function toggleEtudePublished(id: string, published: boolean) {
+  const supabase = createClient()
+  const { error } = await supabase.from("etudes").update({ published }).eq("id", id)
+  if (error) return { error: error.message }
+  revalidatePath("/etudes")
+  revalidatePath(`/etudes/${id}`)
+  return { success: true }
+}
+
+export async function toggleMissionPublished(id: string, published: boolean) {
+  const supabase = createClient()
+  const { error } = await supabase.from("missions").update({ published }).eq("id", id)
+  if (error) return { error: error.message }
+  revalidatePath("/missions")
+  return { success: true }
+}
+
 export async function deleteEtude(id: string) {
   const supabase = createClient()
   const { error } = await supabase.from("etudes").delete().eq("id", id)

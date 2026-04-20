@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getEtudes, createEtude, updateEtude, getClients, getMembers, getParametre, deleteEtude } from "@/lib/actions/etudes"
+import { getEtudes, createEtude, updateEtude, getClients, getMembers, getParametre, deleteEtude, toggleEtudePublished } from "@/lib/actions/etudes"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
-import { X, Loader2, Trash2, Pencil } from "lucide-react"
+import { X, Loader2, Trash2, Pencil, Eye, EyeOff } from "lucide-react"
 import type { EtudeWithRelations, Client } from "@/types/database.types"
 
 const STATUT_CONFIG: Record<string, { label: string; chipClass: string; dotClass: string }> = {
@@ -256,9 +256,16 @@ export default function EtudesPage() {
                             </p>
                           </div>
                           <div className="flex flex-col items-end gap-1 shrink-0">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sc?.chipClass || "bg-slate-100 text-slate-600"}`}>
-                              {sc?.label || etude.statut}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {!(etude as any).published && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">
+                                  BROUILLON
+                                </span>
+                              )}
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sc?.chipClass || "bg-slate-100 text-slate-600"}`}>
+                                {sc?.label || etude.statut}
+                              </span>
+                            </div>
                             {(etude.budget_ht ?? etude.budget) != null && (
                               <span className="text-xs font-bold text-[#00236f]">
                                 {Number(etude.budget_ht ?? etude.budget).toLocaleString("fr-FR")} € HT
@@ -266,6 +273,19 @@ export default function EtudesPage() {
                             )}
                           </div>
                         </Link>
+                        <button
+                          onClick={async (e) => {
+                            e.preventDefault(); e.stopPropagation()
+                            const newPublished = !(etude as any).published
+                            const res = await toggleEtudePublished(etude.id, newPublished)
+                            if ((res as any).error) { alert((res as any).error); return }
+                            setEtudes(prev => prev.map(x => x.id === etude.id ? { ...x, published: newPublished } as any : x))
+                          }}
+                          className={`p-1.5 rounded-md transition-all shrink-0 ${(etude as any).published ? "text-emerald-600 hover:bg-emerald-50" : "text-amber-600 hover:bg-amber-50"}`}
+                          title={(etude as any).published ? "Dépublier" : "Publier"}
+                        >
+                          {(etude as any).published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        </button>
                         <button
                           onClick={(e) => {
                             e.preventDefault(); e.stopPropagation()

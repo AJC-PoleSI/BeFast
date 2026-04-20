@@ -337,11 +337,14 @@ export default function EtudeDetailPage() {
               missions.map((m: any) => {
                 const tarif = m.remuneration ?? m.taux_jour
                 return (
-                  <Link key={m.id} href={`/missions/${m.id}`} className="block bg-white rounded-xl border border-border shadow-sm p-4 hover:shadow-md hover:border-gold/30 transition-all">
+                  <div key={m.id} className="group bg-white rounded-xl border border-border shadow-sm p-4 hover:shadow-md hover:border-gold/30 transition-all">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <Link href={`/missions/${m.id}`} className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium text-sm">{m.nom}</span>
+                        {!m.published && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">BROUILLON</span>
+                        )}
                         <Badge variant="outline" className={`text-xs ${MISSION_STATUT_COLORS[m.statut]}`}>
                           {MISSION_STATUT_LABELS[m.statut]}
                         </Badge>
@@ -351,7 +354,7 @@ export default function EtudeDetailPage() {
                         {etude?.numero && (
                           <span className="text-xs font-mono text-slate-400">#{etude.numero}</span>
                         )}
-                      </div>
+                      </Link>
                       <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                         {tarif != null && (
                           <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />{tarif}€/JEH</span>
@@ -359,9 +362,22 @@ export default function EtudeDetailPage() {
                         <span>
                           {m.nb_jeh} × {m.nb_intervenants} = <span className="font-semibold text-[#00236f]">{(m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)} JEH</span>
                         </span>
+                        <button
+                          onClick={async () => {
+                            const sb = createClient()
+                            const next = !m.published
+                            const { error } = await sb.from("missions").update({ published: next }).eq("id", m.id)
+                            if (error) { toast.error(error.message); return }
+                            setMissions(prev => prev.map((x: any) => x.id === m.id ? { ...x, published: next } : x))
+                            toast.success(next ? "Mission publiée" : "Mission dépubliée")
+                          }}
+                          className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-colors ${m.published ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}
+                        >
+                          {m.published ? "Dépublier" : "Publier"}
+                        </button>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 )
               })
             )}
