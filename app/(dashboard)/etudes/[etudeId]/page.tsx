@@ -211,7 +211,8 @@ export default function EtudeDetailPage() {
     )
   }
 
-  const totalJeh = blocs.reduce((sum, b) => sum + (b.jeh || 0), 0)
+  const totalJehMissions = missions.reduce((sum, m) => sum + ((m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)), 0)
+  const totalJeh = blocs.reduce((sum, b) => sum + (b.jeh || 0), 0) || totalJehMissions
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -312,7 +313,7 @@ export default function EtudeDetailPage() {
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {m.nb_jeh} JEH · {m.nb_intervenants} intervenant{m.nb_intervenants > 1 ? "s" : ""}
+                      {m.nb_jeh} × {m.nb_intervenants} = <span className="font-semibold text-[#00236f]">{(m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)} JEH total</span>
                     </div>
                   </div>
                 </Link>
@@ -391,19 +392,48 @@ export default function EtudeDetailPage() {
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
-                        <div className="flex-1 flex relative py-2">
+                        <div className="flex-1 flex relative py-2" id={`track-${bloc.id}`}>
                           {Array.from({ length: nbWeeks }).map((_, i) => (
                             <div key={i} className="flex-1 border-l border-border/20" />
                           ))}
-                          {/* Gantt bar */}
+                          {/* Gantt bar (draggable) */}
                           <div
-                            className="absolute top-2 bottom-2 rounded-md shadow-sm flex items-center justify-center text-white text-xs font-medium transition-all"
+                            onMouseDown={(e) => {
+                              const trackEl = document.getElementById(`track-${bloc.id}`)
+                              if (!trackEl) return
+                              const rect = trackEl.getBoundingClientRect()
+                              const startX = e.clientX
+                              const startSemaine = bloc.semaine_debut
+                              const pxPerWeek = rect.width / nbWeeks
+                              let finalSemaine = startSemaine
+
+                              const onMove = (ev: MouseEvent) => {
+                                const delta = Math.round((ev.clientX - startX) / pxPerWeek)
+                                const newSemaine = Math.max(1, Math.min(nbWeeks - bloc.duree_semaines + 1, startSemaine + delta))
+                                finalSemaine = newSemaine
+                                setBlocs(prev => prev.map(b => b.id === bloc.id ? { ...b, semaine_debut: newSemaine } : b))
+                              }
+                              const onUp = async () => {
+                                window.removeEventListener("mousemove", onMove)
+                                window.removeEventListener("mouseup", onUp)
+                                if (finalSemaine !== startSemaine) {
+                                  await supabase.from("echeancier_blocs")
+                                    .update({ semaine_debut: finalSemaine })
+                                    .eq("id", bloc.id)
+                                }
+                              }
+                              window.addEventListener("mousemove", onMove)
+                              window.addEventListener("mouseup", onUp)
+                              e.preventDefault()
+                            }}
+                            className="absolute top-2 bottom-2 rounded-md shadow-sm flex items-center justify-center text-white text-xs font-medium cursor-grab active:cursor-grabbing select-none hover:ring-2 hover:ring-white/50 transition-all"
                             style={{
                               left: `${((bloc.semaine_debut - 1) / nbWeeks) * 100}%`,
                               width: `${(bloc.duree_semaines / nbWeeks) * 100}%`,
                               backgroundColor: bloc.couleur || "#C9A84C",
                               minWidth: "40px",
                             }}
+                            title="Glisser pour déplacer"
                           >
                             {bloc.duree_semaines > 1 && `${bloc.duree_semaines}s`}
                           </div>

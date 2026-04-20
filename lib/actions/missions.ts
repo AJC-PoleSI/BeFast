@@ -69,6 +69,30 @@ export async function createMission(formData: {
     .single()
 
   if (error) return { error: error.message }
+
+  // Auto-create un bloc dans l'échéancier pour la mission
+  if (data && formData.etude_id) {
+    // Trouver la semaine max déjà utilisée pour placer le nouveau bloc à la suite
+    const { data: existingBlocs } = await supabase
+      .from("echeancier_blocs")
+      .select("semaine_debut, duree_semaines")
+      .eq("etude_id", formData.etude_id)
+    const maxSemaine = (existingBlocs ?? []).reduce(
+      (max, b) => Math.max(max, (b.semaine_debut ?? 1) + (b.duree_semaines ?? 1) - 1),
+      0
+    )
+    const jehTotal = (formData.nb_jeh ?? 0) * (formData.nb_intervenants ?? 1)
+    await supabase.from("echeancier_blocs").insert({
+      etude_id: formData.etude_id,
+      mission_id: data.id,
+      nom: formData.nom,
+      semaine_debut: maxSemaine + 1,
+      duree_semaines: Math.max(1, Math.ceil(jehTotal / 5)), // ~5 JEH/semaine par défaut
+      jeh: jehTotal || null,
+      couleur: "#00236f",
+    })
+  }
+
   revalidatePath("/missions")
   if (formData.etude_id) revalidatePath(`/etudes/${formData.etude_id}`)
   return { data }
