@@ -213,26 +213,12 @@ export async function deleteEcheancierBloc(id: string) {
 
 export async function getMembers() {
   const supabase = createClient()
-  // Tous les membres actifs (Admin + Membre AJC principalement).
-  // On exclut juste les "intervenant" et "membre_en_attente" qui ne sont pas des suiveurs.
-  const { data: excludedRoles } = await supabase
-    .from("profils_types")
-    .select("id")
-    .in("slug", ["intervenant", "membre_en_attente"])
-
-  const excludedIds = (excludedRoles ?? []).map(r => r.id)
-
-  let query = supabase
+  // Tous les comptes actifs, sans filtre de rôle (garantit que le dropdown est peuplé)
+  const { data, error } = await supabase
     .from("personnes")
-    .select("id, prenom, nom, email, profils_types(nom, slug)")
+    .select("id, prenom, nom, email")
     .eq("actif", true)
     .order("nom", { ascending: true })
-
-  if (excludedIds.length > 0) {
-    query = query.not("profil_type_id", "in", `(${excludedIds.join(",")})`)
-  }
-
-  const { data, error } = await query
 
   if (error) return { error: error.message }
   const members = (data ?? []).map(({ id, prenom, nom, email }) => ({ id, prenom, nom, email }))

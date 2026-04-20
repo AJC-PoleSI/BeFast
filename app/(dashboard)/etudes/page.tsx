@@ -249,14 +249,20 @@ export default function EtudesPage() {
                           <div className={`w-2 h-2 rounded-full shrink-0 ${sc?.dotClass || "bg-slate-300"}`} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-slate-800 truncate">{etude.nom}</p>
-                            <p className="text-xs text-slate-400 truncate">{etude.numero} {etude.clients ? `· ${etude.clients.nom}` : ""}</p>
+                            <p className="text-xs text-slate-400 truncate">
+                              {etude.numero}
+                              {etude.clients ? ` · ${etude.clients.nom}` : ""}
+                              {(etude as any).suiveur ? ` · Suiveur : ${(etude as any).suiveur.prenom} ${(etude as any).suiveur.nom}` : ""}
+                            </p>
                           </div>
                           <div className="flex flex-col items-end gap-1 shrink-0">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sc?.chipClass || "bg-slate-100 text-slate-600"}`}>
                               {sc?.label || etude.statut}
                             </span>
-                            {etude.budget && (
-                              <span className="text-xs font-bold text-[#00236f]">€{etude.budget.toLocaleString()}</span>
+                            {(etude.budget_ht ?? etude.budget) != null && (
+                              <span className="text-xs font-bold text-[#00236f]">
+                                {Number(etude.budget_ht ?? etude.budget).toLocaleString("fr-FR")} € HT
+                              </span>
                             )}
                           </div>
                         </Link>

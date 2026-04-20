@@ -108,7 +108,7 @@ export default function EtudeDetailPage() {
 
     const { data: m } = await supabase
       .from("missions")
-      .select("*, suiveur:personnes!missions_suiveur_id_fkey(id, prenom, nom)")
+      .select("*")
       .eq("etude_id", etudeId)
       .order("created_at", { ascending: true })
     setMissions((m as any[]) || [])
@@ -158,7 +158,6 @@ export default function EtudeDetailPage() {
       remuneration: missionForm.remuneration ? parseFloat(missionForm.remuneration) : null,
       nb_jeh: parseInt(missionForm.nb_jeh) || 0,
       nb_intervenants: parseInt(missionForm.nb_intervenants) || 1,
-      suiveur_id: missionForm.suiveur_id || null,
       created_by: user?.id,
     }).select().single()
 
@@ -296,9 +295,12 @@ export default function EtudeDetailPage() {
               <p className="font-medium text-sm">{Number(etude.budget).toLocaleString("fr-FR")}€</p>
             </div>
           )}
-          <div className="rounded-lg bg-muted/30 p-3">
-            <div className="text-xs text-muted-foreground mb-1">Total JEH</div>
-            <p className="font-medium text-sm">{totalJeh}</p>
+          <div className="rounded-lg bg-[#00236f]/5 border border-[#00236f]/10 p-3">
+            <div className="text-xs text-[#00236f] font-semibold mb-1">Total JEH</div>
+            <p className="font-bold text-lg text-[#00236f]">{totalJeh}</p>
+            {totalJehMissions > 0 && (
+              <p className="text-[10px] text-slate-500 mt-0.5">{missions.length} mission{missions.length > 1 ? "s" : ""}</p>
+            )}
           </div>
         </div>
 
@@ -333,7 +335,6 @@ export default function EtudeDetailPage() {
               </div>
             ) : (
               missions.map((m: any) => {
-                const suiv = m.suiveur
                 const tarif = m.remuneration ?? m.taux_jour
                 return (
                   <Link key={m.id} href={`/missions/${m.id}`} className="block bg-white rounded-xl border border-border shadow-sm p-4 hover:shadow-md hover:border-gold/30 transition-all">
@@ -354,12 +355,6 @@ export default function EtudeDetailPage() {
                       <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                         {tarif != null && (
                           <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />{tarif}€/JEH</span>
-                        )}
-                        {suiv && (
-                          <span className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {suiv.prenom} {suiv.nom}
-                          </span>
                         )}
                         <span>
                           {m.nb_jeh} × {m.nb_intervenants} = <span className="font-semibold text-[#00236f]">{(m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)} JEH</span>
@@ -515,19 +510,6 @@ export default function EtudeDetailPage() {
             <div className="space-y-2">
               <Label>Description</Label>
               <Textarea value={missionForm.description} onChange={(e) => setMissionForm({ ...missionForm, description: e.target.value })} placeholder="Description détaillée..." />
-            </div>
-            <div className="space-y-2">
-              <Label>Suiveur</Label>
-              <select
-                value={missionForm.suiveur_id}
-                onChange={(e) => setMissionForm({ ...missionForm, suiveur_id: e.target.value })}
-                className="w-full h-10 px-3 rounded-md border border-input bg-white text-sm"
-              >
-                <option value="">— Sélectionner —</option>
-                {missionSuiveurs.map(s => (
-                  <option key={s.id} value={s.id}>{s.prenom} {s.nom}</option>
-                ))}
-              </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
