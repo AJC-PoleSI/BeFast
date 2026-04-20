@@ -84,10 +84,19 @@ export default function MissionDetailPage() {
   const [classe, setClasse] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
+  const slug = profile?.profils_types?.slug
+  const isRH =
+    (slug === "membre_ajc" || slug === "membre_agc") &&
+    (profile?.pole ?? "").toLowerCase() === "rh"
   const isAGC =
-    profile?.profils_types?.slug === "membre_agc" ||
-    profile?.profils_types?.slug === "administrateur"
-  const isIntervenant = profile?.profils_types?.slug === "intervenant"
+    slug === "membre_agc" ||
+    slug === "membre_ajc" ||
+    slug === "administrateur" ||
+    isAdmin
+  const canSelectCandidates = isAdmin || isRH
+  const isIntervenant = slug === "intervenant"
+  const [filterClasse, setFilterClasse] = useState("")
+  const [filterLangue, setFilterLangue] = useState("")
 
   const fetchData = useCallback(async () => {
     const supabase = createClient()
@@ -140,7 +149,7 @@ export default function MissionDetailPage() {
       mission_id: missionId,
       personne_id: profile!.id,
       motivation,
-      classe: classe || null,
+      classe: classe || (profile as any)?.scolarite || (profile as any)?.classe || null,
       langues: [],
     })
     if (error) {
@@ -344,10 +353,35 @@ export default function MissionDetailPage() {
       {/* Candidatures (AGC view) */}
       {isAGC && (
         <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-border bg-gradient-to-r from-navy/[0.02] to-transparent">
+          <div className="px-6 py-4 border-b border-border bg-gradient-to-r from-navy/[0.02] to-transparent flex items-center justify-between gap-3 flex-wrap">
             <h3 className="font-heading text-lg font-semibold">
               Candidatures ({candidatures.length})
             </h3>
+            {canSelectCandidates && (
+              <div className="flex items-center gap-2">
+                <select
+                  value={filterClasse}
+                  onChange={(e) => setFilterClasse(e.target.value)}
+                  className="h-8 px-2 rounded-md border border-input bg-white text-xs"
+                >
+                  <option value="">Tous niveaux</option>
+                  <option value="premaster">Premaster</option>
+                  <option value="m1">M1</option>
+                  <option value="m2">M2</option>
+                </select>
+                <select
+                  value={filterLangue}
+                  onChange={(e) => setFilterLangue(e.target.value)}
+                  className="h-8 px-2 rounded-md border border-input bg-white text-xs"
+                >
+                  <option value="">Toutes langues</option>
+                  <option value="FR">Français</option>
+                  <option value="EN">Anglais</option>
+                  <option value="ES">Espagnol</option>
+                  <option value="DE">Allemand</option>
+                </select>
+              </div>
+            )}
           </div>
 
           {candidatures.length === 0 ? (
@@ -356,7 +390,21 @@ export default function MissionDetailPage() {
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {candidatures.map((cand) => (
+              {candidatures
+                .filter((c) => !filterClasse || c.classe === filterClasse)
+                .filter((c) => {
+                  if (!filterLangue) return true
+                  const langues = (c as any).langues
+                  if (Array.isArray(langues)) {
+                    return langues.some((l: any) =>
+                      typeof l === "string"
+                        ? l.toUpperCase().includes(filterLangue)
+                        : (l?.langue ?? "").toUpperCase().includes(filterLangue)
+                    )
+                  }
+                  return false
+                })
+                .map((cand) => (
                 <div key={cand.id} className="p-4 flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -388,7 +436,7 @@ export default function MissionDetailPage() {
                     </p>
                   </div>
 
-                  {cand.statut === "en_attente" && (
+                  {cand.statut === "en_attente" && canSelectCandidates && (
                     <div className="flex items-center gap-2 shrink-0">
                       <Button
                         size="sm"
@@ -428,30 +476,39 @@ export default function MissionDetailPage() {
           </DialogHeader>
 
           <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Prénom</Label>
+                <Input value={profile?.prenom ?? ""} readOnly disabled />
+              </div>
+              <div className="space-y-2">
+                <Label>Nom</Label>
+                <Input value={profile?.nom ?? ""} readOnly disabled />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="motivation">Motivation</Label>
+              <Label>Niveau d'étude</Label>
+              <Input
+                value={(profile as any)?.scolarite ?? (profile as any)?.classe ?? ""}
+                readOnly
+                disabled
+                placeholder="Non renseigné"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="motivation">
+                Motivations <span className="text-red-500">*</span>
+              </Label>
               <Textarea
                 id="motivation"
                 value={motivation}
                 onChange={(e) => setMotivation(e.target.value)}
                 placeholder="Pourquoi souhaitez-vous participer à cette mission ?"
-                className="min-h-[120px]"
+                className="min-h-[140px]"
+                required
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="classe">Année</Label>
-              <select
-                id="classe"
-                value={classe}
-                onChange={(e) => setClasse(e.target.value)}
-                className="w-full h-10 px-3 rounded-md border border-input bg-white text-sm"
-              >
-                <option value="">Sélectionner</option>
-                <option value="premaster">Premaster</option>
-                <option value="m1">M1</option>
-                <option value="m2">M2</option>
-              </select>
             </div>
           </div>
 
