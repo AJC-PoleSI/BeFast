@@ -213,22 +213,23 @@ export async function deleteEcheancierBloc(id: string) {
 
 export async function getMembers() {
   const supabase = createClient()
-  // Get membre_ajc + administrateur role ids (suiveurs peuvent être l'un ou l'autre)
-  const { data: roles } = await supabase
+  // Tous les membres actifs (Admin + Membre AJC principalement).
+  // On exclut juste les "intervenant" et "membre_en_attente" qui ne sont pas des suiveurs.
+  const { data: excludedRoles } = await supabase
     .from("profils_types")
-    .select("id, slug")
-    .in("slug", ["membre_ajc", "administrateur"])
+    .select("id")
+    .in("slug", ["intervenant", "membre_en_attente"])
 
-  const roleIds = (roles ?? []).map(r => r.id)
+  const excludedIds = (excludedRoles ?? []).map(r => r.id)
 
   let query = supabase
     .from("personnes")
-    .select("id, prenom, nom, email")
+    .select("id, prenom, nom, email, profils_types(nom, slug)")
     .eq("actif", true)
     .order("nom", { ascending: true })
 
-  if (roleIds.length > 0) {
-    query = query.in("profil_type_id", roleIds)
+  if (excludedIds.length > 0) {
+    query = query.not("profil_type_id", "in", `(${excludedIds.join(",")})`)
   }
 
   const { data, error } = await query
@@ -246,8 +247,27 @@ export async function getParametre(key: string) {
 
 export async function setParametre(key: string, value: string) {
   const supabase = createClient()
-  const { error } = await supabase.from("parametres").upsert({ key, value }).eq("key", key)
+  const { error } = await supabase.from("parametres").upsert({ key, value }, { onConflict: "key" })
   if (error) return { error: error.message }
   revalidatePath("/administration")
+  return { success: true }
+}
+
+export async function getAllParametres() {
+  const supabase = createClient()
+  const { data, error } = await supabase.from("parametres").select("key, value, description").order("key")
+  if (error) return { error: error.message }
+  const map: Record<string, string> = {}
+  for (const p of data ?? []) map[p.key] = p.value ?? ""
+  return { data: map, list: data ?? [] }
+}
+
+export async function setParametres(updates: Record<string, string>) {
+  const supabase = createClient()
+  const rows = Object.entries(updates).map(([key, value]) => ({ key, value }))
+  const { error } = await supabase.from("parametres").upsert(rows, { onConflict: "key" })
+  if (error) return { error: error.message }
+  revalidatePath("/administration")
+  revalidatePath("/administration/structure")
   return { success: true }
 }
