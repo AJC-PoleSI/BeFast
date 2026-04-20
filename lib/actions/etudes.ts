@@ -190,6 +190,14 @@ export async function upsertEcheancierBloc(bloc: {
   return { data }
 }
 
+export async function deleteEtude(id: string) {
+  const supabase = createClient()
+  const { error } = await supabase.from("etudes").delete().eq("id", id)
+  if (error) return { error: error.message }
+  revalidatePath("/etudes")
+  return { success: true }
+}
+
 export async function deleteEcheancierBloc(id: string) {
   const supabase = createClient()
   const { error } = await supabase
@@ -203,12 +211,13 @@ export async function deleteEcheancierBloc(id: string) {
 
 export async function getMembers() {
   const supabase = createClient()
-  // Get membre_ajc role id
-  const { data: roleData } = await supabase
+  // Get membre_ajc + administrateur role ids (suiveurs peuvent être l'un ou l'autre)
+  const { data: roles } = await supabase
     .from("profils_types")
-    .select("id")
-    .eq("slug", "membre_ajc")
-    .maybeSingle()
+    .select("id, slug")
+    .in("slug", ["membre_ajc", "administrateur"])
+
+  const roleIds = (roles ?? []).map(r => r.id)
 
   let query = supabase
     .from("personnes")
@@ -216,8 +225,8 @@ export async function getMembers() {
     .eq("actif", true)
     .order("nom", { ascending: true })
 
-  if (roleData?.id) {
-    query = query.eq("profil_type_id", roleData.id)
+  if (roleIds.length > 0) {
+    query = query.in("profil_type_id", roleIds)
   }
 
   const { data, error } = await query

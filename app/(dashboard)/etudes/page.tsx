@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getEtudes, createEtude, getClients, getMembers, getParametre } from "@/lib/actions/etudes"
+import { getEtudes, createEtude, getClients, getMembers, getParametre, deleteEtude } from "@/lib/actions/etudes"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
-import { X, Loader2 } from "lucide-react"
+import { X, Loader2, Trash2 } from "lucide-react"
 import type { EtudeWithRelations, Client } from "@/types/database.types"
 
 const STATUT_CONFIG: Record<string, { label: string; chipClass: string; dotClass: string }> = {
@@ -243,8 +243,8 @@ export default function EtudesPage() {
                   filteredEtudes.map((etude) => {
                     const sc = STATUT_CONFIG[etude.statut as keyof typeof STATUT_CONFIG]
                     return (
-                      <Link key={etude.id} href={`/etudes/${etude.id}`}>
-                        <div className="flex items-center gap-3 px-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer">
+                      <div key={etude.id} className="group flex items-center gap-3 px-5 py-4 hover:bg-slate-50 transition-colors">
+                        <Link href={`/etudes/${etude.id}`} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
                           <div className={`w-2 h-2 rounded-full shrink-0 ${sc?.dotClass || "bg-slate-300"}`} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-slate-800 truncate">{etude.nom}</p>
@@ -258,8 +258,21 @@ export default function EtudesPage() {
                               <span className="text-xs font-bold text-[#00236f]">€{etude.budget.toLocaleString()}</span>
                             )}
                           </div>
-                        </div>
-                      </Link>
+                        </Link>
+                        <button
+                          onClick={async (e) => {
+                            e.preventDefault(); e.stopPropagation()
+                            if (!confirm(`Supprimer l'étude "${etude.nom}" ? Cette action est irréversible.`)) return
+                            const res = await deleteEtude(etude.id)
+                            if (res.error) { alert(res.error); return }
+                            setEtudes(prev => prev.filter(x => x.id !== etude.id))
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all shrink-0"
+                          title="Supprimer l'étude"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     )
                   })
                 ) : (
