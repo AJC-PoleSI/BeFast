@@ -78,6 +78,8 @@ export async function updateEtude(
     client_id: string
     suiveur_id: string
     budget: number
+    budget_ht: number
+    type: string
     commentaire: string
     statut: string
   }>

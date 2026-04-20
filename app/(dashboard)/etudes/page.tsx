@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getEtudes, createEtude, getClients, getMembers, getParametre, deleteEtude } from "@/lib/actions/etudes"
+import { getEtudes, createEtude, updateEtude, getClients, getMembers, getParametre, deleteEtude } from "@/lib/actions/etudes"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
-import { X, Loader2, Trash2 } from "lucide-react"
+import { X, Loader2, Trash2, Pencil } from "lucide-react"
 import type { EtudeWithRelations, Client } from "@/types/database.types"
 
 const STATUT_CONFIG: Record<string, { label: string; chipClass: string; dotClass: string }> = {
@@ -51,6 +51,7 @@ export default function EtudesPage() {
   const [showModal, setShowModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
   const [tvaRate, setTvaRate] = useState(20)
   const [clients, setClients] = useState<Client[]>([])
@@ -106,7 +107,7 @@ export default function EtudesPage() {
           <p className="text-sm text-slate-500 mt-0.5">Gestion des études et projets clients</p>
         </div>
         <button
-          onClick={() => { setShowModal(true); setFormError(null) }}
+          onClick={() => { setEditingId(null); setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", type: "", commentaire: "", client_id: "", suiveur_id: "" }); setShowModal(true); setFormError(null) }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors"
         >
           <span className="material-symbols-outlined text-lg">add_circle</span>
@@ -260,6 +261,28 @@ export default function EtudesPage() {
                           </div>
                         </Link>
                         <button
+                          onClick={(e) => {
+                            e.preventDefault(); e.stopPropagation()
+                            setEditingId(etude.id)
+                            setForm({
+                              nom: etude.nom ?? "",
+                              numero: etude.numero ?? "",
+                              statut: etude.statut ?? "prospect",
+                              budget: etude.budget?.toString() ?? "",
+                              budget_ht: etude.budget_ht?.toString() ?? "",
+                              type: etude.type ?? "",
+                              commentaire: etude.commentaire ?? "",
+                              client_id: etude.client_id ?? "",
+                              suiveur_id: etude.suiveur_id ?? "",
+                            })
+                            setShowModal(true)
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-slate-400 hover:text-[#00236f] hover:bg-[#d0d8ff] transition-all shrink-0"
+                          title="Modifier l'étude"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={async (e) => {
                             e.preventDefault(); e.stopPropagation()
                             if (!confirm(`Supprimer l'étude "${etude.nom}" ? Cette action est irréversible.`)) return
@@ -294,8 +317,8 @@ export default function EtudesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100">
-              <h2 className="font-manrope font-bold text-[#00236f] text-lg">Nouvelle étude</h2>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <h2 className="font-manrope font-bold text-[#00236f] text-lg">{editingId ? "Modifier l'étude" : "Nouvelle étude"}</h2>
+              <button onClick={() => { setShowModal(false); setEditingId(null) }} className="text-slate-400 hover:text-slate-600 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -305,7 +328,7 @@ export default function EtudesPage() {
                 e.preventDefault()
                 setSubmitting(true)
                 setFormError(null)
-                const result = await createEtude({
+                const payload = {
                   nom: form.nom,
                   numero: form.numero,
                   statut: form.statut,
@@ -315,10 +338,14 @@ export default function EtudesPage() {
                   commentaire: form.commentaire || undefined,
                   client_id: form.client_id || undefined,
                   suiveur_id: form.suiveur_id || undefined,
-                })
+                }
+                const result = editingId
+                  ? await updateEtude(editingId, payload as any)
+                  : await createEtude(payload)
                 setSubmitting(false)
-                if (result.error) { setFormError(result.error); return }
+                if ((result as any).error) { setFormError((result as any).error); return }
                 setShowModal(false)
+                setEditingId(null)
                 setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
                 // Refresh list
                 const fresh = await getEtudes()
@@ -427,7 +454,7 @@ export default function EtudesPage() {
               )}
 
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                <button type="button" onClick={() => { setShowModal(false); setEditingId(null) }} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                   Annuler
                 </button>
                 <button
@@ -436,7 +463,7 @@ export default function EtudesPage() {
                   className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-[#00236f] text-white rounded-lg hover:bg-[#1e3a8a] transition-colors disabled:opacity-50"
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Créer l'étude
+                  {editingId ? "Enregistrer" : "Créer l'étude"}
                 </button>
               </div>
             </form>
