@@ -13,7 +13,6 @@ export async function getMissions(filters?: {
   let query = supabase
     .from("missions")
     .select("*, etudes(id, nom, numero, published)")
-    .eq("published", true)
     .order("created_at", { ascending: false })
 
   if (filters?.type) query = query.eq("type", filters.type)
@@ -22,8 +21,22 @@ export async function getMissions(filters?: {
   if (filters?.statut) query = query.eq("statut", filters.statut)
 
   const { data, error } = await query
-  if (error) return { error: error.message }
-  return { data }
+  if (error) {
+    console.error("getMissions error:", error)
+    return { error: error.message }
+  }
+
+  // Filtrage côté serveur (évite les problèmes de colonnes absentes en prod) :
+  // - on garde les missions publiées (ou published absent/null pour rétro-compat)
+  // - on exclut celles dont l'étude parente est explicitement non publiée
+  const filtered = (data ?? []).filter((m: any) => {
+    const missionPublished = m.published === undefined || m.published === null || m.published === true
+    const etudePublished =
+      !m.etudes || m.etudes.published === undefined || m.etudes.published === null || m.etudes.published === true
+    return missionPublished && etudePublished
+  })
+
+  return { data: filtered }
 }
 
 export async function getMission(id: string) {
