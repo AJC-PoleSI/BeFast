@@ -13,9 +13,11 @@ export async function getMissions(filters?: {
   let query = supabase
     .from("missions")
     .select("*, etudes(id, nom, numero, published)")
+    // Les missions "chef_projet" (suivi de projet) ne sont jamais listées côté intervenant
+    .neq("type", "chef_projet")
     .order("created_at", { ascending: false })
 
-  if (filters?.type) query = query.eq("type", filters.type)
+  if (filters?.type && filters.type !== "chef_projet") query = query.eq("type", filters.type)
   if (filters?.voie) query = query.eq("voie", filters.voie)
   if (filters?.classe) query = query.eq("classe", filters.classe)
   if (filters?.statut) query = query.eq("statut", filters.statut)
@@ -26,14 +28,11 @@ export async function getMissions(filters?: {
     return { error: error.message }
   }
 
-  // Filtrage côté serveur (évite les problèmes de colonnes absentes en prod) :
-  // - on garde les missions publiées (ou published absent/null pour rétro-compat)
-  // - on exclut celles dont l'étude parente est explicitement non publiée
+  // La visibilité d'une mission dépend uniquement de son étude parente.
+  // Si l'étude est publiée → ses missions le sont. Sinon → aucune.
   const filtered = (data ?? []).filter((m: any) => {
-    const missionPublished = m.published === undefined || m.published === null || m.published === true
-    const etudePublished =
-      !m.etudes || m.etudes.published === undefined || m.etudes.published === null || m.etudes.published === true
-    return missionPublished && etudePublished
+    if (!m.etudes) return false
+    return m.etudes.published === true
   })
 
   return { data: filtered }

@@ -40,6 +40,8 @@ export async function createEtude(formData: {
   suiveur_id?: string
   budget?: number
   budget_ht?: number
+  frais_dossier?: number
+  marge_pct?: number
   type?: string
   commentaire?: string
   statut?: string
@@ -79,6 +81,8 @@ export async function updateEtude(
     suiveur_id: string
     budget: number
     budget_ht: number
+    frais_dossier: number
+    marge_pct: number
     type: string
     commentaire: string
     statut: string

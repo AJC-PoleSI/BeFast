@@ -52,7 +52,7 @@ export default function EtudesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
+  const [form, setForm] = useState({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
   const [tvaRate, setTvaRate] = useState(20)
   const [clients, setClients] = useState<Client[]>([])
   const [membres, setMembres] = useState<{ id: string; prenom: string | null; nom: string | null }[]>([])
@@ -107,7 +107,7 @@ export default function EtudesPage() {
           <p className="text-sm text-slate-500 mt-0.5">Gestion des études et projets clients</p>
         </div>
         <button
-          onClick={() => { setEditingId(null); setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", type: "", commentaire: "", client_id: "", suiveur_id: "" }); setShowModal(true); setFormError(null) }}
+          onClick={() => { setEditingId(null); setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_id: "" }); setShowModal(true); setFormError(null) }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors"
         >
           <span className="material-symbols-outlined text-lg">add_circle</span>
@@ -296,6 +296,8 @@ export default function EtudesPage() {
                               statut: etude.statut ?? "prospect",
                               budget: etude.budget?.toString() ?? "",
                               budget_ht: etude.budget_ht?.toString() ?? "",
+                              frais_dossier: (etude as any).frais_dossier?.toString() ?? "",
+                              marge_pct: (etude as any).marge_pct?.toString() ?? "",
                               type: etude.type ?? "",
                               commentaire: etude.commentaire ?? "",
                               client_id: etude.client_id ?? "",
@@ -361,6 +363,8 @@ export default function EtudesPage() {
                   type: form.type || undefined,
                   budget: form.budget ? Number(form.budget) : undefined,
                   budget_ht: form.budget_ht ? Number(form.budget_ht) : undefined,
+                  frais_dossier: form.frais_dossier ? Number(form.frais_dossier) : undefined,
+                  marge_pct: form.marge_pct ? Number(form.marge_pct) : undefined,
                   commentaire: form.commentaire || undefined,
                   client_id: form.client_id || undefined,
                   suiveur_id: form.suiveur_id || undefined,
@@ -372,7 +376,7 @@ export default function EtudesPage() {
                 if ((result as any).error) { setFormError((result as any).error); return }
                 setShowModal(false)
                 setEditingId(null)
-                setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
+                setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
                 // Refresh list
                 const fresh = await getEtudes()
                 if (fresh.data) setEtudes(fresh.data)
@@ -412,6 +416,44 @@ export default function EtudesPage() {
                   <p className="text-xs text-slate-400 mt-1">
                     Budget TTC : {form.budget_ht ? (Number(form.budget_ht) * (1 + tvaRate / 100)).toFixed(2) : "—"} €
                   </p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Frais de dossier (€)</label>
+                  <input
+                    type="number"
+                    value={form.frais_dossier}
+                    onChange={e => setForm(f => ({ ...f, frais_dossier: e.target.value }))}
+                    placeholder="Ex : 150"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Marge (%)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={form.marge_pct}
+                    onChange={e => setForm(f => ({ ...f, marge_pct: e.target.value }))}
+                    placeholder="Ex : 10"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                  />
+                </div>
+                <div className="col-span-2 rounded-lg bg-[#00236f]/[0.04] border border-[#00236f]/20 p-3 text-xs text-[#00236f]">
+                  {(() => {
+                    const base = Number(form.budget_ht) || 0
+                    const frais = Number(form.frais_dossier) || 0
+                    const margePct = Number(form.marge_pct) || 0
+                    const margeEuros = base * (margePct / 100)
+                    const tarifTotal = base + frais + margeEuros
+                    return (
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        <span>Base JEH : <strong>{base.toLocaleString("fr-FR")} €</strong></span>
+                        <span>+ Frais : <strong>{frais.toLocaleString("fr-FR")} €</strong></span>
+                        <span>+ Marge ({margePct}%) : <strong>{margeEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €</strong></span>
+                        <span className="ml-auto">= Tarif étude HT : <strong className="text-sm">{tarifTotal.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €</strong></span>
+                      </div>
+                    )
+                  })()}
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Type d&apos;étude *</label>

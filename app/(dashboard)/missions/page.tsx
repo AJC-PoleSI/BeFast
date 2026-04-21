@@ -16,13 +16,13 @@ interface FilterState {
   search?: string
 }
 
+// Les missions "suivi de projet" (chef_projet) ne sont jamais exposées ici,
+// la liste de types se limite donc à "Intervenant".
 const MISSION_TYPES = [
-  { value: "chef_projet", label: "Suivi de projet" },
   { value: "intervenant", label: "Intervenant" },
 ]
 
-const typeLabel = (t?: string | null) =>
-  t === "chef_projet" ? "Suivi de projet" : "Intervenant"
+const typeLabel = (_t?: string | null) => "Intervenant"
 
 const VOIES = [
   { value: "finance", label: "Finance" },
@@ -109,17 +109,14 @@ export default function MissionsPage() {
     setActiveFilters({})
   }
 
-  const isIntervenantRole = profile?.profils_types?.slug === "intervenant"
-  const visibleMissions = isIntervenantRole
-    ? missions.filter((m) => m.type !== "chef_projet")
-    : missions
+  // Filtre serveur déjà appliqué (chef_projet exclu + étude publiée uniquement)
   const filteredMissions = filters.search
-    ? visibleMissions.filter(
+    ? missions.filter(
         (m) =>
           m.nom.toLowerCase().includes(filters.search!.toLowerCase()) ||
           m.description?.toLowerCase().includes(filters.search!.toLowerCase())
       )
-    : visibleMissions
+    : missions
 
   const featured = filteredMissions[0]
   const secondary = filteredMissions[1]

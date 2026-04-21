@@ -127,6 +127,14 @@ export default function EtudeDetailPage() {
     if (!authLoading) fetchData()
   }, [authLoading, fetchData])
 
+  // Tarif JEH par défaut pour l'affichage en €
+  const [tarifJeh, setTarifJeh] = useState<number>(0)
+  useEffect(() => {
+    const sb = createClient()
+    sb.from("parametres").select("value").eq("key", "tarif_jeh_default").maybeSingle()
+      .then(({ data }) => setTarifJeh(Number(data?.value ?? 0) || 0))
+  }, [])
+
   // Charger la liste des suiveurs potentiels
   useEffect(() => {
     const sb = createClient()
@@ -295,11 +303,42 @@ export default function EtudeDetailPage() {
               <p className="font-medium text-sm">{Number(etude.budget).toLocaleString("fr-FR")}€</p>
             </div>
           )}
+          {(() => {
+            const base = Number((etude as any).budget_ht) || 0
+            const frais = Number((etude as any).frais_dossier) || 0
+            const margePct = Number((etude as any).marge_pct) || 0
+            if (!base && !frais && !margePct) return null
+            const margeEuros = base * (margePct / 100)
+            const total = base + frais + margeEuros
+            return (
+              <div className="rounded-lg bg-gold/10 border border-gold/30 p-3">
+                <div className="flex items-center gap-1 text-xs text-[#00236f] font-semibold mb-1">
+                  <DollarSign className="h-3 w-3" /> Tarif étude HT
+                </div>
+                <p className="font-bold text-sm text-[#00236f]">
+                  {total.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €
+                </p>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Base {base.toLocaleString("fr-FR")} € + frais {frais.toLocaleString("fr-FR")} € + marge {margePct}%
+                </p>
+              </div>
+            )
+          })()}
           <div className="rounded-lg bg-[#00236f]/5 border border-[#00236f]/10 p-3">
             <div className="text-xs text-[#00236f] font-semibold mb-1">Total JEH</div>
-            <p className="font-bold text-lg text-[#00236f]">{totalJeh}</p>
+            <p className="font-bold text-lg text-[#00236f]">
+              {totalJeh}
+              {tarifJeh > 0 && (
+                <span className="ml-2 text-sm font-semibold text-[#00236f]/70">
+                  ({(totalJeh * tarifJeh).toLocaleString("fr-FR")} €)
+                </span>
+              )}
+            </p>
             {totalJehMissions > 0 && (
-              <p className="text-[10px] text-slate-500 mt-0.5">{missions.length} mission{missions.length > 1 ? "s" : ""}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                {missions.length} mission{missions.length > 1 ? "s" : ""}
+                {tarifJeh > 0 && ` · ${tarifJeh} €/JEH`}
+              </p>
             )}
           </div>
         </div>
@@ -342,9 +381,6 @@ export default function EtudeDetailPage() {
                       <Link href={`/missions/${m.id}`} className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium text-sm">{m.nom}</span>
-                        {!m.published && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">BROUILLON</span>
-                        )}
                         <Badge variant="outline" className={`text-xs ${MISSION_STATUT_COLORS[m.statut]}`}>
                           {MISSION_STATUT_LABELS[m.statut]}
                         </Badge>
@@ -361,20 +397,12 @@ export default function EtudeDetailPage() {
                         )}
                         <span>
                           {m.nb_jeh} × {m.nb_intervenants} = <span className="font-semibold text-[#00236f]">{(m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)} JEH</span>
+                          {tarif != null && (
+                            <span className="ml-1 text-slate-500">
+                              ({(((m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)) * (Number(tarif) || 0)).toLocaleString("fr-FR")} €)
+                            </span>
+                          )}
                         </span>
-                        <button
-                          onClick={async () => {
-                            const sb = createClient()
-                            const next = !m.published
-                            const { error } = await sb.from("missions").update({ published: next }).eq("id", m.id)
-                            if (error) { toast.error(error.message); return }
-                            setMissions(prev => prev.map((x: any) => x.id === m.id ? { ...x, published: next } : x))
-                            toast.success(next ? "Mission publiée" : "Mission dépubliée")
-                          }}
-                          className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-colors ${m.published ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}
-                        >
-                          {m.published ? "Dépublier" : "Publier"}
-                        </button>
                       </div>
                     </div>
                   </div>
