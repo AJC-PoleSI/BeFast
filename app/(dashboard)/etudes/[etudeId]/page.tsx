@@ -30,6 +30,10 @@ import {
   Loader2,
   BarChart3,
   ListChecks,
+  Users,
+  CheckCircle2,
+  XCircle,
+  Mail,
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -70,11 +74,13 @@ const GANTT_COLORS = [
 export default function EtudeDetailPage() {
   const params = useParams()
   const etudeId = params.etudeId as string
-  const { loading: authLoading } = useUser()
+  const { isAdmin, permissions, loading: authLoading } = useUser()
+  const canSelectCandidates = isAdmin || !!permissions?.selectionner_candidats
 
   const [etude, setEtude] = useState<EtudeWithRelations | null>(null)
   const [missions, setMissions] = useState<Mission[]>([])
   const [blocs, setBlocs] = useState<EcheancierBloc[]>([])
+  const [candidatures, setCandidatures] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   // Mission creation modal
@@ -119,6 +125,19 @@ export default function EtudeDetailPage() {
       .eq("etude_id", etudeId)
       .order("ordre", { ascending: true })
     setBlocs((b as EcheancierBloc[]) || [])
+
+    // Candidatures de toutes les missions de l'étude
+    const missionIds = ((m as any[]) || []).map(x => x.id)
+    if (missionIds.length > 0) {
+      const { data: cands } = await supabase
+        .from("candidatures")
+        .select("*, personnes(id, prenom, nom, email, promo, scolarite)")
+        .in("mission_id", missionIds)
+        .order("created_at", { ascending: true })
+      setCandidatures((cands as any[]) || [])
+    } else {
+      setCandidatures([])
+    }
 
     setLoading(false)
   }, [etudeId])
@@ -225,6 +244,17 @@ export default function EtudeDetailPage() {
       fetchData()
     }
     setCreatingBloc(false)
+  }
+
+  const handleCandidatureDecision = async (candId: string, statut: "acceptee" | "refusee") => {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from("candidatures")
+      .update({ statut, reponse_date: new Date().toISOString() })
+      .eq("id", candId)
+    if (error) { toast.error(error.message || "Erreur"); return }
+    toast.success(statut === "acceptee" ? "Candidature acceptée" : "Candidature refusée")
+    fetchData()
   }
 
   const handleDeleteBloc = async (blocId: string) => {
@@ -357,6 +387,11 @@ export default function EtudeDetailPage() {
           <TabsTrigger value="echeancier" className="gap-1.5">
             <BarChart3 className="h-4 w-4" /> Échéancier
           </TabsTrigger>
+          {canSelectCandidates && (
+            <TabsTrigger value="candidatures" className="gap-1.5">
+              <Users className="h-4 w-4" /> Candidatures ({candidatures.length})
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Missions tab */}
@@ -537,6 +572,143 @@ export default function EtudeDetailPage() {
             </div>
           </div>
         </TabsContent>
+
+        {/* Candidatures tab */}
+        {canSelectCandidates && (
+          <TabsContent value="candidatures">
+            <div className="space-y-4">
+              {missions.length === 0 ? (
+                <div className="bg-white rounded-xl border border-border p-8 text-center text-muted-foreground text-sm">
+                  Aucune mission — donc aucune candidature.
+                </div>
+              ) : (
+                missions.map((m: any) => {
+                  const missionCands = candidatures.filter((c) => c.mission_id === m.id)
+                  const acceptedCount = missionCands.filter((c) => c.statut === "acceptee").length
+                  const maxInt = m.nb_intervenants ?? 1
+                  const full = acceptedCount >= maxInt
+                  return (
+                    <div key={m.id} className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
+                      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-muted/30 border-b border-border flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">{m.nom}</span>
+                          <Badge variant="outline" className={`text-xs ${MISSION_STATUT_COLORS[m.statut]}`}>
+                            {MISSION_STATUT_LABELS[m.statut]}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {m.type === "chef_projet" ? "Suivi de projet" : "Intervenant"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={`text-xs font-semibold ${
+                              full
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : "bg-[#00236f]/5 text-[#00236f] border-[#00236f]/20"
+                            }`}
+                          >
+                            {acceptedCount} / {maxInt} accepté{acceptedCount > 1 ? "s" : ""}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {missionCands.length} candidature{missionCands.length > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      </div>
+
+                      {missionCands.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-xs text-muted-foreground">
+                          Aucune candidature pour cette mission.
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-border">
+                          {missionCands.map((c: any) => {
+                            const p = c.personnes
+                            return (
+                              <div key={c.id} className="px-4 py-3 flex items-start justify-between gap-4 flex-wrap">
+                                <div className="flex-1 min-w-[240px]">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-medium text-sm">
+                                      {p?.prenom} {p?.nom}
+                                    </span>
+                                    {p?.scolarite && (
+                                      <Badge variant="outline" className="text-[10px] bg-muted/40">
+                                        {p.scolarite}
+                                      </Badge>
+                                    )}
+                                    {p?.promo && (
+                                      <span className="text-[10px] text-muted-foreground">Promo {p.promo}</span>
+                                    )}
+                                    {c.statut === "acceptee" && (
+                                      <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-emerald-200">
+                                        Acceptée
+                                      </Badge>
+                                    )}
+                                    {c.statut === "refusee" && (
+                                      <Badge className="text-[10px] bg-red-100 text-red-700 border-red-200">
+                                        Refusée
+                                      </Badge>
+                                    )}
+                                    {(!c.statut || c.statut === "en_attente") && (
+                                      <Badge className="text-[10px] bg-amber-100 text-amber-700 border-amber-200">
+                                        En attente
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {p?.email && (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                      <Mail className="h-3 w-3" />
+                                      <a href={`mailto:${p.email}`} className="hover:underline">
+                                        {p.email}
+                                      </a>
+                                    </div>
+                                  )}
+                                  {c.motivation && (
+                                    <p className="text-xs text-slate-600 mt-2 whitespace-pre-wrap bg-muted/20 rounded-md p-2 border border-border/50">
+                                      {c.motivation}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleCandidatureDecision(c.id, "acceptee")}
+                                    disabled={
+                                      c.statut === "acceptee" ||
+                                      (full && c.statut !== "acceptee")
+                                    }
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    title={
+                                      full && c.statut !== "acceptee"
+                                        ? "Nombre max d'intervenants atteint"
+                                        : "Accepter"
+                                    }
+                                  >
+                                    <CheckCircle2 className="h-4 w-4 mr-1" /> Accepter
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleCandidatureDecision(c.id, "refusee")}
+                                    disabled={c.statut === "refusee"}
+                                    className="text-red-600 border-red-200 hover:bg-red-50"
+                                  >
+                                    <XCircle className="h-4 w-4 mr-1" /> Refuser
+                                  </Button>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Mission creation modal */}
