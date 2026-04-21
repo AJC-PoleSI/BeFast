@@ -103,7 +103,7 @@ export default function MissionDetailPage() {
 
     const { data: m } = await supabase
       .from("missions")
-      .select("*, etudes(id, nom, numero)")
+      .select("*, etudes(id, nom, numero, published)")
       .eq("id", missionId)
       .single()
 
@@ -198,6 +198,33 @@ export default function MissionDetailPage() {
     )
   }
 
+  // Visibilité : les non-admins ne peuvent pas voir les missions SDP (chef_projet)
+  // ni les missions dont l'étude parente n'est pas publiée.
+  const isSDP = mission.type === "chef_projet"
+  const etudePublished = (mission as any).etudes?.published === true
+  const canView = isAdmin || isAGC || (!isSDP && etudePublished)
+
+  if (!canView) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-4">
+        <Link href="/missions">
+          <Button variant="ghost" size="sm" className="text-muted-foreground">
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            Retour aux missions
+          </Button>
+        </Link>
+        <div className="bg-white rounded-xl border border-border shadow-sm p-10 text-center">
+          <p className="font-heading text-lg font-semibold text-[#00236f] mb-2">
+            Mission non accessible
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Cette mission n'est pas disponible à la candidature.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <Link href="/missions">
@@ -234,7 +261,7 @@ export default function MissionDetailPage() {
               )}
             </div>
 
-            {profile && mission.statut === "ouverte" && !myCandidature && (
+            {profile && mission.statut === "ouverte" && !myCandidature && !isSDP && etudePublished && (
               <Button
                 onClick={() => setShowCandidateModal(true)}
                 className="bg-gold text-navy font-semibold hover:bg-gold/90"
