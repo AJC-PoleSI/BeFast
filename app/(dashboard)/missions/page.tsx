@@ -17,9 +17,12 @@ interface FilterState {
 }
 
 const MISSION_TYPES = [
-  { value: "chef_projet", label: "Chef de projet" },
+  { value: "chef_projet", label: "Suivi de projet" },
   { value: "intervenant", label: "Intervenant" },
 ]
+
+const typeLabel = (t?: string | null) =>
+  t === "chef_projet" ? "Suivi de projet" : "Intervenant"
 
 const VOIES = [
   { value: "finance", label: "Finance" },
@@ -106,13 +109,17 @@ export default function MissionsPage() {
     setActiveFilters({})
   }
 
+  const isIntervenantRole = profile?.profils_types?.slug === "intervenant"
+  const visibleMissions = isIntervenantRole
+    ? missions.filter((m) => m.type !== "chef_projet")
+    : missions
   const filteredMissions = filters.search
-    ? missions.filter(
+    ? visibleMissions.filter(
         (m) =>
           m.nom.toLowerCase().includes(filters.search!.toLowerCase()) ||
           m.description?.toLowerCase().includes(filters.search!.toLowerCase())
       )
-    : missions
+    : visibleMissions
 
   const featured = filteredMissions[0]
   const secondary = filteredMissions[1]
@@ -225,7 +232,7 @@ export default function MissionsPage() {
                         <div className="flex flex-wrap gap-2 mb-3">
                           {featured.type && (
                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[featured.type] || "bg-slate-100 text-slate-600"}`}>
-                              {featured.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
+                              {typeLabel(featured.type)}
                             </span>
                           )}
                           {featured.voie && (
@@ -274,7 +281,7 @@ export default function MissionsPage() {
                       <div className="flex flex-wrap gap-2 mb-3">
                         {secondary.type && (
                           <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[secondary.type] || "bg-slate-100 text-slate-600"}`}>
-                            {secondary.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
+                            {typeLabel(secondary.type)}
                           </span>
                         )}
                       </div>
@@ -302,7 +309,7 @@ export default function MissionsPage() {
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {mission.type && (
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[mission.type] || "bg-slate-100 text-slate-600"}`}>
-                          {mission.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
+                          {typeLabel(mission.type)}
                         </span>
                       )}
                       {mission.voie && (
@@ -347,7 +354,7 @@ export default function MissionsPage() {
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {mission.type && (
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[mission.type] || "bg-slate-100 text-slate-600"}`}>
-                          {mission.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
+                          {typeLabel(mission.type)}
                         </span>
                       )}
                     </div>

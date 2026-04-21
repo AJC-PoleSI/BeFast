@@ -349,7 +349,7 @@ export default function EtudeDetailPage() {
                           {MISSION_STATUT_LABELS[m.statut]}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          {m.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
+                          {m.type === "chef_projet" ? "Suivi de projet" : "Intervenant"}
                         </span>
                         {etude?.numero && (
                           <span className="text-xs font-mono text-slate-400">#{etude.numero}</span>
@@ -532,7 +532,7 @@ export default function EtudeDetailPage() {
                 <Label>Type</Label>
                 <select value={missionForm.type} onChange={(e) => setMissionForm({ ...missionForm, type: e.target.value })} className="w-full h-10 px-3 rounded-md border border-input bg-white text-sm">
                   <option value="intervenant">Intervenant</option>
-                  <option value="chef_projet">Chef de projet</option>
+                  <option value="chef_projet">Suivi de projet</option>
                 </select>
               </div>
               <div className="space-y-2">

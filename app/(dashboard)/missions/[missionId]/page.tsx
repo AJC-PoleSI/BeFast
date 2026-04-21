@@ -256,7 +256,7 @@ export default function MissionDetailPage() {
             <InfoCard
               icon={<Briefcase className="h-4 w-4" />}
               label="Type"
-              value={mission.type === "chef_projet" ? "Chef de projet" : "Intervenant"}
+              value={mission.type === "chef_projet" ? "Suivi de projet" : "Intervenant"}
             />
             {mission.voie && (
               <InfoCard

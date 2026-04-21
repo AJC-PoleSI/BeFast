@@ -20,7 +20,6 @@ export async function getMissions(filters?: {
   if (filters?.voie) query = query.eq("voie", filters.voie)
   if (filters?.classe) query = query.eq("classe", filters.classe)
   if (filters?.statut) query = query.eq("statut", filters.statut)
-  else query = query.eq("statut", "ouverte")
 
   const { data, error } = await query
   if (error) return { error: error.message }
