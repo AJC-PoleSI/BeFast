@@ -30,6 +30,7 @@ import {
   Loader2,
   BarChart3,
   ListChecks,
+  FileText,
   Users,
   CheckCircle2,
   XCircle,
@@ -286,12 +287,19 @@ export default function EtudeDetailPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <Link href="/etudes">
-        <Button variant="ghost" size="sm" className="text-muted-foreground">
-          <ArrowLeft className="h-4 w-4 mr-1.5" />
-          Retour aux études
-        </Button>
-      </Link>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <Link href="/etudes">
+          <Button variant="ghost" size="sm" className="text-muted-foreground">
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            Retour aux études
+          </Button>
+        </Link>
+        <Link href={`/etudes/${etudeId}/documents`}>
+          <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
+            <FileText className="h-4 w-4 mr-1.5" /> Documents
+          </Button>
+        </Link>
+      </div>
 
       {/* Header card */}
       <div className="bg-white rounded-xl border border-border shadow-sm p-6">
@@ -408,7 +416,9 @@ export default function EtudeDetailPage() {
                 Aucune mission créée pour cette étude.
               </div>
             ) : (
-              missions.map((m: any) => {
+              missions
+                .filter((m: any) => isAdmin || canSelectCandidates || m.type !== "chef_projet")
+                .map((m: any) => {
                 const tarif = m.remuneration ?? m.taux_jour
                 return (
                   <div key={m.id} className="group bg-white rounded-xl border border-border shadow-sm p-4 hover:shadow-md hover:border-gold/30 transition-all">

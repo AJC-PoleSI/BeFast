@@ -34,6 +34,7 @@ import {
   Loader2,
   User,
   Mail,
+  FileText,
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -88,11 +89,14 @@ export default function MissionDetailPage() {
   const isRH =
     (slug === "membre_ajc" || slug === "membre_agc") &&
     (profile?.pole ?? "").toLowerCase() === "rh"
+  // isAGC = membres avec accès "staff" (voient toutes les candidatures, peuvent
+  // accéder aux missions non publiées/SDP). Les membres AJC de base n'en font
+  // PAS partie : ils doivent passer par le filtre (!isSDP && etudePublished).
   const isAGC =
     slug === "membre_agc" ||
-    slug === "membre_ajc" ||
     slug === "administrateur" ||
-    isAdmin
+    isAdmin ||
+    !!permissions?.selectionner_candidats
   const canSelectCandidates = isAdmin || isRH || !!permissions?.selectionner_candidats
   const isIntervenant = slug === "intervenant"
   const [filterClasse, setFilterClasse] = useState("")
@@ -227,12 +231,19 @@ export default function MissionDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <Link href="/missions">
-        <Button variant="ghost" size="sm" className="text-muted-foreground">
-          <ArrowLeft className="h-4 w-4 mr-1.5" />
-          Retour aux missions
-        </Button>
-      </Link>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <Link href="/missions">
+          <Button variant="ghost" size="sm" className="text-muted-foreground">
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            Retour aux missions
+          </Button>
+        </Link>
+        <Link href={`/missions/${mission.id}/documents`}>
+          <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
+            <FileText className="h-4 w-4 mr-1.5" /> Documents
+          </Button>
+        </Link>
+      </div>
 
       {/* Mission info */}
       <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
