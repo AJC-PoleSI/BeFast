@@ -234,7 +234,7 @@ export default function MissionDetailPage() {
               )}
             </div>
 
-            {isIntervenant && mission.statut === "ouverte" && !myCandidature && (
+            {profile && mission.statut === "ouverte" && !myCandidature && (
               <Button
                 onClick={() => setShowCandidateModal(true)}
                 className="bg-gold text-navy font-semibold hover:bg-gold/90"

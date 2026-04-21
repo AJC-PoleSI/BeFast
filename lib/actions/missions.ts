@@ -12,9 +12,8 @@ export async function getMissions(filters?: {
   const supabase = createClient()
   let query = supabase
     .from("missions")
-    .select("*, etudes!inner(id, nom, numero, published)")
+    .select("*, etudes(id, nom, numero, published)")
     .eq("published", true)
-    .eq("etudes.published", true)
     .order("created_at", { ascending: false })
 
   if (filters?.type) query = query.eq("type", filters.type)
