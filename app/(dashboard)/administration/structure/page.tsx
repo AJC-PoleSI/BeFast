@@ -2,7 +2,26 @@
 
 import { useEffect, useState } from "react"
 import { getAllParametres, setParametres } from "@/lib/actions/etudes"
-import { Loader2, Save, CheckCircle2, Plus, X } from "lucide-react"
+import { Loader2, Save, CheckCircle2, Plus, X, Settings2 } from "lucide-react"
+
+type PolePerms = Record<string, boolean>
+type PolePermsMap = Record<string, PolePerms>
+
+const PERMISSION_CATALOG: { key: string; label: string }[] = [
+  { key: "selectionner_candidats", label: "Sélectionner les candidats (RH)" },
+  { key: "valider_comptes", label: "Valider les comptes membres" },
+  { key: "voir_documents_membres", label: "Voir les documents des membres" },
+  { key: "voir_factures", label: "Voir les factures" },
+  { key: "valider_bv", label: "Valider les BV" },
+  { key: "gerer_parametres", label: "Gérer les paramètres" },
+  { key: "parametres_structure", label: "Paramètres structure" },
+  { key: "publier_etudes", label: "Publier les études" },
+  { key: "publier_missions", label: "Publier les missions" },
+  { key: "nouvelle_mission", label: "Créer une mission" },
+  { key: "assigner_intervenants", label: "Assigner les intervenants" },
+  { key: "administration", label: "Accès administration" },
+  { key: "statistiques", label: "Voir les statistiques" },
+]
 
 const DEFAULT_POLES = [
   "Developpement",
@@ -108,6 +127,8 @@ export default function ParametresStructurePage() {
   const [form, setForm] = useState<FormState>({})
   const [poles, setPoles] = useState<string[]>(DEFAULT_POLES)
   const [newPole, setNewPole] = useState("")
+  const [polePerms, setPolePerms] = useState<PolePermsMap>({})
+  const [editingPole, setEditingPole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -117,6 +138,12 @@ export default function ParametresStructurePage() {
       if ("data" in res && res.data) {
         setForm(res.data)
         setPoles(parsePoles(res.data.poles_liste))
+        try {
+          const raw = res.data.pole_permissions
+          if (raw) setPolePerms(JSON.parse(raw))
+        } catch {
+          setPolePerms({})
+        }
       }
       setLoading(false)
     })
@@ -125,7 +152,11 @@ export default function ParametresStructurePage() {
   async function handleSave() {
     setSaving(true)
     setSaved(false)
-    const payload = { ...form, poles_liste: JSON.stringify(poles) }
+    const payload = {
+      ...form,
+      poles_liste: JSON.stringify(poles),
+      pole_permissions: JSON.stringify(polePerms),
+    }
     const res = await setParametres(payload)
     setSaving(false)
     if ("error" in res) { alert((res as any).error); return }
@@ -146,6 +177,19 @@ export default function ParametresStructurePage() {
 
   function removePole(p: string) {
     setPoles(list => list.filter(x => x !== p))
+    setPolePerms(prev => {
+      const next = { ...prev }
+      delete next[p]
+      return next
+    })
+    if (editingPole === p) setEditingPole(null)
+  }
+
+  function togglePolePerm(pole: string, key: string, value: boolean) {
+    setPolePerms(prev => ({
+      ...prev,
+      [pole]: { ...(prev[pole] ?? {}), [key]: value },
+    }))
   }
 
   if (loading) {
@@ -220,13 +264,26 @@ export default function ParametresStructurePage() {
             {poles.map(p => (
               <span
                 key={p}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#d0d8ff] text-[#00236f] text-sm font-medium"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
+                  editingPole === p
+                    ? "bg-[#00236f] text-white"
+                    : "bg-[#d0d8ff] text-[#00236f]"
+                }`}
               >
                 {p}
                 <button
                   type="button"
+                  onClick={() => setEditingPole(editingPole === p ? null : p)}
+                  className="hover:bg-white/20 rounded-full p-0.5"
+                  aria-label={`Droits ${p}`}
+                  title="Gérer les droits"
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => removePole(p)}
-                  className="hover:bg-[#00236f]/10 rounded-full p-0.5"
+                  className="hover:bg-white/20 rounded-full p-0.5"
                   aria-label={`Supprimer ${p}`}
                 >
                   <X className="w-3.5 h-3.5" />
@@ -255,6 +312,48 @@ export default function ParametresStructurePage() {
           <p className="text-xs text-slate-400">
             N'oublie pas de cliquer sur « Enregistrer » en bas pour sauvegarder les changements.
           </p>
+
+          {editingPole && (
+            <div className="mt-4 rounded-lg border border-[#00236f]/20 bg-[#00236f]/[0.03] p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-[#00236f]">
+                  Droits du pôle « {editingPole} »
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setEditingPole(null)}
+                  className="text-slate-400 hover:text-slate-600"
+                  aria-label="Fermer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mb-3">
+                Les droits cochés ici s'ajoutent aux droits du rôle du membre.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {PERMISSION_CATALOG.map(perm => {
+                  const checked = !!polePerms[editingPole!]?.[perm.key]
+                  return (
+                    <label
+                      key={perm.key}
+                      className="flex items-center gap-2 px-3 py-2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={e =>
+                          togglePolePerm(editingPole!, perm.key, e.target.checked)
+                        }
+                        className="w-4 h-4 accent-[#00236f]"
+                      />
+                      <span className="text-slate-700">{perm.label}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

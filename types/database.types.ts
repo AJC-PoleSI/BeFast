@@ -12,6 +12,13 @@ export type PermissionKey =
   | "voir_documents_membres"
   | "assigner_intervenants"
   | "parametres_structure"
+  | "selectionner_candidats"
+  | "valider_comptes"
+  | "valider_bv"
+  | "voir_factures"
+  | "gerer_parametres"
+  | "publier_etudes"
+  | "publier_missions"
 
 export type Permissions = Record<PermissionKey, boolean>
 

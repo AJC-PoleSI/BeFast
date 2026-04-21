@@ -73,7 +73,7 @@ export default function MissionDetailPage() {
   const params = useParams()
   const router = useRouter()
   const missionId = params.missionId as string
-  const { profile, isAdmin, loading: authLoading } = useUser()
+  const { profile, isAdmin, permissions, loading: authLoading } = useUser()
 
   const [mission, setMission] = useState<MissionWithEtude | null>(null)
   const [candidatures, setCandidatures] = useState<CandidatureWithPersonne[]>([])
@@ -93,7 +93,7 @@ export default function MissionDetailPage() {
     slug === "membre_ajc" ||
     slug === "administrateur" ||
     isAdmin
-  const canSelectCandidates = isAdmin || isRH
+  const canSelectCandidates = isAdmin || isRH || !!permissions?.selectionner_candidats
   const isIntervenant = slug === "intervenant"
   const [filterClasse, setFilterClasse] = useState("")
   const [filterLangue, setFilterLangue] = useState("")

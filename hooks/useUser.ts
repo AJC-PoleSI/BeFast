@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client"
 import { useEffect, useState } from "react"
-import type { PersonneWithRole, Permissions } from "@/types/database.types"
+import type { PersonneWithRole, Permissions, PermissionKey } from "@/types/database.types"
 import type { User } from "@supabase/supabase-js"
 
 interface UseUserReturn {
@@ -27,11 +27,19 @@ const emptyPermissions: Permissions = {
   voir_documents_membres: false,
   assigner_intervenants: false,
   parametres_structure: false,
+  selectionner_candidats: false,
+  valider_comptes: false,
+  valider_bv: false,
+  voir_factures: false,
+  gerer_parametres: false,
+  publier_etudes: false,
+  publier_missions: false,
 }
 
 export function useUser(): UseUserReturn {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<PersonneWithRole | null>(null)
+  const [polePerms, setPolePerms] = useState<Partial<Permissions>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -53,7 +61,26 @@ export function useUser(): UseUserReturn {
         .eq("id", user.id)
         .single()
 
-      if (data) setProfile(data as PersonneWithRole)
+      if (data) {
+        setProfile(data as PersonneWithRole)
+        // Load pole-specific permissions
+        const pole = (data as any).pole as string | null
+        if (pole) {
+          const { data: param } = await supabase
+            .from("parametres")
+            .select("value")
+            .eq("key", "pole_permissions")
+            .maybeSingle()
+          if (param?.value) {
+            try {
+              const map = JSON.parse(param.value) as Record<string, Partial<Permissions>>
+              setPolePerms(map[pole] ?? {})
+            } catch {
+              setPolePerms({})
+            }
+          }
+        }
+      }
       setLoading(false)
     }
 
@@ -68,7 +95,10 @@ export function useUser(): UseUserReturn {
     return () => subscription.unsubscribe()
   }, [])
 
-  const permissions = profile?.profils_types?.permissions ?? null
+  const rolePerms = profile?.profils_types?.permissions ?? null
+  const permissions = rolePerms
+    ? ({ ...emptyPermissions, ...rolePerms, ...polePerms } as Permissions)
+    : null
   const isAdmin = profile?.profils_types?.slug === "administrateur"
 
   return { user, profile, permissions, loading, isAdmin }
