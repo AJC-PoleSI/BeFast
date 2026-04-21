@@ -2,7 +2,19 @@
 
 import { useEffect, useState } from "react"
 import { getAllParametres, setParametres } from "@/lib/actions/etudes"
-import { Loader2, Save, CheckCircle2 } from "lucide-react"
+import { Loader2, Save, CheckCircle2, Plus, X } from "lucide-react"
+
+const DEFAULT_POLES = [
+  "Developpement",
+  "Commercial",
+  "Communication",
+  "Tresorerie",
+  "Presidence",
+  "Secretariat",
+  "Qualite",
+  "RH",
+  "SI",
+]
 
 type FormState = Record<string, string>
 
@@ -80,15 +92,32 @@ const SECTIONS = [
   },
 ] as const
 
+function parsePoles(raw: string | undefined): string[] {
+  if (!raw) return DEFAULT_POLES
+  try {
+    const arr = JSON.parse(raw)
+    if (Array.isArray(arr) && arr.every(v => typeof v === "string")) return arr
+  } catch {
+    // fallback: comma-separated
+    return raw.split(",").map(s => s.trim()).filter(Boolean)
+  }
+  return DEFAULT_POLES
+}
+
 export default function ParametresStructurePage() {
   const [form, setForm] = useState<FormState>({})
+  const [poles, setPoles] = useState<string[]>(DEFAULT_POLES)
+  const [newPole, setNewPole] = useState("")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     getAllParametres().then(res => {
-      if ("data" in res && res.data) setForm(res.data)
+      if ("data" in res && res.data) {
+        setForm(res.data)
+        setPoles(parsePoles(res.data.poles_liste))
+      }
       setLoading(false)
     })
   }, [])
@@ -96,7 +125,8 @@ export default function ParametresStructurePage() {
   async function handleSave() {
     setSaving(true)
     setSaved(false)
-    const res = await setParametres(form)
+    const payload = { ...form, poles_liste: JSON.stringify(poles) }
+    const res = await setParametres(payload)
     setSaving(false)
     if ("error" in res) { alert((res as any).error); return }
     setSaved(true)
@@ -105,6 +135,17 @@ export default function ParametresStructurePage() {
 
   function update(key: string, value: string) {
     setForm(prev => ({ ...prev, [key]: value }))
+  }
+
+  function addPole() {
+    const v = newPole.trim()
+    if (!v || poles.includes(v)) return
+    setPoles(p => [...p, v])
+    setNewPole("")
+  }
+
+  function removePole(p: string) {
+    setPoles(list => list.filter(x => x !== p))
   }
 
   if (loading) {
@@ -164,6 +205,58 @@ export default function ParametresStructurePage() {
           </div>
         </div>
       ))}
+
+      {/* Gestion des sous-pôles */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
+          <h2 className="font-manrope font-bold text-[#00236f]">Sous-pôles</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Liste des sous-pôles disponibles dans le profil des membres (RH, Tréso, SI...).</p>
+        </div>
+        <div className="p-6 space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {poles.length === 0 && (
+              <span className="text-sm text-slate-400 italic">Aucun sous-pôle configuré.</span>
+            )}
+            {poles.map(p => (
+              <span
+                key={p}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#d0d8ff] text-[#00236f] text-sm font-medium"
+              >
+                {p}
+                <button
+                  type="button"
+                  onClick={() => removePole(p)}
+                  className="hover:bg-[#00236f]/10 rounded-full p-0.5"
+                  aria-label={`Supprimer ${p}`}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newPole}
+              onChange={e => setNewPole(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPole() } }}
+              placeholder="Nouveau sous-pôle (ex: Tréso)"
+              className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+            />
+            <button
+              type="button"
+              onClick={addPole}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-[#00236f] text-white rounded-lg hover:bg-[#1e3a8a]"
+            >
+              <Plus className="w-4 h-4" />
+              Ajouter
+            </button>
+          </div>
+          <p className="text-xs text-slate-400">
+            N'oublie pas de cliquer sur « Enregistrer » en bas pour sauvegarder les changements.
+          </p>
+        </div>
+      </div>
 
       <div className="flex justify-end">
         <button

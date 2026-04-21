@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import type { PersonneWithRole } from "@/types/database.types"
 import type { ProfileFormValues } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 import { ETABLISSEMENTS, SCOLARITES } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
+import { getParametre } from "@/lib/actions/etudes"
 
-const POLES = [
+const DEFAULT_POLES = [
   "Developpement",
   "Commercial",
   "Communication",
@@ -15,7 +16,19 @@ const POLES = [
   "Secretariat",
   "Qualite",
   "RH",
+  "SI",
 ]
+
+function parsePoles(raw: string | null | undefined): string[] {
+  if (!raw) return DEFAULT_POLES
+  try {
+    const arr = JSON.parse(raw)
+    if (Array.isArray(arr) && arr.every(v => typeof v === "string")) return arr
+  } catch {
+    return raw.split(",").map(s => s.trim()).filter(Boolean)
+  }
+  return DEFAULT_POLES
+}
 
 const FIELD_CONFIG = [
   { name: "prenom" as const, label: "Prénom", required: true },
@@ -36,6 +49,11 @@ interface ProfileInfoCardProps {
 export function ProfileInfoCard({ profile, onUpdate, readOnly }: ProfileInfoCardProps) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [poles, setPoles] = useState<string[]>(DEFAULT_POLES)
+
+  useEffect(() => {
+    getParametre("poles_liste").then((raw) => setPoles(parsePoles(raw as string | null)))
+  }, [])
   const [values, setValues] = useState<ProfileFormValues>({
     prenom: profile.prenom || "",
     nom: profile.nom || "",
@@ -157,7 +175,7 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly }: ProfileInfoCard
                 className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               >
                 <option value="">-- Aucun --</option>
-                {POLES.map((p) => <option key={p} value={p}>{p}</option>)}
+                {poles.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             ) : (
               <p className="text-sm px-3 py-2 rounded-lg bg-slate-50 min-h-[36px] flex items-center text-slate-700">
