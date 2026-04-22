@@ -238,7 +238,7 @@ export async function getMembers() {
   const { data, error } = await supabase
     .from("personnes")
     .select("id, prenom, nom, email")
-    .eq("actif", true)
+    .eq("account_status", "validated")
     .order("nom", { ascending: true })
 
   if (error) return { error: error.message }

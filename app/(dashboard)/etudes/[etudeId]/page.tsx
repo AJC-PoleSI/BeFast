@@ -161,7 +161,7 @@ export default function EtudeDetailPage() {
     ;(async () => {
       const { data: excl } = await sb.from("profils_types").select("id").in("slug", ["intervenant", "membre_en_attente"])
       const exclIds = (excl ?? []).map((r: any) => r.id)
-      let q = sb.from("personnes").select("id, prenom, nom").eq("actif", true).order("nom")
+      let q = sb.from("personnes").select("id, prenom, nom").eq("account_status", "validated").order("nom")
       if (exclIds.length > 0) q = q.not("profil_type_id", "in", `(${exclIds.join(",")})`)
       const { data } = await q
       setMissionSuiveurs((data as any[]) ?? [])
