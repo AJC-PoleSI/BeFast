@@ -42,7 +42,7 @@ export default function MissionDocumentsPage() {
       listEntityDocuments("mission", missionId),
       supabase
         .from("candidatures")
-        .select("personnes(id, prenom, nom)")
+        .select("personnes!candidatures_personne_id_fkey(id, prenom, nom)")
         .eq("mission_id", missionId)
         .eq("statut", "acceptee")
     ])
