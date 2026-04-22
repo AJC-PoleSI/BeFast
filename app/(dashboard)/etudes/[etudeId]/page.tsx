@@ -132,7 +132,7 @@ export default function EtudeDetailPage() {
     if (missionIds.length > 0) {
       const { data: cands } = await supabase
         .from("candidatures")
-        .select("*, personnes(id, prenom, nom, email, promo, scolarite)")
+        .select("*, personnes!candidatures_personne_id_fkey(id, prenom, nom, email, promo, scolarite)")
         .in("mission_id", missionIds)
         .order("created_at", { ascending: true })
       setCandidatures((cands as any[]) || [])
@@ -423,19 +423,35 @@ export default function EtudeDetailPage() {
                 return (
                   <div key={m.id} className="group bg-white rounded-xl border border-border shadow-sm p-4 hover:shadow-md hover:border-gold/30 transition-all">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <Link href={`/missions/${m.id}`} className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium text-sm">{m.nom}</span>
-                        <Badge variant="outline" className={`text-xs ${MISSION_STATUT_COLORS[m.statut]}`}>
-                          {MISSION_STATUT_LABELS[m.statut]}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {m.type === "chef_projet" ? "Suivi de projet" : "Intervenant"}
-                        </span>
-                        {etude?.numero && (
-                          <span className="text-xs font-mono text-slate-400">#{etude.numero}</span>
-                        )}
-                      </Link>
+                      {m.type === "chef_projet" ? (
+                        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0 cursor-default">
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">{m.nom}</span>
+                          <Badge variant="outline" className={`text-xs ${MISSION_STATUT_COLORS[m.statut]}`}>
+                            {MISSION_STATUT_LABELS[m.statut]}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            Suivi de projet
+                          </span>
+                          {etude?.numero && (
+                            <span className="text-xs font-mono text-slate-400">#{etude.numero}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <Link href={`/missions/${m.id}`} className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">{m.nom}</span>
+                          <Badge variant="outline" className={`text-xs ${MISSION_STATUT_COLORS[m.statut]}`}>
+                            {MISSION_STATUT_LABELS[m.statut]}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            Intervenant
+                          </span>
+                          {etude?.numero && (
+                            <span className="text-xs font-mono text-slate-400">#{etude.numero}</span>
+                          )}
+                        </Link>
+                      )}
                       <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                         {tarif != null && (
                           <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />{tarif}€/JEH</span>
