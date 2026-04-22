@@ -176,10 +176,9 @@ function buildPhasesContext(blocs: any[] | undefined) {
   }
 
   if (scope === "mission") {
-    const { data: m } = await sb
       .from("missions")
       .select(
-        "*, intervenant:personnes!missions_intervenant_id_fkey(id, prenom, nom, email, adresse, ville, code_postal), etudes(*, clients(*), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*))"
+        "*, intervenant:personnes!missions_intervenant_id_fkey(*), etudes(*, clients(*), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*))"
       )
       .eq("id", entityId)
       .single()
@@ -194,7 +193,7 @@ function buildPhasesContext(blocs: any[] | undefined) {
 
     let selectedIntervenant = (m as any).intervenant ?? {}
     if (intervenantId) {
-      const { data: p } = await sb.from("personnes").select("id, prenom, nom, email, adresse, ville, code_postal").eq("id", intervenantId).single()
+      const { data: p } = await sb.from("personnes").select("*").eq("id", intervenantId).single()
       if (p) selectedIntervenant = p
     }
 

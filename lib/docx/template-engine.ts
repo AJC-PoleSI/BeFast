@@ -12,14 +12,20 @@ export function extractPlaceholders(buffer: ArrayBuffer | Buffer): string[] {
     // API interne mais stable
     const tags: string[] = []
     const re = /\{([^{}]+)\}/g
-    // Concatène les parties text XML
-    const files = zip.file(/\.xml$/) as any[]
-    const textAll = files.map((f) => f.asText()).join("\n")
+    // Scan common XML files for tags
+    const targets = ["word/document.xml", "word/header1.xml", "word/header2.xml", "word/header3.xml", "word/footer1.xml", "word/footer2.xml", "word/footer3.xml"]
+    let textAll = ""
+    for (const path of targets) {
+      const f = zip.file(path)
+      if (f) textAll += f.asText() + "\n"
+    }
+    
     let m: RegExpExecArray | null
     while ((m = re.exec(textAll)) !== null) {
       const raw = m[1].trim()
       if (!raw) continue
-      if (raw.startsWith("#") || raw.startsWith("/") || raw.startsWith("^") || raw.startsWith("@")) continue
+      // Ignore markers for loops, conditions, etc.
+      if (raw.startsWith("#") || raw.startsWith("/") || raw.startsWith("^") || raw.startsWith("@") || raw.startsWith("?")) continue
       if (!tags.includes(raw)) tags.push(raw)
     }
     // Valide la syntaxe du template
