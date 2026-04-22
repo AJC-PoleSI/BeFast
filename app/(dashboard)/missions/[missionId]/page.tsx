@@ -148,19 +148,26 @@ export default function MissionDetailPage() {
       return
     }
     setSubmitting(true)
+    
+    // Resolve class and force lowercase to match DB constraint ('premaster', 'm1', 'm2')
+    const rawClasse = classe || (profile as any)?.scolarite || (profile as any)?.classe || ""
+    const formattedClasse = rawClasse ? String(rawClasse).toLowerCase() : null
+
     const supabase = createClient()
     const { error } = await supabase.from("candidatures").insert({
       mission_id: missionId,
       personne_id: profile!.id,
       motivation,
-      classe: classe || (profile as any)?.scolarite || (profile as any)?.classe || null,
+      classe: formattedClasse,
       langues: [],
     })
+    
     if (error) {
+      console.error("Erreur insert candidature:", error)
       toast.error(
         error.code === "23505"
           ? "Vous avez déjà candidaté"
-          : "Erreur lors de la candidature"
+          : `Erreur lors de la candidature (${error.message})`
       )
     } else {
       toast.success("Candidature envoyée !")

@@ -143,7 +143,7 @@ export async function candidaterMission(formData: {
       mission_id: formData.mission_id,
       personne_id: user.id,
       motivation: formData.motivation,
-      classe: formData.classe || null,
+      classe: formData.classe ? formData.classe.toLowerCase() : null,
       langues: formData.langues || [],
     })
     .select()
