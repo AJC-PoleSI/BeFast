@@ -76,7 +76,8 @@ export async function deleteGeneratedDocument(id: string) {
  */
 export async function buildTemplateContext(
   scope: "etude" | "mission" | "personne" | "general",
-  entityId: string
+  entityId: string,
+  intervenantId?: string
 ): Promise<Record<string, any>> {
   const sb = createClient()
   const today = new Date()
@@ -191,6 +192,12 @@ function buildPhasesContext(blocs: any[] | undefined) {
     const margePct = Number(etude.marge_pct) || 0
     const tarif = budget_ht + frais + budget_ht * (margePct / 100)
 
+    let selectedIntervenant = (m as any).intervenant ?? {}
+    if (intervenantId) {
+      const { data: p } = await sb.from("personnes").select("id, prenom, nom, email, adresse, ville, code_postal").eq("id", intervenantId).single()
+      if (p) selectedIntervenant = p
+    }
+
     return {
       ...base,
       mission: m,
@@ -204,7 +211,7 @@ function buildPhasesContext(blocs: any[] | undefined) {
       },
       client: etude.clients ?? {},
       suiveur: etude.suiveur ?? {},
-      intervenant: (m as any).intervenant ?? {},
+      intervenant: selectedIntervenant,
       phases,
       planning,
     }

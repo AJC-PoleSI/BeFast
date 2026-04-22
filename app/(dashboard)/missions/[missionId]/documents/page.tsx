@@ -12,6 +12,7 @@ import {
   listTemplates,
   deleteGeneratedDocument,
 } from "@/lib/actions/documents"
+import { createClient } from "@/lib/supabase/client"
 
 export default function MissionDocumentsPage() {
   const params = useParams()
@@ -20,18 +21,33 @@ export default function MissionDocumentsPage() {
   const [docs, setDocs] = useState<any[]>([])
   const [generating, setGenerating] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [intervenants, setIntervenants] = useState<any[]>([])
+  const [selectedIntervenantId, setSelectedIntervenantId] = useState<string>("")
 
   const refresh = useCallback(async () => {
     setLoading(true)
-    const [tRes, dRes] = await Promise.all([
+    const supabase = createClient()
+    const [tRes, dRes, cRes] = await Promise.all([
       listTemplates(),
       listEntityDocuments("mission", missionId),
+      supabase
+        .from("candidatures")
+        .select("personnes(id, prenom, nom)")
+        .eq("mission_id", missionId)
+        .eq("statut", "acceptee")
     ])
     const allTpl = (tRes as any).data || []
     setTemplates(allTpl.filter((t: any) => t.scope === "mission" || t.scope === "general"))
     setDocs((dRes as any).data || [])
+    
+    const intervenantsList = (cRes.data || []).map((c: any) => c.personnes).filter(Boolean)
+    setIntervenants(intervenantsList)
+    if (intervenantsList.length === 1 && !selectedIntervenantId) {
+      setSelectedIntervenantId(intervenantsList[0].id)
+    }
+
     setLoading(false)
-  }, [missionId])
+  }, [missionId, selectedIntervenantId])
 
   useEffect(() => {
     refresh()
@@ -42,7 +58,12 @@ export default function MissionDocumentsPage() {
     const res = await fetch("/api/documents/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ template_id: templateId, scope: "mission", entity_id: missionId }),
+      body: JSON.stringify({ 
+        template_id: templateId, 
+        scope: "mission", 
+        entity_id: missionId,
+        intervenant_id: selectedIntervenantId || undefined 
+      }),
     })
     const json = await res.json()
     if (!res.ok) toast.error(json?.error || "Erreur")
@@ -79,6 +100,22 @@ export default function MissionDocumentsPage() {
         <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-gold" /> Générer à partir d&apos;un modèle
         </h2>
+
+        {intervenants.length > 0 && (
+          <div className="mb-4 p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-2">
+            <label className="text-xs font-medium text-slate-700 block">Intervenant à inclure dans les balises :</label>
+            <select
+              className="w-full max-w-sm h-9 px-3 rounded-md border border-input text-sm bg-white"
+              value={selectedIntervenantId}
+              onChange={(e) => setSelectedIntervenantId(e.target.value)}
+            >
+              <option value="">-- Sélectionner un intervenant --</option>
+              {intervenants.map((p) => (
+                <option key={p.id} value={p.id}>{p.prenom} {p.nom}</option>
+              ))}
+            </select>
+          </div>
+        )}
         {loading ? (
           <p className="text-xs text-muted-foreground">Chargement…</p>
         ) : templates.length === 0 ? (

@@ -11,10 +11,11 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
   const body = await req.json()
-  const { template_id, scope, entity_id } = body as {
+  const { template_id, scope, entity_id, intervenant_id } = body as {
     template_id: string
     scope: "etude" | "mission" | "personne" | "general"
     entity_id: string
+    intervenant_id?: string
   }
 
   if (!template_id || !scope || !entity_id) {
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
   if (dlErr || !blob) return NextResponse.json({ error: "DL template" }, { status: 500 })
   const templateBuf = Buffer.from(await blob.arrayBuffer())
 
-  const context = await buildTemplateContext(scope, entity_id)
+  const context = await buildTemplateContext(scope, entity_id, intervenant_id)
 
   let rendered: Buffer
   try {
