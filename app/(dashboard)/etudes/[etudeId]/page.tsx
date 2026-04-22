@@ -132,7 +132,7 @@ export default function EtudeDetailPage() {
     if (missionIds.length > 0) {
       const { data: cands } = await supabase
         .from("candidatures")
-        .select("*, personnes!candidatures_personne_id_fkey(id, prenom, nom, email, promo, scolarite)")
+        .select("*, personnes!candidatures_personne_id_fkey(id, prenom, nom, email)")
         .in("mission_id", missionIds)
         .order("created_at", { ascending: true })
       setCandidatures((cands as any[]) || [])

@@ -127,7 +127,7 @@ export default function MissionDetailPage() {
       if (isAGC) {
         const { data: cands } = await supabase
           .from("candidatures")
-          .select("*, personnes!candidatures_personne_id_fkey(id, prenom, nom, email, promo)")
+          .select("*, personnes!candidatures_personne_id_fkey(id, prenom, nom, email)")
           .eq("mission_id", missionId)
           .order("created_at", { ascending: true })
         setCandidatures((cands as CandidatureWithPersonne[]) || [])

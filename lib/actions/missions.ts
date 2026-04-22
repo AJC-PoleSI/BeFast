@@ -181,7 +181,7 @@ export async function getCandidaturesMission(missionId: string) {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("candidatures")
-    .select("*, personnes(id, prenom, nom, email, promo)")
+    .select("*, personnes!candidatures_personne_id_fkey(id, prenom, nom, email)")
     .eq("mission_id", missionId)
     .order("created_at", { ascending: true })
 
