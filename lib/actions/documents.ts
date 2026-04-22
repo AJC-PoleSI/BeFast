@@ -176,6 +176,7 @@ function buildPhasesContext(blocs: any[] | undefined) {
   }
 
   if (scope === "mission") {
+    const { data: m } = await sb
       .from("missions")
       .select(
         "*, intervenant:personnes!missions_intervenant_id_fkey(*), etudes(*, clients(*), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*))"
