@@ -238,11 +238,13 @@ export default function MissionDetailPage() {
             Retour aux missions
           </Button>
         </Link>
-        <Link href={`/missions/${mission.id}/documents`}>
-          <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
-            <FileText className="h-4 w-4 mr-1.5" /> Documents
-          </Button>
-        </Link>
+        {canSelectCandidates && (
+          <Link href={`/missions/${mission.id}/documents`}>
+            <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
+              <FileText className="h-4 w-4 mr-1.5" /> Documents
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Mission info */}

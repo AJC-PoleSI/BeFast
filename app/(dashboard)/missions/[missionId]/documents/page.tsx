@@ -13,6 +13,15 @@ import {
   deleteGeneratedDocument,
 } from "@/lib/actions/documents"
 import { createClient } from "@/lib/supabase/client"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 export default function MissionDocumentsPage() {
   const params = useParams()
@@ -23,6 +32,7 @@ export default function MissionDocumentsPage() {
   const [loading, setLoading] = useState(true)
   const [intervenants, setIntervenants] = useState<any[]>([])
   const [selectedIntervenantId, setSelectedIntervenantId] = useState<string>("")
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -53,13 +63,14 @@ export default function MissionDocumentsPage() {
     refresh()
   }, [refresh])
 
-  const handleGenerate = async (templateId: string) => {
-    setGenerating(templateId)
+  const handleGenerate = async () => {
+    if (!selectedTemplateId) return
+    setGenerating(selectedTemplateId)
     const res = await fetch("/api/documents/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
-        template_id: templateId, 
+        template_id: selectedTemplateId, 
         scope: "mission", 
         entity_id: missionId,
         intervenant_id: selectedIntervenantId || undefined 
@@ -73,6 +84,7 @@ export default function MissionDocumentsPage() {
       refresh()
     }
     setGenerating(null)
+    setSelectedTemplateId(null)
   }
 
   const handleDelete = async (id: string) => {
@@ -100,22 +112,6 @@ export default function MissionDocumentsPage() {
         <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-gold" /> Générer à partir d&apos;un modèle
         </h2>
-
-        {intervenants.length > 0 && (
-          <div className="mb-4 p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-2">
-            <label className="text-xs font-medium text-slate-700 block">Intervenant à inclure dans les balises :</label>
-            <select
-              className="w-full max-w-sm h-9 px-3 rounded-md border border-input text-sm bg-white"
-              value={selectedIntervenantId}
-              onChange={(e) => setSelectedIntervenantId(e.target.value)}
-            >
-              <option value="">-- Sélectionner un intervenant --</option>
-              {intervenants.map((p) => (
-                <option key={p.id} value={p.id}>{p.prenom} {p.nom}</option>
-              ))}
-            </select>
-          </div>
-        )}
         {loading ? (
           <p className="text-xs text-muted-foreground">Chargement…</p>
         ) : templates.length === 0 ? (
@@ -130,7 +126,7 @@ export default function MissionDocumentsPage() {
             {templates.map((t) => (
               <button
                 key={t.id}
-                onClick={() => handleGenerate(t.id)}
+                onClick={() => setSelectedTemplateId(t.id)}
                 disabled={generating === t.id}
                 className="flex items-center gap-2 text-left p-3 rounded-lg border border-slate-200 hover:border-[#00236f]/40 hover:bg-[#00236f]/5 transition-all disabled:opacity-50"
               >
@@ -185,6 +181,50 @@ export default function MissionDocumentsPage() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!selectedTemplateId} onOpenChange={(o) => !o && setSelectedTemplateId(null)}>
+        <DialogContent>
+          <DialogClose onClose={() => setSelectedTemplateId(null)} />
+          <DialogHeader>
+            <DialogTitle>Générer un document</DialogTitle>
+            <DialogDescription>
+              Veuillez sélectionner l'intervenant pour remplir automatiquement les balises à son nom.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {intervenants.length > 0 ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 block">Intervenant à inclure :</label>
+                <select
+                  className="w-full h-10 px-3 rounded-md border border-input text-sm bg-white"
+                  value={selectedIntervenantId}
+                  onChange={(e) => setSelectedIntervenantId(e.target.value)}
+                >
+                  <option value="">-- Aucun / Laisser vide --</option>
+                  {intervenants.map((p) => (
+                    <option key={p.id} value={p.id}>{p.prenom} {p.nom}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">Aucun intervenant accepté sur cette mission pour le moment.</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setSelectedTemplateId(null)}>Annuler</Button>
+            <Button
+              onClick={handleGenerate}
+              disabled={!!generating}
+              className="bg-[#00236f] text-white hover:bg-[#1e3a8a]"
+            >
+              {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+              Générer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
