@@ -19,7 +19,7 @@ export function extractPlaceholders(buffer: ArrayBuffer | Buffer): string[] {
     while ((m = re.exec(textAll)) !== null) {
       const raw = m[1].trim()
       if (!raw) continue
-      if (raw.startsWith("#") || raw.startsWith("/") || raw.startsWith("^")) continue
+      if (raw.startsWith("#") || raw.startsWith("/") || raw.startsWith("^") || raw.startsWith("@")) continue
       if (!tags.includes(raw)) tags.push(raw)
     }
     // Valide la syntaxe du template
