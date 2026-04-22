@@ -11,7 +11,7 @@ import { DocumentsGrid } from "./_components/DocumentsGrid"
 import type { PersonneWithRole } from "@/types/database.types"
 
 export default function ProfilPage() {
-  const { profile: initialProfile, loading } = useUser()
+  const { profile: initialProfile, loading, isAdmin } = useUser()
   const [profile, setProfile] = useState<PersonneWithRole | null>(null)
 
   useEffect(() => {
@@ -81,6 +81,7 @@ export default function ProfilPage() {
           <ProfileInfoCard
             profile={profile}
             onUpdate={(updated) => setProfile(updated)}
+            isAdmin={isAdmin}
           />
           <SensitiveFieldCard
             profile={profile}

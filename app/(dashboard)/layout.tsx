@@ -68,9 +68,20 @@ export default async function DashboardLayout({
     }
   }
 
-  const permissions = rolePerms
+  let permissions = rolePerms
     ? ({ ...emptyPermissions, ...rolePerms, ...polePerms } as Permissions)
     : null
+
+  // Restreindre les accès si le compte n'est pas validé
+  if (profile?.account_status !== "validated" && !isAdmin) {
+    if (permissions) {
+      // On ne garde que profil et documents
+      const restricted: Permissions = { ...emptyPermissions }
+      if (permissions.profil) restricted.profil = true
+      if (permissions.documents) restricted.documents = true
+      permissions = restricted
+    }
+  }
 
   const userName = profile
     ? [profile.prenom, profile.nom].filter(Boolean).join(" ") || profile.email

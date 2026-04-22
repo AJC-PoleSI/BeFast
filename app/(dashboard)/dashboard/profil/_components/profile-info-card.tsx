@@ -44,9 +44,10 @@ interface ProfileInfoCardProps {
   profile: PersonneWithRole
   onUpdate: (profile: PersonneWithRole) => void
   readOnly?: boolean
+  isAdmin?: boolean
 }
 
-export function ProfileInfoCard({ profile, onUpdate, readOnly }: ProfileInfoCardProps) {
+export function ProfileInfoCard({ profile, onUpdate, readOnly, isAdmin }: ProfileInfoCardProps) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [poles, setPoles] = useState<string[]>(DEFAULT_POLES)
@@ -167,8 +168,11 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly }: ProfileInfoCard
 
           {/* Pole */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">Pôle</label>
-            {editing ? (
+            <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center justify-between">
+              Pôle
+              {!isAdmin && <span className="text-[10px] text-slate-400 font-normal italic">Réservé Administration</span>}
+            </label>
+            {editing && isAdmin ? (
               <select
                 value={values.pole || ""}
                 onChange={(e) => handleChange("pole", e.target.value)}
