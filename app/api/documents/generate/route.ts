@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server"
 import { renderDocx } from "@/lib/docx/template-engine"
 import { buildTemplateContext } from "@/lib/actions/documents"
 
+// Allow up to 30 seconds for DOCX rendering
+export const maxDuration = 30
+
 export async function POST(req: NextRequest) {
   const sb = createClient()
   const {

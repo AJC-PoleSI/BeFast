@@ -42,11 +42,19 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  const { data: personne } = await supabase
-    .from("personnes")
-    .select("*, profils_types(*)")
-    .eq("id", user.id)
-    .single()
+  // Parallelize DB queries — personnes + pole_permissions at the same time
+  const [{ data: personne }, { data: poleParam }] = await Promise.all([
+    supabase
+      .from("personnes")
+      .select("*, profils_types(*)")
+      .eq("id", user.id)
+      .single(),
+    supabase
+      .from("parametres")
+      .select("value")
+      .eq("key", "pole_permissions")
+      .maybeSingle(),
+  ])
 
   const profile = personne as PersonneWithRole | null
   const rolePerms = profile?.profils_types?.permissions ?? null
@@ -54,18 +62,11 @@ export default async function DashboardLayout({
 
   let polePerms: Partial<Permissions> = {}
   const pole = (personne as any)?.pole as string | null
-  if (pole) {
-    const { data: param } = await supabase
-      .from("parametres")
-      .select("value")
-      .eq("key", "pole_permissions")
-      .maybeSingle()
-    if (param?.value) {
-      try {
-        const map = JSON.parse(param.value) as Record<string, Partial<Permissions>>
-        polePerms = map[pole] ?? {}
-      } catch {}
-    }
+  if (pole && poleParam?.value) {
+    try {
+      const map = JSON.parse(poleParam.value) as Record<string, Partial<Permissions>>
+      polePerms = map[pole] ?? {}
+    } catch {}
   }
 
   let permissions = rolePerms

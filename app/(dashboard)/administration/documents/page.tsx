@@ -54,26 +54,45 @@ export default function DocumentTemplatesPage() {
     if (!form.file) return toast.error("Fichier DOCX requis")
     if (!form.name.trim()) return toast.error("Nom requis")
     setUploading(true)
-    const fd = new FormData()
-    fd.append("file", form.file)
-    fd.append("name", form.name)
-    fd.append("description", form.description)
-    fd.append("scope", form.scope)
-    fd.append("category", form.category)
 
-    const res = await fetch("/api/admin/templates", { method: "POST", body: fd })
-    const json = await res.json()
-    if (!res.ok) {
-      toast.error(json?.error || "Erreur upload")
-    } else {
-      toast.success(
-        `Template importé — ${json.data?.placeholders?.length || 0} placeholder(s) détecté(s)`
-      )
-      setShowUpload(false)
-      setForm({ name: "", description: "", scope: "etude", category: "", file: null })
-      refresh()
+    // Timeout after 60s to avoid infinite spinner
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 60000)
+
+    try {
+      const fd = new FormData()
+      fd.append("file", form.file)
+      fd.append("name", form.name)
+      fd.append("description", form.description)
+      fd.append("scope", form.scope)
+      fd.append("category", form.category)
+
+      const res = await fetch("/api/admin/templates", {
+        method: "POST",
+        body: fd,
+        signal: controller.signal,
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        toast.error(json?.error || "Erreur upload")
+      } else {
+        toast.success(
+          `Template importé — ${json.data?.placeholders?.length || 0} placeholder(s) détecté(s)`
+        )
+        setShowUpload(false)
+        setForm({ name: "", description: "", scope: "etude", category: "", file: null })
+        refresh()
+      }
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        toast.error("Délai d'attente dépassé — réessayez avec un fichier plus petit")
+      } else {
+        toast.error("Erreur réseau — vérifiez votre connexion")
+      }
+    } finally {
+      clearTimeout(timeout)
+      setUploading(false)
     }
-    setUploading(false)
   }
 
   const handleDelete = async (id: string) => {
