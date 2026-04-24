@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath } from "next/cache"
 
 export async function listTemplates() {
@@ -91,7 +92,7 @@ export async function listMissionIntervenants(missionId: string) {
 // ============================================================
 // Helper: load all structure parameters from the parametres table
 // ============================================================
-async function loadStructureParams(sb: ReturnType<typeof createClient>) {
+async function loadStructureParams(sb: ReturnType<typeof createAdminClient>) {
   const { data } = await sb.from("parametres").select("key, value")
   const params: Record<string, string> = {}
   if (data) {
@@ -133,7 +134,8 @@ export async function buildTemplateContext(
   entityId: string,
   intervenantId?: string
 ): Promise<Record<string, any>> {
-  const sb = createClient()
+  // Use admin client to bypass RLS — we need to read any user's profile
+  const sb = createAdminClient()
   const today = new Date()
 
   // Load structure parameters in parallel with entity data

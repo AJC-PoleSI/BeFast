@@ -111,16 +111,19 @@ const SECTIONS = [
   },
 ] as const
 
-function parsePoles(raw: string | undefined): string[] {
-  if (!raw) return DEFAULT_POLES
+function parsePoles(raw: string | undefined | null, keyExists: boolean): string[] {
+  // If the key doesn't exist in DB yet (first time), use defaults
+  if (!keyExists) return DEFAULT_POLES
+  // If empty string or null, user has deleted all poles
+  if (!raw) return []
   try {
     const arr = JSON.parse(raw)
-    if (Array.isArray(arr) && arr.every(v => typeof v === "string")) return arr
+    if (Array.isArray(arr)) return arr.filter((v: any) => typeof v === "string")
   } catch {
     // fallback: comma-separated
     return raw.split(",").map(s => s.trim()).filter(Boolean)
   }
-  return DEFAULT_POLES
+  return []
 }
 
 export default function ParametresStructurePage() {
@@ -137,7 +140,9 @@ export default function ParametresStructurePage() {
     getAllParametres().then(res => {
       if ("data" in res && res.data) {
         setForm(res.data)
-        setPoles(parsePoles(res.data.poles_liste))
+        // Only use DEFAULT_POLES if poles_liste key doesn't exist in DB
+        const keyExists = "poles_liste" in res.data
+        setPoles(parsePoles(res.data.poles_liste, keyExists))
         try {
           const raw = res.data.pole_permissions
           if (raw) setPolePerms(JSON.parse(raw))
