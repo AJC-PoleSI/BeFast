@@ -12,8 +12,8 @@ import {
   listEntityDocuments,
   listTemplates,
   deleteGeneratedDocument,
+  listMissionIntervenants,
 } from "@/lib/actions/documents"
-import { createClient } from "@/lib/supabase/client"
 import {
   Dialog,
   DialogContent,
@@ -38,21 +38,16 @@ export default function MissionDocumentsPage() {
 
   const refresh = useCallback(async () => {
     setLoading(true)
-    const supabase = createClient()
-    const [tRes, dRes, cRes] = await Promise.all([
+    const [tRes, dRes, iRes] = await Promise.all([
       listTemplates(),
       listEntityDocuments("mission", missionId),
-      supabase
-        .from("candidatures")
-        .select("personnes!candidatures_personne_id_fkey(id, prenom, nom)")
-        .eq("mission_id", missionId)
-        .eq("statut", "acceptee")
+      listMissionIntervenants(missionId),
     ])
     // Show ALL templates (no scope filtering)
     setTemplates((tRes as any).data || [])
     setDocs((dRes as any).data || [])
     
-    const intervenantsList = (cRes.data || []).map((c: any) => c.personnes).filter(Boolean)
+    const intervenantsList = (iRes as any).data || []
     setIntervenants(intervenantsList)
     if (intervenantsList.length === 1 && !selectedIntervenantId) {
       setSelectedIntervenantId(intervenantsList[0].id)
