@@ -69,6 +69,23 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly, isAdmin }: Profil
     date_naissance: (profile.date_naissance as any) || "",
   })
 
+  // Synchroniser les valeurs locales si le profil parent change (ex: après un refresh ou mise à jour externe)
+  useEffect(() => {
+    setValues({
+      prenom: profile.prenom || "",
+      nom: profile.nom || "",
+      portable: profile.portable || "",
+      promo: profile.promo || "",
+      adresse: profile.adresse || "",
+      ville: profile.ville || "",
+      code_postal: profile.code_postal || "",
+      pole: profile.pole || "",
+      etablissement: (profile.etablissement as any) || "",
+      scolarite: (profile.scolarite as any) || "",
+      date_naissance: (profile.date_naissance as any) || "",
+    })
+  }, [profile])
+
   const handleChange = (field: keyof ProfileFormValues, val: string) => {
     setValues((prev) => ({ ...prev, [field]: val }))
   }

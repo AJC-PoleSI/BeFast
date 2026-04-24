@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { profileSchema } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 
 export async function PATCH(request: Request) {
   try {
@@ -82,6 +83,9 @@ export async function PATCH(request: Request) {
         { status: 500 }
       )
     }
+    
+    // Revalidate the dashboard layout to ensure fresh data on refresh
+    revalidatePath("/(dashboard)", "layout")
 
     return NextResponse.json({ success: true, data })
   } catch (err) {
