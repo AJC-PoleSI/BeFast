@@ -12,58 +12,17 @@ export async function POST(req: NextRequest) {
   } = await sb.auth.getUser()
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
-  let form: FormData
+  let body: any
   try {
-    form = await req.formData()
+    body = await req.json()
   } catch {
     return NextResponse.json({ error: "Requête invalide" }, { status: 400 })
   }
 
-  const file = form.get("file") as File | null
-  const name = (form.get("name") as string) || ""
-  const description = (form.get("description") as string) || ""
-  const category = (form.get("category") as string) || ""
+  const { filePath, fileName, name, description, category, placeholders } = body
 
-  if (!file) return NextResponse.json({ error: "Fichier manquant" }, { status: 400 })
-  if (!name.trim()) return NextResponse.json({ error: "Nom requis" }, { status: 400 })
-
-  // Limit file size (10MB)
-  if (file.size > 10 * 1024 * 1024) {
-    return NextResponse.json({ error: "Fichier trop volumineux (max 10 Mo)" }, { status: 400 })
-  }
-
-  let buffer: Buffer
-  try {
-    buffer = Buffer.from(await file.arrayBuffer())
-  } catch {
-    return NextResponse.json({ error: "Impossible de lire le fichier" }, { status: 400 })
-  }
-
-  let placeholders: string[] = []
-  try {
-    placeholders = extractPlaceholders(buffer)
-  } catch (e: any) {
-    console.error("DOCX parse error:", e)
-    return NextResponse.json(
-      { error: "DOCX invalide: " + (e?.message || "parse error") },
-      { status: 400 }
-    )
-  }
-
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_")
-  const filePath = `templates/${Date.now()}_${safeName}`
-
-  const { error: upErr } = await sb.storage
-    .from("templates")
-    .upload(filePath, buffer, {
-      contentType:
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      upsert: false,
-    })
-  if (upErr) {
-    console.error("Storage upload error:", upErr)
-    return NextResponse.json({ error: upErr.message }, { status: 500 })
-  }
+  if (!filePath) return NextResponse.json({ error: "Chemin de fichier manquant" }, { status: 400 })
+  if (!name?.trim()) return NextResponse.json({ error: "Nom requis" }, { status: 400 })
 
   const { data, error } = await sb
     .from("document_templates")
@@ -72,16 +31,14 @@ export async function POST(req: NextRequest) {
       description,
       category,
       file_path: filePath,
-      file_name: file.name,
-      placeholders,
+      file_name: fileName || "document.docx",
+      placeholders: placeholders || [],
       created_by: user.id,
     })
     .select()
     .single()
 
   if (error) {
-    // Clean up uploaded file on DB failure
-    await sb.storage.from("templates").remove([filePath])
     console.error("DB insert error:", error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

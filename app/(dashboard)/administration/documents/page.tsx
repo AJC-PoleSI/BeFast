@@ -21,6 +21,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { listTemplates, deleteTemplate } from "@/lib/actions/documents"
+import { createClient as createBrowserClient } from "@/lib/supabase/client"
+import { extractPlaceholders } from "@/lib/docx/placeholders"
 
 /* ─── Nomenclature ──────────────────────────────────────────── */
 
@@ -110,32 +112,55 @@ export default function DocumentTemplatesPage() {
     if (!form.file) return toast.error("Fichier DOCX requis")
     setUploading(true)
 
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 60000)
-
     try {
-      // If replacing, delete old one first
+      const sb = createBrowserClient()
+      
+      // 1. Extraire les balises localement pour gagner du temps serveur
+      const buffer = await form.file.arrayBuffer()
+      const placeholders = extractPlaceholders(buffer)
+
+      // 2. Si on remplace, supprimer l'ancien (optionnel mais propre)
       if (replaceId) {
         await deleteTemplate(replaceId)
       }
 
-      const fd = new FormData()
-      fd.append("file", form.file)
-      fd.append("name", form.name)
-      fd.append("description", form.description)
-      fd.append("category", uploadTarget || "")
+      // 3. Upload direct vers Supabase Storage (contourne la limite Vercel de 4.5Mo)
+      const safeName = form.file.name.replace(/[^a-zA-Z0-9._-]/g, "_")
+      const filePath = `templates/${Date.now()}_${safeName}`
+      
+      const { error: upErr } = await sb.storage
+        .from("templates")
+        .upload(filePath, form.file, {
+          contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          upsert: false
+        })
 
+      if (upErr) {
+        throw new Error(`Erreur Storage: ${upErr.message}`)
+      }
+
+      // 4. Enregistrer en base via l'API (maintenant un simple JSON léger)
       const res = await fetch("/api/admin/templates", {
         method: "POST",
-        body: fd,
-        signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filePath,
+          fileName: form.file.name,
+          name: form.name,
+          description: form.description,
+          category: uploadTarget || "",
+          placeholders,
+        }),
       })
+
       const json = await res.json()
       if (!res.ok) {
-        toast.error(json?.error || "Erreur upload")
+        // Nettoyage si la DB échoue
+        await sb.storage.from("templates").remove([filePath])
+        toast.error(json?.error || "Erreur enregistrement")
       } else {
         toast.success(
-          `Modèle importé — ${json.data?.placeholders?.length || 0} balise(s) détectée(s)`
+          `Modèle importé — ${placeholders.length} balise(s) détectée(s)`
         )
         setShowUpload(false)
         setForm({ name: "", description: "", file: null })
@@ -144,13 +169,9 @@ export default function DocumentTemplatesPage() {
         refresh()
       }
     } catch (err: any) {
-      if (err?.name === "AbortError") {
-        toast.error("Délai d'attente dépassé — réessayez avec un fichier plus petit")
-      } else {
-        toast.error("Erreur réseau — vérifiez votre connexion")
-      }
+      console.error("Upload error:", err)
+      toast.error(err.message || "Erreur réseau — vérifiez votre connexion")
     } finally {
-      clearTimeout(timeout)
       setUploading(false)
     }
   }
