@@ -31,7 +31,7 @@ export async function deleteTemplate(id: string) {
 
 export async function updateTemplateMeta(
   id: string,
-  updates: Partial<{ name: string; description: string; scope: string; category: string }>
+  updates: Partial<{ name: string; description: string; category: string }>
 ) {
   const sb = createClient()
   const { error } = await sb.from("document_templates").update(updates).eq("id", id)

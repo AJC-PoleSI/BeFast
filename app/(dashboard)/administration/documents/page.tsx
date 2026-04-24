@@ -18,13 +18,6 @@ import {
 } from "@/components/ui/dialog"
 import { listTemplates, deleteTemplate } from "@/lib/actions/documents"
 
-const SCOPES = [
-  { value: "etude", label: "Étude" },
-  { value: "mission", label: "Mission" },
-  { value: "personne", label: "Personne" },
-  { value: "general", label: "Général" },
-]
-
 export default function DocumentTemplatesPage() {
   const [templates, setTemplates] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -34,7 +27,6 @@ export default function DocumentTemplatesPage() {
   const [form, setForm] = useState({
     name: "",
     description: "",
-    scope: "etude",
     category: "",
     file: null as File | null,
   })
@@ -64,7 +56,6 @@ export default function DocumentTemplatesPage() {
       fd.append("file", form.file)
       fd.append("name", form.name)
       fd.append("description", form.description)
-      fd.append("scope", form.scope)
       fd.append("category", form.category)
 
       const res = await fetch("/api/admin/templates", {
@@ -80,7 +71,7 @@ export default function DocumentTemplatesPage() {
           `Template importé — ${json.data?.placeholders?.length || 0} placeholder(s) détecté(s)`
         )
         setShowUpload(false)
-        setForm({ name: "", description: "", scope: "etude", category: "", file: null })
+        setForm({ name: "", description: "", category: "", file: null })
         refresh()
       }
     } catch (err: any) {
@@ -162,9 +153,6 @@ export default function DocumentTemplatesPage() {
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <FileText className="h-4 w-4 text-[#00236f]" />
                   <span className="font-semibold text-sm">{t.name}</span>
-                  <Badge variant="outline" className="text-[10px] capitalize">
-                    {SCOPES.find((s) => s.value === t.scope)?.label || t.scope}
-                  </Badge>
                   {t.category && (
                     <Badge variant="outline" className="text-[10px] bg-gold/10 text-[#00236f] border-gold/30">
                       {t.category}
@@ -239,34 +227,21 @@ export default function DocumentTemplatesPage() {
                 placeholder="À quoi sert ce modèle ?"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Portée</Label>
-                <select
-                  value={form.scope}
-                  onChange={(e) => setForm({ ...form, scope: e.target.value })}
-                  className="w-full h-10 px-3 rounded-md border border-input bg-white text-sm"
-                >
-                  {SCOPES.map((s) => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label>Catégorie</Label>
-                <Input
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  placeholder="Ex: contrat, facture"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Catégorie</Label>
+              <Input
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                placeholder="Ex: contrat, facture, convention"
+              />
             </div>
             <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
-              <strong>Placeholders disponibles</strong> (selon la portée) :<br />
+              <strong>Placeholders disponibles</strong> :<br />
               <code>{"{etude.nom}"}</code>, <code>{"{etude.numero}"}</code>, <code>{"{etude.tarif_ht}"}</code>,{" "}
               <code>{"{client.nom}"}</code>, <code>{"{suiveur.prenom}"}</code>,{" "}
               <code>{"{mission.nom}"}</code>, <code>{"{mission.nb_jeh}"}</code>,{" "}
-              <code>{"{personne.prenom}"}</code>, <code>{"{date}"}</code>, <code>{"{annee}"}</code>.
+              <code>{"{intervenant.prenom}"}</code>, <code>{"{intervenant.nom}"}</code>,{" "}
+              <code>{"{date}"}</code>, <code>{"{annee}"}</code>.
             </div>
           </div>
           <DialogFooter>

@@ -7,19 +7,31 @@ import { toast } from "sonner"
 import { ArrowLeft, FileText, Download, Trash2, Sparkles, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
 import {
   listEntityDocuments,
   listTemplates,
   deleteGeneratedDocument,
 } from "@/lib/actions/documents"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 export default function EtudeDocumentsPage() {
   const params = useParams()
   const etudeId = params.etudeId as string
   const [templates, setTemplates] = useState<any[]>([])
   const [docs, setDocs] = useState<any[]>([])
-  const [generating, setGenerating] = useState<string | null>(null)
+  const [generating, setGenerating] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
+  const [showGenerateModal, setShowGenerateModal] = useState(false)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -27,8 +39,8 @@ export default function EtudeDocumentsPage() {
       listTemplates(),
       listEntityDocuments("etude", etudeId),
     ])
-    const allTpl = (tRes as any).data || []
-    setTemplates(allTpl.filter((t: any) => t.scope === "etude" || t.scope === "general"))
+    // Show ALL templates (no scope filtering)
+    setTemplates((tRes as any).data || [])
     setDocs((dRes as any).data || [])
     setLoading(false)
   }, [etudeId])
@@ -37,22 +49,27 @@ export default function EtudeDocumentsPage() {
     refresh()
   }, [refresh])
 
-  const handleGenerate = async (templateId: string) => {
-    setGenerating(templateId)
+  const handleGenerate = async () => {
+    if (!selectedTemplateId) {
+      toast.error("Sélectionnez un modèle")
+      return
+    }
+    setGenerating(true)
     const res = await fetch("/api/documents/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ template_id: templateId, scope: "etude", entity_id: etudeId }),
+      body: JSON.stringify({ template_id: selectedTemplateId, scope: "etude", entity_id: etudeId }),
     })
     const json = await res.json()
     if (!res.ok) toast.error(json?.error || "Erreur")
     else {
       toast.success("Document généré")
-      // Télécharge automatiquement
       window.open(`/api/documents/${json.data.id}/download`, "_blank")
+      setShowGenerateModal(false)
+      setSelectedTemplateId("")
       refresh()
     }
-    setGenerating(null)
+    setGenerating(false)
   }
 
   const handleDelete = async (id: string) => {
@@ -76,13 +93,24 @@ export default function EtudeDocumentsPage() {
 
       <div>
         <h1 className="text-2xl font-bold text-[#00236f] mb-1">Documents de l&apos;étude</h1>
-        <p className="text-sm text-slate-500">Générez des documents à partir des modèles DOCX.</p>
+        <p className="text-sm text-slate-500">Générez des documents à partir des modèles DOCX importés.</p>
       </div>
 
       <div className="bg-white rounded-xl border border-border shadow-sm p-5">
-        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-gold" /> Générer à partir d&apos;un modèle
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-gold" /> Générer un document
+          </h2>
+          <Button
+            onClick={() => setShowGenerateModal(true)}
+            size="sm"
+            className="bg-[#00236f] text-white hover:bg-[#1e3a8a]"
+            disabled={loading}
+          >
+            <FileText className="h-4 w-4 mr-1.5" />
+            Nouveau document
+          </Button>
+        </div>
         {loading ? (
           <p className="text-xs text-muted-foreground">Chargement…</p>
         ) : templates.length === 0 ? (
@@ -93,30 +121,9 @@ export default function EtudeDocumentsPage() {
             </Link>.
           </p>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-2">
-            {templates.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => handleGenerate(t.id)}
-                disabled={generating === t.id}
-                className="flex items-center gap-2 text-left p-3 rounded-lg border border-slate-200 hover:border-[#00236f]/40 hover:bg-[#00236f]/5 transition-all disabled:opacity-50"
-              >
-                {generating === t.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-[#00236f]" />
-                ) : (
-                  <FileText className="h-4 w-4 text-[#00236f]" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{t.name}</div>
-                  {t.category && (
-                    <Badge variant="outline" className="text-[10px] mt-0.5">
-                      {t.category}
-                    </Badge>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
+          <p className="text-xs text-muted-foreground">
+            {templates.length} modèle(s) disponible(s) — cliquez sur «&nbsp;Nouveau document&nbsp;» pour en générer un.
+          </p>
         )}
       </div>
 
@@ -163,6 +170,54 @@ export default function EtudeDocumentsPage() {
           </div>
         )}
       </div>
+
+      {/* Generate document modal */}
+      <Dialog open={showGenerateModal} onOpenChange={(o) => !o && setShowGenerateModal(false)}>
+        <DialogContent>
+          <DialogClose onClose={() => setShowGenerateModal(false)} />
+          <DialogHeader>
+            <DialogTitle>Générer un document</DialogTitle>
+            <DialogDescription>
+              Sélectionnez le modèle à utiliser pour générer le document.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Template dropdown */}
+            <div className="space-y-2">
+              <Label>Modèle de document *</Label>
+              <select
+                className="w-full h-10 px-3 rounded-md border border-input text-sm bg-white"
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+              >
+                <option value="">-- Sélectionnez un modèle --</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}{t.category ? ` (${t.category})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-500">
+              Le document sera généré avec les données de cette étude, du client, et du suiveur.
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowGenerateModal(false)}>Annuler</Button>
+            <Button
+              onClick={handleGenerate}
+              disabled={generating || !selectedTemplateId}
+              className="bg-[#00236f] text-white hover:bg-[#1e3a8a]"
+            >
+              {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+              Générer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

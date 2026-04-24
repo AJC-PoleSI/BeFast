@@ -22,7 +22,6 @@ export async function POST(req: NextRequest) {
   const file = form.get("file") as File | null
   const name = (form.get("name") as string) || ""
   const description = (form.get("description") as string) || ""
-  const scope = (form.get("scope") as string) || "etude"
   const category = (form.get("category") as string) || ""
 
   if (!file) return NextResponse.json({ error: "Fichier manquant" }, { status: 400 })
@@ -52,7 +51,7 @@ export async function POST(req: NextRequest) {
   }
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_")
-  const filePath = `${scope}/${Date.now()}_${safeName}`
+  const filePath = `templates/${Date.now()}_${safeName}`
 
   const { error: upErr } = await sb.storage
     .from("templates")
@@ -71,7 +70,6 @@ export async function POST(req: NextRequest) {
     .insert({
       name,
       description,
-      scope,
       category,
       file_path: filePath,
       file_name: file.name,
