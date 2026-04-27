@@ -72,20 +72,41 @@ export async function deleteGeneratedDocument(id: string) {
 }
 
 /**
- * List intervenants (accepted candidatures) for a mission.
- * Uses a server action to ensure the query works regardless of RLS.
+ * List intervenants for a mission.
+ * Combines: accepted candidatures + directly assigned intervenant (missions.intervenant_id).
  */
 export async function listMissionIntervenants(missionId: string) {
   const sb = createClient()
-  const { data, error } = await sb
-    .from("candidatures")
-    .select("personne_id, personnes!candidatures_personne_id_fkey(id, prenom, nom, email)")
-    .eq("mission_id", missionId)
-    .eq("statut", "acceptee")
-  if (error) return { error: error.message, data: [] }
-  const intervenants = (data || [])
-    .map((c: any) => c.personnes)
-    .filter(Boolean)
+
+  const [candidaturesRes, missionRes] = await Promise.all([
+    sb
+      .from("candidatures")
+      .select("personne_id, personnes!candidatures_personne_id_fkey(id, prenom, nom, email)")
+      .eq("mission_id", missionId)
+      .eq("statut", "acceptee"),
+    sb
+      .from("missions")
+      .select("intervenant_id, intervenant:personnes!missions_intervenant_id_fkey(id, prenom, nom, email)")
+      .eq("id", missionId)
+      .single(),
+  ])
+
+  const seen = new Set<string>()
+  const intervenants: any[] = []
+
+  for (const c of candidaturesRes.data || []) {
+    const p = (c as any).personnes
+    if (p && !seen.has(p.id)) {
+      seen.add(p.id)
+      intervenants.push(p)
+    }
+  }
+
+  const directIntervenant = (missionRes.data as any)?.intervenant
+  if (directIntervenant && !seen.has(directIntervenant.id)) {
+    intervenants.push(directIntervenant)
+  }
+
   return { data: intervenants }
 }
 
