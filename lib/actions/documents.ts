@@ -72,6 +72,20 @@ export async function deleteGeneratedDocument(id: string) {
 }
 
 /**
+ * List missions for an étude (for the mission/intervenant selector on étude documents page).
+ */
+export async function listEtudeMissions(etudeId: string) {
+  const sb = createClient()
+  const { data, error } = await sb
+    .from("missions")
+    .select("id, nom, type, statut, intervenant_id, intervenant:personnes!missions_intervenant_id_fkey(id, prenom, nom)")
+    .eq("etude_id", etudeId)
+    .order("created_at", { ascending: true })
+  if (error) return { error: error.message, data: [] }
+  return { data: data || [] }
+}
+
+/**
  * List intervenants for a mission.
  * Combines: accepted candidatures + directly assigned intervenant (missions.intervenant_id).
  */
@@ -325,7 +339,8 @@ export async function buildTemplateContext(
       // Mission
       mission: {
         ...m,
-        numero_etude: etude.numero || "",
+        numero_etude: (etude.numero || "").slice(-2),
+        numero_etude_complet: etude.numero || "",
         description: m.description || "",
       },
       // Étude

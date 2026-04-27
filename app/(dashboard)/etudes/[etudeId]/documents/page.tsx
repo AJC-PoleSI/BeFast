@@ -6,12 +6,13 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { ArrowLeft, FileText, Download, Trash2, Sparkles, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import {
   listEntityDocuments,
   listTemplates,
   deleteGeneratedDocument,
+  listEtudeMissions,
+  listMissionIntervenants,
 } from "@/lib/actions/documents"
 import {
   Dialog,
@@ -26,28 +27,44 @@ import {
 export default function EtudeDocumentsPage() {
   const params = useParams()
   const etudeId = params.etudeId as string
+
   const [templates, setTemplates] = useState<any[]>([])
   const [docs, setDocs] = useState<any[]>([])
+  const [missions, setMissions] = useState<any[]>([])
+  const [intervenants, setIntervenants] = useState<any[]>([])
   const [generating, setGenerating] = useState(false)
   const [loading, setLoading] = useState(true)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
+  const [selectedMissionId, setSelectedMissionId] = useState<string>("")
+  const [selectedIntervenantId, setSelectedIntervenantId] = useState<string>("")
   const [showGenerateModal, setShowGenerateModal] = useState(false)
 
   const refresh = useCallback(async () => {
     setLoading(true)
-    const [tRes, dRes] = await Promise.all([
+    const [tRes, dRes, mRes] = await Promise.all([
       listTemplates(),
       listEntityDocuments("etude", etudeId),
+      listEtudeMissions(etudeId),
     ])
-    // Show ALL templates (no scope filtering)
     setTemplates((tRes as any).data || [])
     setDocs((dRes as any).data || [])
+    setMissions((mRes as any).data || [])
     setLoading(false)
   }, [etudeId])
 
+  useEffect(() => { refresh() }, [refresh])
+
+  // When mission changes, load its intervenants
   useEffect(() => {
-    refresh()
-  }, [refresh])
+    setSelectedIntervenantId("")
+    setIntervenants([])
+    if (!selectedMissionId) return
+    listMissionIntervenants(selectedMissionId).then((res) => {
+      const list = (res as any).data || []
+      setIntervenants(list)
+      if (list.length === 1) setSelectedIntervenantId(list[0].id)
+    })
+  }, [selectedMissionId])
 
   const handleGenerate = async () => {
     if (!selectedTemplateId) {
@@ -55,10 +72,20 @@ export default function EtudeDocumentsPage() {
       return
     }
     setGenerating(true)
+
+    // If a mission is selected, use mission scope to get all mission/intervenant data
+    const scope = selectedMissionId ? "mission" : "etude"
+    const entityId = selectedMissionId || etudeId
+
     const res = await fetch("/api/documents/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ template_id: selectedTemplateId, scope: "etude", entity_id: etudeId }),
+      body: JSON.stringify({
+        template_id: selectedTemplateId,
+        scope,
+        entity_id: entityId,
+        intervenant_id: selectedIntervenantId || undefined,
+      }),
     })
     const json = await res.json()
     if (!res.ok) toast.error(json?.error || "Erreur")
@@ -67,6 +94,8 @@ export default function EtudeDocumentsPage() {
       window.open(`/api/documents/${json.data.id}/download`, "_blank")
       setShowGenerateModal(false)
       setSelectedTemplateId("")
+      setSelectedMissionId("")
+      setSelectedIntervenantId("")
       refresh()
     }
     setGenerating(false)
@@ -76,10 +105,7 @@ export default function EtudeDocumentsPage() {
     if (!confirm("Supprimer ce document ?")) return
     const res = await deleteGeneratedDocument(id)
     if ((res as any).error) toast.error((res as any).error)
-    else {
-      toast.success("Supprimé")
-      refresh()
-    }
+    else { toast.success("Supprimé"); refresh() }
   }
 
   return (
@@ -115,10 +141,10 @@ export default function EtudeDocumentsPage() {
           <p className="text-xs text-muted-foreground">Chargement…</p>
         ) : templates.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            Aucun modèle disponible. Importez-en depuis{" "}
+            Aucun modèle disponible.{" "}
             <Link href="/administration/documents" className="text-[#00236f] underline">
-              Administration → Documents
-            </Link>.
+              Gérer les modèles
+            </Link>
           </p>
         ) : (
           <p className="text-xs text-muted-foreground">
@@ -138,10 +164,7 @@ export default function EtudeDocumentsPage() {
         ) : (
           <div className="space-y-2">
             {docs.map((d) => (
-              <div
-                key={d.id}
-                className="bg-white rounded-xl border border-border shadow-sm p-3 flex items-center justify-between gap-3"
-              >
+              <div key={d.id} className="bg-white rounded-xl border border-border shadow-sm p-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <FileText className="h-4 w-4 text-[#00236f] shrink-0" />
                   <div className="min-w-0">
@@ -152,16 +175,10 @@ export default function EtudeDocumentsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a
-                    href={`/api/documents/${d.id}/download`}
-                    className="inline-flex items-center gap-1 text-xs text-[#00236f] hover:underline"
-                  >
+                  <a href={`/api/documents/${d.id}/download`} className="inline-flex items-center gap-1 text-xs text-[#00236f] hover:underline">
                     <Download className="h-3.5 w-3.5" /> Télécharger
                   </a>
-                  <button
-                    onClick={() => handleDelete(d.id)}
-                    className="text-red-500 hover:text-red-700"
-                  >
+                  <button onClick={() => handleDelete(d.id)} className="text-red-500 hover:text-red-700">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -171,19 +188,17 @@ export default function EtudeDocumentsPage() {
         )}
       </div>
 
-      {/* Generate document modal */}
       <Dialog open={showGenerateModal} onOpenChange={(o) => !o && setShowGenerateModal(false)}>
         <DialogContent>
           <DialogClose onClose={() => setShowGenerateModal(false)} />
           <DialogHeader>
             <DialogTitle>Générer un document</DialogTitle>
             <DialogDescription>
-              Sélectionnez le modèle à utiliser pour générer le document.
+              Sélectionnez le modèle et, si besoin, la mission et l&apos;intervenant concernés.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Template dropdown */}
             <div className="space-y-2">
               <Label>Modèle de document *</Label>
               <select
@@ -200,8 +215,48 @@ export default function EtudeDocumentsPage() {
               </select>
             </div>
 
+            <div className="space-y-2">
+              <Label>Mission (optionnel — requis pour les RDM)</Label>
+              {missions.length > 0 ? (
+                <select
+                  className="w-full h-10 px-3 rounded-md border border-input text-sm bg-white"
+                  value={selectedMissionId}
+                  onChange={(e) => setSelectedMissionId(e.target.value)}
+                >
+                  <option value="">-- Aucune (document d&apos;étude uniquement) --</option>
+                  {missions.map((m) => (
+                    <option key={m.id} value={m.id}>{m.nom}</option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-sm text-slate-500">Aucune mission sur cette étude.</p>
+              )}
+            </div>
+
+            {selectedMissionId && (
+              <div className="space-y-2">
+                <Label>Intervenant</Label>
+                {intervenants.length > 0 ? (
+                  <select
+                    className="w-full h-10 px-3 rounded-md border border-input text-sm bg-white"
+                    value={selectedIntervenantId}
+                    onChange={(e) => setSelectedIntervenantId(e.target.value)}
+                  >
+                    <option value="">-- Aucun --</option>
+                    {intervenants.map((p) => (
+                      <option key={p.id} value={p.id}>{p.prenom} {p.nom}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm text-slate-500">Aucun intervenant assigné à cette mission.</p>
+                )}
+              </div>
+            )}
+
             <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-500">
-              Le document sera généré avec les données de cette étude, du client, et du suiveur.
+              {selectedMissionId
+                ? "Le document sera généré avec les données de la mission, de l'étude, du client et de l'intervenant sélectionné."
+                : "Le document sera généré avec les données de l'étude, du client et du suiveur."}
             </div>
           </div>
 
