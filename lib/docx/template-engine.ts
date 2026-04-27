@@ -9,20 +9,31 @@ export { extractPlaceholders } from "./placeholders"
  * - Simple values: {etude.nom}
  * - Pipe filters: {today | formatDate:'DD/MM/YYYY'}, {president | sexe:'e'}
  * - Underscore-separated fallbacks: {etudiant_prenom}
+ * - Scope chain traversal: variables like {date} work inside {#phases} loops
  */
 function angularParser(tag: string) {
   tag = tag.trim()
-  
+
+  function resolveWithChain(scope: any, context: any, path: string): any {
+    // Try current scope first
+    let val = resolveValue(scope, path)
+    // If not found, walk up the scope chain (needed inside loops)
+    if (val === undefined && context?.scopeList) {
+      for (let i = context.scopeList.length - 1; i >= 0; i--) {
+        val = resolveValue(context.scopeList[i], path)
+        if (val !== undefined) break
+      }
+    }
+    return val
+  }
+
   // Handle pipe filters
   if (tag.includes("|")) {
     const [expression, ...filters] = tag.split("|").map((s) => s.trim())
-    
+
     return {
       get: (scope: any, context: any) => {
-        // Resolve the base value
-        let value = resolveValue(scope, expression)
-        
-        // Apply each filter
+        let value = resolveWithChain(scope, context, expression)
         for (const filter of filters) {
           value = applyFilter(value, filter, scope)
         }
@@ -30,11 +41,11 @@ function angularParser(tag: string) {
       },
     }
   }
-  
+
   // Standard dot/underscore notation
   return {
-    get: (scope: any) => {
-      return resolveValue(scope, tag) ?? ""
+    get: (scope: any, context: any) => {
+      return resolveWithChain(scope, context, tag) ?? ""
     },
   }
 }

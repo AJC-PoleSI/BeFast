@@ -336,12 +336,21 @@ export async function buildTemplateContext(
       ...base,
       // Reference = numéro d'étude
       reference: etude.numero || "",
-      // Mission
+      // Mission — only primitive fields (no raw Supabase join objects)
       mission: {
-        ...m,
+        id: m.id,
+        nom: m.nom || "",
+        type: m.type || "",
+        voie: m.voie || "",
+        classe: m.classe || "",
+        description: m.description || "",
+        statut: m.statut || "",
+        nb_jours: m.nb_jours ?? "",
+        taux_jour: m.taux_jour ?? "",
+        date_debut: m.date_debut || "",
+        date_fin: m.date_fin || "",
         numero_etude: (etude.numero || "").slice(-2),
         numero_etude_complet: etude.numero || "",
-        description: m.description || "",
       },
       // Étude
       etude: {
