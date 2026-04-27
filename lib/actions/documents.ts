@@ -2,16 +2,28 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache"
+
+const TEMPLATES_TAG = "document_templates"
+
+// Uses admin client (no cookies) so unstable_cache works across requests.
+// Templates are global admin resources — bypassing RLS is safe here.
+const _listTemplatesCached = unstable_cache(
+  async () => {
+    const sb = createAdminClient()
+    const { data, error } = await sb
+      .from("document_templates")
+      .select("id, name, description, category, file_path, file_name, placeholders, created_at")
+      .order("created_at", { ascending: false })
+    if (error) return { error: error.message }
+    return { data }
+  },
+  [TEMPLATES_TAG],
+  { tags: [TEMPLATES_TAG], revalidate: 3600 }
+)
 
 export async function listTemplates() {
-  const sb = createClient()
-  const { data, error } = await sb
-    .from("document_templates")
-    .select("*")
-    .order("created_at", { ascending: false })
-  if (error) return { error: error.message }
-  return { data }
+  return _listTemplatesCached()
 }
 
 export async function deleteTemplate(id: string) {
@@ -26,6 +38,7 @@ export async function deleteTemplate(id: string) {
   }
   const { error } = await sb.from("document_templates").delete().eq("id", id)
   if (error) return { error: error.message }
+  revalidateTag(TEMPLATES_TAG)
   revalidatePath("/administration/documents")
   return { success: true }
 }
@@ -37,6 +50,7 @@ export async function updateTemplateMeta(
   const sb = createClient()
   const { error } = await sb.from("document_templates").update(updates).eq("id", id)
   if (error) return { error: error.message }
+  revalidateTag(TEMPLATES_TAG)
   revalidatePath("/administration/documents")
   return { success: true }
 }

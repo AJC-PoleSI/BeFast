@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { extractPlaceholders } from "@/lib/docx/template-engine"
+import { revalidateTag } from "next/cache"
+
+const TEMPLATES_TAG = "document_templates"
 
 // Allow up to 30 seconds for DOCX parsing + upload
 export const maxDuration = 30
@@ -42,5 +45,6 @@ export async function POST(req: NextRequest) {
     console.error("DB insert error:", error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+  revalidateTag(TEMPLATES_TAG)
   return NextResponse.json({ data })
 }
