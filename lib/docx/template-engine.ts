@@ -139,19 +139,27 @@ export function renderDocx(
 ): Buffer {
   const zip = new PizZip(templateBuffer as any)
 
-  // Nettoyage des balises de correction orthographique (proofErr) que Word
-  // rajoute de manière invisible en plein milieu des tags {balises}
-  const filesToClean = [
-    "word/document.xml",
-    "word/header1.xml", "word/header2.xml", "word/header3.xml",
-    "word/footer1.xml", "word/footer2.xml", "word/footer3.xml",
-  ]
-  
-  for (const file of filesToClean) {
-    if (zip.files[file]) {
-      let xml = zip.files[file].asText()
-      xml = xml.replace(/<w:proofErr[^>]*>/g, "").replace(/<\/w:proofErr>/g, "")
-      zip.file(file, xml)
+  // Word insère des éléments invisibles (proofErr, bookmarks, commentaires,
+  // sauts de page rendus, noProof, lang…) qui peuvent casser un tag {balise}
+  // en deux runs <w:r>, empêchant docxtemplater de le reconnaître.
+  // On les nettoie sur TOUS les fichiers XML du dossier word/.
+  const cleanXml = (xml: string): string =>
+    xml
+      .replace(/<w:proofErr[^/]*\/>/g, "")
+      .replace(/<w:proofErr[^>]*>[\s\S]*?<\/w:proofErr>/g, "")
+      .replace(/<w:bookmarkStart[^/]*\/>/g, "")
+      .replace(/<w:bookmarkEnd[^/]*\/>/g, "")
+      .replace(/<w:commentRangeStart[^/]*\/>/g, "")
+      .replace(/<w:commentRangeEnd[^/]*\/>/g, "")
+      .replace(/<w:commentReference[^/]*\/>/g, "")
+      .replace(/<w:lastRenderedPageBreak[^/]*\/>/g, "")
+      .replace(/<w:noProof[^/]*\/>/g, "")
+
+  for (const file of Object.keys(zip.files)) {
+    if (/^word\/.*\.xml$/.test(file) && !file.includes("/_rels/")) {
+      const xml = zip.files[file].asText()
+      const cleaned = cleanXml(xml)
+      if (cleaned !== xml) zip.file(file, cleaned)
     }
   }
 
