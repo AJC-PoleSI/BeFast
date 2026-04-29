@@ -190,21 +190,31 @@ export default function ParametresStructurePage() {
 
   function addPole() {
     const v = newPole.trim()
-    if (!v || poles.includes(v)) return
-    const next = [...poles, v]
-    setPoles(next)
+    if (!v) return
     setNewPole("")
-    persistPoles(next, polePerms)
+    setPoles(prev => {
+      if (prev.includes(v)) return prev
+      const next = [...prev, v]
+      setPolePerms(prevPerms => {
+        persistPoles(next, prevPerms)
+        return prevPerms
+      })
+      return next
+    })
   }
 
   function removePole(p: string) {
-    const nextPoles = poles.filter(x => x !== p)
-    const nextPerms = { ...polePerms }
-    delete nextPerms[p]
-    setPoles(nextPoles)
-    setPolePerms(nextPerms)
     if (editingPole === p) setEditingPole(null)
-    persistPoles(nextPoles, nextPerms)
+    setPoles(prev => {
+      const nextPoles = prev.filter(x => x !== p)
+      setPolePerms(prevPerms => {
+        const nextPerms = { ...prevPerms }
+        delete nextPerms[p]
+        persistPoles(nextPoles, nextPerms)
+        return nextPerms
+      })
+      return nextPoles
+    })
   }
 
   function togglePolePerm(pole: string, key: string, value: boolean) {
