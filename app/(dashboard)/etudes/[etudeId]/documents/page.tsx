@@ -8,11 +8,11 @@ import { ArrowLeft, FileText, Download, Trash2, Sparkles, Loader2 } from "lucide
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
-  listEntityDocuments,
   listTemplates,
   deleteGeneratedDocument,
   listEtudeMissions,
   listMissionIntervenants,
+  listEtudeAllDocuments,
 } from "@/lib/actions/documents"
 import {
   Dialog,
@@ -43,7 +43,7 @@ export default function EtudeDocumentsPage() {
     setLoading(true)
     const [tRes, dRes, mRes] = await Promise.all([
       listTemplates(),
-      listEntityDocuments("etude", etudeId),
+      listEtudeAllDocuments(etudeId),
       listEtudeMissions(etudeId),
     ])
     setTemplates((tRes as any).data || [])

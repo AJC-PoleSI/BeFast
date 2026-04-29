@@ -179,21 +179,32 @@ export default function ParametresStructurePage() {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
+  // Persist the pôles list immediately to avoid losing changes
+  // if the user forgets to click "Enregistrer" at the bottom.
+  async function persistPoles(nextPoles: string[], nextPerms: PolePermsMap) {
+    await setParametres({
+      poles_liste: JSON.stringify(nextPoles),
+      pole_permissions: JSON.stringify(nextPerms),
+    })
+  }
+
   function addPole() {
     const v = newPole.trim()
     if (!v || poles.includes(v)) return
-    setPoles(p => [...p, v])
+    const next = [...poles, v]
+    setPoles(next)
     setNewPole("")
+    persistPoles(next, polePerms)
   }
 
   function removePole(p: string) {
-    setPoles(list => list.filter(x => x !== p))
-    setPolePerms(prev => {
-      const next = { ...prev }
-      delete next[p]
-      return next
-    })
+    const nextPoles = poles.filter(x => x !== p)
+    const nextPerms = { ...polePerms }
+    delete nextPerms[p]
+    setPoles(nextPoles)
+    setPolePerms(nextPerms)
     if (editingPole === p) setEditingPole(null)
+    persistPoles(nextPoles, nextPerms)
   }
 
   function togglePolePerm(pole: string, key: string, value: boolean) {

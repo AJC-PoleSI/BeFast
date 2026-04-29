@@ -68,6 +68,51 @@ export async function listEntityDocuments(scope: string, entityId: string) {
   return { data }
 }
 
+/**
+ * List all documents related to an étude:
+ * - documents directly scoped to the étude
+ * - documents scoped to missions belonging to this étude
+ */
+export async function listEtudeAllDocuments(etudeId: string) {
+  noStore()
+  const sb = createClient()
+
+  // Get mission IDs for this étude
+  const { data: missions } = await sb
+    .from("missions")
+    .select("id")
+    .eq("etude_id", etudeId)
+  const missionIds = (missions || []).map((m: any) => m.id)
+
+  // Fetch étude-scoped + mission-scoped docs in parallel
+  const queries: any[] = [
+    sb
+      .from("generated_documents")
+      .select("*, document_templates(id, name)")
+      .eq("scope", "etude")
+      .eq("entity_id", etudeId)
+      .then((r: any) => r),
+  ]
+  if (missionIds.length > 0) {
+    queries.push(
+      sb
+        .from("generated_documents")
+        .select("*, document_templates(id, name)")
+        .eq("scope", "mission")
+        .in("entity_id", missionIds)
+        .then((r: any) => r)
+    )
+  }
+
+  const results = await Promise.all(queries)
+  const all: any[] = []
+  for (const r of results) {
+    if (r.data) all.push(...r.data)
+  }
+  all.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
+  return { data: all }
+}
+
 export async function deleteGeneratedDocument(id: string) {
   const sb = createClient()
   const { data: doc } = await sb
