@@ -8,19 +8,25 @@ type PolePerms = Record<string, boolean>
 type PolePermsMap = Record<string, PolePerms>
 
 const PERMISSION_CATALOG: { key: string; label: string }[] = [
+  { key: "dashboard", label: "Accès au tableau de bord" },
+  { key: "missions", label: "Accès au module Missions" },
+  { key: "etudes", label: "Accès au module Études" },
+  { key: "prospection", label: "Accès au module Prospection" },
+  { key: "membres", label: "Accès au module Membres" },
+  { key: "documents", label: "Accès au module Documents" },
+  { key: "statistiques", label: "Accès aux Statistiques" },
+  { key: "administration", label: "Accès complet Administration" },
+  { key: "nouvelle_mission", label: "Créer une mission" },
   { key: "selectionner_candidats", label: "Sélectionner les candidats (RH)" },
   { key: "valider_comptes", label: "Valider les comptes membres" },
   { key: "voir_documents_membres", label: "Voir les documents des membres" },
   { key: "voir_factures", label: "Voir les factures" },
   { key: "valider_bv", label: "Valider les BV" },
-  { key: "gerer_parametres", label: "Gérer les paramètres" },
   { key: "parametres_structure", label: "Paramètres structure" },
+  { key: "gerer_parametres", label: "Gérer les paramètres" },
   { key: "publier_etudes", label: "Publier les études" },
   { key: "publier_missions", label: "Publier les missions" },
-  { key: "nouvelle_mission", label: "Créer une mission" },
   { key: "assigner_intervenants", label: "Assigner les intervenants" },
-  { key: "administration", label: "Accès administration" },
-  { key: "statistiques", label: "Voir les statistiques" },
 ]
 
 const DEFAULT_POLES = [

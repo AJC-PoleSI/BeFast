@@ -138,6 +138,23 @@ export function renderDocx(
   data: Record<string, any>
 ): Buffer {
   const zip = new PizZip(templateBuffer as any)
+
+  // Nettoyage des balises de correction orthographique (proofErr) que Word
+  // rajoute de manière invisible en plein milieu des tags {balises}
+  const filesToClean = [
+    "word/document.xml",
+    "word/header1.xml", "word/header2.xml", "word/header3.xml",
+    "word/footer1.xml", "word/footer2.xml", "word/footer3.xml",
+  ]
+  
+  for (const file of filesToClean) {
+    if (zip.files[file]) {
+      let xml = zip.files[file].asText()
+      xml = xml.replace(/<w:proofErr[^>]*>/g, "")
+      zip.file(file, xml)
+    }
+  }
+
   const doc = new Docxtemplater(zip, {
     paragraphLoop: true,
     linebreaks: true,

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { unstable_noStore as noStore } from "next/cache"
 
 export async function getEtudes(filters?: { statut?: string }) {
   const supabase = createClient()
@@ -261,6 +262,7 @@ export async function setParametre(key: string, value: string) {
 }
 
 export async function getAllParametres() {
+  noStore()
   const supabase = createClient()
   const { data, error } = await supabase.from("parametres").select("key, value, description").order("key")
   if (error) return { error: error.message }
