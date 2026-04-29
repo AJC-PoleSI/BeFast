@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { revalidatePath, revalidateTag, unstable_cache } from "next/cache"
+import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noStore } from "next/cache"
 
 const TEMPLATES_TAG = "document_templates"
 
@@ -56,6 +56,7 @@ export async function updateTemplateMeta(
 }
 
 export async function listEntityDocuments(scope: string, entityId: string) {
+  noStore()
   const sb = createClient()
   const { data, error } = await sb
     .from("generated_documents")

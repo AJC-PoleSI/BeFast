@@ -38,6 +38,15 @@ export async function POST(req: NextRequest) {
 
   const context = await buildTemplateContext(scope, entity_id, intervenant_id)
 
+  const { count } = await sb
+    .from("generated_documents")
+    .select("*", { count: "exact", head: true })
+    .eq("entity_id", entity_id)
+    .eq("template_id", template_id)
+
+  const numero_document = (count || 0) + 1
+  context.numero_document = numero_document
+
   let rendered: Buffer
   try {
     rendered = renderDocx(templateBuf, context)
@@ -48,7 +57,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const outName = `${tpl.name.replace(/[^a-zA-Z0-9._-]/g, "_")}_${Date.now()}.docx`
+  const outName = `${tpl.name.replace(/[^a-zA-Z0-9._-]/g, "_")}_${numero_document}.docx`
   const outPath = `${scope}/${entity_id}/${outName}`
 
   const { error: upErr } = await sb.storage.from("documents").upload(outPath, rendered, {

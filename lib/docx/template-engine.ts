@@ -150,7 +150,7 @@ export function renderDocx(
   for (const file of filesToClean) {
     if (zip.files[file]) {
       let xml = zip.files[file].asText()
-      xml = xml.replace(/<w:proofErr[^>]*>/g, "")
+      xml = xml.replace(/<w:proofErr[^>]*>/g, "").replace(/<\/w:proofErr>/g, "")
       zip.file(file, xml)
     }
   }
