@@ -208,6 +208,15 @@ function formatDateFR(date: Date): string {
   return `${dd}/${mm}/${yyyy}`
 }
 
+// Format an ISO date string (YYYY-MM-DD) or Date into DD/MM/YYYY.
+// Returns "" for null/undefined/empty/invalid inputs.
+function fmtDate(value: any): string {
+  if (!value) return ""
+  const d = value instanceof Date ? value : new Date(value)
+  if (isNaN(d.getTime())) return ""
+  return formatDateFR(d)
+}
+
 /**
  * Construit un contexte complet pour le remplissage des templates DOCX.
  * 
@@ -407,14 +416,20 @@ export async function buildTemplateContext(
         statut: m.statut || "",
         nb_jours: m.nb_jours ?? "",
         taux_jour: m.taux_jour ?? "",
-        date_debut: m.date_debut || "",
-        date_fin: m.date_fin || "",
+        date_debut: fmtDate(m.date_debut),
+        date_fin: fmtDate(m.date_fin),
+        date_debut_iso: m.date_debut || "",
+        date_fin_iso: m.date_fin || "",
         numero_etude: (etude.numero || "").slice(-2),
         numero_etude_complet: etude.numero || "",
       },
-      // Étude
+      // Étude — dates formatted DD/MM/YYYY
       etude: {
         ...etude,
+        date_debut: fmtDate(etude.date_debut),
+        date_fin: fmtDate(etude.date_fin),
+        date_debut_iso: etude.date_debut || "",
+        date_fin_iso: etude.date_fin || "",
         prix: tarif.toFixed(2),
         frais: frais.toFixed(2),
         tarif_ht: tarif.toFixed(2),
@@ -422,14 +437,18 @@ export async function buildTemplateContext(
         nb_jeh,
         nb_phases,
       },
+      // Flat aliases for convenience (top-level)
+      date_debut: fmtDate(etude.date_debut),
+      date_fin: fmtDate(etude.date_fin),
       // Client
       client: etude.clients ?? {},
       // Suiveur
       suiveur: etude.suiveur ?? {},
       // Intervenant (accessible via {intervenant.prenom})
       intervenant: intervenantCtx,
-      // Étudiant = alias pour intervenant (accessible via {etudiant.prenom} ou {etudiant_prenom})
+      // Étudiant = alias pour intervenant ({etudiant.*}, {étudiant.*} avec accent, {etudiant_*})
       etudiant: intervenantCtx,
+      "étudiant": intervenantCtx,
       etudiant_prenom: intervenantCtx.prenom,
       etudiant_nom: intervenantCtx.nom,
       etudiant_adresse: intervenantCtx.adresse,
@@ -465,11 +484,16 @@ export async function buildTemplateContext(
     const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext((e as any).echeancier_blocs)
     const organigramme = buildOrganigramme(params)
 
+    const eAny = e as any
     return {
       ...base,
-      reference: (e as any).numero || "",
+      reference: eAny.numero || "",
       etude: {
         ...e,
+        date_debut: fmtDate(eAny.date_debut),
+        date_fin: fmtDate(eAny.date_fin),
+        date_debut_iso: eAny.date_debut || "",
+        date_fin_iso: eAny.date_fin || "",
         prix: tarif.toFixed(2),
         frais: frais.toFixed(2),
         tarif_ht: tarif.toFixed(2),
@@ -477,8 +501,10 @@ export async function buildTemplateContext(
         nb_jeh,
         nb_phases,
       },
-      client: (e as any).clients ?? {},
-      suiveur: (e as any).suiveur ?? {},
+      date_debut: fmtDate(eAny.date_debut),
+      date_fin: fmtDate(eAny.date_fin),
+      client: eAny.clients ?? {},
+      suiveur: eAny.suiveur ?? {},
       ...organigramme,
       phases,
       planning,
@@ -498,6 +524,7 @@ export async function buildTemplateContext(
       ...base,
       personne: p ?? {},
       etudiant: intervenantCtx,
+      "étudiant": intervenantCtx,
       etudiant_prenom: intervenantCtx.prenom,
       etudiant_nom: intervenantCtx.nom,
       ...organigramme,
