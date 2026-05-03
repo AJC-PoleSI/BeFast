@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nous contacter — Audencia Junior Conseil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── HERO ── */
+    .contact-hero { padding-top: 68px; background: var(--marine); padding-bottom: 64px; }
+    .contact-hero-inner { max-width: 1200px; margin: 0 auto; padding: 64px 48px 0; }
+    .ch-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--rose); margin-bottom: 16px; }
+    .ch-title { font-size: 52px; font-weight: 800; color: white; line-height: 1.1; margin-bottom: 16px; }
+    .ch-sub { font-size: 16px; color: rgba(255,255,255,0.55); max-width: 520px; line-height: 1.7; }
+
+    /* ── MAIN GRID ── */
+    .contact-main { max-width: 1200px; margin: 0 auto; padding: 80px 48px 96px; display: grid; grid-template-columns: 1fr 1.4fr; gap: 80px; align-items: start; }
+
+    /* ── LEFT: INFO ── */
+    .contact-info-title { font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--rose); margin-bottom: 12px; }
+    .contact-info h2 { font-size: 28px; font-weight: 800; color: var(--marine); margin-bottom: 8px; letter-spacing: 1px; }
+    .contact-info-accent { width: 36px; height: 3px; background: var(--rose); margin-bottom: 24px; }
+    .contact-info p { font-size: 14px; color: var(--gray-text); line-height: 1.8; margin-bottom: 40px; }
+
+    .info-item { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 20px; }
+    .info-icon { width: 40px; height: 40px; background: var(--gray-bg); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .info-icon svg { width: 18px; height: 18px; stroke: var(--rose); fill: none; stroke-width: 2; }
+    .info-label { font-size: 11px; font-weight: 700; color: var(--marine); margin-bottom: 3px; letter-spacing: 0.5px; text-transform: uppercase; }
+    .info-value { font-size: 13px; color: var(--gray-text); line-height: 1.5; }
+    .info-value a { color: var(--gray-text); text-decoration: none; }
+    .info-value a:hover { color: var(--rose); }
+
+    /* Badges */
+    .contact-badges { display: flex; flex-direction: column; gap: 10px; margin-top: 32px; }
+    .contact-badge { display: flex; align-items: center; gap: 10px; background: var(--gray-bg); border: 1.5px solid var(--gray-border); border-radius: 8px; padding: 12px 16px; font-size: 12px; font-weight: 700; color: var(--marine); }
+    .contact-badge svg { width: 16px; height: 16px; stroke: var(--rose); fill: none; stroke-width: 2; flex-shrink: 0; }
+
+    /* ── RIGHT: FORM ── */
+    .contact-form-wrap { background: var(--gray-bg); border-radius: 12px; padding: 40px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--marine); margin-bottom: 8px; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%; padding: 12px 16px;
+      border: 1.5px solid var(--gray-border); border-radius: 4px;
+      font-family: 'Montserrat', sans-serif; font-size: 13px; color: var(--marine);
+      background: white; outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--marine); }
+    .form-select { appearance: none; cursor: pointer; }
+    .form-textarea { resize: vertical; min-height: 120px; }
+    .form-submit { width: 100%; padding: 16px; font-size: 13px; letter-spacing: 2px; margin-top: 8px; }
+    .form-success {
+      display: none; margin-top: 16px; padding: 16px;
+      background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px;
+      font-size: 13px; color: #166534; font-weight: 600; text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .contact-hero-inner { padding: 48px 24px 0; }
+      .ch-title { font-size: 36px; }
+      .contact-main { grid-template-columns: 1fr; gap: 48px; padding: 48px 24px 64px; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header id="main-header">
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-mark">
+        <img src="photos/logo.png" alt="AJC" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span style="display:none;">AJC</span>
+      </div>
+      <div class="logo-text">Audencia <small>Junior Conseil</small></div>
+    </a>
+    <nav>
+      <div class="nav-item">
+        <a href="la-je.html">La Junior-Entreprise <span class="arr">▾</span></a>
+        <div class="dropdown">
+          <a href="la-je.html#qu-est-ce" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16v.1"/></svg></div>
+            <span><span class="di-title">Qu'est-ce qu'une JE ?</span><span class="di-sub">Le mouvement Junior-Entreprises</span></span>
+          </a>
+          <a href="la-je.html#equipe" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3a4 4 0 010 7.75"/></svg></div>
+            <span><span class="di-title">Notre Équipe</span><span class="di-sub">Bureau et chefs de projets</span></span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="contact.html" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg></div>
+            <span><span class="di-title">Nous contacter</span><span class="di-sub">Demander un devis</span></span>
+          </a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <a href="prestations.html">Nos prestations <span class="arr">▾</span></a>
+        <div class="dropdown">
+          <a href="prestations.html#marketing" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><path d="M3 18L9 12L13 16L18 9L22 13"/></svg></div>
+            <span><span class="di-title">Marketing</span><span class="di-sub">Études de marché, stratégie</span></span>
+          </a>
+          <a href="prestations.html#communication" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+            <span><span class="di-title">Communication</span><span class="di-sub">Stratégie éditoriale, digital</span></span>
+          </a>
+          <a href="prestations.html#rse" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18"/><path d="M3 12h18"/></svg></div>
+            <span><span class="di-title">RSE</span><span class="di-sub">Diagnostic, bilan carbone</span></span>
+          </a>
+          <a href="prestations.html#bigdata" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="6" height="14" rx="1"/><rect x="9" y="3" width="6" height="18" rx="1"/><rect x="16" y="10" width="6" height="11" rx="1"/></svg></div>
+            <span><span class="di-title">Big Data</span><span class="di-sub">Analyse, dataviz</span></span>
+          </a>
+          <a href="prestations.html#finance" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><path d="M12 2L22 7L22 12C22 17.5 17.5 22 12 23C6.5 22 2 17.5 2 12L2 7Z"/><path d="M9 12l3 3 5-5"/></svg></div>
+            <span><span class="di-title">Finance</span><span class="di-sub">Business plan, valorisation</span></span>
+          </a>
+        </div>
+      </div>
+      <a href="index.html#clients">Nos réalisations</a>
+    </nav>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    <a href="contact.html" class="btn-outline-marine active" id="desktop-cta">Nous contacter</a>
+  </div>
+</header>
+<div class="mobile-drawer" id="mobile-drawer">
+  <a href="index.html">Accueil</a>
+  <a href="la-je.html">La Junior-Entreprise</a>
+  <a href="prestations.html">Nos Prestations</a>
+  <a href="index.html#clients">Nos Réalisations</a>
+  <a href="contact.html" class="drawer-cta">Nous Contacter →</a>
+</div>
+
+<!-- HERO -->
+<div class="contact-hero">
+  <div class="contact-hero-inner">
+    <p class="ch-eyebrow">Parlons de votre projet</p>
+    <h1 class="ch-title">Nous contacter</h1>
+    <p class="ch-sub">Notre équipe vous répondra sous 48 heures. Décrivez votre besoin et nous vous proposerons une solution adaptée.</p>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="contact-main">
+
+  <!-- LEFT: Contact info -->
+  <div class="contact-info">
+    <div class="contact-info-title">Coordonnées</div>
+    <h2>Prenons contact</h2>
+    <div class="contact-info-accent"></div>
+    <p>Que vous ayez un projet précis ou une simple question, notre équipe de consultants juniors est disponible pour vous accompagner.</p>
+
+    <div class="info-item">
+      <div class="info-icon">
+        <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
+      </div>
+      <div>
+        <div class="info-label">Email</div>
+        <div class="info-value"><a href="mailto:contact@audencia-junior-conseil.fr">contact@audencia-junior-conseil.fr</a></div>
+      </div>
+    </div>
+
+    <div class="info-item">
+      <div class="info-icon">
+        <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+      </div>
+      <div>
+        <div class="info-label">Téléphone</div>
+        <div class="info-value">+33 (0)2 40 37 34 34</div>
+      </div>
+    </div>
+
+    <div class="info-item">
+      <div class="info-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2 C8 2 5 5.5 5 9.5 C5 15.5 12 22 12 22 S19 15.5 19 9.5 C19 5.5 16 2 12 2 Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+      </div>
+      <div>
+        <div class="info-label">Adresse</div>
+        <div class="info-value">8 route de la Jonelière<br>44312 Nantes Cedex 3</div>
+      </div>
+    </div>
+
+    <div class="contact-badges">
+      <div class="contact-badge">
+        <svg viewBox="0 0 24 24"><path d="M12 2L22 7L22 12C22 17.5 17.5 22 12 23C6.5 22 2 17.5 2 12L2 7Z"/><path d="M9 12l3 3 5-5"/></svg>
+        Certification ISO 9001 — Qualité garantie
+      </div>
+      <div class="contact-badge">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16v.1"/></svg>
+        Réponse sous 48h. Sans engagement.
+      </div>
+      <div class="contact-badge">
+        <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
+        Accord de confidentialité systématique
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Formspree form -->
+  <div class="contact-form-wrap">
+    <form id="contact-form" action="https://formspree.io/f/XXXXXXXX" method="POST">
+      <div class="form-row">
+        <div>
+          <label for="prenom" class="form-label">Prénom *</label>
+          <input type="text" id="prenom" name="prenom" required class="form-input" placeholder="Jean">
+        </div>
+        <div>
+          <label for="nom" class="form-label">Nom *</label>
+          <input type="text" id="nom" name="nom" required class="form-input" placeholder="Dupont">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="email" class="form-label">Email professionnel *</label>
+        <input type="email" id="email" name="email" required class="form-input" placeholder="jean.dupont@entreprise.fr">
+      </div>
+      <div class="form-group">
+        <label for="societe" class="form-label">Entreprise / Organisation</label>
+        <input type="text" id="societe" name="societe" class="form-input" placeholder="Nom de votre entreprise">
+      </div>
+      <div class="form-group">
+        <label for="domaine" class="form-label">Type de projet</label>
+        <select id="domaine" name="domaine" class="form-select">
+          <option value="">Sélectionner un domaine</option>
+          <option value="marketing">Marketing</option>
+          <option value="communication">Communication</option>
+          <option value="rse">RSE</option>
+          <option value="bigdata">Big Data</option>
+          <option value="finance">Finance</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="message" class="form-label">Description du projet *</label>
+        <textarea id="message" name="message" required class="form-textarea" placeholder="Décrivez votre besoin en quelques lignes..."></textarea>
+      </div>
+      <button type="submit" class="btn-solid-marine form-submit">ENVOYER MA DEMANDE</button>
+      <div id="form-success" class="form-success">
+        ✓ Message envoyé ! Nous vous répondrons sous 48h.
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-col-title">Contact</div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+          <span>+33 (0)2 40 37 34 34</span>
+        </div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7 L12 13 L22 7"/></svg>
+          <span>contact@audencia-junior-conseil.fr</span>
+        </div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><path d="M12 2 C8 2 5 5.5 5 9.5 C5 15.5 12 22 12 22 S19 15.5 19 9.5 C19 5.5 16 2 12 2 Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          <span>8 route de la Jonelière<br>44312 Nantes Cedex 3</span>
+        </div>
+        <div class="footer-socials">
+          <a href="#" class="social-btn" aria-label="LinkedIn">in</a>
+          <a href="#" class="social-btn" aria-label="Instagram">ig</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Localisation</div>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2711.3!2d-1.5897!3d47.2557!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4805ef3e8b35ef6b%3A0xb0d17c2a6c9d6b1!2sAudencia%20Business%20School!5e0!3m2!1sfr!2sfr!4v1"
+          style="width:100%;aspect-ratio:16/9;border-radius:6px;border:1px solid rgba(255,255,255,0.08);display:block;"
+          allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Audencia Nantes"></iframe>
+      </div>
+      <div>
+        <div class="footer-col-title">Mentions légales</div>
+        <div class="footer-mentions">
+          <a href="#">Mentions légales</a>
+          <a href="#">Politique de confidentialité</a>
+          <a href="#">CGV</a>
+        </div>
+        <div style="margin-top:32px;">
+          <div class="footer-col-title">La JE</div>
+          <div class="footer-mentions">
+            <a href="la-je.html">Qui sommes-nous ?</a>
+            <a href="la-je.html#equipe">Notre équipe</a>
+            <a href="contact.html">Nous contacter</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-logo-ghost">AJC</div>
+      <div class="footer-copyright">© 2025 Audencia Junior Conseil — Tous droits réservés</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Header scroll
+  window.addEventListener('scroll', () => {
+    document.getElementById('main-header').classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // Hamburger
+  const burger = document.getElementById('hamburger');
+  const drawer = document.getElementById('mobile-drawer');
+  burger.addEventListener('click', () => {
+    burger.classList.toggle('open');
+    drawer.classList.toggle('open');
+    document.body.style.overflow = drawer.classList.contains('open') ? 'hidden' : '';
+  });
+
+  // Pre-fill domaine select from URL param ?domaine=marketing
+  const params = new URLSearchParams(window.location.search);
+  const domaine = params.get('domaine');
+  if (domaine) {
+    const select = document.getElementById('domaine');
+    if (select) select.value = domaine;
+  }
+
+  // Formspree AJAX submission (no page reload)
+  const form = document.getElementById('contact-form');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('button[type=submit]');
+    const origText = btn.textContent;
+    btn.textContent = 'Envoi en cours…';
+    btn.disabled = true;
+    try {
+      const res = await fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        form.reset();
+        document.getElementById('form-success').style.display = 'block';
+        btn.textContent = origText;
+        btn.disabled = false;
+      } else {
+        btn.textContent = 'Erreur — réessayer';
+        btn.disabled = false;
+      }
+    } catch {
+      btn.textContent = 'Erreur — réessayer';
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
