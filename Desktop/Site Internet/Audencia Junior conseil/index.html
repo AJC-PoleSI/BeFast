@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audencia Junior Conseil — La Junior-Entreprise d'Audencia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── HERO ─────────────────────────────── */
+    #hero {
+      padding-top: 68px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      background: var(--marine);
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background: repeating-linear-gradient(135deg,#1a2744,#1a2744 40px,#1e2d52 40px,#1e2d52 80px);
+      opacity: 0.7;
+    }
+    .hero-bg-img {
+      position: absolute; inset: 0; z-index: 1;
+      background: repeating-linear-gradient(45deg,#0f1825,#0f1825 8px,#141f30 8px,#141f30 16px);
+      opacity: 0.85;
+    }
+    .hero-overlay {
+      position: absolute; inset: 0; z-index: 2;
+      background: linear-gradient(105deg, rgba(26,39,68,0.97) 50%, rgba(26,39,68,0.7) 100%);
+    }
+    .hero-inner {
+      position: relative; z-index: 3;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 100px 48px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      width: 100%;
+    }
+    .hero-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 12px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .hero-eyebrow::before { content: ''; display: block; width: 28px; height: 2px; background: var(--rose); flex-shrink: 0; }
+    .hero-title {
+      font-size: clamp(40px, 5vw, 68px);
+      font-weight: 800;
+      line-height: 1.05;
+      color: white;
+      margin-bottom: 28px;
+      letter-spacing: -0.5px;
+    }
+    .hero-title .light { font-weight: 300; }
+    .hero-sub {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.75;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 44px;
+      max-width: 400px;
+    }
+    .hero-ctas {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .hero-right { position: relative; }
+    .hero-img-wrap {
+      width: 100%;
+      aspect-ratio: 5/4;
+      background: repeating-linear-gradient(135deg,#1e2d4a,#1e2d4a 8px,#243460 8px,#243460 16px);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+    .hero-badge {
+      position: absolute;
+      bottom: -20px; left: 24px;
+      background: var(--rose);
+      color: white;
+      padding: 14px 20px;
+      border-radius: 6px;
+      font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+    }
+    .hero-badge strong {
+      display: block; font-size: 20px; font-weight: 800; color: white;
+    }
+    .hero-iso {
+      position: absolute; top: 20px; right: 20px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px; padding: 10px 14px; text-align: center;
+    }
+    .hero-iso strong { display: block; font-size: 15px; font-weight: 800; color: white; }
+    .hero-iso span { font-size: 10px; color: rgba(255,255,255,0.5); font-weight: 600; letter-spacing: 1px; }
+
+    /* ── VALEURS ───────────────────────────── */
+    #valeurs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .valeurs-visual {
+      position: relative;
+      min-height: 480px;
+      background: repeating-linear-gradient(135deg,#0f1825,#0f1825 8px,#141f30 8px,#141f30 16px);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .valeurs-visual::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(26,39,68,0.85) 0%, rgba(190,49,91,0.3) 100%);
+    }
+    .valeurs-visual-content {
+      position: relative; z-index: 1;
+      padding: 64px 56px; text-align: left;
+    }
+    .vvc-label { font-size: 10px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 16px; }
+    .vvc-title { font-size: 40px; font-weight: 800; color: white; line-height: 1.1; margin-bottom: 16px; }
+    .vvc-title .bold { color: var(--rose); }
+    .vvc-tagline { font-size: 18px; font-weight: 300; color: rgba(255,255,255,0.7); font-style: italic; margin-bottom: 36px; letter-spacing: 1px; }
+    .btn-solid-white { background: white; color: var(--marine); border: 2px solid white; padding: 12px 28px; font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; border-radius: 3px; transition: background 0.2s, color 0.2s; text-decoration: none; display: inline-block; }
+    .btn-solid-white:hover { background: transparent; color: white; }
+    .valeurs-atouts {
+      background: var(--white);
+      padding: 64px 56px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .va-label { font-size: 10px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--rose); margin-bottom: 12px; }
+    .va-title { font-size: 28px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--marine); margin-bottom: 8px; }
+    .va-title .thin { font-weight: 300; }
+    .va-accent { width: 36px; height: 3px; background: var(--rose); margin-bottom: 32px; }
+    .va-grid { display: flex; flex-direction: column; gap: 24px; }
+    .va-item { display: flex; align-items: flex-start; gap: 16px; }
+    .va-num { font-size: 28px; font-weight: 800; color: var(--rose); opacity: 0.2; line-height: 1; width: 32px; flex-shrink: 0; }
+    .va-content strong { display: block; font-size: 13px; font-weight: 800; color: var(--marine); margin-bottom: 4px; letter-spacing: 0.3px; }
+    .va-content span { font-size: 12px; color: var(--gray-text); line-height: 1.6; }
+
+    /* ── CHIFFRES CLÉS ─────────────────────── */
+    #chiffres {
+      position: relative;
+      padding: 80px 48px;
+      background: var(--marine);
+      overflow: hidden;
+    }
+    #chiffres::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(45deg,rgba(255,255,255,0.02),rgba(255,255,255,0.02) 1px,transparent 1px,transparent 40px),
+                  repeating-linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0.02) 1px,transparent 1px,transparent 40px);
+    }
+    .chiffres-header {
+      text-align: center; margin-bottom: 56px; position: relative; z-index: 1;
+    }
+    .chiffres-header-label { font-size: 10px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 10px; }
+    .chiffres-header-title { font-size: 28px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: white; }
+    .chiffres-header-title .bold { color: var(--rose); }
+    .chiffres-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+      position: relative; z-index: 1;
+    }
+    .chiffre-item {
+      text-align: center;
+      padding: 40px 24px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      position: relative;
+      transition: background 0.2s;
+    }
+    .chiffre-item:hover { background: rgba(255,255,255,0.07); }
+    .chiffre-num {
+      font-size: 60px;
+      font-weight: 800;
+      color: white;
+      line-height: 1;
+      margin-bottom: 8px;
+      letter-spacing: -2px;
+    }
+    .chiffre-num sup {
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+    .chiffre-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+    }
+
+    /* ── EXPERTISE ─────────────────────────── */
+    #expertise {
+      padding: 96px 48px;
+      background: var(--white);
+    }
+    .expertise-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+    .expertise-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .expertise-card {
+      background: var(--gray-bg);
+      border: 1.5px solid transparent;
+      border-radius: 8px;
+      padding: 28px 24px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .expertise-card:hover {
+      border-color: var(--marine);
+      transform: translateY(-2px);
+    }
+    .expertise-card.rose-card {
+      background: #FDF0F4;
+      border-color: #E8C0CE;
+    }
+    .expertise-card.rose-card:hover {
+      border-color: var(--rose);
+    }
+    .card-icon {
+      width: 40px; height: 40px;
+      margin-bottom: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card-icon svg { width: 28px; height: 28px; }
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--marine);
+      margin-bottom: 8px;
+    }
+    .expertise-card.rose-card .card-title { color: var(--rose); }
+    .card-desc {
+      font-size: 12px;
+      color: var(--gray-text);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .card-link {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--marine);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-link::after { content: '→'; }
+    .card-link:hover { color: var(--rose); }
+    .btn-rose-sm {
+      border: 2px solid var(--rose);
+      background: var(--rose);
+      color: white;
+      padding: 9px 18px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: background 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-rose-sm:hover { background: #a8274e; border-color: #a8274e; }
+
+    /* ── POURQUOI ─────────────────────────── */
+    #pourquoi {
+      background: var(--marine);
+      padding: 96px 48px;
+    }
+    .pourquoi-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .pourquoi-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .pourquoi-title {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: white;
+    }
+    .pourquoi-title .accent { color: var(--rose); }
+    .pourquoi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 48px;
+    }
+    .pourquoi-item {
+      text-align: center;
+      padding: 40px 32px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .pourquoi-item:hover {
+      border-color: rgba(190,49,91,0.4);
+      background: rgba(255,255,255,0.03);
+    }
+    .pourquoi-icon {
+      width: 64px; height: 64px;
+      border: 2px solid var(--rose);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .pourquoi-icon svg { width: 28px; height: 28px; stroke: var(--rose); fill: none; stroke-width: 2; }
+    .pourquoi-item-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: white;
+      margin-bottom: 12px;
+    }
+    .pourquoi-item-desc {
+      font-size: 13px;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.7;
+    }
+
+    /* ── MÉTHODOLOGIE ─────────────────────── */
+    #methodologie {
+      background: var(--gray-bg);
+      padding: 96px 48px;
+    }
+    .methodologie-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-header-center {
+      text-align: center;
+      margin-bottom: 72px;
+    }
+    .section-header-center .section-title { display: inline-block; }
+    .section-header-center .section-accent { margin: 0 auto 0; }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      position: relative;
+    }
+    .steps-grid::before {
+      content: '';
+      position: absolute;
+      top: 48px;
+      left: 12.5%;
+      right: 12.5%;
+      height: 1px;
+      background: var(--gray-border);
+      z-index: 0;
+    }
+    .step-item {
+      text-align: center;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .step-num {
+      font-size: 80px;
+      font-weight: 800;
+      color: var(--rose);
+      line-height: 1;
+      margin-bottom: 8px;
+      opacity: 0.2;
+      transition: opacity 0.3s;
+      font-variant-numeric: tabular-nums;
+    }
+    .step-item:hover .step-num { opacity: 1; }
+    .step-dot {
+      width: 12px; height: 12px;
+      background: var(--rose);
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      position: relative;
+      z-index: 1;
+    }
+    .step-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--marine);
+      margin-bottom: 8px;
+    }
+    .step-desc {
+      font-size: 12px;
+      color: var(--gray-text);
+      line-height: 1.6;
+    }
+
+    /* ── TÉMOIGNAGES ─────────────────────── */
+    #temoignages {
+      background: var(--white);
+      padding: 96px 48px;
+      overflow: hidden;
+    }
+    .temoignages-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .carousel-wrapper {
+      position: relative;
+      margin-top: 56px;
+    }
+    .carousel-track {
+      overflow: hidden;
+    }
+    .carousel-slide {
+      display: none;
+      text-align: center;
+      padding: 0 64px;
+    }
+    .carousel-slide.active { display: block; }
+    .carousel-quote {
+      font-size: 24px;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--marine);
+      line-height: 1.6;
+      margin-bottom: 32px;
+      position: relative;
+    }
+    .carousel-quote::before {
+      content: '\201C';
+      font-size: 80px;
+      color: var(--rose);
+      opacity: 0.2;
+      position: absolute;
+      top: -20px; left: -16px;
+      line-height: 1;
+      font-style: normal;
+    }
+    .carousel-author {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 4px;
+    }
+    .carousel-role {
+      font-size: 12px;
+      color: var(--gray-text);
+      font-weight: 400;
+    }
+    .carousel-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .carousel-btn {
+      width: 44px; height: 44px;
+      border: 2px solid var(--marine);
+      background: transparent;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, color 0.2s;
+      font-size: 16px;
+      color: var(--marine);
+    }
+    .carousel-btn:hover { background: var(--marine); color: white; }
+    .carousel-dots {
+      display: flex; gap: 8px;
+    }
+    .carousel-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--gray-border);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .carousel-dot.active { background: var(--rose); }
+
+    /* ── CLIENTS ─────────────────────────── */
+    #clients {
+      background: var(--gray-bg);
+      padding: 64px 48px;
+    }
+    .clients-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .clients-title {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--gray-text);
+      margin-bottom: 48px;
+    }
+    .clients-title strong { color: var(--marine); font-weight: 800; }
+
+    /* ── PARTENAIRES ─────────────────────── */
+    #partenaires {
+      background: var(--white);
+      padding: 64px 48px;
+    }
+    .partenaires-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ── PRE-FOOTER CTA ──────────────────── */
+    #pre-footer {
+      padding: 48px;
+    }
+    .pre-footer-inner {
+      max-width: 1200px; margin: 0 auto;
+      border: 1.5px solid var(--marine);
+      border-radius: 4px;
+      padding: 40px 56px;
+      display: flex; align-items: center; justify-content: space-between; gap: 40px;
+    }
+    .pf-text h3 { font-size: 20px; font-weight: 700; color: var(--marine); margin-bottom: 6px; }
+    .pf-text p { font-size: 13px; color: var(--gray-text); }
+
+    /* ── CTA FINALE ──────────────────────── */
+    #cta-finale {
+      background: var(--marine);
+      padding: 96px 48px;
+    }
+    .cta-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 48px;
+    }
+    .cta-text h2 {
+      font-size: 40px;
+      font-weight: 800;
+      color: white;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+    .cta-text p {
+      font-size: 15px;
+      color: rgba(255,255,255,0.55);
+      font-weight: 400;
+    }
+
+    /* ── RESPONSIVE (page-specific) ─────── */
+    @media (max-width: 900px) {
+      #valeurs { grid-template-columns: 1fr; }
+      .hero-inner { grid-template-columns: 1fr; gap: 48px; padding: 60px 24px; }
+      .hero-right { display: none; }
+      .chiffres-inner { grid-template-columns: repeat(2, 1fr); }
+      .expertise-inner { grid-template-columns: 1fr; gap: 40px; }
+      .expertise-grid { grid-template-columns: repeat(2, 1fr); }
+      .pourquoi-grid { grid-template-columns: 1fr; gap: 24px; }
+      .steps-grid { grid-template-columns: repeat(2, 1fr); gap: 32px; }
+      .steps-grid::before { display: none; }
+      .cta-inner { flex-direction: column; text-align: center; }
+      section { padding-left: 24px !important; padding-right: 24px !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ══════════════════════════════════════════════════════ -->
+<header id="main-header">
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-mark">
+        <img src="photos/logo.png" alt="AJC" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span style="display:none;">AJC</span>
+      </div>
+      <div class="logo-text">Audencia <small>Junior Conseil</small></div>
+    </a>
+    <nav>
+      <div class="nav-item">
+        <a href="la-je.html">La Junior-Entreprise <span class="arr">▾</span></a>
+        <div class="dropdown">
+          <a href="la-je.html#qu-est-ce" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16v.1"/></svg></div>
+            <span><span class="di-title">Qu'est-ce qu'une JE ?</span><span class="di-sub">Le mouvement Junior-Entreprises</span></span>
+          </a>
+          <a href="la-je.html#equipe" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3a4 4 0 010 7.75"/></svg></div>
+            <span><span class="di-title">Notre Équipe</span><span class="di-sub">Bureau et chefs de projets</span></span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="contact.html" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg></div>
+            <span><span class="di-title">Nous contacter</span><span class="di-sub">Demander un devis</span></span>
+          </a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <a href="prestations.html">Nos prestations <span class="arr">▾</span></a>
+        <div class="dropdown">
+          <a href="prestations.html#marketing" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><path d="M3 18L9 12L13 16L18 9L22 13"/></svg></div>
+            <span><span class="di-title">Marketing</span><span class="di-sub">Études de marché, stratégie</span></span>
+          </a>
+          <a href="prestations.html#communication" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+            <span><span class="di-title">Communication</span><span class="di-sub">Stratégie éditoriale, digital</span></span>
+          </a>
+          <a href="prestations.html#rse" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18"/><path d="M3 12h18"/></svg></div>
+            <span><span class="di-title">RSE</span><span class="di-sub">Diagnostic, bilan carbone</span></span>
+          </a>
+          <a href="prestations.html#bigdata" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="6" height="14" rx="1"/><rect x="9" y="3" width="6" height="18" rx="1"/><rect x="16" y="10" width="6" height="11" rx="1"/></svg></div>
+            <span><span class="di-title">Big Data</span><span class="di-sub">Analyse, dataviz</span></span>
+          </a>
+          <a href="prestations.html#finance" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><path d="M12 2L22 7L22 12C22 17.5 17.5 22 12 23C6.5 22 2 17.5 2 12L2 7Z"/><path d="M9 12l3 3 5-5"/></svg></div>
+            <span><span class="di-title">Finance</span><span class="di-sub">Business plan, valorisation</span></span>
+          </a>
+        </div>
+      </div>
+      <a href="index.html#clients">Nos réalisations</a>
+    </nav>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <a href="contact.html" class="btn-outline-marine" id="desktop-cta">Nous contacter</a>
+  </div>
+</header>
+
+<!-- Mobile drawer -->
+<div class="mobile-drawer" id="mobile-drawer">
+  <a href="index.html">Accueil</a>
+  <a href="la-je.html">La Junior-Entreprise</a>
+  <a href="prestations.html">Nos Prestations</a>
+  <a href="index.html#clients">Nos Réalisations</a>
+  <a href="contact.html" class="drawer-cta">Nous Contacter →</a>
+</div>
+
+<!-- ══ HERO ════════════════════════════════════════════════════════ -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-bg-img"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-inner">
+    <div class="hero-content">
+      <p class="hero-eyebrow">Junior-Entreprise · Nantes</p>
+      <h1 class="hero-title"><span class="light">Audencia</span><br>Junior Conseil</h1>
+      <p class="hero-sub">Engagée depuis 45 années pour votre réussite. Des études sur mesure, réalisées par des étudiants d'excellence d'Audencia Business School.</p>
+      <div class="hero-ctas">
+        <a href="contact.html" class="btn-hero-primary">Demander un devis</a>
+        <a href="la-je.html" class="btn-hero-secondary">La Junior-Entreprise</a>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-img-wrap">
+        <img src="photos/accueil/hero.jpg" alt="Équipe AJC" style="width:100%;height:100%;object-fit:cover;"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <span style="display:none;align-items:center;justify-content:center;width:100%;height:100%;color:rgba(255,255,255,0.3);font-size:12px;font-family:'Courier New',monospace;">Photo à venir</span>
+      </div>
+      <div class="hero-iso">
+        <strong>ISO 9001</strong>
+        <span>CERTIFIÉE</span>
+      </div>
+      <div class="hero-badge">
+        <strong>45 ans</strong>
+        d'expérience
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ VALEURS ══════════════════════════════════════════════════════ -->
+<section id="valeurs">
+  <div class="valeurs-visual">
+    <div class="valeurs-visual-content">
+      <div class="vvc-label">Notre ADN</div>
+      <h2 class="vvc-title">NOS <span class="bold">VALEURS</span></h2>
+      <p class="vvc-tagline">Engagement, Humilité, Excellence</p>
+      <a href="la-je.html" class="btn-solid-white">La Junior-Entreprise</a>
+    </div>
+  </div>
+  <div class="valeurs-atouts">
+    <div class="va-label">Ce qui nous distingue</div>
+    <h2 class="va-title">Nos <span style="font-weight:800;">Atouts</span></h2>
+    <div class="va-accent"></div>
+    <div class="va-grid">
+      <div class="va-item">
+        <div class="va-num">01</div>
+        <div class="va-content">
+          <strong>Adaptation et flexibilité</strong>
+          <span>Chaque étude est construite sur mesure, adaptée à vos contraintes et à votre secteur d'activité.</span>
+        </div>
+      </div>
+      <div class="va-item">
+        <div class="va-num">02</div>
+        <div class="va-content">
+          <strong>Sécurité et confidentialité</strong>
+          <span>Toutes nos études sont couvertes par un accord de confidentialité signé avant le démarrage du projet.</span>
+        </div>
+      </div>
+      <div class="va-item">
+        <div class="va-num">03</div>
+        <div class="va-content">
+          <strong>Excellence académique</strong>
+          <span>Nos consultants sont formés par Audencia, école de commerce classée parmi les meilleures d'Europe.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CHIFFRES CLÉS ════════════════════════════════════════════════ -->
+<section id="chiffres">
+  <div class="chiffres-header">
+    <div class="chiffres-header-label">En chiffres</div>
+    <div class="chiffres-header-title">NOS <span class="bold">CHIFFRES CLÉS</span></div>
+  </div>
+  <div class="chiffres-inner">
+    <div class="chiffre-item">
+      <div class="chiffre-num" data-target="28" data-suffix="">0</div>
+      <div class="chiffre-label">Études réalisées</div>
+    </div>
+    <div class="chiffre-item">
+      <div class="chiffre-num" data-target="45" data-suffix="">0</div>
+      <div class="chiffre-label">Années d'expérience</div>
+    </div>
+    <div class="chiffre-item">
+      <div class="chiffre-num" data-target="5" data-suffix="">0</div>
+      <div class="chiffre-label">Années norme ISO 9001</div>
+    </div>
+    <div class="chiffre-item">
+      <div class="chiffre-num" data-target="6000" data-suffix="+">0</div>
+      <div class="chiffre-label">Étudiants</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ NOTRE EXPERTISE ══════════════════════════════════════════════ -->
+<section id="expertise">
+  <div class="expertise-inner">
+    <div class="expertise-left">
+      <p class="section-label">Domaines d'intervention</p>
+      <h2 class="section-title"><span class="thin">Notre</span><br>Expertise</h2>
+      <div class="section-accent"></div>
+      <p class="section-desc">5 domaines d'intervention, sur-mesure. Nos consultants juniors mobilisent les méthodes académiques d'Audencia au service de vos projets.</p>
+    </div>
+    <div class="expertise-grid">
+
+      <div class="expertise-card">
+        <div class="card-icon">
+          <svg viewBox="0 0 28 28" fill="none" stroke="#1A2744" stroke-width="2">
+            <path d="M3 21 L10 14 L14 18 L20 10 L25 15"/>
+            <circle cx="25" cy="8" r="3"/>
+          </svg>
+        </div>
+        <div class="card-title">Marketing</div>
+        <div class="card-desc">Études de marché, stratégie de lancement, segmentation client, analyse concurrentielle.</div>
+        <a href="prestations.html" class="card-link">Découvrir</a>
+      </div>
+
+      <div class="expertise-card">
+        <div class="card-icon">
+          <svg viewBox="0 0 28 28" fill="none" stroke="#1A2744" stroke-width="2">
+            <rect x="3" y="5" width="22" height="16" rx="2"/>
+            <path d="M9 21 v3 M19 21 v3 M6 24 h16"/>
+            <path d="M8 12 h4 M8 15 h8"/>
+          </svg>
+        </div>
+        <div class="card-title">Communication</div>
+        <div class="card-desc">Stratégie éditoriale, identité de marque, supports de communication, plans médias.</div>
+        <a href="prestations.html" class="card-link">Découvrir</a>
+      </div>
+
+      <div class="expertise-card">
+        <div class="card-icon">
+          <svg viewBox="0 0 28 28" fill="none" stroke="#1A2744" stroke-width="2">
+            <circle cx="14" cy="14" r="10"/>
+            <path d="M14 4 a10 10 0 0 1 0 20"/>
+            <path d="M4 14 h20"/>
+          </svg>
+        </div>
+        <div class="card-title">RSE</div>
+        <div class="card-desc">Diagnostic RSE, stratégie de développement durable, rapport extra-financier, bilan carbone.</div>
+        <a href="prestations.html" class="card-link">Découvrir</a>
+      </div>
+
+      <div class="expertise-card">
+        <div class="card-icon">
+          <svg viewBox="0 0 28 28" fill="none" stroke="#1A2744" stroke-width="2">
+            <rect x="3" y="8" width="7" height="16" rx="1"/>
+            <rect x="11" y="4" width="7" height="20" rx="1"/>
+            <rect x="19" y="12" width="7" height="12" rx="1"/>
+          </svg>
+        </div>
+        <div class="card-title">Big Data</div>
+        <div class="card-desc">Analyse de données, tableaux de bord, data visualisation, modélisation prédictive.</div>
+        <a href="prestations.html" class="card-link">Découvrir</a>
+      </div>
+
+      <div class="expertise-card">
+        <div class="card-icon">
+          <svg viewBox="0 0 28 28" fill="none" stroke="#1A2744" stroke-width="2">
+            <path d="M14 4 L25 9 L25 14 C25 19.5 20.5 24 14 25 C7.5 24 3 19.5 3 14 L3 9 Z"/>
+            <path d="M10 14 l3 3 l6 -6"/>
+          </svg>
+        </div>
+        <div class="card-title">Finance</div>
+        <div class="card-desc">Analyse financière, business plan, valorisation d'entreprise, étude de rentabilité.</div>
+        <a href="prestations.html" class="card-link">Découvrir</a>
+      </div>
+
+      <div class="expertise-card rose-card">
+        <div class="card-icon">
+          <svg viewBox="0 0 28 28" fill="none" stroke="#BE315B" stroke-width="2">
+            <circle cx="14" cy="14" r="10"/>
+            <path d="M14 9 v5 l3 3"/>
+            <path d="M10 4 L14 2 L18 4"/>
+          </svg>
+        </div>
+        <div class="card-title">Autre ?</div>
+        <div class="card-desc">Votre projet ne rentre pas dans une case ? Contactez-nous, nous trouverons une solution.</div>
+        <a href="contact.html" class="btn-rose-sm">Prendre RDV</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══ POURQUOI NOUS CHOISIR ════════════════════════════════════════ -->
+<section id="pourquoi">
+  <div class="pourquoi-inner">
+    <div class="pourquoi-header">
+      <h2 class="pourquoi-title">POURQUOI NOUS <span class="accent">CHOISIR</span></h2>
+    </div>
+    <div class="pourquoi-grid">
+      <div class="pourquoi-item">
+        <div class="pourquoi-icon">
+          <svg viewBox="0 0 28 28"><path d="M14 3 L25 8 L25 14 C25 20 20.5 24.5 14 26 C7.5 24.5 3 20 3 14 L3 8 Z"/><path d="M9 14 l4 4 l7 -7"/></svg>
+        </div>
+        <div class="pourquoi-item-title">Qualité professionnelle</div>
+        <div class="pourquoi-item-desc">Chaque étude est supervisée par un bureau d'études expérimenté et suit notre processus qualité certifié.</div>
+      </div>
+      <div class="pourquoi-item">
+        <div class="pourquoi-icon">
+          <svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="10"/><path d="M14 8 v2 M14 18 v2 M8 14 h2 M18 14 h2"/><path d="M11 11 C11 9.5 12.3 8.5 14 8.5 C15.7 8.5 17 9.5 17 11 C17 13.5 14 15 14 15 M14 18 v0.1"/></svg>
+        </div>
+        <div class="pourquoi-item-title">Tarifs compétitifs</div>
+        <div class="pourquoi-item-desc">Des prestations de conseil de haut niveau à des tarifs accessibles, sans compromis sur la rigueur.</div>
+      </div>
+      <div class="pourquoi-item">
+        <div class="pourquoi-icon">
+          <svg viewBox="0 0 28 28"><rect x="3" y="3" width="22" height="22" rx="3"/><path d="M9 14 l4 4 l7 -7"/><path d="M3 9 h22"/></svg>
+        </div>
+        <div class="pourquoi-item-title">Accompagnement ISO 9001</div>
+        <div class="pourquoi-item-desc">Notre certification ISO 9001 garantit un suivi rigoureux, des livrables documentés et une satisfaction client mesurée.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ MÉTHODOLOGIE ═════════════════════════════════════════════════ -->
+<section id="methodologie">
+  <div class="methodologie-inner">
+    <div class="section-header-center">
+      <p class="section-label" style="text-align:center;">Process</p>
+      <h2 class="section-title">Notre <span style="font-weight:300;">Méthodologie</span></h2>
+      <div class="section-accent" style="margin: 12px auto 0;"></div>
+    </div>
+    <div class="steps-grid">
+      <div class="step-item">
+        <div class="step-num">01</div>
+        <div class="step-dot"></div>
+        <div class="step-title">Prise de contact</div>
+        <div class="step-desc">Échange initial pour cerner vos besoins et valider la faisabilité de votre projet.</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">02</div>
+        <div class="step-dot"></div>
+        <div class="step-title">Proposition commerciale</div>
+        <div class="step-desc">Chiffrage détaillé, cadrage méthodologique et validation du périmètre d'intervention.</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">03</div>
+        <div class="step-dot"></div>
+        <div class="step-title">Réalisation</div>
+        <div class="step-desc">Mise en œuvre par notre équipe, avec points d'avancement réguliers et suivi qualité.</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">04</div>
+        <div class="step-dot"></div>
+        <div class="step-title">Livraison</div>
+        <div class="step-desc">Restitution des livrables, présentation orale et recueil de votre satisfaction.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TÉMOIGNAGES ══════════════════════════════════════════════════ -->
+<section id="temoignages">
+  <div class="temoignages-inner">
+    <div class="section-header-center">
+      <p class="section-label" style="text-align:center;">Retours clients</p>
+      <h2 class="section-title">Nos clients <span style="font-weight:300;text-transform:none;font-size:28px;letter-spacing:1px;">parlent de nous</span></h2>
+      <div class="section-accent" style="margin: 12px auto 0;"></div>
+    </div>
+    <div class="carousel-wrapper">
+      <div class="carousel-track">
+        <!-- Slides populated by JS from temoignages.json -->
+      </div>
+      <div class="carousel-nav">
+        <button class="carousel-btn" id="prev-btn" aria-label="Précédent">&#8592;</button>
+        <div class="carousel-dots">
+          <!-- Dots populated by JS -->
+        </div>
+        <button class="carousel-btn" id="next-btn" aria-label="Suivant">&#8594;</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ILS NOUS ONT FAIT CONFIANCE ═════════════════════════════════ -->
+<section id="clients">
+  <div class="clients-inner">
+    <div class="clients-title">ILS NOUS ONT FAIT <strong>CONFIANCE</strong></div>
+    <div class="logos-grid" id="clients-grid">
+      <!-- Populated by JS from clients.json -->
+    </div>
+  </div>
+</section>
+
+<!-- ══ PRE-FOOTER ══════════════════════════════════════════════════ -->
+<section id="pre-footer">
+  <div class="pre-footer-inner">
+    <div class="pf-text">
+      <h3>Besoin d'un accompagnement ?</h3>
+      <p>Nos chefs de projets vous répondront dans les plus brefs délais.</p>
+    </div>
+    <a href="contact.html" class="btn-outline-marine">Contactez-nous</a>
+  </div>
+</section>
+
+<!-- ══ NOS PARTENAIRES ══════════════════════════════════════════════ -->
+<section id="partenaires" style="background: var(--gray-bg); padding: 64px 48px;">
+  <div class="partenaires-inner">
+    <div class="clients-title">NOS <strong>PARTENAIRES</strong></div>
+    <div class="logos-grid" id="partenaires-grid">
+      <!-- Populated by JS from clients.json -->
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA FINALE ═══════════════════════════════════════════════════ -->
+<section id="cta-finale">
+  <div class="cta-inner">
+    <div class="cta-text">
+      <h2>Prêt à accélérer<br>votre projet ?</h2>
+      <p>Réponse sous 48h. Sans engagement.</p>
+    </div>
+    <a href="contact.html" class="btn-rose" style="font-size:13px;padding:18px 40px;white-space:nowrap;">NOUS CONTACTER</a>
+  </div>
+</section>
+
+<!-- ══ FOOTER ═══════════════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-col-title">Contact</div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+          <span>+33 (0)2 40 37 34 34</span>
+        </div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7 L12 13 L22 7"/></svg>
+          <span>contact@audencia-junior-conseil.fr</span>
+        </div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><path d="M12 2 C8 2 5 5.5 5 9.5 C5 15.5 12 22 12 22 S19 15.5 19 9.5 C19 5.5 16 2 12 2 Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          <span>8 route de la Jonelière<br>44312 Nantes Cedex 3</span>
+        </div>
+        <div class="footer-socials">
+          <a href="#" class="social-btn" aria-label="LinkedIn">in</a>
+          <a href="#" class="social-btn" aria-label="Instagram">ig</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Localisation</div>
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2711.3!2d-1.5897!3d47.2557!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4805ef3e8b35ef6b%3A0xb0d17c2a6c9d6b1!2sAudencia%20Business%20School!5e0!3m2!1sfr!2sfr!4v1"
+          style="width:100%;aspect-ratio:16/9;border-radius:6px;border:1px solid rgba(255,255,255,0.08);display:block;"
+          allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+          title="Audencia Business School — Nantes">
+        </iframe>
+      </div>
+      <div>
+        <div class="footer-col-title">Mentions légales</div>
+        <div class="footer-mentions">
+          <a href="#">Mentions légales</a>
+          <a href="#">Politique de confidentialité</a>
+          <a href="#">CGV</a>
+          <a href="#">Plan du site</a>
+        </div>
+        <div style="margin-top:32px;">
+          <div class="footer-col-title">La JE</div>
+          <div class="footer-mentions">
+            <a href="la-je.html">Qui sommes-nous ?</a>
+            <a href="la-je.html#equipe">Notre équipe</a>
+            <a href="contact.html">Nous contacter</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-logo-ghost">AJC</div>
+      <div class="footer-copyright">© 2025 Audencia Junior Conseil — Tous droits réservés</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Header scroll effect
+  const header = document.getElementById('main-header');
+  window.addEventListener('scroll', () => {
+    header.classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // Hamburger menu
+  const burger = document.getElementById('hamburger');
+  const drawer = document.getElementById('mobile-drawer');
+  burger.addEventListener('click', () => {
+    burger.classList.toggle('open');
+    drawer.classList.toggle('open');
+    document.body.style.overflow = drawer.classList.contains('open') ? 'hidden' : '';
+  });
+
+  // Animated counters
+  function animateCounter(el) {
+    const target = parseInt(el.dataset.target);
+    const suffix = el.dataset.suffix || '';
+    const duration = 1600;
+    const start = performance.now();
+    const easeOut = t => 1 - Math.pow(1 - t, 3);
+    function update(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const value = Math.round(easeOut(progress) * target);
+      el.textContent = value.toLocaleString('fr-FR') + suffix;
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }
+  const counterEls = document.querySelectorAll('.chiffre-num[data-target]');
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !entry.target.dataset.animated) {
+        entry.target.dataset.animated = 'true';
+        animateCounter(entry.target);
+      }
+    });
+  }, { threshold: 0.4 });
+  counterEls.forEach(el => counterObserver.observe(el));
+
+  // Carousel
+  function initCarousel() {
+    const slides = document.querySelectorAll('.carousel-slide');
+    const dots = document.querySelectorAll('.carousel-dot');
+    if (!slides.length) return;
+    let current = 0;
+    let autoTimer;
+    function goTo(idx) {
+      slides[current].classList.remove('active');
+      dots[current].classList.remove('active');
+      current = (idx + slides.length) % slides.length;
+      slides[current].classList.add('active');
+      dots[current].classList.add('active');
+    }
+    function startAuto() { autoTimer = setInterval(() => goTo(current + 1), 5000); }
+    function stopAuto() { clearInterval(autoTimer); }
+    document.getElementById('next-btn').addEventListener('click', () => { stopAuto(); goTo(current + 1); startAuto(); });
+    document.getElementById('prev-btn').addEventListener('click', () => { stopAuto(); goTo(current - 1); startAuto(); });
+    dots.forEach(dot => {
+      dot.addEventListener('click', () => { stopAuto(); goTo(parseInt(dot.dataset.idx)); startAuto(); });
+    });
+    startAuto();
+  }
+
+  // Load testimonials from JSON
+  async function loadTemoignages() {
+    try {
+      const res = await fetch('contenu/temoignages.json');
+      const data = await res.json();
+      const track = document.querySelector('.carousel-track');
+      const dotsContainer = document.querySelector('.carousel-dots');
+      track.innerHTML = '';
+      dotsContainer.innerHTML = '';
+      data.temoignages.forEach((t, i) => {
+        track.innerHTML += `
+          <div class="carousel-slide${i === 0 ? ' active' : ''}">
+            <p class="carousel-quote">${t.quote}</p>
+            <div class="carousel-author">${t.auteur}</div>
+            <div class="carousel-role">${t.mission}</div>
+          </div>`;
+        dotsContainer.innerHTML += `<div class="carousel-dot${i === 0 ? ' active' : ''}" data-idx="${i}"></div>`;
+      });
+      initCarousel();
+    } catch(e) {
+      console.warn('temoignages.json not found, using static fallback');
+      initCarousel();
+    }
+  }
+
+  // Load clients/partners from JSON
+  async function loadClients() {
+    try {
+      const res = await fetch('contenu/clients.json');
+      const data = await res.json();
+      const clientsGrid = document.getElementById('clients-grid');
+      const partenairesGrid = document.getElementById('partenaires-grid');
+      if (clientsGrid) clientsGrid.innerHTML = data.clients.map(c => `<div class="logo-chip">${c}</div>`).join('');
+      if (partenairesGrid) partenairesGrid.innerHTML = data.partenaires.map(p => `<div class="logo-chip">${p}</div>`).join('');
+    } catch(e) { console.warn('clients.json not found'); }
+  }
+
+  // Fade in on scroll
+  const fadeEls = document.querySelectorAll('.expertise-card, .pourquoi-item, .step-item');
+  fadeEls.forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  });
+  const fadeObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const siblings = [...entry.target.parentElement.children];
+        const delay = siblings.indexOf(entry.target) * 80;
+        setTimeout(() => {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }, delay);
+        fadeObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  fadeEls.forEach(el => fadeObserver.observe(el));
+
+  // Init
+  loadTemoignages();
+  loadClients();
+</script>
+
+</body>
+</html>
