@@ -1,0 +1,64 @@
+{
+  "domaines": [
+    {
+      "id": "marketing",
+      "titre": "Marketing",
+      "icone": "chart",
+      "description": "Nos consultants réalisent des études de marché approfondies et des analyses stratégiques pour vous aider à comprendre votre environnement, vos clients et vos concurrents.",
+      "tags": ["Étude de marché", "Segmentation client", "Analyse concurrentielle", "Lancement produit", "Stratégie de marque"],
+      "exemples": [
+        { "client": "Bagelstein", "contexte": "Lancement d'un nouveau produit sur le marché nantais", "livrable": "Étude de marché complète + recommandations stratégiques" },
+        { "client": "Leroy Merlin", "contexte": "Analyse de la satisfaction client en magasin", "livrable": "Rapport d'analyse + plan d'actions prioritaires" }
+      ],
+      "methodologie": ["Cadrage du besoin", "Collecte de données (quali/quanti)", "Analyse et benchmark", "Livrables et recommandations"]
+    },
+    {
+      "id": "communication",
+      "titre": "Communication",
+      "icone": "megaphone",
+      "description": "De la stratégie éditoriale à l'identité de marque, nous vous aidons à construire une communication cohérente, efficace et adaptée à vos cibles.",
+      "tags": ["Stratégie éditoriale", "Identité de marque", "Plan media", "Community management", "Communication digitale"],
+      "exemples": [
+        { "client": "PME Nantaise", "contexte": "Refonte de l'identité visuelle et stratégie social media", "livrable": "Charte graphique + calendrier éditorial 6 mois" },
+        { "client": "Association sportive", "contexte": "Lancement de campagne de communication", "livrable": "Plan de communication complet + supports" }
+      ],
+      "methodologie": ["Audit de l'existant", "Définition des cibles", "Élaboration de la stratégie", "Création des supports"]
+    },
+    {
+      "id": "rse",
+      "titre": "RSE",
+      "icone": "leaf",
+      "description": "Nous accompagnons les entreprises dans leur transition vers des pratiques plus responsables : diagnostics, bilans carbone, stratégies RSE et rapports extra-financiers.",
+      "tags": ["Diagnostic RSE", "Bilan carbone", "Stratégie développement durable", "Rapport extra-financier", "CSRD"],
+      "exemples": [
+        { "client": "GRDF", "contexte": "Diagnostic RSE et stratégie de transition énergétique", "livrable": "Rapport RSE complet + feuille de route" },
+        { "client": "Vinci Energies", "contexte": "Bilan carbone et plan de réduction des émissions", "livrable": "Bilan carbone certifié + recommandations" }
+      ],
+      "methodologie": ["Diagnostic initial", "Collecte des données", "Analyse des impacts", "Plan d'action RSE"]
+    },
+    {
+      "id": "bigdata",
+      "titre": "Big Data",
+      "icone": "bars",
+      "description": "Transformez vos données brutes en insights actionnables. Nos consultants maîtrisent l'analyse de données, la data visualisation et la modélisation prédictive.",
+      "tags": ["Analyse de données", "Data visualisation", "Tableaux de bord", "Modélisation prédictive", "Business Intelligence"],
+      "exemples": [
+        { "client": "Groupe retail", "contexte": "Création d'un tableau de bord de suivi des KPIs commerciaux", "livrable": "Dashboard Power BI + documentation" },
+        { "client": "Startup SaaS", "contexte": "Analyse des données d'usage et segmentation clients", "livrable": "Analyse statistique + recommandations produit" }
+      ],
+      "methodologie": ["Recueil et nettoyage des données", "Exploration et analyse", "Modélisation", "Visualisation et restitution"]
+    },
+    {
+      "id": "finance",
+      "titre": "Finance",
+      "icone": "shield",
+      "description": "Business plans, valorisations d'entreprise, analyses de rentabilité : nos consultants financiers vous accompagnent dans vos décisions stratégiques à fort enjeu.",
+      "tags": ["Business plan", "Valorisation d'entreprise", "Analyse financière", "Étude de rentabilité", "Due diligence"],
+      "exemples": [
+        { "client": "Saint-Gobain", "contexte": "Analyse financière et business plan pour une nouvelle activité", "livrable": "Business plan complet + modèle financier Excel" },
+        { "client": "Start-up deeptech", "contexte": "Valorisation pré-levée de fonds", "livrable": "Note de valorisation + pitch deck financier" }
+      ],
+      "methodologie": ["Analyse de l'existant", "Modélisation financière", "Tests de sensibilité", "Synthèse et recommandations"]
+    }
+  ]
+}

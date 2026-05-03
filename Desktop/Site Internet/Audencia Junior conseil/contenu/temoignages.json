@@ -1,0 +1,24 @@
+{
+  "temoignages": [
+    {
+      "quote": "Une Junior-Entreprise professionnelle et efficace. L'équipe a su s'adapter à nos contraintes et livrer un travail de qualité dans les délais impartis.",
+      "auteur": "Bagelstein",
+      "mission": "Étude Marketing — Lancement produit"
+    },
+    {
+      "quote": "Nous avons été bluffés par la rigueur et la créativité des consultants d'AJC. Le rapport rendu dépassait nos attentes, tant en fond qu'en forme.",
+      "auteur": "GRDF",
+      "mission": "Diagnostic RSE — Transition énergétique"
+    },
+    {
+      "quote": "AJC a réalisé pour nous une étude de marché complète avec une réactivité remarquable. Je recommande vivement cette Junior-Entreprise à toute organisation ambitieuse.",
+      "auteur": "Vinci Energies",
+      "mission": "Étude de marché — Expansion régionale"
+    },
+    {
+      "quote": "Le sérieux, l'implication et la qualité des livrables nous ont convaincus de retravailler avec AJC dès notre prochain projet de développement.",
+      "auteur": "Saint-Gobain",
+      "mission": "Analyse financière — Business plan"
+    }
+  ]
+}
