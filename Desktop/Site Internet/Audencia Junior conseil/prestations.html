@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nos Prestations — Audencia Junior Conseil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── DOMAIN TABS (sticky) ── */
+    .domain-selector {
+      position: sticky; top: 68px; z-index: 100;
+      background: var(--white); border-bottom: 1px solid var(--gray-border);
+      padding: 0 48px;
+    }
+    .domain-selector-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; gap: 0; overflow-x: auto; scrollbar-width: none;
+    }
+    .domain-selector-inner::-webkit-scrollbar { display: none; }
+    .domain-tab {
+      display: flex; align-items: center; gap: 10px;
+      padding: 20px 28px; cursor: pointer; white-space: nowrap;
+      border-bottom: 3px solid transparent;
+      font-size: 13px; font-weight: 700; color: var(--gray-text);
+      transition: color 0.2s, border-color 0.2s;
+      background: none; border-top: none; border-left: none; border-right: none;
+      font-family: 'Montserrat', sans-serif; letter-spacing: 0.5px;
+    }
+    .domain-tab:hover { color: var(--marine); }
+    .domain-tab.active { color: var(--marine); border-bottom-color: var(--rose); }
+
+    /* ── ACCORDÉON ── */
+    .domains-container { max-width: 1200px; margin: 0 auto; padding: 0 48px 96px; }
+
+    .domain-section { border-bottom: 1px solid var(--gray-border); }
+
+    .domain-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 48px 0 32px; cursor: pointer;
+    }
+    .domain-header-left { display: flex; align-items: center; gap: 24px; }
+    .domain-icon-big {
+      width: 64px; height: 64px; border-radius: 12px;
+      background: var(--gray-bg); display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.3s;
+    }
+    .domain-icon-big svg { width: 28px; height: 28px; stroke: var(--marine); fill: none; stroke-width: 2; transition: stroke 0.3s; }
+    .domain-section.active .domain-icon-big { background: var(--marine); }
+    .domain-section.active .domain-icon-big svg { stroke: white; }
+    .domain-h-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--rose); margin-bottom: 6px; }
+    .domain-h-title { font-size: 26px; font-weight: 800; color: var(--marine); }
+    .domain-chevron {
+      width: 40px; height: 40px; border: 2px solid var(--gray-border);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.35s, border-color 0.2s, background 0.2s; flex-shrink: 0;
+    }
+    .domain-chevron svg { width: 16px; height: 16px; stroke: var(--gray-text); fill: none; stroke-width: 2.5; transition: stroke 0.2s; }
+    .domain-section.active .domain-chevron { transform: rotate(180deg); border-color: var(--marine); background: var(--marine); }
+    .domain-section.active .domain-chevron svg { stroke: white; }
+
+    /* Accordéon body */
+    .domain-body { max-height: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0.4,0,0.2,1); }
+    .domain-section.active .domain-body { max-height: 2000px; }
+    .domain-body-inner { padding: 0 0 56px; }
+
+    .domain-desc { font-size: 16px; color: var(--gray-text); line-height: 1.8; max-width: 720px; margin-bottom: 28px; }
+    .domain-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 48px; }
+    .domain-tag { background: var(--gray-bg); border: 1.5px solid var(--gray-border); border-radius: 20px; padding: 7px 16px; font-size: 12px; font-weight: 600; color: var(--marine); }
+
+    /* Reveal on scroll */
+    .domain-reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .domain-reveal.visible { opacity: 1; transform: translateY(0); }
+
+    .examples-label { font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--rose); margin-bottom: 20px; }
+    .examples-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-bottom: 48px; }
+    .example-card { background: var(--gray-bg); border-radius: 8px; padding: 24px 28px; border: 1.5px solid transparent; transition: border-color 0.2s; }
+    .example-card:hover { border-color: var(--marine); }
+    .example-client { font-size: 13px; font-weight: 800; color: var(--marine); margin-bottom: 6px; }
+    .example-context { font-size: 12px; color: var(--gray-text); line-height: 1.6; margin-bottom: 10px; }
+    .example-livrable { font-size: 11px; font-weight: 700; color: var(--rose); }
+    .example-livrable::before { content: '→ '; }
+
+    .methodo-grid { display: flex; gap: 0; margin-bottom: 40px; position: relative; }
+    .methodo-grid::before { content: ''; position: absolute; top: 20px; left: 20px; right: 20px; height: 1px; background: var(--gray-border); z-index: 0; }
+    .methodo-step { flex: 1; text-align: center; padding: 0 12px; position: relative; z-index: 1; }
+    .methodo-dot { width: 10px; height: 10px; background: var(--rose); border-radius: 50%; margin: 0 auto 12px; }
+    .methodo-label { font-size: 11px; font-weight: 600; color: var(--marine); line-height: 1.4; }
+
+    .domain-cta { display: flex; align-items: center; justify-content: space-between; background: var(--marine); border-radius: 8px; padding: 28px 36px; flex-wrap: wrap; gap: 16px; }
+    .domain-cta p { font-size: 15px; font-weight: 700; color: white; }
+    .domain-cta span { font-size: 13px; color: rgba(255,255,255,0.5); display: block; margin-top: 4px; }
+
+    /* ── CTA FINALE ── */
+    .cta-finale { background: var(--marine); padding: 80px 48px; }
+    .cta-finale-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 40px; flex-wrap: wrap; }
+    .cta-finale-inner h2 { font-size: 36px; font-weight: 800; color: white; line-height: 1.2; margin-bottom: 10px; }
+    .cta-finale-inner p { font-size: 14px; color: rgba(255,255,255,0.5); }
+
+    @media (max-width: 900px) {
+      .domain-selector { padding: 0 16px; }
+      .domain-tab { padding: 16px 16px; font-size: 11px; }
+      .domains-container { padding: 0 24px 64px; }
+      .domain-header { padding: 32px 0 20px; }
+      .domain-h-title { font-size: 20px; }
+      .examples-grid { grid-template-columns: 1fr; }
+      .methodo-grid { flex-wrap: wrap; gap: 16px; }
+      .methodo-grid::before { display: none; }
+      .domain-cta { flex-direction: column; text-align: center; }
+      .cta-finale { padding: 60px 24px; }
+      .cta-finale-inner { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<header id="main-header">
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-mark">
+        <img src="photos/logo.png" alt="AJC" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span style="display:none;">AJC</span>
+      </div>
+      <div class="logo-text">Audencia <small>Junior Conseil</small></div>
+    </a>
+    <nav>
+      <div class="nav-item">
+        <a href="la-je.html">La Junior-Entreprise <span class="arr">▾</span></a>
+        <div class="dropdown">
+          <a href="la-je.html#qu-est-ce" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16v.1"/></svg></div>
+            <span><span class="di-title">Qu'est-ce qu'une JE ?</span><span class="di-sub">Le mouvement Junior-Entreprises</span></span>
+          </a>
+          <a href="la-je.html#equipe" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3a4 4 0 010 7.75"/></svg></div>
+            <span><span class="di-title">Notre Équipe</span><span class="di-sub">Bureau et chefs de projets</span></span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="contact.html" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg></div>
+            <span><span class="di-title">Nous contacter</span><span class="di-sub">Demander un devis</span></span>
+          </a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <a href="prestations.html" class="active">Nos prestations <span class="arr">▾</span></a>
+        <div class="dropdown">
+          <a href="prestations.html#marketing" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><path d="M3 18L9 12L13 16L18 9L22 13"/></svg></div>
+            <span><span class="di-title">Marketing</span><span class="di-sub">Études de marché, stratégie</span></span>
+          </a>
+          <a href="prestations.html#communication" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+            <span><span class="di-title">Communication</span><span class="di-sub">Stratégie éditoriale, digital</span></span>
+          </a>
+          <a href="prestations.html#rse" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18"/><path d="M3 12h18"/></svg></div>
+            <span><span class="di-title">RSE</span><span class="di-sub">Diagnostic, bilan carbone</span></span>
+          </a>
+          <a href="prestations.html#bigdata" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="6" height="14" rx="1"/><rect x="9" y="3" width="6" height="18" rx="1"/><rect x="16" y="10" width="6" height="11" rx="1"/></svg></div>
+            <span><span class="di-title">Big Data</span><span class="di-sub">Analyse, dataviz</span></span>
+          </a>
+          <a href="prestations.html#finance" class="dropdown-item">
+            <div class="di-icon"><svg viewBox="0 0 24 24"><path d="M12 2L22 7L22 12C22 17.5 17.5 22 12 23C6.5 22 2 17.5 2 12L2 7Z"/><path d="M9 12l3 3 5-5"/></svg></div>
+            <span><span class="di-title">Finance</span><span class="di-sub">Business plan, valorisation</span></span>
+          </a>
+        </div>
+      </div>
+      <a href="index.html#clients">Nos réalisations</a>
+    </nav>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    <a href="contact.html" class="btn-outline-marine" id="desktop-cta">Nous contacter</a>
+  </div>
+</header>
+<div class="mobile-drawer" id="mobile-drawer">
+  <a href="index.html">Accueil</a>
+  <a href="la-je.html">La Junior-Entreprise</a>
+  <a href="prestations.html">Nos Prestations</a>
+  <a href="index.html#clients">Nos Réalisations</a>
+  <a href="contact.html" class="drawer-cta">Nous Contacter →</a>
+</div>
+
+<!-- HERO -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <p class="page-hero-eyebrow">Ce que nous faisons</p>
+    <h1 class="page-hero-title">Nos Prestations</h1>
+    <p class="page-hero-sub">5 domaines d'expertise, des missions sur mesure réalisées par des consultants formés par Audencia Business School.</p>
+  </div>
+</div>
+
+<!-- DOMAIN TABS (sticky) -->
+<div class="domain-selector">
+  <div class="domain-selector-inner" id="domain-tabs"></div>
+</div>
+
+<!-- ACCORDÉON -->
+<div class="domains-container" id="domains-container"></div>
+
+<!-- CTA FINALE -->
+<section class="cta-finale">
+  <div class="cta-finale-inner">
+    <div>
+      <h2>Votre projet ne rentre<br>pas dans une case ?</h2>
+      <p>Contactez-nous, nous trouverons une solution adaptée.</p>
+    </div>
+    <a href="contact.html" class="btn-rose" style="font-size:13px;padding:18px 40px;white-space:nowrap;">NOUS CONTACTER</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-col-title">Contact</div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+          <span>+33 (0)2 40 37 34 34</span>
+        </div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7 L12 13 L22 7"/></svg>
+          <span>contact@audencia-junior-conseil.fr</span>
+        </div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><path d="M12 2 C8 2 5 5.5 5 9.5 C5 15.5 12 22 12 22 S19 15.5 19 9.5 C19 5.5 16 2 12 2 Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          <span>8 route de la Jonelière<br>44312 Nantes Cedex 3</span>
+        </div>
+        <div class="footer-socials">
+          <a href="#" class="social-btn" aria-label="LinkedIn">in</a>
+          <a href="#" class="social-btn" aria-label="Instagram">ig</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Localisation</div>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2711.3!2d-1.5897!3d47.2557!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4805ef3e8b35ef6b%3A0xb0d17c2a6c9d6b1!2sAudencia%20Business%20School!5e0!3m2!1sfr!2sfr!4v1"
+          style="width:100%;aspect-ratio:16/9;border-radius:6px;border:1px solid rgba(255,255,255,0.08);display:block;"
+          allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Audencia Nantes"></iframe>
+      </div>
+      <div>
+        <div class="footer-col-title">Mentions légales</div>
+        <div class="footer-mentions">
+          <a href="#">Mentions légales</a>
+          <a href="#">Politique de confidentialité</a>
+          <a href="#">CGV</a>
+        </div>
+        <div style="margin-top:32px;">
+          <div class="footer-col-title">La JE</div>
+          <div class="footer-mentions">
+            <a href="la-je.html">Qui sommes-nous ?</a>
+            <a href="la-je.html#equipe">Notre équipe</a>
+            <a href="contact.html">Nous contacter</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-logo-ghost">AJC</div>
+      <div class="footer-copyright">© 2025 Audencia Junior Conseil — Tous droits réservés</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Header
+  window.addEventListener('scroll', () => {
+    document.getElementById('main-header').classList.toggle('scrolled', window.scrollY > 20);
+  });
+  const burger = document.getElementById('hamburger');
+  const drawer = document.getElementById('mobile-drawer');
+  burger.addEventListener('click', () => {
+    burger.classList.toggle('open');
+    drawer.classList.toggle('open');
+    document.body.style.overflow = drawer.classList.contains('open') ? 'hidden' : '';
+  });
+
+  // SVG icons per domain id
+  const ICONS = {
+    marketing: `<svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21 L10 14 L14 18 L20 10 L25 15"/><circle cx="25" cy="8" r="3"/></svg>`,
+    communication: `<svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="22" height="16" rx="2"/><path d="M8 12 h4 M8 15 h8"/></svg>`,
+    rse: `<svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="14" cy="14" r="10"/><path d="M14 4 a10 10 0 0 1 0 20"/><path d="M4 14 h20"/></svg>`,
+    bigdata: `<svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="7" height="16" rx="1"/><rect x="11" y="4" width="7" height="20" rx="1"/><rect x="19" y="12" width="7" height="12" rx="1"/></svg>`,
+    finance: `<svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4 L25 9 L25 14 C25 19.5 20.5 24 14 25 C7.5 24 3 19.5 3 14 L3 9 Z"/><path d="M10 14 l3 3 l6 -6"/></svg>`
+  };
+
+  let revealObserver;
+
+  function setupRevealObserver() {
+    revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); }
+      });
+    }, { threshold: 0.15 });
+  }
+
+  function activateDomain(id, scroll = true) {
+    document.querySelectorAll('.domain-tab').forEach(t => t.classList.toggle('active', t.dataset.id === id));
+    document.querySelectorAll('.domain-section').forEach(s => s.classList.toggle('active', s.id === 'section-' + id));
+    if (scroll) {
+      const section = document.getElementById('section-' + id);
+      if (section) {
+        const offset = section.getBoundingClientRect().top + window.scrollY - 140;
+        window.scrollTo({ top: offset, behavior: 'smooth' });
+      }
+    }
+    // Re-observe reveal elements after opening
+    setTimeout(() => {
+      document.querySelectorAll('#section-' + id + ' .domain-reveal').forEach(el => {
+        if (!el.classList.contains('visible')) revealObserver.observe(el);
+      });
+    }, 100);
+  }
+
+  async function buildPrestations() {
+    const res = await fetch('contenu/prestations.json');
+    const { domaines } = await res.json();
+
+    // Build tabs
+    document.getElementById('domain-tabs').innerHTML = domaines.map(d => `
+      <button class="domain-tab" data-id="${d.id}" onclick="activateDomain('${d.id}')">${d.titre}</button>
+    `).join('');
+
+    // Build accordéon
+    document.getElementById('domains-container').innerHTML = domaines.map(d => `
+      <div class="domain-section" id="section-${d.id}">
+        <div class="domain-header" onclick="activateDomain('${d.id}')">
+          <div class="domain-header-left">
+            <div class="domain-icon-big">${ICONS[d.id] || ''}</div>
+            <div>
+              <div class="domain-h-eyebrow">Domaine d'expertise</div>
+              <div class="domain-h-title">${d.titre}</div>
+            </div>
+          </div>
+          <div class="domain-chevron">
+            <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="domain-body">
+          <div class="domain-body-inner">
+            <p class="domain-desc">${d.description}</p>
+            <div class="domain-tags">${d.tags.map(t => `<span class="domain-tag">${t}</span>`).join('')}</div>
+            <div class="domain-reveal">
+              <div class="examples-label">Exemples de missions réalisées</div>
+              <div class="examples-grid">
+                ${d.exemples.map(e => `
+                  <div class="example-card">
+                    <div class="example-client">${e.client}</div>
+                    <div class="example-context">${e.contexte}</div>
+                    <div class="example-livrable">${e.livrable}</div>
+                  </div>`).join('')}
+              </div>
+              <div class="examples-label">Notre approche</div>
+              <div class="methodo-grid">
+                ${d.methodologie.map(m => `
+                  <div class="methodo-step">
+                    <div class="methodo-dot"></div>
+                    <div class="methodo-label">${m}</div>
+                  </div>`).join('')}
+              </div>
+              <div class="domain-cta">
+                <div>
+                  <p>Vous avez un projet en ${d.titre.toLowerCase()} ?</p>
+                  <span>Réponse sous 48h. Sans engagement.</span>
+                </div>
+                <a href="contact.html?domaine=${d.id}" class="btn-hero-primary">Demander un devis</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`).join('');
+
+    setupRevealObserver();
+
+    // Handle URL hash or param
+    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.replace('#', '');
+    const target = params.get('domaine') || hash || domaines[0].id;
+    activateDomain(target, false);
+  }
+
+  buildPrestations();
+</script>
+</body>
+</html>
