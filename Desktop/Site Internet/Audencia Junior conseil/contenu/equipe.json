@@ -1,0 +1,48 @@
+{
+  "bureau": [
+    {
+      "nom": "Émilie Munsch",
+      "role": "Présidente",
+      "description": "Émilie élabore la stratégie et s'assure de sa bonne mise en œuvre avec le soutien du bureau. En tant que représentante pénale de la Junior, elle coordonne l'ensemble des 24 chefs de projets tout en étant gardienne de la cohésion du mandat.",
+      "photo": "photos/equipe/bureau/president.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Pierrick Rimaudière",
+      "role": "Vice-Président",
+      "description": "Pierrick s'occupe de développer les partenariats avec les différentes parties-prenantes d'AJC. Il pilote l'efficacité des processus et contribue à leur amélioration continue en suivant les indicateurs de risques et de performances.",
+      "photo": "photos/equipe/bureau/vice-president.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Clara Chiche",
+      "role": "Secrétaire Générale",
+      "description": "Premier point de contact entre vous et Audencia Junior Conseil, Clara relaie vos besoins à nos chefs de projet afin d'établir la rédaction d'un devis. Elle veille aussi au bon fonctionnement administratif de la structure.",
+      "photo": "photos/equipe/bureau/secretaire.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Arthur Robin",
+      "role": "Trésorier",
+      "description": "Arthur est au cœur du fonctionnement interne de la structure. Il est en charge de la partie financière des études et de la structure, effectue l'ensemble des paiements et s'assure du contrôle interne du pôle Trésorerie.",
+      "photo": "photos/equipe/bureau/tresorier.jpg",
+      "linkedin": "#"
+    }
+  ],
+  "poles": [
+    { "nom": "Victoire Gorrioux", "role": "Responsable Développement Commercial", "photo": "photos/equipe/bureau/resp-dev-commercial.jpg", "linkedin": "#" },
+    { "nom": "Anna Von Borowski", "role": "Responsable Ressources Humaines", "photo": "photos/equipe/bureau/resp-rh.jpg", "linkedin": "#" },
+    { "nom": "Clémence Defosseux", "role": "Responsable Audit-Qualité", "photo": "photos/equipe/bureau/resp-audit.jpg", "linkedin": "#" },
+    { "nom": "Esther Gesny", "role": "Responsable Marketing", "photo": "photos/equipe/bureau/resp-marketing.jpg", "linkedin": "#" }
+  ],
+  "chefs_projet": [
+    { "nom": "Chef de Projet 1", "role": "Marketing", "photo": "photos/equipe/chefs-projet/cdp-01.jpg", "linkedin": "#" },
+    { "nom": "Chef de Projet 2", "role": "Communication", "photo": "photos/equipe/chefs-projet/cdp-02.jpg", "linkedin": "#" },
+    { "nom": "Chef de Projet 3", "role": "Finance", "photo": "photos/equipe/chefs-projet/cdp-03.jpg", "linkedin": "#" },
+    { "nom": "Chef de Projet 4", "role": "RSE", "photo": "photos/equipe/chefs-projet/cdp-04.jpg", "linkedin": "#" },
+    { "nom": "Chef de Projet 5", "role": "Big Data", "photo": "photos/equipe/chefs-projet/cdp-05.jpg", "linkedin": "#" },
+    { "nom": "Chef de Projet 6", "role": "Études", "photo": "photos/equipe/chefs-projet/cdp-06.jpg", "linkedin": "#" },
+    { "nom": "Chef de Projet 7", "role": "Digital", "photo": "photos/equipe/chefs-projet/cdp-07.jpg", "linkedin": "#" },
+    { "nom": "Chef de Projet 8", "role": "Stratégie", "photo": "photos/equipe/chefs-projet/cdp-08.jpg", "linkedin": "#" }
+  ]
+}
