@@ -18,11 +18,20 @@
       "principal": true
     }
   ],
-  "reseaux_sociaux": {
-    "linkedin": "#",
-    "instagram": "#",
-    "facebook": "#"
-  },
+  "reseaux_sociaux": [
+    {
+      "nom": "LinkedIn",
+      "lien": "#",
+      "logo": "photos/reseaux-sociaux/linkedin.png",
+      "initiale": "in"
+    },
+    {
+      "nom": "Instagram",
+      "lien": "#",
+      "logo": "photos/reseaux-sociaux/instagram.png",
+      "initiale": "ig"
+    }
+  ],
   "chiffres_cles": {
     "etudes_realisees": 28,
     "annees_experience": 45,
