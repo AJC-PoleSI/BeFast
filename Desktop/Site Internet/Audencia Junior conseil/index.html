@@ -523,14 +523,46 @@
     }
     .clients-title strong { color: var(--marine); font-weight: 800; }
 
-    /* ── PARTENAIRES ─────────────────────── */
-    #partenaires {
-      background: var(--white);
-      padding: 64px 48px;
+    /* ── SLIDER PARTENAIRES ──────────────── */
+    .slider-outer {
+      overflow: hidden;
+      position: relative;
+      mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+      -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
     }
-    .partenaires-inner {
-      max-width: 1200px;
-      margin: 0 auto;
+    .slider-track {
+      display: flex;
+      gap: 16px;
+      width: max-content;
+      animation: slide 28s linear infinite;
+    }
+    .slider-track:hover { animation-play-state: paused; }
+    @keyframes slide {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    .slider-chip {
+      display: flex; align-items: center; justify-content: center;
+      padding: 14px 28px; min-width: 140px; height: 72px;
+      background: var(--white); border: 1.5px solid var(--gray-border);
+      border-radius: 6px; flex-shrink: 0;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    }
+    .slider-chip:hover {
+      border-color: var(--marine);
+      box-shadow: 0 4px 16px rgba(26,39,68,0.1);
+      transform: translateY(-2px);
+    }
+    .slider-chip img {
+      max-height: 40px; max-width: 120px; width: auto;
+      object-fit: contain;
+      filter: grayscale(100%); opacity: 0.55;
+      transition: filter 0.2s, opacity 0.2s;
+    }
+    .slider-chip:hover img { filter: grayscale(0%); opacity: 1; }
+    .slider-chip span {
+      font-size: 13px; font-weight: 700;
+      color: var(--marine); letter-spacing: 0.5px;
     }
 
     /* ── PRE-FOOTER CTA ──────────────────── */
@@ -967,10 +999,10 @@
 </section>
 
 <!-- ══ NOS PARTENAIRES ══════════════════════════════════════════════ -->
-<section id="partenaires" style="background: var(--gray-bg); padding: 64px 48px;">
-  <div class="partenaires-inner">
-    <div class="clients-title">NOS <strong>PARTENAIRES</strong></div>
-    <div class="logos-grid" id="partenaires-grid">
+<section id="partenaires" style="background: var(--gray-bg); padding: 64px 0;">
+  <div class="clients-title" style="padding: 0 48px; margin-bottom: 40px;">NOS <strong>PARTENAIRES</strong></div>
+  <div class="slider-outer">
+    <div class="slider-track" id="partenaires-grid">
       <!-- Populated by JS from clients.json -->
     </div>
   </div>
@@ -1136,15 +1168,26 @@
     }
   }
 
-  // Génère une chip avec logo image (si dispo) ou nom en texte
-  function logoChip(item) {
-    if (item.logo) {
-      return `<div class="logo-chip logo-chip-img">
-        <img src="${item.logo}" alt="${item.nom}"
-             onerror="this.parentElement.innerHTML='<span>${item.nom}</span>'">
-      </div>`;
-    }
-    return `<div class="logo-chip">${item.nom || item}</div>`;
+  // Chip client (logo cliquable si lien dispo)
+  function clientChip(item) {
+    const lien = item.lien && item.lien !== '#' ? item.lien : null;
+    const inner = item.logo
+      ? `<img src="${item.logo}" alt="${item.nom}" onerror="this.outerHTML='<span>${item.nom}</span>'">`
+      : `<span>${item.nom}</span>`;
+    return lien
+      ? `<a href="${lien}" target="_blank" rel="noopener" class="logo-chip logo-chip-img">${inner}</a>`
+      : `<div class="logo-chip logo-chip-img">${inner}</div>`;
+  }
+
+  // Chip partenaire pour slider (dupliqué pour boucle infinie)
+  function sliderChip(item) {
+    const lien = item.lien && item.lien !== '#' ? item.lien : null;
+    const inner = item.logo
+      ? `<img src="${item.logo}" alt="${item.nom}" onerror="this.outerHTML='<span>${item.nom}</span>'">`
+      : `<span>${item.nom}</span>`;
+    return lien
+      ? `<a href="${lien}" target="_blank" rel="noopener" class="slider-chip">${inner}</a>`
+      : `<div class="slider-chip">${inner}</div>`;
   }
 
   // Load clients/partners from JSON
@@ -1154,9 +1197,33 @@
       const data = await res.json();
       const clientsGrid = document.getElementById('clients-grid');
       const partenairesGrid = document.getElementById('partenaires-grid');
-      if (clientsGrid) clientsGrid.innerHTML = data.clients.map(logoChip).join('');
-      if (partenairesGrid) partenairesGrid.innerHTML = data.partenaires.map(logoChip).join('');
+      if (clientsGrid) clientsGrid.innerHTML = data.clients.map(clientChip).join('');
+      if (partenairesGrid) {
+        const chips = data.partenaires.map(sliderChip).join('');
+        partenairesGrid.innerHTML = chips + chips;
+      }
     } catch(e) { console.warn('clients.json not found'); }
+  }
+
+  // Load config (chiffres clés + réseaux sociaux)
+  async function loadConfig() {
+    try {
+      const res = await fetch('contenu/config.json');
+      const cfg = await res.json();
+      const c = cfg.chiffres_cles;
+      const nums = document.querySelectorAll('.chiffre-num[data-target]');
+      const vals = [c.etudes_realisees, c.annees_experience, c.ans_iso_9001, c.etudiants_audencia];
+      const suffixes = ['', '', '', '+'];
+      nums.forEach((el, i) => { if (vals[i] !== undefined) { el.dataset.target = vals[i]; el.dataset.suffix = suffixes[i] || ''; } });
+      const socialContainers = document.querySelectorAll('.footer-socials');
+      if (cfg.reseaux_sociaux && cfg.reseaux_sociaux.length) {
+        const btns = cfg.reseaux_sociaux.map(r => {
+          const img = r.logo ? `<img src="${r.logo}" alt="${r.nom}" style="width:16px;height:16px;object-fit:contain;filter:invert(1);" onerror="this.outerHTML='${r.initiale}'">` : r.initiale;
+          return `<a href="${r.lien}" class="social-btn" aria-label="${r.nom}"${r.lien !== '#' ? ' target=\"_blank\" rel=\"noopener\"' : ''}>${img}</a>`;
+        }).join('');
+        socialContainers.forEach(c => c.innerHTML = btns);
+      }
+    } catch(e) { console.warn('config.json not found'); }
   }
 
   // Fade in on scroll
@@ -1184,6 +1251,7 @@
   // Init
   loadTemoignages();
   loadClients();
+  loadConfig();
 </script>
 
 </body>
