@@ -1,4 +1,22 @@
 {
-  "clients": ["GRDF", "LVMH", "Vinci", "Saint-Gobain", "Grant Thornton", "Leroy Merlin", "BNP Paribas", "TotalEnergies", "Bagelstein"],
-  "partenaires": ["PwC", "LCL", "CGI", "Mantu", "JE France", "Training You", "Centrale Nantes Études"]
+  "clients": [
+    { "nom": "GRDF",           "logo": "photos/clients/grdf.png" },
+    { "nom": "LVMH",           "logo": "photos/clients/lvmh.png" },
+    { "nom": "Vinci",          "logo": "photos/clients/vinci.png" },
+    { "nom": "Saint-Gobain",   "logo": "photos/clients/saint-gobain.png" },
+    { "nom": "Grant Thornton", "logo": "photos/clients/grant-thornton.png" },
+    { "nom": "Leroy Merlin",   "logo": "photos/clients/leroy-merlin.png" },
+    { "nom": "BNP Paribas",    "logo": "photos/clients/bnp-paribas.png" },
+    { "nom": "TotalEnergies",  "logo": "photos/clients/total-energies.png" },
+    { "nom": "Bagelstein",     "logo": "photos/clients/bagelstein.png" }
+  ],
+  "partenaires": [
+    { "nom": "PwC",                    "logo": "photos/partenaires/pwc.png" },
+    { "nom": "LCL",                    "logo": "photos/partenaires/lcl.png" },
+    { "nom": "CGI",                    "logo": "photos/partenaires/cgi.png" },
+    { "nom": "Mantu",                  "logo": "photos/partenaires/mantu.png" },
+    { "nom": "JE France",              "logo": "photos/partenaires/je-france.png" },
+    { "nom": "Training You",           "logo": "photos/partenaires/training-you.png" },
+    { "nom": "Centrale Nantes Études", "logo": "photos/partenaires/centrale-nantes.png" }
+  ]
 }

@@ -1,0 +1,32 @@
+{
+  "association": {
+    "nom": "Audencia Junior Conseil",
+    "sigle": "AJC",
+    "slogan": "La Junior-Entreprise d'Audencia Business School",
+    "email": "contact@ajc-mail.com",
+    "telephone": "+33 (0)2 40 37 34 34",
+    "annee_creation": 1979,
+    "iso_depuis": 2019
+  },
+  "campus": [
+    {
+      "nom": "Nantes",
+      "adresse": "8 route de la Jonelière",
+      "code_postal": "44312",
+      "ville": "Nantes Cedex 3",
+      "actif": true,
+      "principal": true
+    }
+  ],
+  "reseaux_sociaux": {
+    "linkedin": "#",
+    "instagram": "#",
+    "facebook": "#"
+  },
+  "chiffres_cles": {
+    "etudes_realisees": 28,
+    "annees_experience": 45,
+    "ans_iso_9001": 5,
+    "etudiants_audencia": 6000
+  }
+}

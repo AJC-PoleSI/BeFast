@@ -1136,6 +1136,17 @@
     }
   }
 
+  // Génère une chip avec logo image (si dispo) ou nom en texte
+  function logoChip(item) {
+    if (item.logo) {
+      return `<div class="logo-chip logo-chip-img">
+        <img src="${item.logo}" alt="${item.nom}"
+             onerror="this.parentElement.innerHTML='<span>${item.nom}</span>'">
+      </div>`;
+    }
+    return `<div class="logo-chip">${item.nom || item}</div>`;
+  }
+
   // Load clients/partners from JSON
   async function loadClients() {
     try {
@@ -1143,8 +1154,8 @@
       const data = await res.json();
       const clientsGrid = document.getElementById('clients-grid');
       const partenairesGrid = document.getElementById('partenaires-grid');
-      if (clientsGrid) clientsGrid.innerHTML = data.clients.map(c => `<div class="logo-chip">${c}</div>`).join('');
-      if (partenairesGrid) partenairesGrid.innerHTML = data.partenaires.map(p => `<div class="logo-chip">${p}</div>`).join('');
+      if (clientsGrid) clientsGrid.innerHTML = data.clients.map(logoChip).join('');
+      if (partenairesGrid) partenairesGrid.innerHTML = data.partenaires.map(logoChip).join('');
     } catch(e) { console.warn('clients.json not found'); }
   }
 
