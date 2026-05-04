@@ -159,7 +159,10 @@ nav a.active { border-bottom: 2px solid var(--rose); padding-bottom: 2px; }
 .page-hero-sub { font-size: 16px; color: rgba(255,255,255,0.55); max-width: 520px; line-height: 1.7; }
 
 /* Logo chip (clients / partenaires) */
-.logo-chip { padding: 14px 28px; background: var(--white); border: 1.5px solid var(--gray-border); border-radius: 6px; font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--marine); transition: border-color 0.2s, box-shadow 0.2s; }
+.logo-chip { padding: 14px 28px; background: var(--white); border: 1.5px solid var(--gray-border); border-radius: 6px; font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--marine); transition: border-color 0.2s, box-shadow 0.2s; display: flex; align-items: center; justify-content: center; }
+.logo-chip-img { padding: 10px 20px; min-width: 120px; height: 64px; }
+.logo-chip-img img { max-height: 40px; max-width: 120px; width: auto; object-fit: contain; filter: grayscale(100%); opacity: 0.6; transition: filter 0.2s, opacity 0.2s; display: block; }
+.logo-chip-img:hover img { filter: grayscale(0%); opacity: 1; }
 .logo-chip:hover { border-color: var(--marine); box-shadow: 0 2px 12px rgba(26,39,68,0.08); }
 .logos-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; align-items: center; }
 
