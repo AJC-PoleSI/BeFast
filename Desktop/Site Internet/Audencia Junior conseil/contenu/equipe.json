@@ -8,9 +8,9 @@
       "linkedin": "#"
     },
     {
-      "nom": "Pierrick Rimaudière",
+      "nom": "Pierre ou rick Rimaudière",
       "role": "Vice-Président",
-      "description": "Pierrick s'occupe de développer les partenariats avec les différentes parties-prenantes d'AJC. Il pilote l'efficacité des processus et contribue à leur amélioration continue en suivant les indicateurs de risques et de performances.",
+      "description": "Pierre ou rick s'occupe de développer les partenariats avec les différentes parties-prenantes de Audencia Junior Conseil. En tant que membre du bureau, il se charge également de piloter l'efficacité des processus de la Junior et contribuer à leur amélioration continue en suivant les indicateurs de risques et de performances.",
       "photo": "photos/equipe/bureau/vice-president.jpg",
       "linkedin": "#"
     },
@@ -30,19 +30,79 @@
     }
   ],
   "poles": [
-    { "nom": "Victoire Gorrioux", "role": "Responsable Développement Commercial", "photo": "photos/equipe/bureau/resp-dev-commercial.jpg", "linkedin": "#" },
-    { "nom": "Anna Von Borowski", "role": "Responsable Ressources Humaines", "photo": "photos/equipe/bureau/resp-rh.jpg", "linkedin": "#" },
-    { "nom": "Clémence Defosseux", "role": "Responsable Audit-Qualité", "photo": "photos/equipe/bureau/resp-audit.jpg", "linkedin": "#" },
-    { "nom": "Esther Gesny", "role": "Responsable Marketing", "photo": "photos/equipe/bureau/resp-marketing.jpg", "linkedin": "#" }
+    {
+      "nom": "Victoire Gorrioux",
+      "role": "Responsable Développement Commercial",
+      "photo": "photos/equipe/bureau/resp-dev-commercial.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Anna Von Borowski",
+      "role": "Responsable Ressources Humaines",
+      "photo": "photos/equipe/bureau/resp-rh.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Clémence Defosseux",
+      "role": "Responsable Audit-Qualité",
+      "photo": "photos/equipe/bureau/resp-audit.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Esther Gesny",
+      "role": "Responsable Marketing",
+      "photo": "photos/equipe/bureau/resp-marketing.jpg",
+      "linkedin": "#"
+    }
   ],
   "chefs_projet": [
-    { "nom": "Chef de Projet 1", "role": "Marketing", "photo": "photos/equipe/chefs-projet/cdp-01.jpg", "linkedin": "#" },
-    { "nom": "Chef de Projet 2", "role": "Communication", "photo": "photos/equipe/chefs-projet/cdp-02.jpg", "linkedin": "#" },
-    { "nom": "Chef de Projet 3", "role": "Finance", "photo": "photos/equipe/chefs-projet/cdp-03.jpg", "linkedin": "#" },
-    { "nom": "Chef de Projet 4", "role": "RSE", "photo": "photos/equipe/chefs-projet/cdp-04.jpg", "linkedin": "#" },
-    { "nom": "Chef de Projet 5", "role": "Big Data", "photo": "photos/equipe/chefs-projet/cdp-05.jpg", "linkedin": "#" },
-    { "nom": "Chef de Projet 6", "role": "Études", "photo": "photos/equipe/chefs-projet/cdp-06.jpg", "linkedin": "#" },
-    { "nom": "Chef de Projet 7", "role": "Digital", "photo": "photos/equipe/chefs-projet/cdp-07.jpg", "linkedin": "#" },
-    { "nom": "Chef de Projet 8", "role": "Stratégie", "photo": "photos/equipe/chefs-projet/cdp-08.jpg", "linkedin": "#" }
+    {
+      "nom": "Chef de Projet 1",
+      "role": "Marketing",
+      "photo": "photos/equipe/chefs-projet/cdp-01.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Chef de Projet 2",
+      "role": "Communication",
+      "photo": "photos/equipe/chefs-projet/cdp-02.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Chef de Projet 3",
+      "role": "Finance",
+      "photo": "photos/equipe/chefs-projet/cdp-03.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Chef de Projet 4",
+      "role": "RSE",
+      "photo": "photos/equipe/chefs-projet/cdp-04.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Chef de Projet 5",
+      "role": "Big Data",
+      "photo": "photos/equipe/chefs-projet/cdp-05.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Chef de Projet 6",
+      "role": "Études",
+      "photo": "photos/equipe/chefs-projet/cdp-06.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Chef de Projet 7",
+      "role": "Digital",
+      "photo": "photos/equipe/chefs-projet/cdp-07.jpg",
+      "linkedin": "#"
+    },
+    {
+      "nom": "Chef de Projet 8",
+      "role": "Stratégie",
+      "photo": "photos/equipe/chefs-projet/cdp-08.jpg",
+      "linkedin": "#"
+    }
   ]
 }
