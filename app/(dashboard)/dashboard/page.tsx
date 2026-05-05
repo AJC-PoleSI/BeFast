@@ -1,20 +1,8 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import { useUser } from "@/hooks/useUser"
-import { getMissions } from "@/lib/actions/missions"
+import { createClient } from "@/lib/supabase/server"
+import { getMissions, getMesCandidatures } from "@/lib/actions/missions"
 import { getEtudes } from "@/lib/actions/etudes"
-import { getMesCandidatures } from "@/lib/actions/missions"
-import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
-import type { MissionWithEtude, EtudeWithRelations, CandidatureWithMission } from "@/types/database.types"
-
-interface DashboardStats {
-  missionsOuvertes: number
-  etudesEnCours: number
-  candidatures: number
-  taux: number
-}
+import type { MissionWithEtude, CandidatureWithMission } from "@/types/database.types"
 
 const STATUT_BADGE: Record<string, { label: string; className: string }> = {
   ouverte: { label: "Ouverte", className: "bg-blue-100 text-blue-700" },
@@ -24,67 +12,50 @@ const STATUT_BADGE: Record<string, { label: string; className: string }> = {
   annulee: { label: "Annulée", className: "bg-red-100 text-red-600" },
 }
 
-export default function DashboardPage() {
-  const { profile } = useUser()
-  const [stats, setStats] = useState<DashboardStats>({
-    missionsOuvertes: 0,
-    etudesEnCours: 0,
-    candidatures: 0,
-    taux: 0,
-  })
-  const [missions, setMissions] = useState<MissionWithEtude[]>([])
-  const [candidatures, setCandidatures] = useState<CandidatureWithMission[]>([])
-  const [loading, setLoading] = useState(true)
+export default async function DashboardPage() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true)
-      const missionsResult = await getMissions({ statut: "ouverte" })
-      const missionsData = missionsResult.data || []
-      setMissions(missionsData.slice(0, 5))
+  const [
+    personneResult,
+    missionsResult,
+    etudesResult,
+    candidaturesResult,
+  ] = await Promise.all([
+    user
+      ? supabase.from("personnes").select("prenom, email").eq("id", user.id).single()
+      : Promise.resolve({ data: null }),
+    getMissions({ statut: "ouverte" }),
+    getEtudes(),
+    getMesCandidatures(),
+  ])
 
-      const etudesResult = await getEtudes()
-      const etudesData = etudesResult.data || []
-      const etudesEnCours = etudesData.filter((e) => e.statut === "en_cours")
+  const personne = personneResult.data
+  const allMissions = (missionsResult.data || []) as MissionWithEtude[]
+  const allEtudes = etudesResult.data || []
+  const allCandidatures = (candidaturesResult.data || []) as CandidatureWithMission[]
 
-      const candidaturesResult = await getMesCandidatures()
-      const candidaturesData = candidaturesResult.data || []
-      setCandidatures(candidaturesData.slice(0, 3))
+  const missions = allMissions.slice(0, 5)
+  const candidatures = allCandidatures.slice(0, 3)
+  const etudesEnCours = allEtudes.filter((e) => e.statut === "en_cours")
 
-      setStats({
-        missionsOuvertes: missionsData.length,
-        etudesEnCours: etudesEnCours.length,
-        candidatures: candidaturesData.length,
-        taux: candidaturesData.length > 0 ? 75 : 0,
-      })
-      setLoading(false)
-    }
-    loadData()
-  }, [])
-
-  const greeting = profile
-    ? `Bienvenue, ${profile.prenom || profile.email}`
+  const greeting = personne
+    ? `Bienvenue, ${personne.prenom || personne.email}`
     : "Bienvenue"
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
       <div>
         <p className="text-sm text-slate-500">{greeting}</p>
       </div>
 
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* CA Financier */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">CA Financier</p>
-              {loading ? (
-                <Skeleton className="h-8 w-20 mt-2" />
-              ) : (
-                <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">—</p>
-              )}
+              <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">—</p>
               <p className="text-xs text-slate-400 mt-1">Prévisionnel N/A</p>
             </div>
             <div className="w-11 h-11 rounded-xl bg-[#d0d8ff] flex items-center justify-center">
@@ -93,16 +64,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Missions actives */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Missions actives</p>
-              {loading ? (
-                <Skeleton className="h-8 w-12 mt-2" />
-              ) : (
-                <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">{stats.missionsOuvertes}</p>
-              )}
+              <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">{allMissions.length}</p>
               <Link href="/missions" className="text-xs text-[#00236f] mt-1 hover:underline inline-flex items-center gap-0.5">
                 Voir missions
                 <span className="material-symbols-outlined text-base">arrow_forward</span>
@@ -114,16 +80,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Études en cours */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Études en cours</p>
-              {loading ? (
-                <Skeleton className="h-8 w-12 mt-2" />
-              ) : (
-                <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">{stats.etudesEnCours}</p>
-              )}
+              <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">{etudesEnCours.length}</p>
               <Link href="/etudes" className="text-xs text-[#00236f] mt-1 hover:underline inline-flex items-center gap-0.5">
                 Voir études
                 <span className="material-symbols-outlined text-base">arrow_forward</span>
@@ -135,18 +96,13 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Intervenants */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Mes candidatures</p>
-              {loading ? (
-                <Skeleton className="h-8 w-12 mt-2" />
-              ) : (
-                <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">{stats.candidatures}</p>
-              )}
-              {stats.candidatures > 0 ? (
-                <p className="text-xs text-emerald-600 mt-1 font-medium">{stats.taux}% acceptation</p>
+              <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">{allCandidatures.length}</p>
+              {allCandidatures.length > 0 ? (
+                <p className="text-xs text-emerald-600 mt-1 font-medium">75% acceptation</p>
               ) : (
                 <p className="text-xs text-slate-400 mt-1">Aucune candidature</p>
               )}
@@ -160,7 +116,7 @@ export default function DashboardPage() {
 
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent missions — col-span-2 */}
+        {/* Recent missions */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
             <h2 className="font-manrope font-bold text-[#00236f] text-base">Missions récentes</h2>
@@ -170,11 +126,7 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="divide-y divide-slate-100">
-            {loading ? (
-              <div className="p-6 space-y-3">
-                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
-              </div>
-            ) : missions.length > 0 ? (
+            {missions.length > 0 ? (
               missions.map((mission) => {
                 const badge = STATUT_BADGE[mission.statut] || { label: mission.statut, className: "bg-slate-100 text-slate-600" }
                 return (
@@ -212,7 +164,6 @@ export default function DashboardPage() {
 
         {/* Right column */}
         <div className="space-y-4">
-          {/* Quick actions */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <h2 className="font-manrope font-bold text-[#00236f] text-base mb-4">Actions rapides</h2>
             <div className="space-y-2">
@@ -237,14 +188,9 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Candidatures status */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <h2 className="font-manrope font-bold text-[#00236f] text-base mb-4">Statut candidatures</h2>
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
-              </div>
-            ) : candidatures.length > 0 ? (
+            {candidatures.length > 0 ? (
               <div className="space-y-2">
                 {candidatures.map((cand) => (
                   <div key={cand.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-50">

@@ -1,7 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compress: true,
+  poweredByHeader: false,
   images: {
-    unoptimized: true, // Disable image optimization (uses __dirname which isn't available in Edge Runtime)
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [],
+  },
+  experimental: {
+    optimizePackageImports: ["lucide-react"],
   },
 }
 module.exports = nextConfig
