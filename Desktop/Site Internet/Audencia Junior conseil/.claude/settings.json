@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"/Users/felixpitz/Desktop/Site Internet/Audencia Junior conseil\" && npx serve . --listen 3000 2>/dev/null &",
+            "async": true,
+            "statusMessage": "Démarrage du serveur local AJC..."
+          }
+        ]
+      }
+    ]
+  }
+}
