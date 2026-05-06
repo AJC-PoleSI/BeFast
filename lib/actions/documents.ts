@@ -354,20 +354,7 @@ export async function buildTemplateContext(
   // Build étudiant/intervenant context from a personne record
   function buildIntervenantContext(person: any) {
     if (!person) return {}
-    const ctx: Record<string, any> = {
-      prenom: person.prenom || "",
-      nom: person.nom || "",
-      email: person.email || "",
-      portable: person.portable || "",
-      adresse: person.adresse || "",
-      code_postal: person.code_postal || "",
-      ville: person.ville || "",
-      promo: person.promo || "",
-      etablissement: person.etablissement || "",
-      scolarite: person.scolarite || "",
-      date_naissance: person.date_naissance || "",
-    }
-    return ctx
+    return { ...person }
   }
 
   if (scope === "mission") {
@@ -405,17 +392,9 @@ export async function buildTemplateContext(
       ...base,
       // Reference = numéro d'étude
       reference: etude.numero || "",
-      // Mission — only primitive fields (no raw Supabase join objects)
+      // Mission — all fields + formatted dates
       mission: {
-        id: m.id,
-        nom: m.nom || "",
-        type: m.type || "",
-        voie: m.voie || "",
-        classe: m.classe || "",
-        description: m.description || "",
-        statut: m.statut || "",
-        nb_jours: m.nb_jours ?? "",
-        taux_jour: m.taux_jour ?? "",
+        ...m,
         date_debut: fmtDate(m.date_debut),
         date_fin: fmtDate(m.date_fin),
         date_debut_iso: m.date_debut || "",
