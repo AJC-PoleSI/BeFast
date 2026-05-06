@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 
@@ -108,7 +107,6 @@ export function TagsDictionary({
             <BookOpen className="w-5 h-5" />
             Dictionnaire des Balises
           </DialogTitle>
-          <DialogClose className="absolute right-4 top-4" />
         </DialogHeader>
 
         <div className="px-6 py-3 border-b border-slate-100 flex-shrink-0 bg-slate-50/50">
