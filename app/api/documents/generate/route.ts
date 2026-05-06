@@ -66,6 +66,15 @@ export async function POST(req: NextRequest) {
 
   const context = await buildTemplateContext(scope, entity_id, intervenant_id)
 
+  // Debug logging — visible in Vercel function logs
+  console.log("[DOC-GEN] === GENERATION START ===")
+  console.log("[DOC-GEN] scope:", scope, "entity_id:", entity_id, "intervenant_id:", intervenant_id)
+  console.log("[DOC-GEN] context top-level keys:", Object.keys(context))
+  console.log("[DOC-GEN] context.intervenant:", JSON.stringify(context.intervenant || {}).slice(0, 300))
+  console.log("[DOC-GEN] context.etudiant:", JSON.stringify(context.etudiant || {}).slice(0, 300))
+  console.log("[DOC-GEN] context.mission:", JSON.stringify(context.mission || {}).slice(0, 300))
+  console.log("[DOC-GEN] context.president:", JSON.stringify(context.president || {}).slice(0, 300))
+
   // Resolve étude info (numero + id) for naming/counting
   let etudeId: string | null = null
   let etudeNumero: string = ""

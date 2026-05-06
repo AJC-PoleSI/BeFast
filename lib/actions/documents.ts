@@ -351,10 +351,17 @@ export async function buildTemplateContext(
     }
   }
 
-  // Build étudiant/intervenant context from a personne record
+  // Build étudiant/intervenant context from a personne record.
+  // Only extract primitive fields — skip nested Supabase join objects.
   function buildIntervenantContext(person: any) {
     if (!person) return {}
-    return { ...person }
+    const ctx: Record<string, any> = {}
+    for (const [k, v] of Object.entries(person)) {
+      if (v !== null && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date)) continue
+      ctx[k] = v ?? ""
+    }
+    console.log("[DOC-GEN] intervenant context keys:", Object.keys(ctx))
+    return ctx
   }
 
   if (scope === "mission") {
@@ -379,22 +386,42 @@ export async function buildTemplateContext(
     const tarif = budget_ht + frais + budget_ht * (margePct / 100)
 
     // Resolve the intervenant: use explicit intervenantId if provided, else mission's intervenant
-    let selectedIntervenant = (m as any).intervenant ?? {}
+    let selectedIntervenant = (m as any).intervenant ?? null
+    console.log("[DOC-GEN] intervenantId from request:", intervenantId)
+    console.log("[DOC-GEN] mission.intervenant_id:", m.intervenant_id)
+    console.log("[DOC-GEN] mission.intervenant (joined):", selectedIntervenant ? "found" : "null")
+
     if (intervenantId) {
-      const { data: p } = await sb.from("personnes").select("*").eq("id", intervenantId).single()
+      const { data: p, error: pErr } = await sb.from("personnes").select("*").eq("id", intervenantId).single()
+      console.log("[DOC-GEN] fetched intervenant by ID:", p ? `${p.prenom} ${p.nom}` : "NOT FOUND", pErr?.message || "")
       if (p) selectedIntervenant = p
+    }
+
+    if (!selectedIntervenant || Object.keys(selectedIntervenant).length === 0) {
+      console.log("[DOC-GEN] WARNING: No intervenant data available!")
     }
 
     const intervenantCtx = buildIntervenantContext(selectedIntervenant)
     const organigramme = buildOrganigramme(params)
 
+    // Extract only primitive fields from mission (skip nested Supabase join objects like 'intervenant', 'etudes')
+    const missionPrimitives: Record<string, any> = {}
+    for (const [k, v] of Object.entries(m as Record<string, any>)) {
+      if (v !== null && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date)) continue
+      missionPrimitives[k] = v ?? ""
+    }
+
+    console.log("[DOC-GEN] mission primitive keys:", Object.keys(missionPrimitives))
+    console.log("[DOC-GEN] mission.date_debut raw:", m.date_debut, "→ formatted:", fmtDate(m.date_debut))
+    console.log("[DOC-GEN] mission.date_fin raw:", m.date_fin, "→ formatted:", fmtDate(m.date_fin))
+
     return {
       ...base,
       // Reference = numéro d'étude
       reference: etude.numero || "",
-      // Mission — all fields + formatted dates
+      // Mission — only primitive fields + formatted dates
       mission: {
-        ...m,
+        ...missionPrimitives,
         date_debut: fmtDate(m.date_debut),
         date_fin: fmtDate(m.date_fin),
         date_debut_iso: m.date_debut || "",
