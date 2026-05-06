@@ -23,6 +23,7 @@ import {
   DialogClose,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { DocumentViewer } from "@/components/documents/DocumentViewer"
 
 export default function EtudeDocumentsPage() {
   const params = useParams()
@@ -38,6 +39,8 @@ export default function EtudeDocumentsPage() {
   const [selectedMissionId, setSelectedMissionId] = useState<string>("")
   const [selectedIntervenantId, setSelectedIntervenantId] = useState<string>("")
   const [showGenerateModal, setShowGenerateModal] = useState(false)
+
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -164,7 +167,11 @@ export default function EtudeDocumentsPage() {
         ) : (
           <div className="space-y-2">
             {docs.map((d) => (
-              <div key={d.id} className="bg-white rounded-xl border border-border shadow-sm p-3 flex items-center justify-between gap-3">
+              <div 
+                key={d.id} 
+                className="bg-white rounded-xl border border-border shadow-sm p-3 flex items-center justify-between gap-3 cursor-pointer hover:border-[#00236f]/30 transition-colors"
+                onClick={() => setPreviewDoc({ url: `/api/documents/${d.id}/download`, name: d.file_name })}
+              >
                 <div className="flex items-center gap-2 min-w-0">
                   <FileText className="h-4 w-4 text-[#00236f] shrink-0" />
                   <div className="min-w-0">
@@ -175,8 +182,12 @@ export default function EtudeDocumentsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a href={`/api/documents/${d.id}/download`} className="inline-flex items-center gap-1 text-xs text-[#00236f] hover:underline">
-                    <Download className="h-3.5 w-3.5" /> Télécharger
+                  <a 
+                    href={`/api/documents/${d.id}/download`} 
+                    className="inline-flex items-center gap-1 text-xs text-[#00236f] hover:bg-[#00236f]/10 p-1.5 rounded transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Download className="h-3.5 w-3.5" />
                   </a>
                   <button onClick={() => handleDelete(d.id)} className="text-red-500 hover:text-red-700">
                     <Trash2 className="h-4 w-4" />
@@ -273,6 +284,13 @@ export default function EtudeDocumentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <DocumentViewer
+        open={!!previewDoc}
+        onOpenChange={(open) => !open && setPreviewDoc(null)}
+        url={previewDoc?.url || null}
+        fileName={previewDoc?.name || null}
+      />
     </div>
   )
 }

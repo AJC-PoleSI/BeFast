@@ -130,19 +130,17 @@ function applyFilter(value: any, filterStr: string, scope: any): any {
 }
 
 /**
- * Remplit un DOCX avec les données fournies.
+ * Remplit un DOCX ou PPTX avec les données fournies.
  * Utilise un parseur Angular pour gérer les pipes et les chemins imbriqués.
  */
-export function renderDocx(
+export function renderTemplate(
   templateBuffer: ArrayBuffer | Buffer,
-  data: Record<string, any>
+  data: Record<string, any>,
+  isPptx: boolean = false
 ): Buffer {
   const zip = new PizZip(templateBuffer as any)
 
-  // Word insère des éléments invisibles (proofErr, bookmarks, commentaires,
-  // sauts de page rendus, noProof, lang…) qui peuvent casser un tag {balise}
-  // en deux runs <w:r>, empêchant docxtemplater de le reconnaître.
-  // On les nettoie sur TOUS les fichiers XML du dossier word/.
+  // Nettoyage des éléments invisibles qui peuvent casser un tag {balise}
   const cleanXml = (xml: string): string =>
     xml
       .replace(/<w:proofErr[^/]*\/>/g, "")
@@ -154,9 +152,13 @@ export function renderDocx(
       .replace(/<w:commentReference[^/]*\/>/g, "")
       .replace(/<w:lastRenderedPageBreak[^/]*\/>/g, "")
       .replace(/<w:noProof[^/]*\/>/g, "")
+      // Pour PowerPoint
+      .replace(/<a:bookmarkStart[^/]*\/>/g, "")
+      .replace(/<a:bookmarkEnd[^/]*\/>/g, "")
 
   for (const file of Object.keys(zip.files)) {
-    if (/^word\/.*\.xml$/.test(file) && !file.includes("/_rels/")) {
+    // Nettoyer les fichiers word (DOCX) ou ppt (PPTX)
+    if ((/^word\/.*\.xml$/.test(file) || /^ppt\/.*\.xml$/.test(file)) && !file.includes("/_rels/")) {
       const xml = zip.files[file].asText()
       const cleaned = cleanXml(xml)
       if (cleaned !== xml) zip.file(file, cleaned)

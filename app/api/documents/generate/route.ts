@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { renderDocx } from "@/lib/docx/template-engine"
+import { renderTemplate } from "@/lib/docx/template-engine"
 import { buildTemplateContext } from "@/lib/actions/documents"
 
 // Allow up to 30 seconds for DOCX rendering
@@ -111,9 +111,10 @@ export async function POST(req: NextRequest) {
   const numero_document = counter
   context.numero_document = numero_document
 
+  const isPptx = tpl.file_path.endsWith(".pptx")
   let rendered: Buffer
   try {
-    rendered = renderDocx(templateBuf, context)
+    rendered = renderTemplate(templateBuf, context, isPptx)
   } catch (e: any) {
     return NextResponse.json(
       { error: "Erreur génération: " + (e?.message || "render error") },
@@ -121,16 +122,20 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Build name: AA CODE[NN] NUMERO_ETUDE.docx
-  // Examples: "26 CE 07.docx", "26 RDM08 07.docx"
+  const ext = isPptx ? ".pptx" : ".docx"
+  const mimeType = isPptx 
+    ? "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+  // Build name: AA CODE[NN] NUMERO_ETUDE.ext
+  // Examples: "26 CE 07.docx", "26 RDM08 07.pptx"
   const codePart = codeInfo.numbered ? `${codeInfo.code}${pad2(counter)}` : codeInfo.code
   const baseName = [aa, codePart, numEtude].filter(Boolean).join(" ")
-  const outName = `${baseName}.docx`
+  const outName = `${baseName}${ext}`
   const outPath = `${scope}/${entity_id}/${Date.now()}_${outName}`
 
   const { error: upErr } = await sb.storage.from("documents").upload(outPath, rendered, {
-    contentType:
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    contentType: mimeType,
     upsert: false,
   })
   if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 })

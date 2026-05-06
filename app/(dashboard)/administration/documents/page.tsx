@@ -23,7 +23,7 @@ import {
 import { listTemplates, deleteTemplate } from "@/lib/actions/documents"
 import { createClient as createBrowserClient } from "@/lib/supabase/client"
 import { extractPlaceholders } from "@/lib/docx/placeholders"
-
+import { TagsDictionary } from "@/components/documents/TagsDictionary"
 /* ─── Nomenclature ──────────────────────────────────────────── */
 
 const CATEGORY_ETUDE = "etude_mission"
@@ -66,6 +66,7 @@ export default function DocumentTemplatesPage() {
 
   // Upload modal
   const [showUpload, setShowUpload] = useState(false)
+  const [showDict, setShowDict] = useState(false)
   const [uploadTarget, setUploadTarget] = useState<string | null>(null) // document type key
   const [replaceId, setReplaceId] = useState<string | null>(null) // template id to replace
   const [form, setForm] = useState({ name: "", description: "", file: null as File | null })
@@ -536,6 +537,10 @@ export default function DocumentTemplatesPage() {
               Gérez les modèles DOCX utilisés pour la génération automatique de documents.
             </p>
           </div>
+          <Button onClick={() => setShowDict(true)} variant="outline" className="gap-2 border-[#00236f]/20 text-[#00236f] hover:bg-[#00236f]/5">
+            <BookOpen className="w-4 h-4" />
+            Dictionnaire des Balises
+          </Button>
         </div>
 
         {/* Search */}
@@ -657,6 +662,8 @@ export default function DocumentTemplatesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <TagsDictionary open={showDict} onOpenChange={setShowDict} />
     </>
   )
 }

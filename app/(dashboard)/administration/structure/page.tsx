@@ -179,42 +179,38 @@ export default function ParametresStructurePage() {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
-  // Persist the pôles list immediately to avoid losing changes
-  // if the user forgets to click "Enregistrer" at the bottom.
+  // Persist the pôles list immediately to the database.
+  // Called with the definitive new values (not from inside setState).
   async function persistPoles(nextPoles: string[], nextPerms: PolePermsMap) {
+    const polesJson = JSON.stringify(nextPoles)
+    const permsJson = JSON.stringify(nextPerms)
+    // Also keep the local form in sync so that handleSave doesn't overwrite with stale data
+    setForm(prev => ({ ...prev, poles_liste: polesJson, pole_permissions: permsJson }))
     await setParametres({
-      poles_liste: JSON.stringify(nextPoles),
-      pole_permissions: JSON.stringify(nextPerms),
+      poles_liste: polesJson,
+      pole_permissions: permsJson,
     })
   }
 
   function addPole() {
     const v = newPole.trim()
     if (!v) return
+    if (poles.includes(v)) return
     setNewPole("")
-    setPoles(prev => {
-      if (prev.includes(v)) return prev
-      const next = [...prev, v]
-      setPolePerms(prevPerms => {
-        persistPoles(next, prevPerms)
-        return prevPerms
-      })
-      return next
-    })
+    const nextPoles = [...poles, v]
+    setPoles(nextPoles)
+    // polePerms unchanged, just persist with current perms
+    persistPoles(nextPoles, polePerms)
   }
 
   function removePole(p: string) {
     if (editingPole === p) setEditingPole(null)
-    setPoles(prev => {
-      const nextPoles = prev.filter(x => x !== p)
-      setPolePerms(prevPerms => {
-        const nextPerms = { ...prevPerms }
-        delete nextPerms[p]
-        persistPoles(nextPoles, nextPerms)
-        return nextPerms
-      })
-      return nextPoles
-    })
+    const nextPoles = poles.filter(x => x !== p)
+    const nextPerms = { ...polePerms }
+    delete nextPerms[p]
+    setPoles(nextPoles)
+    setPolePerms(nextPerms)
+    persistPoles(nextPoles, nextPerms)
   }
 
   function togglePolePerm(pole: string, key: string, value: boolean) {
@@ -341,8 +337,8 @@ export default function ParametresStructurePage() {
               Ajouter
             </button>
           </div>
-          <p className="text-xs text-slate-400">
-            N'oublie pas de cliquer sur « Enregistrer » en bas pour sauvegarder les changements.
+          <p className="text-xs text-emerald-500 font-medium">
+            Les sous-pôles sont sauvegardés automatiquement.
           </p>
 
           {editingPole && (

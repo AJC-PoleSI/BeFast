@@ -20,6 +20,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { toast } from "sonner"
+import { DocumentViewer } from "@/components/documents/DocumentViewer"
 import type { DocumentPersonne, DocumentType } from "@/types/database.types"
 import {
   VALID_DOC_TYPES,
@@ -79,6 +80,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
   const [uploading, setUploading] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null)
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -212,7 +214,9 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
 
   const handleView = async (doc: DocumentPersonne) => {
     const url = await getSignedUrl(doc.file_path)
-    if (url) window.open(url, "_blank")
+    if (url) {
+      setPreviewDoc({ url, name: doc.file_name })
+    }
   }
 
   const handleDownload = async (doc: DocumentPersonne) => {
@@ -401,6 +405,13 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
           )
         })}
       </div>
+
+      <DocumentViewer
+        open={!!previewDoc}
+        onOpenChange={(open) => !open && setPreviewDoc(null)}
+        url={previewDoc?.url || null}
+        fileName={previewDoc?.name || null}
+      />
     </div>
   )
 }
