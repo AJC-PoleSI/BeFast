@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getAllParametres, setParametres } from "@/lib/actions/etudes"
+import { getAllParametres, setParametres, savePolesSilent } from "@/lib/actions/etudes"
 import { Loader2, Save, CheckCircle2, Plus, X, Settings2 } from "lucide-react"
+import { toast } from "sonner"
 
 type PolePerms = Record<string, boolean>
 type PolePermsMap = Record<string, PolePerms>
@@ -163,15 +164,34 @@ export default function ParametresStructurePage() {
   async function handleSave() {
     setSaving(true)
     setSaved(false)
+    // Build payload from form fields, explicitly overriding poles
     const payload = {
       ...form,
       poles_liste: JSON.stringify(poles),
       pole_permissions: JSON.stringify(polePerms),
     }
     const res = await setParametres(payload)
+    if ("error" in res) {
+      setSaving(false)
+      toast.error((res as any).error)
+      return
+    }
+    // Refetch from DB to confirm what was actually saved
+    const fresh = await getAllParametres()
+    if ("data" in fresh && fresh.data) {
+      setForm(fresh.data)
+      const keyExists = "poles_liste" in fresh.data
+      setPoles(parsePoles(fresh.data.poles_liste, keyExists))
+      try {
+        const raw = fresh.data.pole_permissions
+        if (raw) setPolePerms(JSON.parse(raw))
+      } catch {
+        setPolePerms({})
+      }
+    }
     setSaving(false)
-    if ("error" in res) { alert((res as any).error); return }
     setSaved(true)
+    toast.success("Paramètres enregistrés")
     setTimeout(() => setSaved(false), 2000)
   }
 
@@ -179,17 +199,17 @@ export default function ParametresStructurePage() {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
-  // Persist the pôles list immediately to the database.
-  // Called with the definitive new values (not from inside setState).
+  // Persist poles to DB WITHOUT triggering revalidatePath.
+  // revalidatePath remounts this client component and resets all state.
   async function persistPoles(nextPoles: string[], nextPerms: PolePermsMap) {
     const polesJson = JSON.stringify(nextPoles)
     const permsJson = JSON.stringify(nextPerms)
-    // Also keep the local form in sync so that handleSave doesn't overwrite with stale data
+    // Keep local form in sync
     setForm(prev => ({ ...prev, poles_liste: polesJson, pole_permissions: permsJson }))
-    await setParametres({
-      poles_liste: polesJson,
-      pole_permissions: permsJson,
-    })
+    const res = await savePolesSilent(polesJson, permsJson)
+    if ("error" in res) {
+      toast.error("Erreur de sauvegarde des sous-pôles: " + (res as any).error)
+    }
   }
 
   function addPole() {
@@ -199,7 +219,6 @@ export default function ParametresStructurePage() {
     setNewPole("")
     const nextPoles = [...poles, v]
     setPoles(nextPoles)
-    // polePerms unchanged, just persist with current perms
     persistPoles(nextPoles, polePerms)
   }
 
