@@ -5,11 +5,7 @@ import { Loader2, X, Download, AlertCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogClose,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
 
 export function DocumentViewer({
   open,
@@ -112,11 +108,12 @@ export function DocumentViewer({
                 Télécharger
               </a>
             )}
-            <DialogClose asChild>
-              <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </DialogClose>
+            <button 
+              onClick={() => onOpenChange(false)}
+              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
