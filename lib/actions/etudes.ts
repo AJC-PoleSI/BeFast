@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath } from "next/cache"
 import { unstable_noStore as noStore } from "next/cache"
 
@@ -283,18 +284,24 @@ export async function setParametres(updates: Record<string, string>) {
 
 /**
  * Save poles without triggering revalidatePath.
+ * Uses admin client to bypass RLS on the parametres table.
  * revalidatePath causes the client component to remount,
  * which resets state and re-fetches data — creating a loop
  * that overwrites the user's changes.
  */
 export async function savePolesSilent(polesJson: string, permsJson: string) {
-  const supabase = createClient()
+  const supabase = createAdminClient()
   const rows = [
     { key: "poles_liste", value: polesJson },
     { key: "pole_permissions", value: permsJson },
   ]
+  console.log("[POLES] Saving poles:", polesJson.slice(0, 200))
   const { error } = await supabase.from("parametres").upsert(rows, { onConflict: "key" })
-  if (error) return { error: error.message }
+  if (error) {
+    console.log("[POLES] ERROR:", error.message)
+    return { error: error.message }
+  }
+  console.log("[POLES] Saved successfully")
   // NO revalidatePath here — intentional
   return { success: true }
 }

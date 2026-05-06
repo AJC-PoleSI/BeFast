@@ -209,6 +209,8 @@ export default function ParametresStructurePage() {
     const res = await savePolesSilent(polesJson, permsJson)
     if ("error" in res) {
       toast.error("Erreur de sauvegarde des sous-pôles: " + (res as any).error)
+    } else {
+      toast.success("Sous-pôle mis à jour")
     }
   }
 
