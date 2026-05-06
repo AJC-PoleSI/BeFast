@@ -1,0 +1,27 @@
+/* ========================================
+   CONFIGURATION DU LOGO
+   ======================================== */
+
+/* Change le "150px" pour agrandir ou réduire le logo */
+.logo-mark img {
+  max-width: 120px !important;
+  height: auto !important;
+  display: block !important;
+}
+
+/* Exemple de tailles pré-configurées (change 150px par une de ces valeurs): */
+
+/* Petit (80px) */
+/* max-width: 80px; */
+
+/* Moyen (120px) */
+/* max-width: 120px; */
+
+/* Grand (150px) - ACTIF PAR DÉFAUT */
+/* max-width: 150px; */
+
+/* Très grand (200px) */
+/* max-width: 200px; */
+
+/* Énorme (250px) */
+/* max-width: 250px; */
