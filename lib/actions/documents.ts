@@ -376,10 +376,15 @@ export async function buildTemplateContext(
       paramsPromise,
     ])
     console.log("[DOC-GEN] Mission fetch error:", mErr?.message || "none")
+    if (mErr) console.log("[DOC-GEN] Full error object:", JSON.stringify(mErr))
+    console.log("[DOC-GEN] Raw mission object:", JSON.stringify(m || null).slice(0, 1000))
     console.log("[DOC-GEN] Mission data keys:", m ? Object.keys(m) : "null")
+    console.log("[DOC-GEN] Mission.intervenant_id:", m?.intervenant_id)
+    console.log("[DOC-GEN] Mission.intervenant:", m?.intervenant ? JSON.stringify(m.intervenant).slice(0, 200) : "null")
+    console.log("[DOC-GEN] Mission.etude_id:", m?.etude_id)
+    console.log("[DOC-GEN] Mission.etudes:", m?.etudes ? JSON.stringify(m.etudes).slice(0, 300) : "null")
     console.log("[DOC-GEN] Mission.date_debut:", m?.date_debut)
     console.log("[DOC-GEN] Mission.nom:", m?.nom)
-    console.log("[DOC-GEN] Etude object:", m?.etudes ? Object.keys(m.etudes) : "null")
     if (!m) return base
     
     const etude = (m as any).etudes ?? {}
