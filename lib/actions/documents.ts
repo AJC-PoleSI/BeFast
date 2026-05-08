@@ -365,7 +365,7 @@ export async function buildTemplateContext(
   }
 
   if (scope === "mission") {
-    const [{ data: m }, params] = await Promise.all([
+    const [{ data: m, error: mErr }, params] = await Promise.all([
       sb
         .from("missions")
         .select(
@@ -375,6 +375,11 @@ export async function buildTemplateContext(
         .single(),
       paramsPromise,
     ])
+    console.log("[DOC-GEN] Mission fetch error:", mErr?.message || "none")
+    console.log("[DOC-GEN] Mission data keys:", m ? Object.keys(m) : "null")
+    console.log("[DOC-GEN] Mission.date_debut:", m?.date_debut)
+    console.log("[DOC-GEN] Mission.nom:", m?.nom)
+    console.log("[DOC-GEN] Etude object:", m?.etudes ? Object.keys(m.etudes) : "null")
     if (!m) return base
     
     const etude = (m as any).etudes ?? {}
