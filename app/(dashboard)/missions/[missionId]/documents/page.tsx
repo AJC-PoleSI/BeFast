@@ -83,6 +83,13 @@ export default function MissionDocumentsPage() {
     if (!res.ok) toast.error(json?.error || "Erreur")
     else {
       toast.success("Document généré")
+      // Show debug info to diagnose placeholder issues
+      if (json._debug) {
+        const d = json._debug
+        console.log("[DOC-GEN DEBUG]", JSON.stringify(d, null, 2))
+        const info = `Intervenant: ${d.intervenant_prenom} ${d.intervenant_nom} | Mission: ${d.mission_nom} | Date début: ${d.mission_date_debut}`
+        toast.info(info, { duration: 8000 })
+      }
       window.open(`/api/documents/${json.data.id}/download`, "_blank")
       setShowGenerateModal(false)
       setSelectedTemplateId("")

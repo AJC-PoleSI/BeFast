@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getAllParametres, setParametres, savePolesSilent } from "@/lib/actions/etudes"
+import { getAllParametres, setParametres } from "@/lib/actions/etudes"
 import { Loader2, Save, CheckCircle2, Plus, X, Settings2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -144,17 +144,24 @@ export default function ParametresStructurePage() {
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    getAllParametres().then(res => {
-      if ("data" in res && res.data) {
-        setForm(res.data)
-        // Only use DEFAULT_POLES if poles_liste key doesn't exist in DB
-        const keyExists = "poles_liste" in res.data
-        setPoles(parsePoles(res.data.poles_liste, keyExists))
-        try {
-          const raw = res.data.pole_permissions
-          if (raw) setPolePerms(JSON.parse(raw))
-        } catch {
-          setPolePerms({})
+    Promise.all([
+      getAllParametres(),
+      fetch("/api/poles").then(r => r.json()),
+    ]).then(([formRes, polesRes]) => {
+      if ("data" in formRes && formRes.data) {
+        setForm(formRes.data)
+      }
+      // Load poles from the dedicated API (bypasses RLS)
+      if (polesRes.data) {
+        const pl = polesRes.data.poles_liste
+        const pp = polesRes.data.pole_permissions
+        if (Array.isArray(pl)) {
+          setPoles(pl)
+        } else {
+          setPoles(DEFAULT_POLES)
+        }
+        if (pp && typeof pp === "object") {
+          setPolePerms(pp)
         }
       }
       setLoading(false)
@@ -199,18 +206,24 @@ export default function ParametresStructurePage() {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
-  // Persist poles to DB WITHOUT triggering revalidatePath.
-  // revalidatePath remounts this client component and resets all state.
+  // Persist poles via dedicated API route (bypasses RLS, no revalidatePath)
   async function persistPoles(nextPoles: string[], nextPerms: PolePermsMap) {
-    const polesJson = JSON.stringify(nextPoles)
-    const permsJson = JSON.stringify(nextPerms)
     // Keep local form in sync
-    setForm(prev => ({ ...prev, poles_liste: polesJson, pole_permissions: permsJson }))
-    const res = await savePolesSilent(polesJson, permsJson)
-    if ("error" in res) {
-      toast.error("Erreur de sauvegarde des sous-pôles: " + (res as any).error)
-    } else {
-      toast.success("Sous-pôle mis à jour")
+    setForm(prev => ({ ...prev, poles_liste: JSON.stringify(nextPoles), pole_permissions: JSON.stringify(nextPerms) }))
+    try {
+      const res = await fetch("/api/poles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ poles_liste: nextPoles, pole_permissions: nextPerms }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        toast.error("Erreur: " + (json.error || "Sauvegarde échouée"))
+      } else {
+        toast.success("Sous-pôle mis à jour")
+      }
+    } catch (err: any) {
+      toast.error("Erreur réseau: " + err.message)
     }
   }
 

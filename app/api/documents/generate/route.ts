@@ -164,5 +164,18 @@ export async function POST(req: NextRequest) {
     .single()
   if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 })
 
-  return NextResponse.json({ data: row })
+  return NextResponse.json({ 
+    data: row,
+    _debug: {
+      intervenant_id_received: intervenant_id || null,
+      intervenant_prenom: context.intervenant?.prenom || "(vide)",
+      intervenant_nom: context.intervenant?.nom || "(vide)",
+      etudiant_prenom: context.etudiant?.prenom || "(vide)",
+      mission_nom: context.mission?.nom || "(vide)",
+      mission_date_debut: context.mission?.date_debut || "(vide)",
+      president_nom: context.president?.nom_complet || "(vide)",
+      reference: context.reference || "(vide)",
+      context_keys: Object.keys(context),
+    }
+  })
 }
