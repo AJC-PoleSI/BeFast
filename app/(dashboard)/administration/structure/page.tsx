@@ -171,12 +171,11 @@ export default function ParametresStructurePage() {
   async function handleSave() {
     setSaving(true)
     setSaved(false)
-    // Build payload from form fields, explicitly overriding poles
-    const payload = {
-      ...form,
-      poles_liste: JSON.stringify(poles),
-      pole_permissions: JSON.stringify(polePerms),
-    }
+    // Build payload from form fields ONLY — poles are managed separately via persistPoles
+    const payload = { ...form }
+    delete payload.poles_liste
+    delete payload.pole_permissions
+
     const res = await setParametres(payload)
     if ("error" in res) {
       setSaving(false)
@@ -187,14 +186,6 @@ export default function ParametresStructurePage() {
     const fresh = await getAllParametres()
     if ("data" in fresh && fresh.data) {
       setForm(fresh.data)
-      const keyExists = "poles_liste" in fresh.data
-      setPoles(parsePoles(fresh.data.poles_liste, keyExists))
-      try {
-        const raw = fresh.data.pole_permissions
-        if (raw) setPolePerms(JSON.parse(raw))
-      } catch {
-        setPolePerms({})
-      }
     }
     setSaving(false)
     setSaved(true)
@@ -248,10 +239,12 @@ export default function ParametresStructurePage() {
   }
 
   function togglePolePerm(pole: string, key: string, value: boolean) {
-    setPolePerms(prev => ({
-      ...prev,
-      [pole]: { ...(prev[pole] ?? {}), [key]: value },
-    }))
+    const nextPerms = {
+      ...polePerms,
+      [pole]: { ...(polePerms[pole] ?? {}), [key]: value },
+    }
+    setPolePerms(nextPerms)
+    persistPoles(poles, nextPerms)
   }
 
   if (loading) {

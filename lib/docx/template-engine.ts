@@ -152,6 +152,13 @@ export function renderTemplate(
       .replace(/<w:commentReference[^/]*\/>/g, "")
       .replace(/<w:lastRenderedPageBreak[^/]*\/>/g, "")
       .replace(/<w:noProof[^/]*\/>/g, "")
+      .replace(/<w:rFonts[^>]*>/g, "")
+      .replace(/<w:rStyle[^/]*\/>/g, "")
+      .replace(/<w:rsidR[^/]*\/>/g, "")
+      .replace(/<w:rsidRPr[^/]*\/>/g, "")
+      .replace(/<w:rsidSect[^/]*\/>/g, "")
+      .replace(/<w:lang[^/]*\/>/g, "")
+      .replace(/<w:instrText[^>]*>[\s\S]*?<\/w:instrText>/g, "")
       // Pour PowerPoint
       .replace(/<a:bookmarkStart[^/]*\/>/g, "")
       .replace(/<a:bookmarkEnd[^/]*\/>/g, "")
@@ -170,6 +177,7 @@ export function renderTemplate(
     linebreaks: true,
     nullGetter: () => "",
     parser: angularParser,
+    delimiters: { start: "{", end: "}" },
   })
   doc.render(data)
   const out = doc.getZip().generate({ type: "nodebuffer" })

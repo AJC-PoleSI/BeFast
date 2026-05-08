@@ -167,10 +167,10 @@ export default function EtudeDocumentsPage() {
         ) : (
           <div className="space-y-2">
             {docs.map((d) => (
-              <div 
-                key={d.id} 
+              <div
+                key={d.id}
                 className="bg-white rounded-xl border border-border shadow-sm p-3 flex items-center justify-between gap-3 cursor-pointer hover:border-[#00236f]/30 transition-colors"
-                onClick={() => setPreviewDoc({ url: `/api/documents/${d.id}/download`, name: d.file_name })}
+                onClick={() => setPreviewDoc({ url: `/api/documents/${d.id}/preview`, name: d.file_name })}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <FileText className="h-4 w-4 text-[#00236f] shrink-0" />
