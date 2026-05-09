@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qu'est-ce qu'une JE — Audencia Junior Conseil</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="logo-config.css">
+  <style>
+    /* ── SUB-NAV ── */
+    .sub-nav {
+      position: sticky; top: 68px; z-index: 90;
+      background: var(--white); border-bottom: 1px solid var(--gray-border);
+      padding: 0 48px;
+    }
+    .sub-nav-inner { display: flex; gap: 0; max-width: 1200px; margin: 0 auto; }
+    .sub-nav-link {
+      padding: 16px 24px; font-size: 12px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--gray-text); text-decoration: none;
+      border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+    .sub-nav-link:hover { color: var(--marine); }
+    .sub-nav-link.active { color: var(--marine); border-bottom-color: var(--rose); }
+
+    /* ── SECTIONS ── */
+    section { padding: 96px 48px; }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+
+    /* ── QU'EST-CE QU'UNE JE ── */
+    #qu-est-ce { background: var(--white); }
+    .je-intro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; margin-bottom: 80px; }
+    .ph { width: 100%; background: repeating-linear-gradient(45deg,#f0f1f4,#f0f1f4 6px,#e8eaef 6px,#e8eaef 12px); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .ph span { font-family: 'Courier New', monospace; font-size: 12px; color: #888; background: rgba(255,255,255,0.85); padding: 8px 14px; border-radius: 3px; }
+
+    .je-definition-block {
+      background: var(--marine); color: white; border-radius: 8px;
+      padding: 48px 56px; margin-bottom: 64px; position: relative; overflow: hidden;
+    }
+    .je-definition-block::before {
+      content: '\201C';
+      position: absolute; top: -20px; left: 24px;
+      font-size: 160px; color: rgba(190,49,91,0.15); line-height: 1; font-style: normal;
+    }
+    .je-def-label { font-size: 10px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--rose); margin-bottom: 20px; }
+    .je-def-quote { font-size: 18px; font-weight: 400; font-style: italic; line-height: 1.7; color: white; max-width: 780px; margin-bottom: 16px; }
+    .je-def-source { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+
+    .je-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 64px; }
+    .je-card { background: var(--gray-bg); border-radius: 8px; padding: 32px 28px; border: 1.5px solid transparent; transition: border-color 0.2s; }
+    .je-card:hover { border-color: var(--marine); }
+    .je-card-num { font-size: 48px; font-weight: 800; color: var(--rose); opacity: 0.2; line-height: 1; margin-bottom: 8px; }
+    .je-card-title { font-size: 14px; font-weight: 700; color: var(--marine); margin-bottom: 10px; letter-spacing: 0.5px; }
+    .je-card-desc { font-size: 13px; color: var(--gray-text); line-height: 1.6; }
+
+    /* Mouvement JE */
+    .mouvement-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+    .mouvement-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .stat-card { background: var(--gray-bg); border-radius: 8px; padding: 24px; text-align: center; }
+    .stat-num { font-size: 36px; font-weight: 800; color: var(--marine); margin-bottom: 4px; }
+    .stat-label { font-size: 11px; color: var(--gray-text); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+
+    /* CNJE */
+    .cnje-block { background: var(--gray-bg); border-radius: 8px; padding: 48px 56px; margin-top: 64px; display: grid; grid-template-columns: auto 1fr; gap: 56px; align-items: center; }
+    .cnje-logo-box { width: 120px; height: 120px; background: var(--marine); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .cnje-logo-box span { color: white; font-size: 22px; font-weight: 800; letter-spacing: 2px; }
+    .cnje-title { font-size: 20px; font-weight: 800; color: var(--marine); margin-bottom: 12px; }
+    .cnje-title .accent { color: var(--rose); }
+    .cnje-desc { font-size: 13px; color: var(--gray-text); line-height: 1.7; margin-bottom: 16px; }
+    .cnje-list { display: flex; flex-direction: column; gap: 8px; }
+    .cnje-item { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--marine); font-weight: 600; }
+    .cnje-item::before { content: '—'; color: var(--rose); flex-shrink: 0; }
+
+    /* Code déontologie */
+    .deon-block { background: var(--marine); border-radius: 8px; padding: 48px 56px; margin-top: 32px; }
+    .deon-title { font-size: 20px; font-weight: 800; color: white; margin-bottom: 12px; letter-spacing: 1px; }
+    .deon-title .accent { color: var(--rose); }
+    .deon-text { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.7; max-width: 700px; }
+    .deon-text + .deon-text { margin-top: 12px; }
+
+    /* ── CTA FINALE ── */
+    #cta-je {
+      background: var(--marine); padding: 80px 48px;
+    }
+    .cta-je-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 48px; }
+    .cta-je-text h2 { font-size: 36px; font-weight: 800; color: white; margin-bottom: 10px; line-height: 1.2; }
+    .cta-je-text p { font-size: 14px; color: rgba(255,255,255,0.5); }
+
+    @media (max-width: 1000px) {
+      .je-intro-grid, .mouvement-grid { grid-template-columns: 1fr; gap: 40px; }
+      .je-cards { grid-template-columns: 1fr 1fr; }
+      .cnje-block { grid-template-columns: 1fr; }
+      .cta-je-inner { flex-direction: column; text-align: center; }
+      section { padding: 64px 24px; }
+      .sub-nav { padding-left: 24px; padding-right: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="main-header">
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-mark">
+        <img src="photos/logo.png" alt="AJC" style="max-width: 180px; height: auto;" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span style="display:none;">AJC</span>
+      </div>
+      <div class="logo-text">Audencia <small>Junior Conseil</small></div>
+    </a>
+    <nav>
+      <div class="nav-item">
+        <a href="qu-est-ce-une-je.html" class="active">La Junior-Entreprise <span class="arr">▾</span></a>
+        <div class="dropdown">
+          <a href="qu-est-ce-une-je.html" class="dropdown-item">
+            <span><span class="di-title">Qu'est-ce qu'une JE ?</span><span class="di-sub">Le mouvement Junior-Entreprises</span></span>
+          </a>
+          <a href="notre-equipe.html" class="dropdown-item">
+            <span><span class="di-title">Notre Équipe</span><span class="di-sub">Bureau et chefs de projets</span></span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="contact.html" class="dropdown-item">
+            <span><span class="di-title">Nous contacter</span><span class="di-sub">Demander un devis</span></span>
+          </a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <a href="prestations.html">Nos prestations <span class="arr">▾</span></a>
+        <div class="dropdown">
+          <a href="prestations.html#marketing" class="dropdown-item">
+            <span><span class="di-title">Marketing</span><span class="di-sub">Études de marché, stratégie</span></span>
+          </a>
+          <a href="prestations.html#communication" class="dropdown-item">
+            <span><span class="di-title">Communication</span><span class="di-sub">Stratégie éditoriale, digital</span></span>
+          </a>
+          <a href="prestations.html#rse" class="dropdown-item">
+            <span><span class="di-title">RSE</span><span class="di-sub">Diagnostic, bilan carbone</span></span>
+          </a>
+          <a href="prestations.html#bigdata" class="dropdown-item">
+            <span><span class="di-title">Big Data</span><span class="di-sub">Analyse, dataviz</span></span>
+          </a>
+          <a href="prestations.html#finance" class="dropdown-item">
+            <span><span class="di-title">Finance</span><span class="di-sub">Business plan, valorisation</span></span>
+          </a>
+        </div>
+      </div>
+      <a href="index.html#clients">Nos réalisations</a>
+    </nav>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <a href="contact.html" class="btn-outline-marine" id="desktop-cta">Nous contacter</a>
+  </div>
+</header>
+<div class="mobile-drawer" id="mobile-drawer">
+  <a href="index.html">Accueil</a>
+  <a href="qu-est-ce-une-je.html">Qu'est-ce qu'une JE ?</a>
+  <a href="notre-equipe.html">Notre Équipe</a>
+  <a href="prestations.html">Nos Prestations</a>
+  <a href="index.html#clients">Nos Réalisations</a>
+  <a href="contact.html" class="drawer-cta">Nous Contacter →</a>
+</div>
+
+<!-- HERO BANNER -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <p class="page-hero-eyebrow">La Junior-Entreprise</p>
+    <h1 class="page-hero-title">Audencia<br>Junior Conseil</h1>
+    <p class="page-hero-sub">Fondée il y a plus de 45 ans, AJC est l'une des Junior-Entreprises les plus reconnues de France. Adossée à Audencia Business School, nous formons les consultants de demain.</p>
+  </div>
+</div>
+
+<!-- ══ QU'EST-CE QU'UNE JE ════════════════════════════════════════ -->
+<section id="qu-est-ce">
+  <div class="section-inner">
+
+    <!-- Intro grid -->
+    <div class="je-intro-grid">
+      <div>
+        <p class="section-eyebrow">Le mouvement</p>
+        <h2 class="section-title"><span class="thin">Qu'est-ce</span><br>qu'une JE ?</h2>
+        <div class="section-accent"></div>
+        <div class="section-body">
+          <p>Une <strong>Junior-Entreprise</strong> est une association loi 1901 à but non lucratif, gérée et administrée par des étudiants. Elle a pour vocation de permettre aux étudiants de mettre en application les enseignements prodigués par leur école, en accompagnant des professionnels confrontés à des problématiques concrètes.</p>
+          <p>Les professionnels ont ainsi l'occasion de travailler avec des étudiants dynamiques, munis de compétences nouvellement acquises et opérationnelles, à des tarifs compétitifs.</p>
+          <p>Au sein du mouvement, chaque JE est régie par la <strong>CNJE</strong> qui veille au respect du <strong>Code de Déontologie</strong> par le biais d'audits annuels.</p>
+        </div>
+      </div>
+      <div class="je-intro-img">
+        <img src="photos/accueil/hero.jpg" alt="Équipe AJC" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="ph" style="aspect-ratio:4/3;display:none;"><span>campus Audencia</span></div>
+      </div>
+    </div>
+
+    <!-- Citation CNJE -->
+    <div class="je-definition-block">
+      <div class="je-def-label">Le mot de la CNJE</div>
+      <p class="je-def-quote">« Les Junior-Entrepreneurs sont des étudiants de Grandes Écoles et Universités engagés et investis, désireux de se professionnaliser avant la fin de leurs études en gérant les Junior-Entreprises et en réalisant des projets pour les professionnels. »</p>
+      <div class="je-def-source">Confédération Nationale des Junior-Entreprises</div>
+    </div>
+
+    <!-- Cartes atouts -->
+    <div class="je-cards">
+      <div class="je-card">
+        <div class="je-card-num">01</div>
+        <div class="je-card-title">Expertise académique</div>
+        <div class="je-card-desc">Nos consultants mobilisent les dernières méthodes enseignées à Audencia, l'une des meilleures business schools européennes.</div>
+      </div>
+      <div class="je-card">
+        <div class="je-card-num">02</div>
+        <div class="je-card-title">Encadrement rigoureux</div>
+        <div class="je-card-desc">Chaque étude est suivie par un bureau expérimenté et validée selon notre processus qualité certifié ISO 9001.</div>
+      </div>
+      <div class="je-card">
+        <div class="je-card-num">03</div>
+        <div class="je-card-title">Tarifs compétitifs</div>
+        <div class="je-card-desc">Des prestations de conseil de niveau professionnel à des tarifs adaptés aux besoins des PME, start-ups et grandes entreprises.</div>
+      </div>
+    </div>
+
+    <!-- Le mouvement -->
+    <div class="mouvement-grid">
+      <div>
+        <p class="section-eyebrow">Depuis 1967</p>
+        <h2 class="section-title"><span class="thin">Le mouvement</span><br>Junior-Entreprises</h2>
+        <div class="section-accent"></div>
+        <div class="section-body">
+          <p>Le mouvement <strong>Junior-Entreprise</strong> a vu le jour en 1967 et a été consolidé en 1969 par la création de la Confédération Nationale des Junior-Entreprises.</p>
+          <p>Aujourd'hui ce mouvement dépasse les frontières de l'Hexagone et génère un chiffre d'affaires de <strong>9,45 millions d'euros</strong>. L'institution veille à fédérer, pérenniser et développer le mouvement à l'échelle nationale.</p>
+        </div>
+      </div>
+      <div class="mouvement-stats">
+        <div class="stat-card">
+          <div class="stat-num">200+</div>
+          <div class="stat-label">Junior-Entreprises</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">20 000</div>
+          <div class="stat-label">Junior-Entrepreneurs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">9,45M€</div>
+          <div class="stat-label">Chiffre d'affaires</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">1967</div>
+          <div class="stat-label">Année de création</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CNJE -->
+    <div class="cnje-block">
+      <div class="cnje-logo-box">
+        <img src="photos/partenaires/cnje.png" alt="CNJE"
+             style="width:90px;height:90px;object-fit:contain;border-radius:4px;"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span style="display:none;">CNJE</span>
+      </div>
+      <div>
+        <div class="cnje-title">La <span class="accent">CNJE</span></div>
+        <p class="cnje-desc">La Confédération Nationale des Junior-Entreprises est l'institution qui, depuis bientôt 50 ans, œuvre pour permettre au mouvement des Junior-Entreprises de grandir. Elle a notamment pour vocation de :</p>
+        <div class="cnje-list">
+          <div class="cnje-item">Développer le mouvement</div>
+          <div class="cnje-item">Former et accompagner les Junior-Entreprises</div>
+          <div class="cnje-item">Promouvoir le concept et la marque Junior-Entreprise</div>
+          <div class="cnje-item">Organiser, animer et fédérer le mouvement</div>
+          <div class="cnje-item">Assurer l'esprit d'entreprise, gage d'un engagement individuel et d'un sens des responsabilités collectives</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code déontologie -->
+    <div class="deon-block">
+      <div class="deon-title">Le code de <span class="accent">Déontologie</span></div>
+      <p class="deon-text">Chacun des Junior-Entrepreneurs est tenu au respect du Code de Déontologie élaboré par la CNJE, sur la base des textes de loi. Le respect de ce Code est scrupuleusement vérifié lors d'audits annuels, supervisés par l'institution.</p>
+      <p class="deon-text" style="margin-top:12px;">Par ailleurs, Audencia Junior Conseil met en œuvre des audits internes et assure ainsi, par ce double contrôle, un niveau de qualité élevé sur ses études.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ CTA FINALE ════════════════════════════════════════════════ -->
+<section id="cta-je" style="padding:80px 48px;background:var(--marine);">
+  <div class="cta-je-inner">
+    <div class="cta-je-text">
+      <h2>Prêt à travailler<br>avec nous ?</h2>
+      <p>Réponse sous 48h. Sans engagement.</p>
+    </div>
+    <a href="contact.html" class="btn-rose" style="font-size:13px;padding:18px 40px;white-space:nowrap;">NOUS CONTACTER</a>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-col-title">Contact</div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+          <span>+33 7 69 44 78 99</span>
+        </div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7 L12 13 L22 7"/></svg>
+          <span>contact@ajc-mail.com</span>
+        </div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><path d="M12 2 C8 2 5 5.5 5 9.5 C5 15.5 12 22 12 22 S19 15.5 19 9.5 C19 5.5 16 2 12 2 Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          <span>8 route de la Jonelière<br>44312 Nantes Cedex 3</span>
+        </div>
+        <div class="footer-socials">
+          <a href="#" class="social-btn" aria-label="LinkedIn">in</a>
+          <a href="#" class="social-btn" aria-label="Instagram">ig</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Localisation</div>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2711.3!2d-1.5897!3d47.2557!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4805ef3e8b35ef6b%3A0xb0d17c2a6c9d6b1!2sAudencia%20Business%20School!5e0!3m2!1sfr!2sfr!4v1"
+          style="width:100%;aspect-ratio:16/9;border-radius:6px;border:1px solid rgba(255,255,255,0.08);display:block;"
+          allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Audencia Nantes"></iframe>
+      </div>
+      <div>
+        <div class="footer-col-title">Mentions légales</div>
+        <div class="footer-mentions">
+          <a href="#">Mentions légales</a>
+          <a href="#">Politique de confidentialité</a>
+          <a href="#">CGV</a>
+        </div>
+        <div style="margin-top:32px;">
+          <div class="footer-col-title">La JE</div>
+          <div class="footer-mentions">
+            <a href="qu-est-ce-une-je.html">Qui sommes-nous ?</a>
+            <a href="notre-equipe.html">Notre équipe</a>
+            <a href="contact.html">Nous contacter</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-logo-ghost">AJC</div>
+      <div class="footer-copyright">© 2025 Audencia Junior Conseil — Tous droits réservés</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  window.addEventListener('scroll', () => {
+    document.getElementById('main-header').classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  const burger = document.getElementById('hamburger');
+  const drawer = document.getElementById('mobile-drawer');
+  burger.addEventListener('click', () => {
+    burger.classList.toggle('open');
+    drawer.classList.toggle('open');
+    document.body.style.overflow = drawer.classList.contains('open') ? 'hidden' : '';
+  });
+</script>
+</body>
+</html>

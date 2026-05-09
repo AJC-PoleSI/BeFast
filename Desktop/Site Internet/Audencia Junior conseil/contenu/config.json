@@ -37,5 +37,8 @@
     "annees_experience": 45,
     "ans_iso_9001": 5,
     "etudiants_audencia": 6000
+  },
+  "pages": {
+    "notre_equipe_photo": "photos/photo-equipe.jpg"
   }
 }
