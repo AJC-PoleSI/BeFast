@@ -23,11 +23,22 @@ const _listTemplatesCached = unstable_cache(
 )
 
 export async function listTemplates() {
+  const sb = createClient()
+  const {
+    data: { user },
+  } = await sb.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   return _listTemplatesCached()
 }
 
 export async function deleteTemplate(id: string) {
   const sb = createClient()
+  const {
+    data: { user },
+  } = await sb.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { data: tpl } = await sb
     .from("document_templates")
     .select("file_path")
@@ -48,6 +59,11 @@ export async function updateTemplateMeta(
   updates: Partial<{ name: string; description: string; category: string }>
 ) {
   const sb = createClient()
+  const {
+    data: { user },
+  } = await sb.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { error } = await sb.from("document_templates").update(updates).eq("id", id)
   if (error) return { error: error.message }
   revalidateTag(TEMPLATES_TAG)
@@ -58,6 +74,11 @@ export async function updateTemplateMeta(
 export async function listEntityDocuments(scope: string, entityId: string) {
   noStore()
   const sb = createClient()
+  const {
+    data: { user },
+  } = await sb.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { data, error } = await sb
     .from("generated_documents")
     .select("*, document_templates(id, name)")
@@ -76,6 +97,10 @@ export async function listEntityDocuments(scope: string, entityId: string) {
 export async function listEtudeAllDocuments(etudeId: string) {
   noStore()
   const sb = createClient()
+  const {
+    data: { user },
+  } = await sb.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
 
   // Get mission IDs for this étude
   const { data: missions } = await sb
@@ -115,6 +140,11 @@ export async function listEtudeAllDocuments(etudeId: string) {
 
 export async function deleteGeneratedDocument(id: string) {
   const sb = createClient()
+  const {
+    data: { user },
+  } = await sb.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { data: doc } = await sb
     .from("generated_documents")
     .select("file_path, scope, entity_id")
@@ -136,6 +166,11 @@ export async function deleteGeneratedDocument(id: string) {
  */
 export async function listEtudeMissions(etudeId: string) {
   const sb = createClient()
+  const {
+    data: { user },
+  } = await sb.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { data, error } = await sb
     .from("missions")
     .select("id, nom, type, statut, intervenant_id, intervenant:personnes!missions_intervenant_id_fkey(id, prenom, nom)")
@@ -151,6 +186,10 @@ export async function listEtudeMissions(etudeId: string) {
  */
 export async function listMissionIntervenants(missionId: string) {
   const sb = createClient()
+  const {
+    data: { user },
+  } = await sb.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
 
   const [candidaturesRes, missionRes] = await Promise.all([
     sb
@@ -238,6 +277,12 @@ export async function buildTemplateContext(
   entityId: string,
   intervenantId?: string
 ): Promise<Record<string, any>> {
+  const client = createClient()
+  const {
+    data: { user },
+  } = await client.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   // Use admin client to bypass RLS — we need to read any user's profile
   const sb = createAdminClient()
   const today = new Date()

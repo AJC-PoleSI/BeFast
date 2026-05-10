@@ -7,6 +7,11 @@ import { unstable_noStore as noStore } from "next/cache"
 
 export async function getEtudes(filters?: { statut?: string }) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   let query = supabase
     .from("etudes")
     .select(
@@ -23,6 +28,11 @@ export async function getEtudes(filters?: { statut?: string }) {
 
 export async function getEtude(id: string) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { data, error } = await supabase
     .from("etudes")
     .select(
@@ -91,6 +101,11 @@ export async function updateEtude(
   }>
 ) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { error } = await supabase
     .from("etudes")
     .update(updates)
@@ -104,6 +119,11 @@ export async function updateEtude(
 
 export async function getEtudeMissions(etudeId: string) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { data, error } = await supabase
     .from("missions")
     .select("*")
@@ -118,6 +138,11 @@ export async function getEtudeMissions(etudeId: string) {
 
 export async function getClients() {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { data, error } = await supabase
     .from("clients")
     .select("*")
@@ -155,6 +180,11 @@ export async function createClient_(formData: {
 
 export async function getEcheancierBlocs(etudeId: string) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { data, error } = await supabase
     .from("echeancier_blocs")
     .select("*")
@@ -176,6 +206,10 @@ export async function upsertEcheancierBloc(bloc: {
   ordre?: number
 }) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
 
   if (bloc.id) {
     const { data, error } = await supabase
@@ -200,6 +234,11 @@ export async function upsertEcheancierBloc(bloc: {
 
 export async function toggleEtudePublished(id: string, published: boolean) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { error } = await supabase.from("etudes").update({ published }).eq("id", id)
   if (error) return { error: error.message }
   revalidatePath("/etudes")
@@ -209,6 +248,11 @@ export async function toggleEtudePublished(id: string, published: boolean) {
 
 export async function toggleMissionPublished(id: string, published: boolean) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { error } = await supabase.from("missions").update({ published }).eq("id", id)
   if (error) return { error: error.message }
   revalidatePath("/missions")
@@ -217,6 +261,11 @@ export async function toggleMissionPublished(id: string, published: boolean) {
 
 export async function deleteEtude(id: string) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { error } = await supabase.from("etudes").delete().eq("id", id)
   if (error) return { error: error.message }
   revalidatePath("/etudes")
@@ -225,6 +274,11 @@ export async function deleteEtude(id: string) {
 
 export async function deleteEcheancierBloc(id: string) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { error } = await supabase
     .from("echeancier_blocs")
     .delete()
@@ -236,6 +290,11 @@ export async function deleteEcheancierBloc(id: string) {
 
 export async function getMembers() {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   // Tous les comptes actifs, sans filtre de rôle (garantit que le dropdown est peuplé)
   const { data, error } = await supabase
     .from("personnes")
@@ -250,12 +309,22 @@ export async function getMembers() {
 
 export async function getParametre(key: string) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { data } = await supabase.from("parametres").select("value").eq("key", key).single()
   return data?.value ?? null
 }
 
 export async function setParametre(key: string, value: string) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { error } = await supabase.from("parametres").upsert({ key, value }, { onConflict: "key" })
   if (error) return { error: error.message }
   revalidatePath("/administration")
@@ -265,6 +334,11 @@ export async function setParametre(key: string, value: string) {
 export async function getAllParametres() {
   noStore()
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { data, error } = await supabase.from("parametres").select("key, value, description").order("key")
   if (error) return { error: error.message }
   const map: Record<string, string> = {}
@@ -274,6 +348,11 @@ export async function getAllParametres() {
 
 export async function setParametres(updates: Record<string, string>) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const rows = Object.entries(updates).map(([key, value]) => ({ key, value }))
   const { error } = await supabase.from("parametres").upsert(rows, { onConflict: "key" })
   if (error) return { error: error.message }
@@ -290,6 +369,12 @@ export async function setParametres(updates: Record<string, string>) {
  * that overwrites the user's changes.
  */
 export async function savePolesSilent(polesJson: string, permsJson: string) {
+  const client = createClient()
+  const {
+    data: { user },
+  } = await client.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const supabase = createAdminClient()
   const rows = [
     { key: "poles_liste", value: polesJson },

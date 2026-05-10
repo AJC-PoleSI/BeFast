@@ -10,6 +10,11 @@ export async function getMissions(filters?: {
   statut?: string
 }) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   let query = supabase
     .from("missions")
     .select("*, etudes(id, nom, numero, published)")
@@ -40,6 +45,11 @@ export async function getMissions(filters?: {
 
 export async function getMission(id: string) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { data, error } = await supabase
     .from("missions")
     .select("*, etudes(id, nom, numero)")
@@ -112,6 +122,11 @@ export async function createMission(formData: {
 
 export async function updateMissionStatut(id: string, statut: string) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { error } = await supabase
     .from("missions")
     .update({ statut })
@@ -179,6 +194,11 @@ export async function getMesCandidatures() {
 
 export async function getCandidaturesMission(missionId: string) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { data, error } = await supabase
     .from("candidatures")
     .select("*, personnes!candidatures_personne_id_fkey(id, prenom, nom, email)")
@@ -194,6 +214,11 @@ export async function repondreCandidature(
   statut: "acceptee" | "refusee"
 ) {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const { error } = await supabase
     .from("candidatures")
     .update({ statut, reponse_date: new Date().toISOString() })

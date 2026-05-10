@@ -73,6 +73,10 @@ export async function updateMemberRole(personneId: string, roleSlug: string) {
 
 export async function getAllRoles(): Promise<{ data: ProfilType[] | null; error: string | null }> {
   try {
+    const client = createClient()
+    const { data: { user } } = await client.auth.getUser()
+    if (!user) return { data: null, error: "Non authentifié" }
+
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("profils_types")

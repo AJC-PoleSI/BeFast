@@ -4,6 +4,11 @@ import { createClient } from "@/lib/supabase/server"
 
 export async function getStats() {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
   const now = new Date()
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 

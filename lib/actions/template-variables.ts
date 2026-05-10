@@ -1,5 +1,6 @@
 "use server"
 
+import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { decryptFromString } from "@/lib/encryption"
 
@@ -11,6 +12,10 @@ import { decryptFromString } from "@/lib/encryption"
  */
 export async function getProfileTemplateVariables(userId: string) {
   try {
+    const client = createClient()
+    const { data: { user } } = await client.auth.getUser()
+    if (!user) throw new Error("Non authentifié")
+
     const admin = createAdminClient()
 
     // Get user profile data
