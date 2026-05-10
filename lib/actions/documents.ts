@@ -227,13 +227,19 @@ export async function listMissionIntervenants(missionId: string) {
 // Helper: load all structure parameters from the parametres table
 // ============================================================
 async function loadStructureParams(sb: ReturnType<typeof createAdminClient>) {
-  const { data } = await sb.from("parametres").select("key, value")
+  const { data, error } = await sb.from("parametres").select("key, value")
+  console.log("[DOC-GEN] loadStructureParams error:", error?.message || "none")
   const params: Record<string, string> = {}
   if (data) {
     for (const row of data) {
       params[row.key] = row.value || ""
     }
   }
+  console.log("[DOC-GEN] loadStructureParams keys loaded:", Object.keys(params))
+  console.log("[DOC-GEN] president_nom:", params.president_nom)
+  console.log("[DOC-GEN] president_genre:", params.president_genre)
+  console.log("[DOC-GEN] tresorier_nom:", params.tresorier_nom)
+  console.log("[DOC-GEN] raison_sociale:", params.raison_sociale)
   return params
 }
 
@@ -352,17 +358,24 @@ export async function buildTemplateContext(
   // Build president/tresorier objects from parametres
   function buildOrganigramme(params: Record<string, string>) {
     // Parse president_nom which may be "Prénom Nom" or just "Nom"
-    const presidentParts = (params.president_nom || "").split(" ")
+    const presidentNomRaw = params.president_nom || ""
+    const presidentParts = presidentNomRaw.trim().split(/\s+/).filter(Boolean)
     const presidentGenre = params.president_genre || "M"
-    
-    const tresorierParts = (params.tresorier_nom || "").split(" ")
+
+    const tresorierNomRaw = params.tresorier_nom || ""
+    const tresorierParts = tresorierNomRaw.trim().split(/\s+/).filter(Boolean)
     const tresorierGenre = params.tresorier_genre || "M"
+
+    console.log("[DOC-GEN] buildOrganigramme president_nom_raw:", presidentNomRaw)
+    console.log("[DOC-GEN] buildOrganigramme president_parts:", presidentParts)
+    console.log("[DOC-GEN] buildOrganigramme tresorier_nom_raw:", tresorierNomRaw)
+    console.log("[DOC-GEN] buildOrganigramme tresorier_parts:", tresorierParts)
 
     return {
       president: {
         nom: presidentParts.length > 1 ? presidentParts.slice(1).join(" ") : presidentParts[0] || "",
         prenom: presidentParts.length > 1 ? presidentParts[0] : "",
-        nom_complet: params.president_nom || "",
+        nom_complet: presidentNomRaw,
         genre: presidentGenre,
         civilite: presidentGenre === "F" ? "Madame" : "Monsieur",
         titre: presidentGenre === "F" ? "Madame" : "Monsieur",
@@ -370,7 +383,7 @@ export async function buildTemplateContext(
       tresorier: {
         nom: tresorierParts.length > 1 ? tresorierParts.slice(1).join(" ") : tresorierParts[0] || "",
         prenom: tresorierParts.length > 1 ? tresorierParts[0] : "",
-        nom_complet: params.tresorier_nom || "",
+        nom_complet: tresorierNomRaw,
         genre: tresorierGenre,
         civilite: tresorierGenre === "F" ? "Madame" : "Monsieur",
         titre: tresorierGenre === "F" ? "Madame" : "Monsieur",
@@ -399,13 +412,18 @@ export async function buildTemplateContext(
   // Build étudiant/intervenant context from a personne record.
   // Only extract primitive fields — skip nested Supabase join objects.
   function buildIntervenantContext(person: any) {
-    if (!person) return {}
+    if (!person) {
+      console.log("[DOC-GEN] buildIntervenantContext: person is null/undefined")
+      return {}
+    }
     const ctx: Record<string, any> = {}
     for (const [k, v] of Object.entries(person)) {
       if (v !== null && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date)) continue
       ctx[k] = v ?? ""
     }
-    console.log("[DOC-GEN] intervenant context keys:", Object.keys(ctx))
+    console.log("[DOC-GEN] buildIntervenantContext keys:", Object.keys(ctx))
+    console.log("[DOC-GEN] buildIntervenantContext prenom:", ctx.prenom)
+    console.log("[DOC-GEN] buildIntervenantContext nom:", ctx.nom)
     return ctx
   }
 
@@ -414,7 +432,7 @@ export async function buildTemplateContext(
       sb
         .from("missions")
         .select(
-          "*, intervenant:personnes!missions_intervenant_id_fkey(*), etudes(*, clients(*), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*))"
+          "*, intervenant:personnes!missions_intervenant_id_fkey(*), etudes(*, client:clients(*), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*))"
         )
         .eq("id", entityId)
         .single(),
@@ -470,6 +488,10 @@ export async function buildTemplateContext(
     console.log("[DOC-GEN] mission.date_debut raw:", m.date_debut, "→ formatted:", fmtDate(m.date_debut))
     console.log("[DOC-GEN] mission.date_fin raw:", m.date_fin, "→ formatted:", fmtDate(m.date_fin))
 
+    // Extract client: with alias client:clients(*), this is a single object
+    const clientData = etude.client || {}
+    console.log("[DOC-GEN] clientData:", JSON.stringify(clientData).slice(0, 200))
+
     return {
       ...base,
       // Reference = numéro d'étude
@@ -501,8 +523,8 @@ export async function buildTemplateContext(
       // Flat aliases for convenience (top-level)
       date_debut: fmtDate(etude.date_debut),
       date_fin: fmtDate(etude.date_fin),
-      // Client
-      client: etude.clients ?? {},
+      // Client (extract first from array if needed)
+      client: clientData,
       // Suiveur
       suiveur: etude.suiveur ?? {},
       // Intervenant (accessible via {intervenant.prenom})
@@ -530,7 +552,7 @@ export async function buildTemplateContext(
       sb
         .from("etudes")
         .select(
-          "*, clients(*), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*)"
+          "*, client:clients(*), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*)"
         )
         .eq("id", entityId)
         .single(),
@@ -541,11 +563,16 @@ export async function buildTemplateContext(
     const frais = Number((e as any).frais_dossier) || 0
     const margePct = Number((e as any).marge_pct) || 0
     const tarif = budget_ht + frais + budget_ht * (margePct / 100)
-    
+
     const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext((e as any).echeancier_blocs)
     const organigramme = buildOrganigramme(params)
 
     const eAny = e as any
+
+    // Extract client: with alias client:clients(*), this is a single object
+    const clientData = eAny.client || {}
+    console.log("[DOC-GEN] (étude scope) clientData:", JSON.stringify(clientData).slice(0, 200))
+
     return {
       ...base,
       reference: eAny.numero || "",
@@ -564,7 +591,7 @@ export async function buildTemplateContext(
       },
       date_debut: fmtDate(eAny.date_debut),
       date_fin: fmtDate(eAny.date_fin),
-      client: eAny.clients ?? {},
+      client: clientData,
       suiveur: eAny.suiveur ?? {},
       ...organigramme,
       phases,

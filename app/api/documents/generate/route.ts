@@ -70,10 +70,13 @@ export async function POST(req: NextRequest) {
   console.log("[DOC-GEN] === GENERATION START ===")
   console.log("[DOC-GEN] scope:", scope, "entity_id:", entity_id, "intervenant_id:", intervenant_id)
   console.log("[DOC-GEN] context top-level keys:", Object.keys(context))
-  console.log("[DOC-GEN] context.intervenant:", JSON.stringify(context.intervenant || {}).slice(0, 300))
-  console.log("[DOC-GEN] context.etudiant:", JSON.stringify(context.etudiant || {}).slice(0, 300))
-  console.log("[DOC-GEN] context.mission:", JSON.stringify(context.mission || {}).slice(0, 300))
-  console.log("[DOC-GEN] context.president:", JSON.stringify(context.president || {}).slice(0, 300))
+  console.log("[DOC-GEN] context.intervenant:", JSON.stringify(context.intervenant || {}).slice(0, 500))
+  console.log("[DOC-GEN] context.etudiant:", JSON.stringify(context.etudiant || {}).slice(0, 500))
+  console.log("[DOC-GEN] context.mission:", JSON.stringify(context.mission || {}).slice(0, 500))
+  console.log("[DOC-GEN] context.president:", JSON.stringify(context.president || {}).slice(0, 500))
+  console.log("[DOC-GEN] context.tresorier:", JSON.stringify(context.tresorier || {}).slice(0, 500))
+  console.log("[DOC-GEN] context.structure:", JSON.stringify(context.structure || {}).slice(0, 500))
+  console.log("[DOC-GEN] context.etude:", JSON.stringify(context.etude || {}).slice(0, 500))
 
   // Resolve étude info (numero + id) for naming/counting
   let etudeId: string | null = null
@@ -120,11 +123,23 @@ export async function POST(req: NextRequest) {
   const numero_document = counter
   context.numero_document = numero_document
 
+  // Final context validation before rendering
+  console.log("[DOC-GEN] === FINAL CONTEXT CHECK ===")
+  console.log("[DOC-GEN] context keys (all):", Object.keys(context).sort())
+  console.log("[DOC-GEN] Has president?", "president" in context, context.president ? JSON.stringify(context.president) : "undefined")
+  console.log("[DOC-GEN] Has tresorier?", "tresorier" in context, context.tresorier ? JSON.stringify(context.tresorier) : "undefined")
+  console.log("[DOC-GEN] Has structure?", "structure" in context, context.structure ? JSON.stringify(context.structure).slice(0, 300) : "undefined")
+  console.log("[DOC-GEN] Has intervenant?", "intervenant" in context, context.intervenant ? JSON.stringify(context.intervenant).slice(0, 300) : "undefined")
+  console.log("[DOC-GEN] Has mission?", "mission" in context, context.mission ? JSON.stringify(context.mission).slice(0, 300) : "undefined")
+
   const isPptx = tpl.file_path.endsWith(".pptx")
   let rendered: Buffer
   try {
+    console.log("[DOC-GEN] Starting template rendering...")
     rendered = renderTemplate(templateBuf, context, isPptx)
+    console.log("[DOC-GEN] Template rendering completed successfully")
   } catch (e: any) {
+    console.log("[DOC-GEN] Template rendering failed:", e?.message)
     return NextResponse.json(
       { error: "Erreur génération: " + (e?.message || "render error") },
       { status: 500 }
