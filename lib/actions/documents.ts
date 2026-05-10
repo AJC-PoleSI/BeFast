@@ -439,7 +439,7 @@ export async function buildTemplateContext(
       sb
         .from("missions")
         .select(
-          "*, intervenant:personnes!missions_intervenant_id_fkey(*), etudes(*, client:clients(*), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*))"
+          "*, intervenant:personnes!missions_intervenant_id_fkey(id, prenom, nom, email), etudes(*, client:clients(id, nom, contact_nom, contact_email, contact_phone), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*))"
         )
         .eq("id", entityId)
         .single(),
@@ -581,7 +581,7 @@ export async function buildTemplateContext(
       sb
         .from("etudes")
         .select(
-          "*, client:clients(*), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*)"
+          "*, client:clients(id, nom, contact_nom, contact_email, contact_phone), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*)"
         )
         .eq("id", entityId)
         .single(),
