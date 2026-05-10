@@ -1,98 +1,111 @@
-import "server-only"
-
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { profileSchema } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
-import { NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
+import { encryptData, decryptData, generateEncryptionSalt } from "@/lib/crypto"
+import { NextRequest, NextResponse } from "next/server"
 
-export async function PATCH(request: Request) {
+const MASTER_KEY = process.env.ENCRYPTION_MASTER_KEY || "default-key"
+
+export async function GET(req: NextRequest) {
   try {
-    const supabase = createClient()
+    const sb = createClient()
+    const { data: { user }, error: authError } = await sb.auth.getUser()
+    if (authError || !user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-    }
-
-    // Get current user role
-    const { data: userProfile } = await supabase
+    const admin = createAdminClient()
+    const { data: profile, error } = await admin
       .from("personnes")
-      .select("profils_types(slug)")
+      .select("*")
       .eq("id", user.id)
       .single()
 
-    const currentUserSlug = (userProfile?.profils_types as { slug?: string } | null)?.slug
-    const isAdmin = currentUserSlug === "administrateur"
+    if (error || !profile) return NextResponse.json({ error: "Profil introuvable" }, { status: 404 })
 
-    const body = await request.json()
-    const parsed = profileSchema.safeParse(body)
+    const salt = profile.encryption_salt || generateEncryptionSalt()
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Données invalides", details: parsed.error.flatten() },
-        { status: 400 }
-      )
+    const decrypted = {
+      ...profile,
+      nss: profile.nss_encrypted ? decryptData(profile.nss_encrypted, profile.nss_iv, profile.nss_auth_tag, MASTER_KEY, salt) : null,
+      iban: profile.iban_encrypted ? decryptData(profile.iban_encrypted, profile.iban_iv, profile.iban_auth_tag, MASTER_KEY, salt) : null,
+      adresse: profile.adresse_encrypted ? decryptData(profile.adresse_encrypted, profile.adresse_iv, profile.adresse_auth_tag, MASTER_KEY, salt) : profile.adresse,
+      date_naissance: profile.date_naissance_encrypted ? decryptData(profile.date_naissance_encrypted, profile.date_naissance_iv, profile.date_naissance_auth_tag, MASTER_KEY, salt) : profile.date_naissance,
+      ville: profile.ville_encrypted ? decryptData(profile.ville_encrypted, profile.ville_iv, profile.ville_auth_tag, MASTER_KEY, salt) : profile.ville,
+      code_postal: profile.code_postal_encrypted ? decryptData(profile.code_postal_encrypted, profile.code_postal_iv, profile.code_postal_auth_tag, MASTER_KEY, salt) : profile.code_postal,
     }
 
-    // Check if admin is editing another user
-    const url = new URL(request.url)
-    const targetUserId = url.searchParams.get("targetUserId")
-    let updateId = user.id
+    return NextResponse.json({ data: decrypted })
+  } catch (error: any) {
+    console.error("[GET /api/profil]", error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
 
-    if (targetUserId && targetUserId !== user.id) {
-      if (!isAdmin) {
-        return NextResponse.json(
-          { error: "Accès non autorisé" },
-          { status: 403 }
-        )
-      }
-      updateId = targetUserId
-    }
+export async function PUT(req: NextRequest) {
+  try {
+    const sb = createClient()
+    const { data: { user }, error: authError } = await sb.auth.getUser()
+    if (authError || !user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
-    // Filter data and apply protections
-    const dataToUpdate = Object.entries(parsed.data).reduce((acc, [key, value]) => {
-      // Protection du pôle : seul un admin peut le modifier
-      if (key === "pole" && !isAdmin) {
-        return acc
-      }
-
-      if (value === "") {
-        acc[key] = null
-      } else {
-        acc[key] = value
-      }
-      return acc
-    }, {} as Record<string, any>)
-
+    const body = await req.json()
     const admin = createAdminClient()
-    const { data, error } = await admin
+
+    const { data: profile } = await admin
       .from("personnes")
-      .update(dataToUpdate)
-      .eq("id", updateId)
+      .select("encryption_salt")
+      .eq("id", user.id)
+      .single()
+
+    const salt = profile?.encryption_salt || generateEncryptionSalt()
+
+    const updates: any = { encryption_salt: salt }
+
+    if (body.nss) {
+      const enc = encryptData(body.nss, MASTER_KEY, salt)
+      updates.nss_encrypted = enc.encrypted
+      updates.nss_iv = enc.iv
+      updates.nss_auth_tag = enc.authTag
+    }
+    if (body.iban) {
+      const enc = encryptData(body.iban, MASTER_KEY, salt)
+      updates.iban_encrypted = enc.encrypted
+      updates.iban_iv = enc.iv
+      updates.iban_auth_tag = enc.authTag
+    }
+    if (body.adresse) {
+      const enc = encryptData(body.adresse, MASTER_KEY, salt)
+      updates.adresse_encrypted = enc.encrypted
+      updates.adresse_iv = enc.iv
+      updates.adresse_auth_tag = enc.authTag
+    }
+    if (body.date_naissance) {
+      const enc = encryptData(body.date_naissance, MASTER_KEY, salt)
+      updates.date_naissance_encrypted = enc.encrypted
+      updates.date_naissance_iv = enc.iv
+      updates.date_naissance_auth_tag = enc.authTag
+    }
+    if (body.ville) {
+      const enc = encryptData(body.ville, MASTER_KEY, salt)
+      updates.ville_encrypted = enc.encrypted
+      updates.ville_iv = enc.iv
+      updates.ville_auth_tag = enc.authTag
+    }
+    if (body.code_postal) {
+      const enc = encryptData(body.code_postal, MASTER_KEY, salt)
+      updates.code_postal_encrypted = enc.encrypted
+      updates.code_postal_iv = enc.iv
+      updates.code_postal_auth_tag = enc.authTag
+    }
+
+    const { data: updated, error } = await admin
+      .from("personnes")
+      .update(updates)
+      .eq("id", user.id)
       .select()
       .single()
 
-    if (error) {
-      console.error("Profile update error:", error)
-      return NextResponse.json(
-        { error: "Erreur lors de la mise à jour (Vérifiez que les colonnes existent en base)" },
-        { status: 500 }
-      )
-    }
-    
-    // Revalidate the dashboard layout to ensure fresh data on refresh
-    revalidatePath("/(dashboard)", "layout")
-
-    return NextResponse.json({ success: true, data })
-  } catch (err) {
-    console.error("Internal profile error:", err)
-    return NextResponse.json(
-      { error: "Une erreur est survenue." },
-      { status: 500 }
-    )
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ data: updated })
+  } catch (error: any) {
+    console.error("[PUT /api/profil]", error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
