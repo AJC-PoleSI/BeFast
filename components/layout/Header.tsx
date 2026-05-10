@@ -38,7 +38,7 @@ export function Header({ userName, onMenuToggle }: HeaderProps) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-30">
+    <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-zinc-200 flex items-center justify-between px-6 z-30">
       {/* LEFT - Home Button */}
       <div className="flex items-center gap-4">
         <Link
@@ -60,35 +60,35 @@ export function Header({ userName, onMenuToggle }: HeaderProps) {
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setDropdownOpen((v) => !v)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-200 hover:bg-zinc-50 transition-colors"
           title="Mon compte"
         >
           {/* Avatar circle */}
           <div className="w-8 h-8 rounded-full bg-[#00236f] flex items-center justify-center text-white text-xs font-bold shrink-0">
             {initials}
           </div>
-          <span className="text-sm font-medium text-slate-700 hidden sm:block">
+          <span className="text-sm font-medium text-zinc-700 hidden sm:block">
             {userName || "Mon compte"}
           </span>
-          <span className="material-symbols-outlined text-slate-400 text-sm">
+          <span className="material-symbols-outlined text-zinc-400 text-sm">
             {dropdownOpen ? "expand_less" : "expand_more"}
           </span>
         </button>
 
         {/* Dropdown menu */}
         {dropdownOpen && (
-          <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-50">
+          <div className="absolute right-0 mt-2 w-52 bg-white border border-zinc-200 rounded-xl shadow-lg overflow-hidden z-50">
             {/* Profile link */}
             <Link
               href="/profil"
               onClick={() => setDropdownOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 transition-colors"
             >
               <span className="material-symbols-outlined text-[#00236f] text-lg">person</span>
-              <span className="text-sm font-medium text-slate-700">Mon profil</span>
+              <span className="text-sm font-medium text-zinc-700">Mon profil</span>
             </Link>
 
-            <div className="border-t border-slate-100" />
+            <div className="border-t border-zinc-100" />
 
             {/* Logout */}
             <button

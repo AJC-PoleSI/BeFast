@@ -45,10 +45,10 @@ function DeleteModal({ role, onConfirm, onCancel, loading }: {
             <AlertTriangle className="w-6 h-6 text-red-600" />
           </div>
           <div>
-            <h2 className="text-lg font-manrope font-bold text-slate-900">Supprimer le rôle</h2>
-            <p className="text-sm text-slate-500 mt-1">
+            <h2 className="text-lg font-manrope font-bold text-zinc-900">Supprimer le rôle</h2>
+            <p className="text-sm text-zinc-500 mt-1">
               Êtes-vous certain de vouloir supprimer le rôle{" "}
-              <span className="font-semibold text-slate-800">"{role.nom}"</span> ?
+              <span className="font-semibold text-zinc-800">"{role.nom}"</span> ?
             </p>
             <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
               <p className="text-xs text-red-700 font-medium">
@@ -62,7 +62,7 @@ function DeleteModal({ role, onConfirm, onCancel, loading }: {
           <button
             onClick={onCancel}
             disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-zinc-700 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors"
           >
             Annuler
           </button>
@@ -101,36 +101,36 @@ function CreateModal({ onConfirm, onCancel, loading }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-manrope font-bold text-slate-900">Créer un nouveau rôle</h2>
-          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600">
+          <h2 className="text-lg font-manrope font-bold text-zinc-900">Créer un nouveau rôle</h2>
+          <button onClick={onCancel} className="text-zinc-400 hover:text-zinc-600">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+            <label className="block text-xs font-semibold text-zinc-600 mb-1.5 uppercase tracking-wide">
               Nom du rôle
             </label>
             <input
               value={nom}
               onChange={(e) => handleNomChange(e.target.value)}
               placeholder="ex: Responsable Communication"
-              className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 focus:border-[#00236f]"
+              className="w-full px-3 py-2.5 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 focus:border-[#00236f]"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+            <label className="block text-xs font-semibold text-zinc-600 mb-1.5 uppercase tracking-wide">
               Identifiant technique (slug)
             </label>
             <input
               value={slug}
               onChange={(e) => { setSlug(e.target.value); setAutoSlug(false) }}
               placeholder="ex: responsable_communication"
-              className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 focus:border-[#00236f] font-mono"
+              className="w-full px-3 py-2.5 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 focus:border-[#00236f] font-mono"
             />
-            <p className="text-xs text-slate-400 mt-1">Minuscules, underscores uniquement. Unique et permanent.</p>
+            <p className="text-xs text-zinc-400 mt-1">Minuscules, underscores uniquement. Unique et permanent.</p>
           </div>
 
           <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
@@ -144,7 +144,7 @@ function CreateModal({ onConfirm, onCancel, loading }: {
           <button
             onClick={onCancel}
             disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200"
+            className="px-4 py-2 text-sm font-medium text-zinc-700 bg-zinc-100 rounded-lg hover:bg-zinc-200"
           >
             Annuler
           </button>
@@ -171,7 +171,7 @@ function Toggle({ checked, onChange, disabled }: {
       role="switch" aria-checked={checked} disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-        checked ? "bg-[#00236f]" : "bg-slate-200"
+        checked ? "bg-[#00236f]" : "bg-zinc-200"
       } disabled:opacity-40 disabled:cursor-not-allowed`}
     >
       <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
@@ -283,7 +283,7 @@ export default function DroitsPage() {
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-manrope font-black text-[#00236f]">Droits & Profils</h1>
-          <p className="text-slate-500 text-sm mt-1">Gérez les rôles et leurs permissions d'accès.</p>
+          <p className="text-zinc-500 text-sm mt-1">Gérez les rôles et leurs permissions d'accès.</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
@@ -296,14 +296,14 @@ export default function DroitsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader className="w-6 h-6 animate-spin text-slate-300" />
+          <Loader className="w-6 h-6 animate-spin text-zinc-300" />
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-2">
+        <div className="flex flex-col items-center justify-center h-64 text-zinc-400 gap-2">
           <span className="material-symbols-outlined text-4xl">error_outline</span>
-          <p className="text-sm font-semibold text-slate-600">{error}</p>
+          <p className="text-sm font-semibold text-zinc-600">{error}</p>
           <button onClick={() => { setError(null); setLoading(true); loadRoles() }}
-            className="mt-2 px-4 py-2 text-sm bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">
+            className="mt-2 px-4 py-2 text-sm bg-zinc-200 text-zinc-700 rounded-lg hover:bg-zinc-300">
             Réessayer
           </button>
         </div>
@@ -311,9 +311,9 @@ export default function DroitsPage() {
         <div className="flex gap-6 flex-1 min-h-0">
           {/* Role list */}
           <div className="w-64 shrink-0">
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-zinc-100 bg-zinc-50">
+                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">
                   {roles.length} rôle{roles.length > 1 ? "s" : ""}
                 </p>
               </div>
@@ -324,7 +324,7 @@ export default function DroitsPage() {
                     className={`flex items-center justify-between px-3 py-2.5 rounded-lg group transition-colors cursor-pointer ${
                       selectedRole?.id === role.id
                         ? "bg-[#00236f] text-white"
-                        : "text-slate-700 hover:bg-slate-100"
+                        : "text-zinc-700 hover:bg-zinc-100"
                     }`}
                     onClick={() => selectRole(role)}
                   >
@@ -351,11 +351,11 @@ export default function DroitsPage() {
           {/* Permissions editor */}
           {selectedRole ? (
             <div className="flex-1 overflow-y-auto">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
+                <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between">
                   <div>
                     <h2 className="font-manrope font-bold text-[#00236f] text-lg">{selectedRole.nom}</h2>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-zinc-400 mt-0.5">
                       {isAdmin
                         ? "Rôle système — toutes les permissions sont actives et non modifiables."
                         : "Activez ou désactivez les accès puis enregistrez."}
@@ -379,25 +379,25 @@ export default function DroitsPage() {
                   )}
                 </div>
 
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-zinc-100">
                   {ALL_PERMS.map(key => {
                     const info = PERM_LABELS[key]
                     const active = isAdmin ? true : permissions[key]
                     return (
-                      <div key={key} className="flex items-center justify-between px-6 py-4 hover:bg-slate-50/50 transition-colors">
+                      <div key={key} className="flex items-center justify-between px-6 py-4 hover:bg-zinc-50/50 transition-colors">
                         <div className="flex items-center gap-4">
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                            active ? "bg-[#d0d8ff]" : "bg-slate-100"
+                            active ? "bg-[#d0d8ff]" : "bg-zinc-100"
                           }`}>
                             <span className={`material-symbols-outlined text-xl transition-colors ${
-                              active ? "text-[#00236f]" : "text-slate-400"
+                              active ? "text-[#00236f]" : "text-zinc-400"
                             }`}>{info.icon}</span>
                           </div>
                           <div>
                             <p className={`text-sm font-semibold transition-colors ${
-                              active ? "text-slate-800" : "text-slate-400"
+                              active ? "text-zinc-800" : "text-zinc-400"
                             }`}>{info.label}</p>
-                            <p className="text-xs text-slate-400">{info.description}</p>
+                            <p className="text-xs text-zinc-400">{info.description}</p>
                           </div>
                         </div>
                         <Toggle
@@ -412,7 +412,7 @@ export default function DroitsPage() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-slate-400">
+            <div className="flex-1 flex items-center justify-center text-zinc-400">
               <p className="text-sm">Sélectionnez un rôle pour gérer ses permissions</p>
             </div>
           )}

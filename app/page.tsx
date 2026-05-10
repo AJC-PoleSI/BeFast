@@ -6,7 +6,7 @@ export default function Home() {
       <div className="text-center space-y-6">
         <div>
           <h1 className="text-4xl font-black text-[#00236f] mb-2">BeFast</h1>
-          <p className="text-slate-600">Plateforme de gestion interne</p>
+          <p className="text-zinc-600">Plateforme de gestion interne</p>
         </div>
 
         <div className="space-y-3">
@@ -17,7 +17,7 @@ export default function Home() {
             Se connecter
           </Link>
 
-          <div className="text-sm text-slate-600">
+          <div className="text-sm text-zinc-600">
             <Link href="/diagnostic" className="text-blue-600 hover:underline">
               Diagnostic →
             </Link>

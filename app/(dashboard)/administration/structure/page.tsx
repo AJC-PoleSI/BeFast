@@ -260,7 +260,7 @@ export default function ParametresStructurePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-manrope font-black text-[#00236f]">Paramètres de la structure</h1>
-          <p className="text-slate-500 text-sm mt-1">Informations utilisées dans les documents générés (factures, BV, missions).</p>
+          <p className="text-zinc-500 text-sm mt-1">Informations utilisées dans les documents générés (factures, BV, missions).</p>
         </div>
         <button
           onClick={handleSave}
@@ -273,26 +273,26 @@ export default function ParametresStructurePage() {
       </div>
 
       {SECTIONS.map(section => (
-        <div key={section.title} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <div key={section.title} className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50">
             <h2 className="font-manrope font-bold text-[#00236f]">{section.title}</h2>
           </div>
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             {section.fields.map((field: any) => (
               <div key={field.key} className={(field.key === "adresse_1" || field.key === "adresse_2") ? "md:col-span-2" : ""}>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">{field.label}</label>
+                <label className="block text-xs font-semibold text-zinc-600 mb-1">{field.label}</label>
                 <div className="flex gap-2">
                   <input
                     type={field.type}
                     value={form[field.key] ?? ""}
                     onChange={e => update(field.key, e.target.value)}
-                    className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                    className="flex-1 px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                   />
                   {field.genreKey && (
                     <select
                       value={form[field.genreKey] ?? "F"}
                       onChange={e => update(field.genreKey, e.target.value)}
-                      className="px-2 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                      className="px-2 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                     >
                       <option value="F">Mme</option>
                       <option value="M">M.</option>
@@ -306,15 +306,15 @@ export default function ParametresStructurePage() {
       ))}
 
       {/* Gestion des sous-pôles */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
+      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50">
           <h2 className="font-manrope font-bold text-[#00236f]">Sous-pôles</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Liste des sous-pôles disponibles dans le profil des membres (RH, Tréso, SI...).</p>
+          <p className="text-xs text-zinc-500 mt-0.5">Liste des sous-pôles disponibles dans le profil des membres (RH, Tréso, SI...).</p>
         </div>
         <div className="p-6 space-y-3">
           <div className="flex flex-wrap gap-2">
             {poles.length === 0 && (
-              <span className="text-sm text-slate-400 italic">Aucun sous-pôle configuré.</span>
+              <span className="text-sm text-zinc-400 italic">Aucun sous-pôle configuré.</span>
             )}
             {poles.map(p => (
               <span
@@ -353,7 +353,7 @@ export default function ParametresStructurePage() {
               onChange={e => setNewPole(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPole() } }}
               placeholder="Nouveau sous-pôle (ex: Tréso)"
-              className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+              className="flex-1 px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
             />
             <button
               type="button"
@@ -377,13 +377,13 @@ export default function ParametresStructurePage() {
                 <button
                   type="button"
                   onClick={() => setEditingPole(null)}
-                  className="text-slate-400 hover:text-slate-600"
+                  className="text-zinc-400 hover:text-zinc-600"
                   aria-label="Fermer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <p className="text-xs text-slate-500 mb-3">
+              <p className="text-xs text-zinc-500 mb-3">
                 Les droits cochés ici s'ajoutent aux droits du rôle du membre.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -392,7 +392,7 @@ export default function ParametresStructurePage() {
                   return (
                     <label
                       key={perm.key}
-                      className="flex items-center gap-2 px-3 py-2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer text-sm"
+                      className="flex items-center gap-2 px-3 py-2 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 cursor-pointer text-sm"
                     >
                       <input
                         type="checkbox"
@@ -402,7 +402,7 @@ export default function ParametresStructurePage() {
                         }
                         className="w-4 h-4 accent-[#00236f]"
                       />
-                      <span className="text-slate-700">{perm.label}</span>
+                      <span className="text-zinc-700">{perm.label}</span>
                     </label>
                   )
                 })}

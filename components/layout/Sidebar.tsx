@@ -35,7 +35,7 @@ export function Sidebar({ permissions, isAdmin, userName, open, onClose }: Sideb
   })
 
   const nav = (
-    <div className="flex flex-col h-screen w-64 bg-slate-100 border-r border-slate-200">
+    <div className="flex flex-col h-screen w-64 bg-zinc-100 border-r border-zinc-200">
       {/* Logo */}
       <div className="px-5 py-5 flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-[#00236f] flex items-center justify-center shrink-0">
@@ -43,10 +43,10 @@ export function Sidebar({ permissions, isAdmin, userName, open, onClose }: Sideb
         </div>
         <div>
           <div className="font-manrope font-extrabold text-[#00236f] text-base leading-tight">BeFast</div>
-          <div className="text-[10px] text-slate-500 font-medium tracking-wide leading-tight">Strategic Command</div>
+          <div className="text-[10px] text-zinc-500 font-medium tracking-wide leading-tight">Strategic Command</div>
         </div>
         {onClose && (
-          <button onClick={onClose} className="lg:hidden ml-auto text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="lg:hidden ml-auto text-zinc-400 hover:text-zinc-600">
             <span className="material-symbols-outlined text-xl">close</span>
           </button>
         )}
@@ -63,11 +63,11 @@ export function Sidebar({ permissions, isAdmin, userName, open, onClose }: Sideb
               onClick={onClose}
               className={`flex items-center gap-3 py-3 pl-4 pr-3 rounded-lg text-sm transition-colors ${
                 isActive
-                  ? "bg-slate-200 text-[#00236f] font-semibold border-l-4 border-[#00236f]"
-                  : "text-slate-600 hover:bg-slate-200 hover:text-slate-900 border-l-4 border-transparent"
+                  ? "bg-zinc-200 text-[#00236f] font-semibold border-l-4 border-[#00236f]"
+                  : "text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900 border-l-4 border-transparent"
               }`}
             >
-              <span className={`material-symbols-outlined text-xl ${isActive ? "text-[#00236f]" : "text-slate-500"}`}>
+              <span className={`material-symbols-outlined text-xl ${isActive ? "text-[#00236f]" : "text-zinc-500"}`}>
                 {item.materialIcon}
               </span>
               {item.label}
@@ -80,7 +80,7 @@ export function Sidebar({ permissions, isAdmin, userName, open, onClose }: Sideb
       <div className="px-3 pb-5 space-y-2">
         <Link
           href="/parametres"
-          className="flex items-center gap-3 py-2.5 pl-4 pr-3 rounded-lg text-sm text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
+          className="flex items-center gap-3 py-2.5 pl-4 pr-3 rounded-lg text-sm text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800 transition-colors"
         >
           <span className="material-symbols-outlined text-xl">settings</span>
           Paramètres
@@ -88,7 +88,7 @@ export function Sidebar({ permissions, isAdmin, userName, open, onClose }: Sideb
 
         <Link
           href="/support"
-          className="flex items-center gap-3 py-2.5 pl-4 pr-3 rounded-lg text-sm text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
+          className="flex items-center gap-3 py-2.5 pl-4 pr-3 rounded-lg text-sm text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800 transition-colors"
         >
           <span className="material-symbols-outlined text-xl">help_outline</span>
           Support

@@ -143,38 +143,38 @@ export function CustomFieldModal({
         <div className="space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">
+            <label className="block text-xs font-medium text-zinc-500 mb-1.5">
               Nom du champ
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => handleNameChange(e.target.value)}
-              className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+              className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               placeholder="Ex: Numéro d'étudiant"
             />
           </div>
 
           {/* Slug */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">
+            <label className="block text-xs font-medium text-zinc-500 mb-1.5">
               Slug (auto-généré)
             </label>
             <input
               type="text"
               value={formData.slug}
               onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
-              className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+              className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               placeholder="numero_etudiant"
             />
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-zinc-400 mt-1">
               Utilisé dans les templates: {`{{${formData.slug}}}`}
             </p>
           </div>
 
           {/* Type */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">
+            <label className="block text-xs font-medium text-zinc-500 mb-1.5">
               Type
             </label>
             <select
@@ -186,7 +186,7 @@ export function CustomFieldModal({
                   options: [],
                 }))
               }
-              className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+              className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
             >
               <option value="text">Texte</option>
               <option value="select">Sélection</option>
@@ -198,13 +198,13 @@ export function CustomFieldModal({
           {/* Options (if type = select) */}
           {formData.type === "select" && (
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">
+              <label className="block text-xs font-medium text-zinc-500 mb-1.5">
                 Options (séparées par des virgules)
               </label>
               <textarea
                 value={optionsInput}
                 onChange={(e) => setOptionsInput(e.target.value)}
-                className="w-full h-24 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                className="w-full h-24 px-3 py-2 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                 placeholder="Option 1, Option 2, Option 3"
               />
             </div>
@@ -221,14 +221,14 @@ export function CustomFieldModal({
               }
               className="w-4 h-4"
             />
-            <label htmlFor="required" className="text-sm text-slate-700">
+            <label htmlFor="required" className="text-sm text-zinc-700">
               Champ obligatoire
             </label>
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">
+            <label className="block text-xs font-medium text-zinc-500 mb-1.5">
               Description (optionnel)
             </label>
             <textarea
@@ -236,7 +236,7 @@ export function CustomFieldModal({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, description: e.target.value }))
               }
-              className="w-full h-20 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+              className="w-full h-20 px-3 py-2 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               placeholder="Description affichée aux utilisateurs"
             />
           </div>
@@ -247,7 +247,7 @@ export function CustomFieldModal({
           <button
             onClick={() => onOpenChange(false)}
             disabled={saving}
-            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            className="flex-1 px-4 py-2 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 transition-colors disabled:opacity-50"
           >
             Annuler
           </button>

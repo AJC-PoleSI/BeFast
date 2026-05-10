@@ -68,8 +68,8 @@ export default function CustomFieldsPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-12 bg-slate-200 rounded-lg animate-pulse" />
-        <div className="h-96 bg-slate-200 rounded-lg animate-pulse" />
+        <div className="h-12 bg-zinc-200 rounded-lg animate-pulse" />
+        <div className="h-96 bg-zinc-200 rounded-lg animate-pulse" />
       </div>
     )
   }
@@ -77,7 +77,7 @@ export default function CustomFieldsPage() {
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-slate-500">Accès non autorisé</p>
+        <p className="text-zinc-500">Accès non autorisé</p>
       </div>
     )
   }
@@ -87,13 +87,13 @@ export default function CustomFieldsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">
+          <p className="text-xs font-medium text-zinc-400 uppercase tracking-widest mb-1">
             Administration / Champs Personnalisés
           </p>
           <h1 className="text-2xl font-manrope font-black text-[#00236f]">
             Gestion des Champs Personnalisés
           </h1>
-          <p className="text-sm text-slate-600 mt-2">
+          <p className="text-sm text-zinc-600 mt-2">
             Créez des champs personnalisés pour enrichir les profils utilisateurs. Ils seront disponibles dans les templates de documents.
           </p>
         </div>
@@ -127,7 +127,7 @@ export default function CustomFieldsPage() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-20 bg-slate-100 rounded-lg animate-pulse"
+              className="h-20 bg-zinc-100 rounded-lg animate-pulse"
             />
           ))}
         </div>

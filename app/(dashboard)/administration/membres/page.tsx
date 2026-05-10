@@ -36,15 +36,15 @@ function RoleDropdown({ member, roles, onRoleChange, updating }: {
       <button
         onClick={() => setOpen(!open)}
         disabled={updating === member.id}
-        className="p-1.5 text-slate-400 hover:text-[#00236f] hover:bg-slate-100 rounded-md transition-colors disabled:opacity-50"
+        className="p-1.5 text-zinc-400 hover:text-[#00236f] hover:bg-zinc-100 rounded-md transition-colors disabled:opacity-50"
       >
         {updating === member.id
           ? <Loader className="w-5 h-5 animate-spin" />
           : <MoreVertical className="w-5 h-5" />}
       </button>
       {open && (
-        <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-20">
-          <p className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <div className="absolute right-0 mt-1 w-52 bg-white border border-zinc-200 rounded-xl shadow-xl z-20">
+          <p className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
             Changer le rôle
           </p>
           <div className="p-1.5">
@@ -52,8 +52,8 @@ function RoleDropdown({ member, roles, onRoleChange, updating }: {
               <button
                 key={r.slug}
                 onClick={() => { setOpen(false); onRoleChange(member.id, r.slug) }}
-                className={`w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-2 ${
-                  member.profils_types?.slug === r.slug ? "font-semibold text-[#00236f]" : "text-slate-700"
+                className={`w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-zinc-100 transition-colors flex items-center gap-2 ${
+                  member.profils_types?.slug === r.slug ? "font-semibold text-[#00236f]" : "text-zinc-700"
                 }`}
               >
                 {member.profils_types?.slug === r.slug && (
@@ -115,7 +115,7 @@ export default function AdminMembersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-manrope font-black text-[#00236f]">Membres & Validation</h1>
-          <p className="text-slate-500 text-sm mt-1">Gérez les comptes utilisateurs et validez les nouveaux membres.</p>
+          <p className="text-zinc-500 text-sm mt-1">Gérez les comptes utilisateurs et validez les nouveaux membres.</p>
         </div>
         {pendingCount > 0 && (
           <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl border border-amber-200 text-sm font-semibold">
@@ -125,20 +125,20 @@ export default function AdminMembersPage() {
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex-1 flex flex-col">
+      <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-sm flex-1 flex flex-col">
         
         {/* TOOLBAR */}
-        <div className="p-4 border-b border-slate-100 flex flex-col lg:flex-row justify-between gap-4 bg-slate-50">
+        <div className="p-4 border-b border-zinc-100 flex flex-col lg:flex-row justify-between gap-4 bg-zinc-50">
           <div className="flex flex-wrap gap-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Rôle</label>
-              <div className="flex bg-white border border-slate-200 rounded-lg p-1 flex-wrap gap-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 px-1">Rôle</label>
+              <div className="flex bg-white border border-zinc-200 rounded-lg p-1 flex-wrap gap-1">
                 {["Tous", ...allRoles.map(r => r.slug)].map((f) => (
                   <button
                     key={f}
                     onClick={() => setRoleFilter(f)}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                      roleFilter === f ? "bg-[#00236f] text-white" : "text-slate-500 hover:text-slate-700"
+                      roleFilter === f ? "bg-[#00236f] text-white" : "text-zinc-500 hover:text-zinc-700"
                     }`}
                   >
                     {f === "Tous" ? "Tous" : (allRoles.find(r => r.slug === f)?.nom ?? f)}
@@ -148,8 +148,8 @@ export default function AdminMembersPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Statut Compte</label>
-              <div className="flex bg-white border border-slate-200 rounded-lg p-1 gap-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 px-1">Statut Compte</label>
+              <div className="flex bg-white border border-zinc-200 rounded-lg p-1 gap-1">
                 {[
                   { value: "Tous", label: "Tous" },
                   { value: "pending_validation", label: "En attente" },
@@ -159,7 +159,7 @@ export default function AdminMembersPage() {
                     key={s.value}
                     onClick={() => setStatusFilter(s.value)}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                      statusFilter === s.value ? "bg-[#00236f] text-white" : "text-slate-500 hover:text-slate-700"
+                      statusFilter === s.value ? "bg-[#00236f] text-white" : "text-zinc-500 hover:text-zinc-700"
                     }`}
                   >
                     {s.label}
@@ -171,13 +171,13 @@ export default function AdminMembersPage() {
 
           <div className="lg:self-end">
             <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
               <input
                 type="text"
                 placeholder="Rechercher un membre..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                className="pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-lg w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               />
             </div>
           </div>
@@ -188,13 +188,13 @@ export default function AdminMembersPage() {
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <Loader className="w-8 h-8 animate-spin text-slate-300 mx-auto mb-2" />
-                <p className="text-sm text-slate-400">Chargement des membres...</p>
+                <Loader className="w-8 h-8 animate-spin text-zinc-300 mx-auto mb-2" />
+                <p className="text-sm text-zinc-400">Chargement des membres...</p>
               </div>
             </div>
           ) : (
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-200">
+              <thead className="text-xs text-zinc-500 uppercase bg-zinc-50/50 border-b border-zinc-200">
                 <tr>
                   <th className="px-6 py-4 font-semibold">Membre</th>
                   <th className="px-6 py-4 font-semibold">Rôle</th>
@@ -202,26 +202,26 @@ export default function AdminMembersPage() {
                   <th className="px-6 py-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-zinc-100">
                 {filteredMembers.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
+                    <td colSpan={4} className="px-6 py-12 text-center text-zinc-400">
                       Aucun membre trouvé.
                     </td>
                   </tr>
                 ) : (
                   filteredMembers.map((m) => (
-                    <tr key={m.id} className="hover:bg-slate-50/70 transition-colors">
+                    <tr key={m.id} className="hover:bg-zinc-50/70 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-[#00236f]/10 text-[#00236f] flex items-center justify-center font-bold text-sm shrink-0">
                             {(m.prenom?.[0] ?? "?").toUpperCase()}{(m.nom?.[0] ?? "").toUpperCase()}
                           </div>
                           <div>
-                            <div className="font-semibold text-slate-800">
+                            <div className="font-semibold text-zinc-800">
                               {m.prenom || ""} {m.nom || ""}
                             </div>
-                            <div className="text-xs text-slate-500">{m.email}</div>
+                            <div className="text-xs text-zinc-500">{m.email}</div>
                           </div>
                         </div>
                       </td>
@@ -231,7 +231,7 @@ export default function AdminMembersPage() {
                             {m.profils_types.nom}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-400 italic">Aucun rôle</span>
+                          <span className="text-xs text-zinc-400 italic">Aucun rôle</span>
                         )}
                       </td>
                       <td className="px-6 py-4">
@@ -292,7 +292,7 @@ export default function AdminMembersPage() {
           )}
         </div>
 
-        <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 text-xs text-slate-400">
+        <div className="px-6 py-3 border-t border-zinc-100 bg-zinc-50 text-xs text-zinc-400">
           {filteredMembers.length} membre{filteredMembers.length > 1 ? "s" : ""} affiché{filteredMembers.length > 1 ? "s" : ""}
         </div>
       </div>

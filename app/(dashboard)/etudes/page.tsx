@@ -30,8 +30,8 @@ const STATUT_CONFIG: Record<string, { label: string; chipClass: string; dotClass
   },
   terminee: {
     label: "Terminée",
-    chipClass: "bg-slate-100 text-slate-600",
-    dotClass: "bg-slate-400",
+    chipClass: "bg-zinc-100 text-zinc-600",
+    dotClass: "bg-zinc-400",
   },
 }
 
@@ -100,11 +100,11 @@ export default function EtudesPage() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">
+          <p className="text-xs font-medium text-zinc-400 uppercase tracking-widest mb-1">
             Study Management
           </p>
           <h1 className="text-2xl font-manrope font-black text-[#00236f]">Études</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Gestion des études et projets clients</p>
+          <p className="text-sm text-zinc-500 mt-0.5">Gestion des études et projets clients</p>
         </div>
         <button
           onClick={() => { setEditingId(null); setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_id: "" }); setShowModal(true); setFormError(null) }}
@@ -122,7 +122,7 @@ export default function EtudesPage() {
           className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             !selectedStatut
               ? "bg-[#00236f] text-white border-[#00236f]"
-              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+              : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
           }`}
         >
           Toutes ({etudes.length})
@@ -134,7 +134,7 @@ export default function EtudesPage() {
             className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
               selectedStatut === statut
                 ? "bg-[#00236f] text-white border-[#00236f]"
-                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
             }`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${config.dotClass}`} />
@@ -145,11 +145,11 @@ export default function EtudesPage() {
 
       {/* Search */}
       <div className="relative">
-        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-lg">search</span>
         <input
           type="search"
           placeholder="Rechercher une étude par nom, numéro ou client..."
-          className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 shadow-sm"
+          className="w-full h-10 pl-9 pr-4 rounded-xl border border-zinc-200 bg-white text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 shadow-sm"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -164,7 +164,7 @@ export default function EtudesPage() {
           {/* Active study detail panel */}
           {activeStudy && (
             <div className="lg:col-span-8">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-6">
                 <div className="flex items-start justify-between gap-4 mb-5">
                   <div className="flex-1">
                     <div className="flex flex-wrap gap-2 mb-3">
@@ -176,34 +176,34 @@ export default function EtudesPage() {
                       </span>
                     </div>
                     <h2 className="text-xl font-manrope font-black text-[#00236f] mb-1">{activeStudy.nom}</h2>
-                    <p className="text-sm text-slate-400 font-mono">{activeStudy.numero}</p>
+                    <p className="text-sm text-zinc-400 font-mono">{activeStudy.numero}</p>
                   </div>
                   {activeStudy.budget && (
                     <div className="text-right">
-                      <p className="text-xs text-slate-400">Budget</p>
+                      <p className="text-xs text-zinc-400">Budget</p>
                       <p className="text-2xl font-manrope font-black text-[#00236f]">€{activeStudy.budget.toLocaleString()}</p>
                     </div>
                   )}
                 </div>
 
                 {/* Info grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-xl mb-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-zinc-50 rounded-xl mb-5">
                   {activeStudy.clients && (
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Client</p>
-                      <p className="text-sm font-semibold text-slate-800">{activeStudy.clients.nom}</p>
+                      <p className="text-xs text-zinc-400 mb-1">Client</p>
+                      <p className="text-sm font-semibold text-zinc-800">{activeStudy.clients.nom}</p>
                     </div>
                   )}
                   {activeStudy.suiveur && (
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Suiveur</p>
-                      <p className="text-sm font-semibold text-slate-800">
+                      <p className="text-xs text-zinc-400 mb-1">Suiveur</p>
+                      <p className="text-sm font-semibold text-zinc-800">
                         {activeStudy.suiveur.prenom} {activeStudy.suiveur.nom}
                       </p>
                     </div>
                   )}
                   <div>
-                    <p className="text-xs text-slate-400 mb-1">Statut</p>
+                    <p className="text-xs text-zinc-400 mb-1">Statut</p>
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUT_CONFIG[activeStudy.statut]?.chipClass}`}>
                       {STATUT_CONFIG[activeStudy.statut]?.label}
                     </span>
@@ -216,7 +216,7 @@ export default function EtudesPage() {
                       <span className="material-symbols-outlined text-base">comment</span>
                       Commentaires
                     </p>
-                    <p className="text-sm text-slate-600">{activeStudy.commentaire}</p>
+                    <p className="text-sm text-zinc-600">{activeStudy.commentaire}</p>
                   </div>
                 )}
 
@@ -233,23 +233,23 @@ export default function EtudesPage() {
 
           {/* Studies list panel */}
           <div className={activeStudy ? "lg:col-span-4" : "lg:col-span-12"}>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-100">
+            <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-zinc-100">
                 <h2 className="font-manrope font-bold text-[#00236f] text-base">
                   {filteredEtudes.length} étude{filteredEtudes.length !== 1 ? "s" : ""}
                 </h2>
               </div>
-              <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
+              <div className="divide-y divide-zinc-100 max-h-[600px] overflow-y-auto">
                 {filteredEtudes.length > 0 ? (
                   filteredEtudes.map((etude) => {
                     const sc = STATUT_CONFIG[etude.statut as keyof typeof STATUT_CONFIG]
                     return (
-                      <div key={etude.id} className="group flex items-center gap-3 px-5 py-4 hover:bg-slate-50 transition-colors">
+                      <div key={etude.id} className="group flex items-center gap-3 px-5 py-4 hover:bg-zinc-50 transition-colors">
                         <Link href={`/etudes/${etude.id}`} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
-                          <div className={`w-2 h-2 rounded-full shrink-0 ${sc?.dotClass || "bg-slate-300"}`} />
+                          <div className={`w-2 h-2 rounded-full shrink-0 ${sc?.dotClass || "bg-zinc-300"}`} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-slate-800 truncate">{etude.nom}</p>
-                            <p className="text-xs text-slate-400 truncate">
+                            <p className="text-sm font-semibold text-zinc-800 truncate">{etude.nom}</p>
+                            <p className="text-xs text-zinc-400 truncate">
                               {etude.numero}
                               {etude.clients ? ` · ${etude.clients.nom}` : ""}
                               {(etude as any).suiveur ? ` · Suiveur : ${(etude as any).suiveur.prenom} ${(etude as any).suiveur.nom}` : ""}
@@ -262,7 +262,7 @@ export default function EtudesPage() {
                                   BROUILLON
                                 </span>
                               )}
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sc?.chipClass || "bg-slate-100 text-slate-600"}`}>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sc?.chipClass || "bg-zinc-100 text-zinc-600"}`}>
                                 {sc?.label || etude.statut}
                               </span>
                             </div>
@@ -305,7 +305,7 @@ export default function EtudesPage() {
                             })
                             setShowModal(true)
                           }}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-slate-400 hover:text-[#00236f] hover:bg-[#d0d8ff] transition-all shrink-0"
+                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-zinc-400 hover:text-[#00236f] hover:bg-[#d0d8ff] transition-all shrink-0"
                           title="Modifier l'étude"
                         >
                           <Pencil className="w-4 h-4" />
@@ -318,7 +318,7 @@ export default function EtudesPage() {
                             if (res.error) { alert(res.error); return }
                             setEtudes(prev => prev.filter(x => x.id !== etude.id))
                           }}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all shrink-0"
+                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-all shrink-0"
                           title="Supprimer l'étude"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -327,7 +327,7 @@ export default function EtudesPage() {
                     )
                   })
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                  <div className="flex flex-col items-center justify-center py-12 text-zinc-400">
                     <span className="material-symbols-outlined text-4xl mb-2">school</span>
                     <p className="text-sm">
                       {searchTerm || selectedStatut ? "Aucune étude correspondante" : "Créez votre première étude"}
@@ -344,9 +344,9 @@ export default function EtudesPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100">
               <h2 className="font-manrope font-bold text-[#00236f] text-lg">{editingId ? "Modifier l'étude" : "Nouvelle étude"}</h2>
-              <button onClick={() => { setShowModal(false); setEditingId(null) }} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <button onClick={() => { setShowModal(false); setEditingId(null) }} className="text-zinc-400 hover:text-zinc-600 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -385,57 +385,57 @@ export default function EtudesPage() {
             >
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nom de l&apos;étude *</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1">Nom de l&apos;étude *</label>
                   <input
                     required
                     value={form.nom}
                     onChange={e => setForm(f => ({ ...f, nom: e.target.value }))}
                     placeholder="Ex : Étude marketing Q3"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Numéro *</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1">Numéro *</label>
                   <input
                     required
                     value={form.numero}
                     onChange={e => setForm(f => ({ ...f, numero: e.target.value }))}
                     placeholder="Ex : 2024-001"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Budget HT (€)</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1">Budget HT (€)</label>
                   <input
                     type="number"
                     value={form.budget_ht}
                     onChange={e => setForm(f => ({ ...f, budget_ht: e.target.value }))}
                     placeholder="Ex : 5000"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                   />
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-zinc-400 mt-1">
                     Budget TTC : {form.budget_ht ? (Number(form.budget_ht) * (1 + tvaRate / 100)).toFixed(2) : "—"} €
                   </p>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Frais de dossier (€)</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1">Frais de dossier (€)</label>
                   <input
                     type="number"
                     value={form.frais_dossier}
                     onChange={e => setForm(f => ({ ...f, frais_dossier: e.target.value }))}
                     placeholder="Ex : 150"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Marge (%)</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1">Marge (%)</label>
                   <input
                     type="number"
                     step="0.1"
                     value={form.marge_pct}
                     onChange={e => setForm(f => ({ ...f, marge_pct: e.target.value }))}
                     placeholder="Ex : 10"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                   />
                 </div>
                 <div className="col-span-2 rounded-lg bg-[#00236f]/[0.04] border border-[#00236f]/20 p-3 text-xs text-[#00236f]">
@@ -456,12 +456,12 @@ export default function EtudesPage() {
                   })()}
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Type d&apos;étude *</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1">Type d&apos;étude *</label>
                   <select
                     required
                     value={form.type}
                     onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                   >
                     <option value="">— Sélectionner —</option>
                     <option value="ao">AO</option>
@@ -470,33 +470,33 @@ export default function EtudesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Client</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1">Client</label>
                   <select
                     value={form.client_id}
                     onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                   >
                     <option value="">— Sélectionner —</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Suiveur</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1">Suiveur</label>
                   <select
                     value={form.suiveur_id}
                     onChange={e => setForm(f => ({ ...f, suiveur_id: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                   >
                     <option value="">— Sélectionner —</option>
                     {membres.map(m => <option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Statut</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1">Statut</label>
                   <select
                     value={form.statut}
                     onChange={e => setForm(f => ({ ...f, statut: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                   >
                     <option value="prospection">Prospection</option>
                     <option value="en_cours_prospection">En cours de prospection</option>
@@ -506,13 +506,13 @@ export default function EtudesPage() {
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Commentaire</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1">Commentaire</label>
                   <textarea
                     value={form.commentaire}
                     onChange={e => setForm(f => ({ ...f, commentaire: e.target.value }))}
                     rows={3}
                     placeholder="Notes, contexte..."
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 resize-none"
+                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 resize-none"
                   />
                 </div>
               </div>
@@ -522,7 +522,7 @@ export default function EtudesPage() {
               )}
 
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => { setShowModal(false); setEditingId(null) }} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                <button type="button" onClick={() => { setShowModal(false); setEditingId(null) }} className="px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors">
                   Annuler
                 </button>
                 <button

@@ -88,12 +88,12 @@ export function DocumentViewer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[90vw] h-[90vh] flex flex-col p-0 overflow-hidden bg-slate-50/50">
+      <DialogContent className="max-w-5xl w-[90vw] h-[90vh] flex flex-col p-0 overflow-hidden bg-zinc-50/50">
         {/* Header */}
-        <div className="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between shrink-0 shadow-sm z-10">
+        <div className="px-4 py-3 bg-white border-b border-zinc-200 flex items-center justify-between shrink-0 shadow-sm z-10">
           <div className="flex-1 min-w-0 pr-4">
-            <h2 className="text-sm font-bold text-slate-800 truncate">{fileName || "Document"}</h2>
-            <p className="text-[11px] text-slate-500">Aperçu rapide</p>
+            <h2 className="text-sm font-bold text-zinc-800 truncate">{fileName || "Document"}</h2>
+            <p className="text-[11px] text-zinc-500">Aperçu rapide</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {url && (
@@ -110,7 +110,7 @@ export function DocumentViewer({
             )}
             <button 
               onClick={() => onOpenChange(false)}
-              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-1.5 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -120,9 +120,9 @@ export function DocumentViewer({
         {/* Content */}
         <div className="flex-1 relative overflow-hidden flex items-center justify-center">
           {loading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/80 z-20 backdrop-blur-sm">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-50/80 z-20 backdrop-blur-sm">
               <Loader2 className="w-8 h-8 animate-spin text-[#00236f] mb-3" />
-              <p className="text-sm font-medium text-slate-600">Chargement du document...</p>
+              <p className="text-sm font-medium text-zinc-600">Chargement du document...</p>
             </div>
           )}
 
@@ -131,8 +131,8 @@ export function DocumentViewer({
               <div className="w-12 h-12 rounded-full bg-red-100 text-red-500 flex items-center justify-center mx-auto mb-3">
                 <AlertCircle className="w-6 h-6" />
               </div>
-              <h3 className="text-slate-800 font-bold mb-2">Aperçu indisponible</h3>
-              <p className="text-sm text-slate-500 mb-4">{error}</p>
+              <h3 className="text-zinc-800 font-bold mb-2">Aperçu indisponible</h3>
+              <p className="text-sm text-zinc-500 mb-4">{error}</p>
               {url && (
                 <a
                   href={url}
@@ -147,7 +147,7 @@ export function DocumentViewer({
           {/* Docx Container */}
           <div 
             ref={containerRef} 
-            className={`w-full h-full overflow-auto bg-slate-100/50 p-4 sm:p-8 flex-col items-center ${isDocx && !loading && !error ? "flex" : "hidden"}`}
+            className={`w-full h-full overflow-auto bg-zinc-100/50 p-4 sm:p-8 flex-col items-center ${isDocx && !loading && !error ? "flex" : "hidden"}`}
             style={{ 
               // Basic styling for the docx pages
               "--docx-page-margin": "0 auto 20px auto",
@@ -166,12 +166,12 @@ export function DocumentViewer({
 
           {/* Image Container */}
           {isImage && blobUrl && !loading && !error && (
-            <div className="w-full h-full p-6 flex items-center justify-center bg-slate-50 overflow-auto">
+            <div className="w-full h-full p-6 flex items-center justify-center bg-zinc-50 overflow-auto">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src={blobUrl} 
                 alt={fileName || "Image"} 
-                className="max-w-full max-h-full object-contain shadow-sm rounded-lg border border-slate-200 bg-white" 
+                className="max-w-full max-h-full object-contain shadow-sm rounded-lg border border-zinc-200 bg-white" 
               />
             </div>
           )}

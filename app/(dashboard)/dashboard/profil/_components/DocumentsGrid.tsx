@@ -249,7 +249,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
   return (
     <div>
       {/* Header */}
-      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+      <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
         <h2 className="font-manrope font-bold text-[#00236f] text-base">
           {isAdminView ? "Documents soumis" : readOnly ? "Documents" : "Mes documents"}
         </h2>
@@ -281,7 +281,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
               : existing.status === "rejected"
               ? "border-red-200 bg-red-50/30"
               : "border-orange-200 bg-orange-50/30" // pending (orange)
-            : "border-slate-200 bg-white" // missing (white)
+            : "border-zinc-200 bg-white" // missing (white)
 
           // Icon bg/color
           const iconStyle = existing
@@ -290,7 +290,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
               : existing.status === "rejected"
               ? "bg-red-100 text-red-500"
               : "bg-orange-100 text-orange-600" // pending (orange)
-            : "bg-slate-50 text-slate-300" // missing (white)
+            : "bg-zinc-50 text-zinc-300" // missing (white)
 
           return (
             <div
@@ -303,14 +303,14 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-slate-700 truncate">
+                  <p className="text-xs font-semibold text-zinc-700 truncate">
                     {DOC_TYPE_LABELS[docType]}
                   </p>
                   <div className="flex items-center gap-1 mt-0.5">
                     {existing ? (
                       <StatusBadge status={existing.status} />
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-400 font-bold">
                         <AlertCircle className="h-3 w-3 shrink-0" />
                         Manquant
                       </span>
@@ -326,12 +326,12 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
                     <button
                       onClick={() => handleView(existing)}
                       title="Consulter le document"
-                      className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-[#00236f] hover:bg-slate-50 shadow-sm transition-all mr-1"
+                      className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-zinc-200 text-[#00236f] hover:bg-zinc-50 shadow-sm transition-all mr-1"
                     >
                       <Eye className="h-4 w-4" />
                     </button>
                     {isAdminView && existing.status === "pending" && (
-                      <div className="flex items-center gap-1 ml-1 pl-1 border-l border-slate-200">
+                      <div className="flex items-center gap-1 ml-1 pl-1 border-l border-zinc-200">
                         <button
                           onClick={() => handleUpdateStatus(existing.id, "approved")}
                           disabled={isUpdating}
@@ -354,7 +354,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
                       <button
                         onClick={() => handleDownload(existing)}
                         title="Télécharger"
-                        className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+                        className="h-7 w-7 flex items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 transition-colors"
                       >
                         <Download className="h-3.5 w-3.5" />
                       </button>

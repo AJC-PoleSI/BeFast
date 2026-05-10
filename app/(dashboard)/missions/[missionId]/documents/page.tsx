@@ -116,7 +116,7 @@ export default function MissionDocumentsPage() {
 
       <div>
         <h1 className="text-2xl font-bold text-[#00236f] mb-1">Documents de la mission</h1>
-        <p className="text-sm text-slate-500">Générez des documents à partir des modèles DOCX importés.</p>
+        <p className="text-sm text-zinc-500">Générez des documents à partir des modèles DOCX importés.</p>
       </div>
 
       <div className="bg-white rounded-xl border border-border shadow-sm p-5">
@@ -170,7 +170,7 @@ export default function MissionDocumentsPage() {
                   <FileText className="h-4 w-4 text-[#00236f] shrink-0" />
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">{d.name}</div>
-                    <div className="text-xs text-slate-500 truncate">
+                    <div className="text-xs text-zinc-500 truncate">
                       {d.file_name} · {new Date(d.created_at).toLocaleString("fr-FR")}
                     </div>
                   </div>
@@ -237,11 +237,11 @@ export default function MissionDocumentsPage() {
                   ))}
                 </select>
               ) : (
-                <p className="text-sm text-slate-500">Aucun intervenant accepté sur cette mission.</p>
+                <p className="text-sm text-zinc-500">Aucun intervenant accepté sur cette mission.</p>
               )}
             </div>
 
-            <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-500">
+            <div className="rounded-lg bg-zinc-50 border border-zinc-200 p-3 text-xs text-zinc-500">
               Le document sera généré avec les données de cette mission, de son étude, du client, et de l&apos;intervenant sélectionné.
             </div>
           </div>

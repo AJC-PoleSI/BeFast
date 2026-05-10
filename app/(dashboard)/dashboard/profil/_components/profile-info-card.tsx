@@ -141,8 +141,8 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly, isAdmin }: Profil
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+    <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
         <h2 className="font-manrope font-bold text-[#00236f] text-base">Informations Personnelles</h2>
         {!readOnly && !editing && (
           <button
@@ -157,15 +157,15 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly, isAdmin }: Profil
 
       <div className="p-6">
         {/* Email always shown */}
-        <div className="mb-4 p-3 bg-slate-50 rounded-xl">
-          <p className="text-xs text-slate-400 mb-0.5">Email Académique</p>
-          <p className="text-sm font-medium text-slate-800">{profile.email}</p>
+        <div className="mb-4 p-3 bg-zinc-50 rounded-xl">
+          <p className="text-xs text-zinc-400 mb-0.5">Email Académique</p>
+          <p className="text-sm font-medium text-zinc-800">{profile.email}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {FIELD_CONFIG.map(({ name, label, required }) => (
             <div key={name}>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">
+              <label className="block text-xs font-medium text-zinc-500 mb-1.5">
                 {label}{required && <span className="text-red-500 ml-0.5">*</span>}
               </label>
               {editing ? (
@@ -173,11 +173,11 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly, isAdmin }: Profil
                   type="text"
                   value={values[name] || ""}
                   onChange={(e) => handleChange(name, e.target.value)}
-                  className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                  className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                 />
               ) : (
-                <p className="text-sm px-3 py-2 rounded-lg bg-slate-50 min-h-[36px] flex items-center text-slate-700">
-                  {values[name] || <span className="text-slate-300 italic text-xs">Non renseigné</span>}
+                <p className="text-sm px-3 py-2 rounded-lg bg-zinc-50 min-h-[36px] flex items-center text-zinc-700">
+                  {values[name] || <span className="text-zinc-300 italic text-xs">Non renseigné</span>}
                 </p>
               )}
             </div>
@@ -185,88 +185,88 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly, isAdmin }: Profil
 
           {/* Pole */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center justify-between">
+            <label className="block text-xs font-medium text-zinc-500 mb-1.5 flex items-center justify-between">
               Pôle
-              {!isAdmin && <span className="text-[10px] text-slate-400 font-normal italic">Réservé Administration</span>}
+              {!isAdmin && <span className="text-[10px] text-zinc-400 font-normal italic">Réservé Administration</span>}
             </label>
             {editing && isAdmin ? (
               <select
                 value={values.pole || ""}
                 onChange={(e) => handleChange("pole", e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               >
                 <option value="">-- Aucun --</option>
                 {poles.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             ) : (
-              <p className="text-sm px-3 py-2 rounded-lg bg-slate-50 min-h-[36px] flex items-center text-slate-700">
-                {values.pole || <span className="text-slate-300 italic text-xs">Non renseigné</span>}
+              <p className="text-sm px-3 py-2 rounded-lg bg-zinc-50 min-h-[36px] flex items-center text-zinc-700">
+                {values.pole || <span className="text-zinc-300 italic text-xs">Non renseigné</span>}
               </p>
             )}
           </div>
 
           {/* Établissement */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">Établissement</label>
+            <label className="block text-xs font-medium text-zinc-500 mb-1.5">Établissement</label>
             {editing ? (
               <select
                 value={values.etablissement || ""}
                 onChange={(e) => handleChange("etablissement", e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               >
                 <option value="">-- Aucun --</option>
                 {ETABLISSEMENTS.map((e) => <option key={e} value={e}>{e}</option>)}
               </select>
             ) : (
-              <p className="text-sm px-3 py-2 rounded-lg bg-slate-50 min-h-[36px] flex items-center text-slate-700">
-                {values.etablissement || <span className="text-slate-300 italic text-xs">Non renseigné</span>}
+              <p className="text-sm px-3 py-2 rounded-lg bg-zinc-50 min-h-[36px] flex items-center text-zinc-700">
+                {values.etablissement || <span className="text-zinc-300 italic text-xs">Non renseigné</span>}
               </p>
             )}
           </div>
 
           {/* Scolarité */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">Scolarité</label>
+            <label className="block text-xs font-medium text-zinc-500 mb-1.5">Scolarité</label>
             {editing ? (
               <select
                 value={values.scolarite || ""}
                 onChange={(e) => handleChange("scolarite", e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               >
                 <option value="">-- Aucun --</option>
                 {SCOLARITES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             ) : (
-              <p className="text-sm px-3 py-2 rounded-lg bg-slate-50 min-h-[36px] flex items-center text-slate-700">
-                {values.scolarite || <span className="text-slate-300 italic text-xs">Non renseigné</span>}
+              <p className="text-sm px-3 py-2 rounded-lg bg-zinc-50 min-h-[36px] flex items-center text-zinc-700">
+                {values.scolarite || <span className="text-zinc-300 italic text-xs">Non renseigné</span>}
               </p>
             )}
           </div>
 
           {/* Date de Naissance */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">Date de Naissance</label>
+            <label className="block text-xs font-medium text-zinc-500 mb-1.5">Date de Naissance</label>
             {editing ? (
               <input
                 type="date"
                 value={values.date_naissance || ""}
                 onChange={(e) => handleChange("date_naissance", e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               />
             ) : (
-              <p className="text-sm px-3 py-2 rounded-lg bg-slate-50 min-h-[36px] flex items-center text-slate-700">
-                {values.date_naissance ? new Date(values.date_naissance).toLocaleDateString('fr-FR') : <span className="text-slate-300 italic text-xs">Non renseigné</span>}
+              <p className="text-sm px-3 py-2 rounded-lg bg-zinc-50 min-h-[36px] flex items-center text-zinc-700">
+                {values.date_naissance ? new Date(values.date_naissance).toLocaleDateString('fr-FR') : <span className="text-zinc-300 italic text-xs">Non renseigné</span>}
               </p>
             )}
           </div>
         </div>
 
         {editing && (
-          <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-zinc-100">
             <button
               onClick={handleCancel}
               disabled={saving}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+              className="px-4 py-2 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 transition-colors disabled:opacity-50"
             >
               Annuler
             </button>

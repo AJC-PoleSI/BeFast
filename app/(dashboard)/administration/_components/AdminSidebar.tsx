@@ -37,10 +37,10 @@ export function AdminSidebar() {
   return (
     <nav className="w-64 shrink-0 pr-8 hidden md:block">
       <div className="mb-6">
-        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">
+        <h2 className="text-sm font-bold text-zinc-800 uppercase tracking-wider mb-2">
           Administration
         </h2>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-zinc-500">
           Gérez votre structure de Junior-Entreprise
         </p>
       </div>
@@ -57,7 +57,7 @@ export function AdminSidebar() {
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
                   ? "bg-[#00236f] text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
               }`}
             >
               <Icon className="w-4 h-4" />

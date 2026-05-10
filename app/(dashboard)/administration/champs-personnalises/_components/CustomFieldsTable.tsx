@@ -51,31 +51,31 @@ export function CustomFieldsTable({
 
   if (fields.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
-        <p className="text-slate-500">Aucun champ personnalisé créé</p>
+      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-8 text-center">
+        <p className="text-zinc-500">Aucun champ personnalisé créé</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50">
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600">
+            <tr className="border-b border-zinc-200 bg-zinc-50">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-zinc-600">
                 Nom
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-zinc-600">
                 Slug
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-zinc-600">
                 Type
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-zinc-600">
                 Requis
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-zinc-600">
                 Actions
               </th>
             </tr>
@@ -84,22 +84,22 @@ export function CustomFieldsTable({
             {fields.map((field) => (
               <tr
                 key={field.id}
-                className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                className="border-b border-zinc-100 hover:bg-zinc-50 transition-colors"
               >
                 <td className="px-6 py-4">
                   <div>
-                    <p className="text-sm font-medium text-slate-800">
+                    <p className="text-sm font-medium text-zinc-800">
                       {field.name}
                     </p>
                     {field.description && (
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-zinc-500 mt-1">
                         {field.description}
                       </p>
                     )}
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <code className="text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                  <code className="text-xs text-zinc-600 bg-zinc-100 px-2 py-1 rounded">
                     {field.slug}
                   </code>
                 </td>
@@ -113,7 +113,7 @@ export function CustomFieldsTable({
                     className={`text-xs font-medium ${
                       field.required
                         ? "text-red-600"
-                        : "text-slate-500"
+                        : "text-zinc-500"
                     }`}
                   >
                     {field.required ? "Oui" : "Non"}

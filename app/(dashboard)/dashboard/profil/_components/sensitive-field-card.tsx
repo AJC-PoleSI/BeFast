@@ -17,32 +17,32 @@ export function SensitiveFieldCard({ profile, isOwnProfile }: SensitiveFieldCard
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
+      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-zinc-100">
           <span className="material-symbols-outlined text-[#00236f] text-xl">lock</span>
           <div>
             <h2 className="font-manrope font-bold text-[#00236f] text-base">Données sensibles</h2>
-            <p className="text-xs text-slate-400">Chiffrées AES-256 — jamais stockées en clair</p>
+            <p className="text-xs text-zinc-400">Chiffrées AES-256 — jamais stockées en clair</p>
           </div>
         </div>
 
         <div className="p-6 space-y-3">
           {/* NSS Row */}
-          <div className="flex items-center justify-between rounded-xl border border-slate-200 p-4 hover:bg-slate-50 transition-colors">
+          <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-4 hover:bg-zinc-50 transition-colors">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
-                <span className="material-symbols-outlined text-slate-500 text-lg">key</span>
+              <div className="w-9 h-9 rounded-lg bg-zinc-100 flex items-center justify-center">
+                <span className="material-symbols-outlined text-zinc-500 text-lg">key</span>
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-800">N° Sécurité Sociale</p>
-                <p className="text-xs text-slate-400 font-mono mt-0.5">
+                <p className="text-sm font-semibold text-zinc-800">N° Sécurité Sociale</p>
+                <p className="text-xs text-zinc-400 font-mono mt-0.5">
                   {hasNss ? (
                     <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-xs">lock</span>
                       ••••••••••••••
                     </span>
                   ) : (
-                    <span className="italic text-slate-300">Non renseigné</span>
+                    <span className="italic text-zinc-300">Non renseigné</span>
                   )}
                 </p>
               </div>
@@ -59,21 +59,21 @@ export function SensitiveFieldCard({ profile, isOwnProfile }: SensitiveFieldCard
           </div>
 
           {/* IBAN Row */}
-          <div className="flex items-center justify-between rounded-xl border border-slate-200 p-4 hover:bg-slate-50 transition-colors">
+          <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-4 hover:bg-zinc-50 transition-colors">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
-                <span className="material-symbols-outlined text-slate-500 text-lg">account_balance</span>
+              <div className="w-9 h-9 rounded-lg bg-zinc-100 flex items-center justify-center">
+                <span className="material-symbols-outlined text-zinc-500 text-lg">account_balance</span>
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-800">IBAN</p>
-                <p className="text-xs text-slate-400 font-mono mt-0.5">
+                <p className="text-sm font-semibold text-zinc-800">IBAN</p>
+                <p className="text-xs text-zinc-400 font-mono mt-0.5">
                   {hasIban ? (
                     <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-xs">lock</span>
                       ••••••••••••••••••••••
                     </span>
                   ) : (
-                    <span className="italic text-slate-300">Non renseigné</span>
+                    <span className="italic text-zinc-300">Non renseigné</span>
                   )}
                 </p>
               </div>

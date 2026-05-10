@@ -27,7 +27,7 @@ export function MissionCard({
 }: MissionCardProps) {
   if (featured) {
     return (
-      <div className="lg:col-span-8 bg-white rounded-xl p-8 flex flex-col justify-between group cursor-pointer hover:shadow-xl transition-all duration-300 relative overflow-hidden border border-slate-100">
+      <div className="lg:col-span-8 bg-white rounded-xl p-8 flex flex-col justify-between group cursor-pointer hover:shadow-xl transition-all duration-300 relative overflow-hidden border border-zinc-100">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#C9A84C]/10 rounded-bl-full -mr-10 -mt-10 group-hover:scale-125 transition-transform" />
 
         <div className="relative">
@@ -41,20 +41,20 @@ export function MissionCard({
           <h3 className="text-3xl font-bold font-headline mb-4 group-hover:text-[#0D1B2A] transition-colors">
             {title}
           </h3>
-          <p className="text-slate-600 mb-8 leading-relaxed max-w-xl">{description}</p>
+          <p className="text-zinc-600 mb-8 leading-relaxed max-w-xl">{description}</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-slate-100">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-zinc-100">
           <div>
-            <span className="text-xs uppercase font-bold text-slate-400 block mb-1">Duration</span>
+            <span className="text-xs uppercase font-bold text-zinc-400 block mb-1">Duration</span>
             <p className="text-sm font-semibold text-[#0D1B2A]">{duration}</p>
           </div>
           <div>
-            <span className="text-xs uppercase font-bold text-slate-400 block mb-1">JEH</span>
+            <span className="text-xs uppercase font-bold text-zinc-400 block mb-1">JEH</span>
             <p className="text-sm font-semibold text-[#0D1B2A]">{jeh} Days</p>
           </div>
           <div>
-            <span className="text-xs uppercase font-bold text-slate-400 block mb-1">Required</span>
+            <span className="text-xs uppercase font-bold text-zinc-400 block mb-1">Required</span>
             <p className="text-sm font-semibold text-[#0D1B2A]">{requirements}</p>
           </div>
           <div className="flex justify-end items-end">
@@ -68,17 +68,17 @@ export function MissionCard({
   }
 
   return (
-    <Card className="p-6 flex flex-col justify-between hover:shadow-lg transition-all cursor-pointer border border-slate-100">
+    <Card className="p-6 flex flex-col justify-between hover:shadow-lg transition-all cursor-pointer border border-zinc-100">
       <div>
-        <div className="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6">
+        <div className="h-12 w-12 bg-zinc-100 rounded-lg flex items-center justify-center mb-6">
           <span className="text-[#0D1B2A] font-bold">📊</span>
         </div>
         <h4 className="text-lg font-bold font-headline mb-2 text-[#0D1B2A]">{title}</h4>
-        <p className="text-sm text-slate-600 line-clamp-3">{description}</p>
+        <p className="text-sm text-zinc-600 line-clamp-3">{description}</p>
       </div>
-      <div className="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center">
+      <div className="mt-8 pt-4 border-t border-zinc-100 flex justify-between items-center">
         <span className="text-[#0D1B2A] font-bold">€{budget.toLocaleString()}</span>
-        <span className="text-xs font-semibold text-slate-500">{jeh} JEH</span>
+        <span className="text-xs font-semibold text-zinc-500">{jeh} JEH</span>
       </div>
     </Card>
   )

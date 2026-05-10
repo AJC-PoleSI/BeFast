@@ -10,7 +10,7 @@ export default function AdministrationLayout({
     <RoleGuard requireAdmin>
       <div className="flex flex-col md:flex-row min-h-[calc(100vh-8rem)]">
         <AdminSidebar />
-        <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="flex-1 bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
           {children}
         </div>
       </div>

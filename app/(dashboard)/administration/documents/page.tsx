@@ -215,7 +215,7 @@ export default function DocumentTemplatesPage() {
         className={`group flex items-center gap-4 px-4 py-3 rounded-xl border transition-all cursor-pointer ${
           isSelected
             ? "border-[#00236f] bg-[#00236f]/[0.04] shadow-sm"
-            : "border-slate-200 bg-white hover:border-[#00236f]/30 hover:shadow-sm"
+            : "border-zinc-200 bg-white hover:border-[#00236f]/30 hover:shadow-sm"
         }`}
         onClick={() => tpl && setSelectedTemplate(tpl)}
       >
@@ -224,7 +224,7 @@ export default function DocumentTemplatesPage() {
           className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
             tpl
               ? "bg-emerald-50 text-emerald-600"
-              : "bg-slate-100 text-slate-400"
+              : "bg-zinc-100 text-zinc-400"
           }`}
         >
           <FileText className="w-5 h-5" />
@@ -233,7 +233,7 @@ export default function DocumentTemplatesPage() {
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-sm font-semibold text-slate-800 truncate">
+            <span className="text-sm font-semibold text-zinc-800 truncate">
               {docType.label}
             </span>
             {tpl ? (
@@ -241,13 +241,13 @@ export default function DocumentTemplatesPage() {
                 Importé
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-[10px] text-slate-400 border-slate-200 shrink-0">
+              <Badge variant="outline" className="text-[10px] text-zinc-400 border-zinc-200 shrink-0">
                 Non importé
               </Badge>
             )}
           </div>
           {tpl && (
-            <div className="flex items-center gap-3 text-[11px] text-slate-500">
+            <div className="flex items-center gap-3 text-[11px] text-zinc-500">
               <span className="flex items-center gap-1">
                 <Tag className="w-3 h-3" />
                 {(tpl.placeholders || []).length} balise(s)
@@ -273,7 +273,7 @@ export default function DocumentTemplatesPage() {
                   e.stopPropagation()
                   setSelectedTemplate(tpl)
                 }}
-                className="p-2 rounded-lg text-slate-500 hover:text-[#00236f] hover:bg-[#00236f]/10 transition-colors"
+                className="p-2 rounded-lg text-zinc-500 hover:text-[#00236f] hover:bg-[#00236f]/10 transition-colors"
                 title="Voir les balises"
               >
                 <Eye className="w-4 h-4" />
@@ -281,7 +281,7 @@ export default function DocumentTemplatesPage() {
               <a
                 href={`/api/admin/templates/${tpl.id}/download`}
                 onClick={(e) => e.stopPropagation()}
-                className="p-2 rounded-lg text-slate-500 hover:text-[#00236f] hover:bg-[#00236f]/10 transition-colors"
+                className="p-2 rounded-lg text-zinc-500 hover:text-[#00236f] hover:bg-[#00236f]/10 transition-colors"
                 title="Exporter / Télécharger"
               >
                 <Download className="w-4 h-4" />
@@ -291,7 +291,7 @@ export default function DocumentTemplatesPage() {
                   e.stopPropagation()
                   openUploadFor(docType.key, tpl.id)
                 }}
-                className="p-2 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                className="p-2 rounded-lg text-zinc-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                 title="Importer une nouvelle version"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -301,7 +301,7 @@ export default function DocumentTemplatesPage() {
                   e.stopPropagation()
                   handleDelete(tpl.id)
                 }}
-                className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                className="p-2 rounded-lg text-zinc-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                 title="Supprimer"
               >
                 <Trash2 className="w-4 h-4" />
@@ -339,11 +339,11 @@ export default function DocumentTemplatesPage() {
     const imported = docs.filter((d) => getTemplateForType(d.key)).length
 
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
         {/* Header */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-slate-50/50 transition-colors"
+          className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-zinc-50/50 transition-colors"
         >
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${accentColor}`}>
             {icon}
@@ -351,15 +351,15 @@ export default function DocumentTemplatesPage() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
               <h2 className="font-manrope font-bold text-[#00236f] text-base">{title}</h2>
-              <span className="text-xs text-slate-400 font-medium">
+              <span className="text-xs text-zinc-400 font-medium">
                 {imported}/{total} importé(s)
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+            <p className="text-xs text-zinc-500 mt-0.5">{description}</p>
           </div>
           {/* Progress bar */}
           <div className="w-24 shrink-0">
-            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-emerald-500 rounded-full transition-all duration-500"
                 style={{ width: `${total > 0 ? (imported / total) * 100 : 0}%` }}
@@ -367,9 +367,9 @@ export default function DocumentTemplatesPage() {
             </div>
           </div>
           {collapsed ? (
-            <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+            <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-slate-400 shrink-0" />
+            <ChevronDown className="w-5 h-5 text-zinc-400 shrink-0" />
           )}
         </button>
 
@@ -377,7 +377,7 @@ export default function DocumentTemplatesPage() {
         {!collapsed && (
           <div className="px-6 pb-5 space-y-2">
             {docs.length === 0 ? (
-              <p className="text-sm text-slate-400 italic py-4 text-center">
+              <p className="text-sm text-zinc-400 italic py-4 text-center">
                 Aucun résultat pour cette recherche.
               </p>
             ) : (
@@ -406,18 +406,18 @@ export default function DocumentTemplatesPage() {
     }
 
     return (
-      <div className="fixed inset-y-0 right-0 w-[420px] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col animate-slide-in">
+      <div className="fixed inset-y-0 right-0 w-[420px] bg-white border-l border-zinc-200 shadow-2xl z-50 flex flex-col animate-slide-in">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
           <div className="min-w-0">
             <h3 className="font-manrope font-bold text-[#00236f] text-sm truncate">
               {docType?.label || selectedTemplate.name}
             </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">{selectedTemplate.file_name}</p>
+            <p className="text-[11px] text-zinc-400 mt-0.5">{selectedTemplate.file_name}</p>
           </div>
           <button
             onClick={() => setSelectedTemplate(null)}
-            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -427,37 +427,37 @@ export default function DocumentTemplatesPage() {
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* Meta */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-xs text-slate-500">
+            <div className="flex items-center gap-2 text-xs text-zinc-500">
               <Clock className="w-3.5 h-3.5" />
               Importé le {new Date(selectedTemplate.created_at).toLocaleDateString("fr-FR", {
                 day: "numeric", month: "long", year: "numeric",
               })}
             </div>
             {selectedTemplate.description && (
-              <p className="text-sm text-slate-600">{selectedTemplate.description}</p>
+              <p className="text-sm text-zinc-600">{selectedTemplate.description}</p>
             )}
           </div>
 
           {/* Placeholders */}
           <div>
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <h4 className="text-xs font-bold text-zinc-700 uppercase tracking-wider mb-3 flex items-center gap-2">
               <Tag className="w-3.5 h-3.5 text-[#00236f]" />
               Balises détectées ({placeholders.length})
             </h4>
 
             {placeholders.length === 0 ? (
-              <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-center">
-                <p className="text-sm text-slate-400 italic">Aucune balise détectée dans ce document.</p>
+              <div className="rounded-xl bg-zinc-50 border border-zinc-200 p-4 text-center">
+                <p className="text-sm text-zinc-400 italic">Aucune balise détectée dans ce document.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {Object.entries(groups).map(([prefix, items]) => (
-                  <div key={prefix} className="rounded-xl bg-slate-50 border border-slate-200 overflow-hidden">
-                    <div className="px-3 py-2 bg-slate-100/80 border-b border-slate-200">
+                  <div key={prefix} className="rounded-xl bg-zinc-50 border border-zinc-200 overflow-hidden">
+                    <div className="px-3 py-2 bg-zinc-100/80 border-b border-zinc-200">
                       <span className="text-xs font-bold text-[#00236f] uppercase tracking-wider">
                         {prefix}
                       </span>
-                      <span className="text-[10px] text-slate-400 ml-2">
+                      <span className="text-[10px] text-zinc-400 ml-2">
                         ({items.length})
                       </span>
                     </div>
@@ -465,7 +465,7 @@ export default function DocumentTemplatesPage() {
                       {items.map((p) => (
                         <span
                           key={p}
-                          className="inline-flex items-center text-[11px] font-mono bg-white text-slate-700 px-2.5 py-1 rounded-md border border-slate-200 shadow-sm"
+                          className="inline-flex items-center text-[11px] font-mono bg-white text-zinc-700 px-2.5 py-1 rounded-md border border-zinc-200 shadow-sm"
                         >
                           <span className="text-[#00236f]/40">{"{"}</span>
                           {p}
@@ -481,7 +481,7 @@ export default function DocumentTemplatesPage() {
         </div>
 
         {/* Footer actions */}
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center gap-2">
+        <div className="px-6 py-4 border-t border-zinc-100 flex items-center gap-2">
           <a
             href={`/api/admin/templates/${selectedTemplate.id}/download`}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-[#00236f] bg-[#00236f]/10 rounded-xl hover:bg-[#00236f]/20 transition-colors"
@@ -533,7 +533,7 @@ export default function DocumentTemplatesPage() {
         <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-manrope font-black text-[#00236f]">Modèles de Documents</h1>
-            <p className="text-slate-500 text-sm mt-1">
+            <p className="text-zinc-500 text-sm mt-1">
               Gérez les modèles DOCX utilisés pour la génération automatique de documents.
             </p>
           </div>
@@ -545,7 +545,7 @@ export default function DocumentTemplatesPage() {
 
         {/* Search */}
         <div className="mb-6 relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -640,7 +640,7 @@ export default function DocumentTemplatesPage() {
                 placeholder="Notes sur ce modèle…"
               />
             </div>
-            <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
+            <div className="rounded-lg bg-zinc-50 border border-zinc-200 p-3 text-xs text-zinc-600">
               <strong>Balises disponibles</strong> :<br />
               <code>{"{etude.nom}"}</code>, <code>{"{etude.numero}"}</code>, <code>{"{client.nom}"}</code>,{" "}
               <code>{"{suiveur.prenom}"}</code>, <code>{"{mission.nom}"}</code>,{" "}

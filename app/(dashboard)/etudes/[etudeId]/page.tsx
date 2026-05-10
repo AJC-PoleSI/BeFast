@@ -356,7 +356,7 @@ export default function EtudeDetailPage() {
                 <p className="font-bold text-sm text-[#00236f]">
                   {total.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €
                 </p>
-                <p className="text-[10px] text-slate-500 mt-0.5">
+                <p className="text-[10px] text-zinc-500 mt-0.5">
                   Base {base.toLocaleString("fr-FR")} € + frais {frais.toLocaleString("fr-FR")} € + marge {margePct}%
                 </p>
               </div>
@@ -373,7 +373,7 @@ export default function EtudeDetailPage() {
               )}
             </p>
             {totalJehMissions > 0 && (
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[10px] text-zinc-500 mt-0.5">
                 {missions.length} mission{missions.length > 1 ? "s" : ""}
                 {tarifJeh > 0 && ` · ${tarifJeh} €/JEH`}
               </p>
@@ -434,7 +434,7 @@ export default function EtudeDetailPage() {
                             Suivi de projet
                           </span>
                           {etude?.numero && (
-                            <span className="text-xs font-mono text-slate-400">#{etude.numero}</span>
+                            <span className="text-xs font-mono text-zinc-400">#{etude.numero}</span>
                           )}
                         </div>
                       ) : (
@@ -448,7 +448,7 @@ export default function EtudeDetailPage() {
                             Intervenant
                           </span>
                           {etude?.numero && (
-                            <span className="text-xs font-mono text-slate-400">#{etude.numero}</span>
+                            <span className="text-xs font-mono text-zinc-400">#{etude.numero}</span>
                           )}
                         </Link>
                       )}
@@ -459,7 +459,7 @@ export default function EtudeDetailPage() {
                         <span>
                           {m.nb_jeh} × {m.nb_intervenants} = <span className="font-semibold text-[#00236f]">{(m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)} JEH</span>
                           {tarif != null && (
-                            <span className="ml-1 text-slate-500">
+                            <span className="ml-1 text-zinc-500">
                               ({(((m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)) * (Number(tarif) || 0)).toLocaleString("fr-FR")} €)
                             </span>
                           )}
@@ -691,7 +691,7 @@ export default function EtudeDetailPage() {
                                     </div>
                                   )}
                                   {c.motivation && (
-                                    <p className="text-xs text-slate-600 mt-2 whitespace-pre-wrap bg-muted/20 rounded-md p-2 border border-border/50">
+                                    <p className="text-xs text-zinc-600 mt-2 whitespace-pre-wrap bg-muted/20 rounded-md p-2 border border-border/50">
                                       {c.motivation}
                                     </p>
                                   )}

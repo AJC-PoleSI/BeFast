@@ -94,13 +94,13 @@ export function DynamicFieldsCard({ isOwnProfile = true }: DynamicFieldsCardProp
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-100">
+      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
+        <div className="px-6 py-4 border-b border-zinc-100">
           <h2 className="font-manrope font-bold text-[#00236f] text-base">Champs Personnalisés</h2>
         </div>
         <div className="p-6 space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-10 bg-slate-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-10 bg-zinc-100 rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -112,8 +112,8 @@ export function DynamicFieldsCard({ isOwnProfile = true }: DynamicFieldsCardProp
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+    <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
         <h2 className="font-manrope font-bold text-[#00236f] text-base">Champs Personnalisés</h2>
         {isOwnProfile && !editing && (
           <button
@@ -130,12 +130,12 @@ export function DynamicFieldsCard({ isOwnProfile = true }: DynamicFieldsCardProp
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {fields.map((field) => (
             <div key={field.id}>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">
+              <label className="block text-xs font-medium text-zinc-500 mb-1.5">
                 {field.name}
                 {field.required && <span className="text-red-500 ml-0.5">*</span>}
               </label>
               {field.description && (
-                <p className="text-xs text-slate-400 mb-1">{field.description}</p>
+                <p className="text-xs text-zinc-400 mb-1">{field.description}</p>
               )}
 
               {editing ? (
@@ -144,7 +144,7 @@ export function DynamicFieldsCard({ isOwnProfile = true }: DynamicFieldsCardProp
                     <select
                       value={values[field.id] || ""}
                       onChange={(e) => handleChange(field.id, e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                      className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                     >
                       <option value="">-- Sélectionnez --</option>
                       {field.options?.values?.map((opt) => (
@@ -158,32 +158,32 @@ export function DynamicFieldsCard({ isOwnProfile = true }: DynamicFieldsCardProp
                       type="date"
                       value={values[field.id] || ""}
                       onChange={(e) => handleChange(field.id, e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                      className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                     />
                   ) : field.type === "number" ? (
                     <input
                       type="number"
                       value={values[field.id] || ""}
                       onChange={(e) => handleChange(field.id, e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                      className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                     />
                   ) : (
                     <input
                       type="text"
                       value={values[field.id] || ""}
                       onChange={(e) => handleChange(field.id, e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                      className="w-full h-9 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                     />
                   )}
                 </>
               ) : (
-                <p className="text-sm px-3 py-2 rounded-lg bg-slate-50 min-h-[36px] flex items-center text-slate-700">
+                <p className="text-sm px-3 py-2 rounded-lg bg-zinc-50 min-h-[36px] flex items-center text-zinc-700">
                   {values[field.id] ? (
                     field.type === "date" && values[field.id]
                       ? new Date(values[field.id]).toLocaleDateString("fr-FR")
                       : values[field.id]
                   ) : (
-                    <span className="text-slate-300 italic text-xs">Non renseigné</span>
+                    <span className="text-zinc-300 italic text-xs">Non renseigné</span>
                   )}
                 </p>
               )}
@@ -192,11 +192,11 @@ export function DynamicFieldsCard({ isOwnProfile = true }: DynamicFieldsCardProp
         </div>
 
         {editing && (
-          <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-zinc-100">
             <button
               onClick={handleCancel}
               disabled={saving}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+              className="px-4 py-2 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 transition-colors disabled:opacity-50"
             >
               Annuler
             </button>

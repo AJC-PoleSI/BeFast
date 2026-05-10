@@ -39,7 +39,7 @@ export default function ProfilPage() {
   if (!profile) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-slate-400">Profil introuvable.</p>
+        <p className="text-zinc-400">Profil introuvable.</p>
       </div>
     )
   }
@@ -49,13 +49,13 @@ export default function ProfilPage() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">
+          <p className="text-xs font-medium text-zinc-400 uppercase tracking-widest mb-1">
             Mon espace / Profil
           </p>
           <h1 className="text-2xl font-manrope font-black text-[#00236f]">Tableau de Bord Personnel</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-200 bg-white text-sm font-medium text-zinc-600 hover:bg-zinc-50 transition-colors">
             <span className="material-symbols-outlined text-lg">download</span>
             Exporter Données
           </button>
@@ -93,7 +93,7 @@ export default function ProfilPage() {
         {/* Right column — col-span-4 */}
         <div className="lg:col-span-4 space-y-4">
           {/* Documents card */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
             <DocumentsGrid /></div>
 
           {/* Security banner */}

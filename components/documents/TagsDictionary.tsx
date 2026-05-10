@@ -189,7 +189,7 @@ export function TagsDictionary({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0 flex flex-row items-center justify-between">
+        <DialogHeader className="px-6 py-4 border-b border-zinc-100 flex-shrink-0 flex flex-row items-center justify-between">
           <DialogTitle className="text-xl font-manrope font-bold text-[#00236f] flex items-center gap-2">
             <BookOpen className="w-5 h-5" />
             Dictionnaire des Balises
@@ -204,7 +204,7 @@ export function TagsDictionary({
             <h4 className="font-bold text-[#00236f] mb-3 text-sm uppercase tracking-wide">Ajouter au dictionnaire</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1 block">Catégorie</label>
+                <label className="text-xs font-semibold text-zinc-500 mb-1 block">Catégorie</label>
                 <select 
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors"
                   value={newCat} 
@@ -214,30 +214,30 @@ export function TagsDictionary({
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1 block">Nom balise (ex: intervenant.ville)</label>
+                <label className="text-xs font-semibold text-zinc-500 mb-1 block">Nom balise (ex: intervenant.ville)</label>
                 <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="mission.nouvelle_donnee" className="h-9" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1 block">Description</label>
+                <label className="text-xs font-semibold text-zinc-500 mb-1 block">Description</label>
                 <Input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Ville de l'intervenant" className="h-9" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1 block">Exemple (optionnel)</label>
+                <label className="text-xs font-semibold text-zinc-500 mb-1 block">Exemple (optionnel)</label>
                 <Input value={newExample} onChange={e => setNewExample(e.target.value)} placeholder="Paris" className="h-9" />
               </div>
             </div>
             <Button size="sm" className="bg-[#00236f] hover:bg-[#00236f]/90 text-white" onClick={handleAddTag}>
               Ajouter la balise
             </Button>
-            <p className="text-xs text-slate-500 mt-3">
+            <p className="text-xs text-zinc-500 mt-3">
               💡 <b>Note:</b> Toutes les colonnes de votre base de données sont déjà accessibles. Vous n'avez qu'à ajouter le nom ici pour que vos collaborateurs le voient.
             </p>
           </div>
         )}
 
-        <div className="px-6 py-3 border-b border-slate-100 flex-shrink-0 bg-slate-50/50">
+        <div className="px-6 py-3 border-b border-zinc-100 flex-shrink-0 bg-zinc-50/50">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
             <Input 
               placeholder="Rechercher une balise (ex: intervenant, date...)"
               value={search}
@@ -247,13 +247,13 @@ export function TagsDictionary({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30">
+        <div className="flex-1 overflow-y-auto p-6 bg-zinc-50/30">
           {loading ? (
             <div className="flex items-center justify-center h-32">
               <Loader2 className="w-6 h-6 animate-spin text-[#00236f]" />
             </div>
           ) : filteredDict.length === 0 ? (
-            <div className="text-center py-10 text-slate-400">
+            <div className="text-center py-10 text-zinc-400">
               Aucune balise ne correspond à votre recherche.
             </div>
           ) : (
@@ -262,7 +262,7 @@ export function TagsDictionary({
                 const IconComponent = ICONS[category.iconName] || BookOpen
                 return (
                   <div key={idx} className="space-y-3">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                    <h3 className="font-bold text-zinc-800 flex items-center gap-2">
                       <IconComponent className="w-5 h-5 text-[#00236f]" />
                       {category.category}
                     </h3>
@@ -270,7 +270,7 @@ export function TagsDictionary({
                       {category.tags.map((tag: any) => (
                         <div 
                           key={tag.name} 
-                          className="group flex flex-col bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:border-[#00236f]/30 transition-colors cursor-pointer relative"
+                          className="group flex flex-col bg-white border border-zinc-200 rounded-xl p-3 shadow-sm hover:border-[#00236f]/30 transition-colors cursor-pointer relative"
                           onClick={() => handleCopy(tag.name)}
                         >
                           <button 
@@ -284,12 +284,12 @@ export function TagsDictionary({
                             <code className="text-[13px] font-bold text-[#00236f]">
                               {"{"}{tag.name}{"}"}
                             </code>
-                            <div className="text-slate-400 bg-slate-100 rounded p-1 group-hover:bg-[#00236f]/10 group-hover:text-[#00236f] transition-colors">
+                            <div className="text-zinc-400 bg-zinc-100 rounded p-1 group-hover:bg-[#00236f]/10 group-hover:text-[#00236f] transition-colors">
                               {copied === tag.name ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                             </div>
                           </div>
-                          <p className="text-xs text-slate-500 font-medium">{tag.desc}</p>
-                          <p className="text-[11px] text-slate-400 italic mt-1 truncate">
+                          <p className="text-xs text-zinc-500 font-medium">{tag.desc}</p>
+                          <p className="text-[11px] text-zinc-400 italic mt-1 truncate">
                             Exemple : {tag.example}
                           </p>
                         </div>

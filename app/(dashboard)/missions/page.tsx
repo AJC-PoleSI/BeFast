@@ -74,12 +74,12 @@ export default function MissionsPage() {
 
   if (!isAccessAllowed) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-6 bg-white rounded-2xl border border-zinc-200 shadow-sm">
         <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4 text-amber-600">
           <ShieldAlert className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-manrope font-black text-[#00236f] mb-2">Accès restreint</h2>
-        <p className="text-slate-500 max-w-md mx-auto mb-6">
+        <p className="text-zinc-500 max-w-md mx-auto mb-6">
           Votre compte est en cours de validation par l'administration. 
           L'accès au catalogue des missions sera disponible une fois votre profil validé.
         </p>
@@ -127,24 +127,24 @@ export default function MissionsPage() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">
+          <p className="text-xs font-medium text-zinc-400 uppercase tracking-widest mb-1">
             Mission Catalog
           </p>
           <h1 className="text-2xl font-manrope font-black text-[#00236f]">Missions</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Découvrez et candidatez aux missions disponibles</p>
+          <p className="text-sm text-zinc-500 mt-0.5">Découvrez et candidatez aux missions disponibles</p>
         </div>
       </div>
 
       {/* Search & Filters */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-5">
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Search */}
           <div className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-lg">search</span>
             <input
               type="search"
               placeholder="Rechercher une mission..."
-              className="w-full h-10 pl-9 pr-4 rounded-lg border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 bg-slate-50"
+              className="w-full h-10 pl-9 pr-4 rounded-lg border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 bg-zinc-50"
               value={filters.search || ""}
               onChange={(e) => handleSearch(e.target.value)}
             />
@@ -152,7 +152,7 @@ export default function MissionsPage() {
 
           {/* Type */}
           <select
-            className="h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+            className="h-10 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
             value={filters.type || ""}
             onChange={(e) => handleFilterChange("type", e.target.value || undefined)}
           >
@@ -162,7 +162,7 @@ export default function MissionsPage() {
 
           {/* Voie */}
           <select
-            className="h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+            className="h-10 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
             value={filters.voie || ""}
             onChange={(e) => handleFilterChange("voie", e.target.value || undefined)}
           >
@@ -172,7 +172,7 @@ export default function MissionsPage() {
 
           {/* Classe */}
           <select
-            className="h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+            className="h-10 px-3 rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
             value={filters.classe || ""}
             onChange={(e) => handleFilterChange("classe", e.target.value || undefined)}
           >
@@ -189,7 +189,7 @@ export default function MissionsPage() {
           </button>
           <button
             onClick={resetFilters}
-            className="h-10 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            className="h-10 px-4 rounded-lg border border-zinc-200 bg-white text-sm text-zinc-600 hover:bg-zinc-50 transition-colors"
           >
             Réinitialiser
           </button>
@@ -223,12 +223,12 @@ export default function MissionsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
               {featured && (
                 <Link href={`/missions/${featured.id}`} className="lg:col-span-8">
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#00236f]/30 transition-all p-6 h-full cursor-pointer">
+                  <div className="bg-white rounded-xl border border-zinc-200 shadow-sm hover:shadow-md hover:border-[#00236f]/30 transition-all p-6 h-full cursor-pointer">
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="flex-1">
                         <div className="flex flex-wrap gap-2 mb-3">
                           {featured.type && (
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[featured.type] || "bg-slate-100 text-slate-600"}`}>
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[featured.type] || "bg-zinc-100 text-zinc-600"}`}>
                               {typeLabel(featured.type)}
                             </span>
                           )}
@@ -239,25 +239,25 @@ export default function MissionsPage() {
                           )}
                         </div>
                         <h2 className="text-xl font-manrope font-black text-[#00236f] mb-2">{featured.nom}</h2>
-                        <p className="text-sm text-slate-500 line-clamp-3">{featured.description}</p>
+                        <p className="text-sm text-zinc-500 line-clamp-3">{featured.description}</p>
                       </div>
                       <div className="w-14 h-14 rounded-xl bg-[#d0d8ff] flex items-center justify-center shrink-0">
                         <span className="material-symbols-outlined text-[#00236f] text-2xl">assignment</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6 pt-4 border-t border-slate-100">
+                    <div className="flex items-center gap-6 pt-4 border-t border-zinc-100">
                       {featured.remuneration && (
                         <div>
-                          <p className="text-xs text-slate-400">Budget</p>
+                          <p className="text-xs text-zinc-400">Budget</p>
                           <p className="text-lg font-manrope font-black text-[#00236f]">€{featured.remuneration.toLocaleString()}</p>
                         </div>
                       )}
                       <div>
-                        <p className="text-xs text-slate-400">JEH</p>
+                        <p className="text-xs text-zinc-400">JEH</p>
                         <p className="text-lg font-manrope font-black text-[#00236f]">{featured.nb_jeh}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-400">Postes</p>
+                        <p className="text-xs text-zinc-400">Postes</p>
                         <p className="text-lg font-manrope font-black text-[#00236f]">{featured.nb_intervenants}</p>
                       </div>
                       <div className="ml-auto">
@@ -273,23 +273,23 @@ export default function MissionsPage() {
 
               {secondary && (
                 <Link href={`/missions/${secondary.id}`} className="lg:col-span-4">
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#00236f]/30 transition-all p-5 h-full cursor-pointer flex flex-col">
+                  <div className="bg-white rounded-xl border border-zinc-200 shadow-sm hover:shadow-md hover:border-[#00236f]/30 transition-all p-5 h-full cursor-pointer flex flex-col">
                     <div className="flex-1">
                       <div className="flex flex-wrap gap-2 mb-3">
                         {secondary.type && (
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[secondary.type] || "bg-slate-100 text-slate-600"}`}>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[secondary.type] || "bg-zinc-100 text-zinc-600"}`}>
                             {typeLabel(secondary.type)}
                           </span>
                         )}
                       </div>
                       <h3 className="font-manrope font-bold text-[#00236f] text-base mb-2">{secondary.nom}</h3>
-                      <p className="text-sm text-slate-500 line-clamp-3">{secondary.description}</p>
+                      <p className="text-sm text-zinc-500 line-clamp-3">{secondary.description}</p>
                     </div>
-                    <div className="flex items-center gap-4 pt-4 border-t border-slate-100 mt-4">
+                    <div className="flex items-center gap-4 pt-4 border-t border-zinc-100 mt-4">
                       {secondary.remuneration && (
                         <p className="text-base font-manrope font-black text-[#00236f]">€{secondary.remuneration.toLocaleString()}</p>
                       )}
-                      <p className="text-sm text-slate-500">{secondary.nb_jeh} JEH</p>
+                      <p className="text-sm text-zinc-500">{secondary.nb_jeh} JEH</p>
                     </div>
                   </div>
                 </Link>
@@ -302,24 +302,24 @@ export default function MissionsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {rest.map((mission) => (
                 <Link key={mission.id} href={`/missions/${mission.id}`}>
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#00236f]/30 transition-all p-5 cursor-pointer h-full">
+                  <div className="bg-white rounded-xl border border-zinc-200 shadow-sm hover:shadow-md hover:border-[#00236f]/30 transition-all p-5 cursor-pointer h-full">
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {mission.type && (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[mission.type] || "bg-slate-100 text-slate-600"}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[mission.type] || "bg-zinc-100 text-zinc-600"}`}>
                           {typeLabel(mission.type)}
                         </span>
                       )}
                       {mission.voie && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">{mission.voie}</span>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600">{mission.voie}</span>
                       )}
                     </div>
                     <h3 className="font-manrope font-bold text-[#00236f] text-sm mb-1.5">{mission.nom}</h3>
-                    <p className="text-xs text-slate-500 line-clamp-2 mb-4">{mission.description}</p>
-                    <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
+                    <p className="text-xs text-zinc-500 line-clamp-2 mb-4">{mission.description}</p>
+                    <div className="flex items-center gap-3 pt-3 border-t border-zinc-100">
                       {mission.remuneration && (
                         <p className="text-sm font-bold text-[#00236f]">€{mission.remuneration.toLocaleString()}</p>
                       )}
-                      <p className="text-xs text-slate-400">{mission.nb_jeh} JEH</p>
+                      <p className="text-xs text-zinc-400">{mission.nb_jeh} JEH</p>
                     </div>
                   </div>
                 </Link>
@@ -347,21 +347,21 @@ export default function MissionsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredMissions.slice(5).map((mission) => (
                 <Link key={mission.id} href={`/missions/${mission.id}`}>
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#00236f]/30 transition-all p-5 cursor-pointer h-full">
+                  <div className="bg-white rounded-xl border border-zinc-200 shadow-sm hover:shadow-md hover:border-[#00236f]/30 transition-all p-5 cursor-pointer h-full">
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {mission.type && (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[mission.type] || "bg-slate-100 text-slate-600"}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_COLORS[mission.type] || "bg-zinc-100 text-zinc-600"}`}>
                           {typeLabel(mission.type)}
                         </span>
                       )}
                     </div>
                     <h3 className="font-manrope font-bold text-[#00236f] text-sm mb-1.5">{mission.nom}</h3>
-                    <p className="text-xs text-slate-500 line-clamp-2 mb-4">{mission.description}</p>
-                    <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
+                    <p className="text-xs text-zinc-500 line-clamp-2 mb-4">{mission.description}</p>
+                    <div className="flex items-center gap-3 pt-3 border-t border-zinc-100">
                       {mission.remuneration && (
                         <p className="text-sm font-bold text-[#00236f]">€{mission.remuneration.toLocaleString()}</p>
                       )}
-                      <p className="text-xs text-slate-400">{mission.nb_jeh} JEH</p>
+                      <p className="text-xs text-zinc-400">{mission.nb_jeh} JEH</p>
                     </div>
                   </div>
                 </Link>

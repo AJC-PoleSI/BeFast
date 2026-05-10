@@ -53,7 +53,7 @@ function KpiCard({
 
   return (
     <div
-      className="group bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 transition-all duration-500 hover:shadow-lg hover:shadow-slate-200/50 hover:-translate-y-1 hover:border-slate-300/80 cursor-default"
+      className="group bg-white rounded-2xl border border-zinc-200/80 shadow-sm p-5 transition-all duration-500 hover:shadow-lg hover:shadow-zinc-200/50 hover:-translate-y-1 hover:border-zinc-300/80 cursor-default"
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(24px)",
@@ -66,7 +66,7 @@ function KpiCard({
         >
           <Icon className="w-5 h-5" />
         </div>
-        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-500 transition-colors">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 group-hover:text-zinc-500 transition-colors">
           {title}
         </p>
       </div>
@@ -133,7 +133,7 @@ export default function AdminStatsDashboard() {
     return (
       <div className="p-8 flex flex-col items-center justify-center h-64 gap-3">
         <Loader2 className="w-7 h-7 animate-spin text-[#00236f]" />
-        <p className="text-sm text-slate-400 font-medium animate-pulse">Chargement des statistiques…</p>
+        <p className="text-sm text-zinc-400 font-medium animate-pulse">Chargement des statistiques…</p>
       </div>
     )
   }
@@ -179,7 +179,7 @@ export default function AdminStatsDashboard() {
         </div>
         <div>
           <h1 className="text-2xl font-manrope font-black text-[#00236f]">Statistiques</h1>
-          <p className="text-slate-500 text-sm">Vue d&apos;ensemble de l&apos;activité et de la trésorerie.</p>
+          <p className="text-zinc-500 text-sm">Vue d&apos;ensemble de l&apos;activité et de la trésorerie.</p>
         </div>
       </div>
 
@@ -202,7 +202,7 @@ export default function AdminStatsDashboard() {
 
       {/* Études par type */}
       <div
-        className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6"
+        className="bg-white rounded-2xl border border-zinc-200/80 shadow-sm p-6"
         style={{
           opacity: visible ? 1 : 0,
           transform: visible ? "translateY(0)" : "translateY(16px)",

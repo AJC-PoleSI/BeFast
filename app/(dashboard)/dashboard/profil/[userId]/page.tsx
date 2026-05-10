@@ -172,7 +172,7 @@ export default function AdminProfilePage() {
 
                 <div className="flex flex-col items-end gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-slate-500">Statut du compte :</span>
+                    <span className="text-xs font-medium text-zinc-500">Statut du compte :</span>
                     {profile.account_status === "validated" ? (
                       <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200">
                         Validé
