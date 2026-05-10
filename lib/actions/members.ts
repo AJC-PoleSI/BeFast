@@ -136,6 +136,11 @@ export async function createRole(nom: string, slug: string) {
       dashboard: false, profil: false, missions: false, etudes: false,
       prospection: false, statistiques: false, administration: false,
       membres: false, documents: false, nouvelle_mission: false,
+      selectionner_candidats: false, valider_comptes: false,
+      voir_documents_membres: false, voir_factures: false,
+      valider_bv: false, assigner_intervenants: false,
+      parametres_structure: false, gerer_parametres: false,
+      publier_etudes: false, publier_missions: false,
     }
 
     const { data, error } = await admin
