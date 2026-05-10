@@ -42,35 +42,18 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  // Parallelize DB queries — personnes + pole_permissions at the same time
-  const [{ data: personne }, { data: poleParam }] = await Promise.all([
-    supabase
-      .from("personnes")
-      .select("*, profils_types(*)")
-      .eq("id", user.id)
-      .single(),
-    supabase
-      .from("parametres")
-      .select("value")
-      .eq("key", "pole_permissions")
-      .maybeSingle(),
-  ])
+  const { data: personne } = await supabase
+    .from("personnes")
+    .select("*, profils_types(*)")
+    .eq("id", user.id)
+    .single()
 
   const profile = personne as PersonneWithRole | null
   const rolePerms = profile?.profils_types?.permissions ?? null
   const isAdmin = profile?.profils_types?.slug === "administrateur"
 
-  let polePerms: Partial<Permissions> = {}
-  const pole = (personne as any)?.pole as string | null
-  if (pole && poleParam?.value) {
-    try {
-      const map = JSON.parse(poleParam.value) as Record<string, Partial<Permissions>>
-      polePerms = map[pole] ?? {}
-    } catch {}
-  }
-
   let permissions = rolePerms
-    ? ({ ...emptyPermissions, ...rolePerms, ...polePerms } as Permissions)
+    ? ({ ...emptyPermissions, ...rolePerms } as Permissions)
     : null
 
   // Restreindre les accès si le compte n'est pas validé
