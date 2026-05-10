@@ -435,91 +435,80 @@ export async function buildTemplateContext(
   }
 
   if (scope === "mission") {
+    console.log("[DOC-GEN-V2] ===== MISSION SCOPE (V2 — independent queries) =====")
+    console.log("[DOC-GEN-V2] missionId:", entityId, "intervenantId:", intervenantId)
+
+    // Step 1: Fetch mission alone (no joins — most reliable)
     const [{ data: m, error: mErr }, params] = await Promise.all([
-      sb
-        .from("missions")
-        .select(
-          "*, intervenant:personnes!missions_intervenant_id_fkey(id, prenom, nom, email), etudes(*, client:clients(id, nom, contact_nom, contact_email, contact_phone), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*))"
-        )
-        .eq("id", entityId)
-        .single(),
+      sb.from("missions").select("*").eq("id", entityId).single(),
       paramsPromise,
     ])
-    console.log("[DOC-GEN] ===== MISSION SCOPE DEBUG =====")
-    console.log("[DOC-GEN] Mission fetch error:", mErr?.message || "none")
-    if (mErr) {
-      console.log("[DOC-GEN] Full error object:", JSON.stringify(mErr))
-      console.log("[DOC-GEN] ERROR: Mission query failed, returning base context")
+    console.log("[DOC-GEN-V2] Mission fetch error:", mErr?.message || "none")
+    if (mErr || !m) {
+      console.log("[DOC-GEN-V2] Mission failed:", JSON.stringify(mErr))
       return base
     }
-    console.log("[DOC-GEN] Mission found:", m ? "YES" : "NO")
-    if (m) {
-      console.log("[DOC-GEN] Mission ID:", m.id)
-      console.log("[DOC-GEN] Mission.nom:", m.nom)
-      console.log("[DOC-GEN] Mission.intervenant_id:", m.intervenant_id)
-      console.log("[DOC-GEN] Mission.intervenant exists:", m.intervenant ? "YES" : "NO")
-      if (m.intervenant) {
-        console.log("[DOC-GEN] Mission.intervenant keys:", Object.keys(m.intervenant))
-        console.log("[DOC-GEN] Mission.intervenant.prenom:", m.intervenant.prenom)
-        console.log("[DOC-GEN] Mission.intervenant.nom:", m.intervenant.nom)
-      }
-      console.log("[DOC-GEN] Mission.etude_id:", m.etude_id)
-      console.log("[DOC-GEN] Mission.etudes exists:", m.etudes ? "YES" : "NO")
-      if (m.etudes) {
-        console.log("[DOC-GEN] Mission.etudes keys:", Object.keys(m.etudes))
-        console.log("[DOC-GEN] Mission.etudes.numero:", m.etudes.numero)
-        console.log("[DOC-GEN] Mission.etudes.client exists:", m.etudes.client ? "YES" : "NO")
-      }
-    }
-    if (!m) {
-      console.log("[DOC-GEN] ERROR: No mission data returned")
-      return base
-    }
-    
-    const etude = (m as any).etudes ?? {}
-    const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(etude.echeancier_blocs)
-    
+    console.log("[DOC-GEN-V2] Mission OK:", m.nom, "etude_id:", m.etude_id, "intervenant_id:", m.intervenant_id)
+
+    // Step 2: Fetch related data IN PARALLEL via separate queries
+    const [etudeRes, intervenantRes, blocsRes] = await Promise.all([
+      // Etude (if mission has etude_id)
+      m.etude_id
+        ? sb.from("etudes").select("*").eq("id", m.etude_id).single()
+        : Promise.resolve({ data: null, error: null }),
+      // Intervenant: use explicit ID if provided, else mission.intervenant_id
+      (intervenantId || m.intervenant_id)
+        ? sb.from("personnes").select("*").eq("id", intervenantId || m.intervenant_id).single()
+        : Promise.resolve({ data: null, error: null }),
+      // Phases (echeancier_blocs) — only if mission has etude_id
+      m.etude_id
+        ? sb.from("echeancier_blocs").select("*").eq("etude_id", m.etude_id)
+        : Promise.resolve({ data: [], error: null }),
+    ])
+
+    const etude: any = (etudeRes as any).data || {}
+    const selectedIntervenant: any = (intervenantRes as any).data
+    const blocs: any[] = (blocsRes as any).data || []
+
+    console.log("[DOC-GEN-V2] Etude:", etude?.numero || "(empty)", "err:", (etudeRes as any).error?.message || "")
+    console.log("[DOC-GEN-V2] Intervenant:", selectedIntervenant ? `${selectedIntervenant.prenom} ${selectedIntervenant.nom}` : "(none)", "err:", (intervenantRes as any).error?.message || "")
+    console.log("[DOC-GEN-V2] Blocs count:", blocs.length)
+
+    // Step 3: Fetch client and suiveur for the etude (in parallel)
+    const [clientRes, suiveurRes] = await Promise.all([
+      etude.client_id
+        ? sb.from("clients").select("*").eq("id", etude.client_id).single()
+        : Promise.resolve({ data: null, error: null }),
+      etude.suiveur_id
+        ? sb.from("personnes").select("id, prenom, nom, email").eq("id", etude.suiveur_id).single()
+        : Promise.resolve({ data: null, error: null }),
+    ])
+
+    const clientData: any = (clientRes as any).data || {}
+    const suiveur: any = (suiveurRes as any).data || {}
+    console.log("[DOC-GEN-V2] Client:", clientData?.nom || "(empty)", "err:", (clientRes as any).error?.message || "")
+    console.log("[DOC-GEN-V2] Suiveur:", suiveur?.nom || "(empty)", "err:", (suiveurRes as any).error?.message || "")
+
+    const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(blocs)
+
     const budget_ht = Number(etude.budget_ht) || 0
     const frais = Number(etude.frais_dossier) || 0
     const margePct = Number(etude.marge_pct) || 0
     const tarif = budget_ht + frais + budget_ht * (margePct / 100)
 
-    // Resolve the intervenant: use explicit intervenantId if provided, else mission's intervenant
-    let selectedIntervenant = (m as any).intervenant ?? null
-    console.log("[DOC-GEN] intervenantId from request:", intervenantId)
-    console.log("[DOC-GEN] mission.intervenant_id:", m.intervenant_id)
-    console.log("[DOC-GEN] mission.intervenant (joined):", selectedIntervenant ? "found" : "null")
-
-    if (intervenantId) {
-      const { data: p, error: pErr } = await sb.from("personnes").select("*").eq("id", intervenantId).single()
-      console.log("[DOC-GEN] fetched intervenant by ID:", p ? `${p.prenom} ${p.nom}` : "NOT FOUND", pErr?.message || "")
-      if (p) selectedIntervenant = p
-    }
-
-    if (!selectedIntervenant || Object.keys(selectedIntervenant).length === 0) {
-      console.log("[DOC-GEN] WARNING: No intervenant data available!")
-    }
-
     const intervenantCtx = buildIntervenantContext(selectedIntervenant)
-    console.log("[DOC-GEN] intervenantCtx after build:", JSON.stringify(intervenantCtx).slice(0, 300))
+    console.log("[DOC-GEN-V2] intervenantCtx:", JSON.stringify(intervenantCtx).slice(0, 300))
 
     const organigramme = buildOrganigramme(params)
-    console.log("[DOC-GEN] organigramme.president:", JSON.stringify(organigramme.president).slice(0, 200))
+    console.log("[DOC-GEN-V2] organigramme.president:", JSON.stringify(organigramme.president).slice(0, 200))
 
-    // Extract only primitive fields from mission (skip nested Supabase join objects like 'intervenant', 'etudes')
+    // Extract only primitive fields from mission
     const missionPrimitives: Record<string, any> = {}
     for (const [k, v] of Object.entries(m as Record<string, any>)) {
       if (v !== null && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date)) continue
       missionPrimitives[k] = v ?? ""
     }
-
-    console.log("[DOC-GEN] mission primitive keys:", Object.keys(missionPrimitives))
-    console.log("[DOC-GEN] mission.date_debut raw:", m.date_debut, "→ formatted:", fmtDate(m.date_debut))
-    console.log("[DOC-GEN] mission.date_fin raw:", m.date_fin, "→ formatted:", fmtDate(m.date_fin))
-
-    // Extract client: with alias client:clients(*), this is a single object
-    const clientData = etude.client || {}
-    console.log("[DOC-GEN] clientData:", JSON.stringify(clientData).slice(0, 200))
+    console.log("[DOC-GEN-V2] mission primitive keys:", Object.keys(missionPrimitives))
 
     return {
       ...base,
@@ -554,8 +543,8 @@ export async function buildTemplateContext(
       date_fin: fmtDate(etude.date_fin),
       // Client (extract first from array if needed)
       client: clientData,
-      // Suiveur
-      suiveur: etude.suiveur ?? {},
+      // Suiveur (fetched independently)
+      suiveur,
       // Intervenant (accessible via {intervenant.prenom})
       intervenant: intervenantCtx,
       // Étudiant = alias pour intervenant ({etudiant.*}, {étudiant.*} avec accent, {etudiant_*})
@@ -577,30 +566,52 @@ export async function buildTemplateContext(
   }
 
   if (scope === "etude") {
-    const [{ data: e }, params] = await Promise.all([
-      sb
-        .from("etudes")
-        .select(
-          "*, client:clients(id, nom, contact_nom, contact_email, contact_phone), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), echeancier_blocs(*)"
-        )
-        .eq("id", entityId)
-        .single(),
+    console.log("[DOC-GEN-V2] ===== ETUDE SCOPE (V2 — independent queries) =====")
+    console.log("[DOC-GEN-V2] etudeId:", entityId, "intervenantId:", intervenantId)
+
+    // Step 1: Fetch etude alone (no joins)
+    const [{ data: e, error: eErr }, params] = await Promise.all([
+      sb.from("etudes").select("*").eq("id", entityId).single(),
       paramsPromise,
     ])
-    if (!e) return base
-    const budget_ht = Number((e as any).budget_ht) || 0
-    const frais = Number((e as any).frais_dossier) || 0
-    const margePct = Number((e as any).marge_pct) || 0
+    if (eErr || !e) {
+      console.log("[DOC-GEN-V2] Etude failed:", JSON.stringify(eErr))
+      return base
+    }
+    const eAny = e as any
+    console.log("[DOC-GEN-V2] Etude OK:", eAny.numero, "client_id:", eAny.client_id, "suiveur_id:", eAny.suiveur_id)
+
+    // Step 2: Fetch client, suiveur, blocs, intervenant in PARALLEL
+    const [clientRes, suiveurRes, blocsRes, intervenantRes] = await Promise.all([
+      eAny.client_id
+        ? sb.from("clients").select("*").eq("id", eAny.client_id).single()
+        : Promise.resolve({ data: null, error: null }),
+      eAny.suiveur_id
+        ? sb.from("personnes").select("id, prenom, nom, email").eq("id", eAny.suiveur_id).single()
+        : Promise.resolve({ data: null, error: null }),
+      sb.from("echeancier_blocs").select("*").eq("etude_id", entityId),
+      intervenantId
+        ? sb.from("personnes").select("*").eq("id", intervenantId).single()
+        : Promise.resolve({ data: null, error: null }),
+    ])
+
+    const clientData: any = (clientRes as any).data || {}
+    const suiveur: any = (suiveurRes as any).data || {}
+    const blocs: any[] = (blocsRes as any).data || []
+    const selectedIntervenant: any = (intervenantRes as any).data
+    console.log("[DOC-GEN-V2] Client:", clientData?.nom || "(empty)", "err:", (clientRes as any).error?.message || "")
+    console.log("[DOC-GEN-V2] Suiveur:", suiveur?.nom || "(empty)", "err:", (suiveurRes as any).error?.message || "")
+    console.log("[DOC-GEN-V2] Blocs count:", blocs.length)
+    console.log("[DOC-GEN-V2] Intervenant (étude scope):", selectedIntervenant ? `${selectedIntervenant.prenom} ${selectedIntervenant.nom}` : "(none)")
+
+    const budget_ht = Number(eAny.budget_ht) || 0
+    const frais = Number(eAny.frais_dossier) || 0
+    const margePct = Number(eAny.marge_pct) || 0
     const tarif = budget_ht + frais + budget_ht * (margePct / 100)
 
-    const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext((e as any).echeancier_blocs)
+    const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(blocs)
     const organigramme = buildOrganigramme(params)
-
-    const eAny = e as any
-
-    // Extract client: with alias client:clients(*), this is a single object
-    const clientData = eAny.client || {}
-    console.log("[DOC-GEN] (étude scope) clientData:", JSON.stringify(clientData).slice(0, 200))
+    const intervenantCtx = buildIntervenantContext(selectedIntervenant)
 
     return {
       ...base,
@@ -621,7 +632,15 @@ export async function buildTemplateContext(
       date_debut: fmtDate(eAny.date_debut),
       date_fin: fmtDate(eAny.date_fin),
       client: clientData,
-      suiveur: eAny.suiveur ?? {},
+      suiveur,
+      intervenant: intervenantCtx,
+      etudiant: intervenantCtx,
+      "étudiant": intervenantCtx,
+      etudiant_prenom: intervenantCtx.prenom,
+      etudiant_nom: intervenantCtx.nom,
+      etudiant_adresse: intervenantCtx.adresse,
+      etudiant_code_postal: intervenantCtx.code_postal,
+      etudiant_ville: intervenantCtx.ville,
       ...organigramme,
       phases,
       planning,
