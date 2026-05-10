@@ -412,18 +412,25 @@ export async function buildTemplateContext(
   // Build étudiant/intervenant context from a personne record.
   // Only extract primitive fields — skip nested Supabase join objects.
   function buildIntervenantContext(person: any) {
+    console.log("[DOC-GEN] buildIntervenantContext input:", person ? "object" : "null/undefined")
     if (!person) {
-      console.log("[DOC-GEN] buildIntervenantContext: person is null/undefined")
+      console.log("[DOC-GEN] buildIntervenantContext: person is null/undefined, returning empty object")
       return {}
     }
+    if (Object.keys(person).length === 0) {
+      console.log("[DOC-GEN] buildIntervenantContext: person is empty object")
+      return {}
+    }
+    console.log("[DOC-GEN] buildIntervenantContext input keys:", Object.keys(person))
     const ctx: Record<string, any> = {}
     for (const [k, v] of Object.entries(person)) {
       if (v !== null && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date)) continue
       ctx[k] = v ?? ""
     }
-    console.log("[DOC-GEN] buildIntervenantContext keys:", Object.keys(ctx))
-    console.log("[DOC-GEN] buildIntervenantContext prenom:", ctx.prenom)
-    console.log("[DOC-GEN] buildIntervenantContext nom:", ctx.nom)
+    console.log("[DOC-GEN] buildIntervenantContext output keys:", Object.keys(ctx))
+    console.log("[DOC-GEN] buildIntervenantContext prenom:", ctx.prenom || "(empty)")
+    console.log("[DOC-GEN] buildIntervenantContext nom:", ctx.nom || "(empty)")
+    console.log("[DOC-GEN] buildIntervenantContext output:", JSON.stringify(ctx).slice(0, 200))
     return ctx
   }
 
@@ -438,17 +445,36 @@ export async function buildTemplateContext(
         .single(),
       paramsPromise,
     ])
+    console.log("[DOC-GEN] ===== MISSION SCOPE DEBUG =====")
     console.log("[DOC-GEN] Mission fetch error:", mErr?.message || "none")
-    if (mErr) console.log("[DOC-GEN] Full error object:", JSON.stringify(mErr))
-    console.log("[DOC-GEN] Raw mission object:", JSON.stringify(m || null).slice(0, 1000))
-    console.log("[DOC-GEN] Mission data keys:", m ? Object.keys(m) : "null")
-    console.log("[DOC-GEN] Mission.intervenant_id:", m?.intervenant_id)
-    console.log("[DOC-GEN] Mission.intervenant:", m?.intervenant ? JSON.stringify(m.intervenant).slice(0, 200) : "null")
-    console.log("[DOC-GEN] Mission.etude_id:", m?.etude_id)
-    console.log("[DOC-GEN] Mission.etudes:", m?.etudes ? JSON.stringify(m.etudes).slice(0, 300) : "null")
-    console.log("[DOC-GEN] Mission.date_debut:", m?.date_debut)
-    console.log("[DOC-GEN] Mission.nom:", m?.nom)
-    if (!m) return base
+    if (mErr) {
+      console.log("[DOC-GEN] Full error object:", JSON.stringify(mErr))
+      console.log("[DOC-GEN] ERROR: Mission query failed, returning base context")
+      return base
+    }
+    console.log("[DOC-GEN] Mission found:", m ? "YES" : "NO")
+    if (m) {
+      console.log("[DOC-GEN] Mission ID:", m.id)
+      console.log("[DOC-GEN] Mission.nom:", m.nom)
+      console.log("[DOC-GEN] Mission.intervenant_id:", m.intervenant_id)
+      console.log("[DOC-GEN] Mission.intervenant exists:", m.intervenant ? "YES" : "NO")
+      if (m.intervenant) {
+        console.log("[DOC-GEN] Mission.intervenant keys:", Object.keys(m.intervenant))
+        console.log("[DOC-GEN] Mission.intervenant.prenom:", m.intervenant.prenom)
+        console.log("[DOC-GEN] Mission.intervenant.nom:", m.intervenant.nom)
+      }
+      console.log("[DOC-GEN] Mission.etude_id:", m.etude_id)
+      console.log("[DOC-GEN] Mission.etudes exists:", m.etudes ? "YES" : "NO")
+      if (m.etudes) {
+        console.log("[DOC-GEN] Mission.etudes keys:", Object.keys(m.etudes))
+        console.log("[DOC-GEN] Mission.etudes.numero:", m.etudes.numero)
+        console.log("[DOC-GEN] Mission.etudes.client exists:", m.etudes.client ? "YES" : "NO")
+      }
+    }
+    if (!m) {
+      console.log("[DOC-GEN] ERROR: No mission data returned")
+      return base
+    }
     
     const etude = (m as any).etudes ?? {}
     const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(etude.echeancier_blocs)
@@ -475,7 +501,10 @@ export async function buildTemplateContext(
     }
 
     const intervenantCtx = buildIntervenantContext(selectedIntervenant)
+    console.log("[DOC-GEN] intervenantCtx after build:", JSON.stringify(intervenantCtx).slice(0, 300))
+
     const organigramme = buildOrganigramme(params)
+    console.log("[DOC-GEN] organigramme.president:", JSON.stringify(organigramme.president).slice(0, 200))
 
     // Extract only primitive fields from mission (skip nested Supabase join objects like 'intervenant', 'etudes')
     const missionPrimitives: Record<string, any> = {}
