@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useReducer } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -25,21 +25,59 @@ import {
 } from "@/components/ui/dialog"
 import { DocumentViewer } from "@/components/documents/DocumentViewer"
 
+type FormState = {
+  selectedTemplateId: string
+  selectedMissionId: string
+  selectedIntervenantId: string
+  showGenerateModal: boolean
+  intervenants: any[]
+}
+
+type FormAction =
+  | { type: "SET_TEMPLATE"; payload: string }
+  | { type: "SET_MISSION"; payload: string }
+  | { type: "SET_INTERVENANT"; payload: string }
+  | { type: "SET_INTERVENANTS"; payload: any[] }
+  | { type: "TOGGLE_MODAL"; payload: boolean }
+  | { type: "RESET_FORM" }
+
+const initialFormState: FormState = {
+  selectedTemplateId: "",
+  selectedMissionId: "",
+  selectedIntervenantId: "",
+  showGenerateModal: false,
+  intervenants: [],
+}
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_TEMPLATE":
+      return { ...state, selectedTemplateId: action.payload }
+    case "SET_MISSION":
+      return { ...state, selectedMissionId: action.payload, selectedIntervenantId: "" }
+    case "SET_INTERVENANT":
+      return { ...state, selectedIntervenantId: action.payload }
+    case "SET_INTERVENANTS":
+      return { ...state, intervenants: action.payload }
+    case "TOGGLE_MODAL":
+      return { ...state, showGenerateModal: action.payload }
+    case "RESET_FORM":
+      return { ...initialFormState, intervenants: state.intervenants }
+    default:
+      return state
+  }
+}
+
 export default function EtudeDocumentsPage() {
   const params = useParams()
   const etudeId = params.etudeId as string
 
+  const [formState, dispatch] = useReducer(formReducer, initialFormState)
   const [templates, setTemplates] = useState<any[]>([])
   const [docs, setDocs] = useState<any[]>([])
   const [missions, setMissions] = useState<any[]>([])
-  const [intervenants, setIntervenants] = useState<any[]>([])
   const [generating, setGenerating] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
-  const [selectedMissionId, setSelectedMissionId] = useState<string>("")
-  const [selectedIntervenantId, setSelectedIntervenantId] = useState<string>("")
-  const [showGenerateModal, setShowGenerateModal] = useState(false)
-
   const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null)
 
   const refresh = useCallback(async () => {
@@ -55,39 +93,41 @@ export default function EtudeDocumentsPage() {
     setLoading(false)
   }, [etudeId])
 
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => {
+    refresh()
+  }, [refresh])
 
   // When mission changes, load its intervenants
   useEffect(() => {
-    setSelectedIntervenantId("")
-    setIntervenants([])
-    if (!selectedMissionId) return
-    listMissionIntervenants(selectedMissionId).then((res) => {
+    dispatch({ type: "SET_INTERVENANT", payload: "" })
+    dispatch({ type: "SET_INTERVENANTS", payload: [] })
+    if (!formState.selectedMissionId) return
+    listMissionIntervenants(formState.selectedMissionId).then((res) => {
       const list = (res as any).data || []
-      setIntervenants(list)
-      if (list.length === 1) setSelectedIntervenantId(list[0].id)
+      dispatch({ type: "SET_INTERVENANTS", payload: list })
+      if (list.length === 1) dispatch({ type: "SET_INTERVENANT", payload: list[0].id })
     })
-  }, [selectedMissionId])
+  }, [formState.selectedMissionId])
 
   const handleGenerate = async () => {
-    if (!selectedTemplateId) {
+    if (!formState.selectedTemplateId) {
       toast.error("Sélectionnez un modèle")
       return
     }
     setGenerating(true)
 
     // If a mission is selected, use mission scope to get all mission/intervenant data
-    const scope = selectedMissionId ? "mission" : "etude"
-    const entityId = selectedMissionId || etudeId
+    const scope = formState.selectedMissionId ? "mission" : "etude"
+    const entityId = formState.selectedMissionId || etudeId
 
     const res = await fetch("/api/documents/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        template_id: selectedTemplateId,
+        template_id: formState.selectedTemplateId,
         scope,
         entity_id: entityId,
-        intervenant_id: selectedIntervenantId || undefined,
+        intervenant_id: formState.selectedIntervenantId || undefined,
       }),
     })
     const json = await res.json()
@@ -95,10 +135,7 @@ export default function EtudeDocumentsPage() {
     else {
       toast.success("Document généré")
       window.open(`/api/documents/${json.data.id}/download`, "_blank")
-      setShowGenerateModal(false)
-      setSelectedTemplateId("")
-      setSelectedMissionId("")
-      setSelectedIntervenantId("")
+      dispatch({ type: "RESET_FORM" })
       refresh()
     }
     setGenerating(false)
@@ -131,7 +168,7 @@ export default function EtudeDocumentsPage() {
             <Sparkles className="h-4 w-4 text-gold" /> Générer un document
           </h2>
           <Button
-            onClick={() => setShowGenerateModal(true)}
+            onClick={() => dispatch({ type: "TOGGLE_MODAL", payload: true })}
             size="sm"
             className="bg-[#00236f] text-white hover:bg-[#1e3a8a]"
             disabled={loading}
@@ -199,9 +236,9 @@ export default function EtudeDocumentsPage() {
         )}
       </div>
 
-      <Dialog open={showGenerateModal} onOpenChange={(o) => !o && setShowGenerateModal(false)}>
+      <Dialog open={formState.showGenerateModal} onOpenChange={(o) => !o && dispatch({ type: "TOGGLE_MODAL", payload: false })}>
         <DialogContent>
-          <DialogClose onClose={() => setShowGenerateModal(false)} />
+          <DialogClose onClose={() => dispatch({ type: "TOGGLE_MODAL", payload: false })} />
           <DialogHeader>
             <DialogTitle>Générer un document</DialogTitle>
             <DialogDescription>
@@ -214,8 +251,8 @@ export default function EtudeDocumentsPage() {
               <Label>Modèle de document *</Label>
               <select
                 className="w-full h-10 px-3 rounded-md border border-input text-sm bg-white"
-                value={selectedTemplateId}
-                onChange={(e) => setSelectedTemplateId(e.target.value)}
+                value={formState.selectedTemplateId}
+                onChange={(e) => dispatch({ type: "SET_TEMPLATE", payload: e.target.value })}
               >
                 <option value="">-- Sélectionnez un modèle --</option>
                 {templates.map((t) => (
@@ -231,8 +268,8 @@ export default function EtudeDocumentsPage() {
               {missions.length > 0 ? (
                 <select
                   className="w-full h-10 px-3 rounded-md border border-input text-sm bg-white"
-                  value={selectedMissionId}
-                  onChange={(e) => setSelectedMissionId(e.target.value)}
+                  value={formState.selectedMissionId}
+                  onChange={(e) => dispatch({ type: "SET_MISSION", payload: e.target.value })}
                 >
                   <option value="">-- Aucune (document d&apos;étude uniquement) --</option>
                   {missions.map((m) => (
@@ -244,17 +281,17 @@ export default function EtudeDocumentsPage() {
               )}
             </div>
 
-            {selectedMissionId && (
+            {formState.selectedMissionId && (
               <div className="space-y-2">
                 <Label>Intervenant</Label>
-                {intervenants.length > 0 ? (
+                {formState.intervenants.length > 0 ? (
                   <select
                     className="w-full h-10 px-3 rounded-md border border-input text-sm bg-white"
-                    value={selectedIntervenantId}
-                    onChange={(e) => setSelectedIntervenantId(e.target.value)}
+                    value={formState.selectedIntervenantId}
+                    onChange={(e) => dispatch({ type: "SET_INTERVENANT", payload: e.target.value })}
                   >
                     <option value="">-- Aucun --</option>
-                    {intervenants.map((p) => (
+                    {formState.intervenants.map((p) => (
                       <option key={p.id} value={p.id}>{p.prenom} {p.nom}</option>
                     ))}
                   </select>
@@ -265,17 +302,17 @@ export default function EtudeDocumentsPage() {
             )}
 
             <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-500">
-              {selectedMissionId
+              {formState.selectedMissionId
                 ? "Le document sera généré avec les données de la mission, de l'étude, du client et de l'intervenant sélectionné."
                 : "Le document sera généré avec les données de l'étude, du client et du suiveur."}
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowGenerateModal(false)}>Annuler</Button>
+            <Button variant="ghost" onClick={() => dispatch({ type: "TOGGLE_MODAL", payload: false })}>Annuler</Button>
             <Button
               onClick={handleGenerate}
-              disabled={generating || !selectedTemplateId}
+              disabled={generating || !formState.selectedTemplateId}
               className="bg-[#00236f] text-white hover:bg-[#1e3a8a]"
             >
               {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
