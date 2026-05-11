@@ -63,6 +63,10 @@ export default function EtudesPage() {
       const [etudesResult, clientsResult, membresResult] = await Promise.all([
         getEtudes(), getClients(), getMembers()
       ])
+      console.log("[EtudesPage] getEtudes result:", JSON.stringify(etudesResult))
+      if ((etudesResult as any).error) {
+        console.error("[EtudesPage] getEtudes ERROR:", (etudesResult as any).error)
+      }
       if ((etudesResult as any).data) setEtudes((etudesResult as any).data)
       if ((clientsResult as any).data) setClients((clientsResult as any).data as Client[])
       if ((membresResult as any).data) setMembres((membresResult as any).data)

@@ -97,7 +97,7 @@ export async function getEtudes(filters?: { statut?: string }) {
   let query = supabase
     .from("etudes")
     .select(
-      "id, nom, numero, statut, type, budget, budget_ht, frais_dossier, marge_pct, commentaire, client_id, suiveur_id, published, created_at, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)"
+      "*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)"
     )
     .order("created_at", { ascending: false })
   if (filters?.statut) query = query.eq("statut", filters.statut)
