@@ -2,81 +2,57 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { revalidatePath, revalidateTag, unstable_cache } from "next/cache"
+import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noStore } from "next/cache"
 import { MISSIONS_TAG, MISSION_DETAIL_TAG, CANDIDATURES_TAG } from "@/lib/cache-tags"
 
-// Cached list — only the published missions (visible to all auth users).
-// Same data for everyone, so a global cache key is safe.
-const _getMissionsCached = unstable_cache(
-  async () => {
-    const sb = createAdminClient()
-    const { data, error } = await sb
-      .from("missions")
-      .select("id, nom, description, type, voie, classe, statut, nb_jeh, nb_intervenants, remuneration, etude_id, created_at, etudes(id, nom, numero, published)")
-      .neq("type", "chef_projet")
-      .order("created_at", { ascending: false })
-    if (error) return { error: error.message }
-    const filtered = (data ?? []).filter((m: any) => m.etudes?.published === true)
-    return { data: filtered }
-  },
-  [MISSIONS_TAG],
-  { tags: [MISSIONS_TAG], revalidate: 120 } // 2 minutes
-)
-
+// Liste des missions — PAS de cache. Les utilisateurs créent/modifient
+// fréquemment leurs missions et doivent toujours voir leur travail.
 export async function getMissions(filters?: {
   type?: string
   voie?: string
   classe?: string
   statut?: string
 }) {
+  noStore()
   const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
-  // Use cached list (shared across users) then filter in memory.
-  // Filters are simple equality checks — way faster than re-querying.
-  const result = await _getMissionsCached()
-  if ((result as any).error) return result
-  let data = (result as any).data as any[]
+  let query = supabase
+    .from("missions")
+    .select("id, nom, description, type, voie, classe, statut, nb_jeh, nb_intervenants, remuneration, etude_id, created_at, etudes(id, nom, numero, published)")
+    .neq("type", "chef_projet")
+    .order("created_at", { ascending: false })
 
-  if (filters?.type && filters.type !== "chef_projet") {
-    data = data.filter((m) => m.type === filters.type)
-  }
-  if (filters?.voie) data = data.filter((m) => m.voie === filters.voie)
-  if (filters?.classe) data = data.filter((m) => m.classe === filters.classe)
-  if (filters?.statut) data = data.filter((m) => m.statut === filters.statut)
+  if (filters?.type && filters.type !== "chef_projet") query = query.eq("type", filters.type)
+  if (filters?.voie) query = query.eq("voie", filters.voie)
+  if (filters?.classe) query = query.eq("classe", filters.classe)
+  if (filters?.statut) query = query.eq("statut", filters.statut)
 
-  return { data }
+  const { data, error } = await query
+  if (error) return { error: error.message }
+  const filtered = (data ?? []).filter((m: any) => m.etudes?.published === true)
+  return { data: filtered }
 }
 
-// Detail query cache — keyed by mission ID with 5min TTL.
-// Same data for all auth users; gets invalidated on mutation.
-const _getMissionCached = (id: string) =>
-  unstable_cache(
-    async (mid: string) => {
-      const sb = createAdminClient()
-      const { data, error } = await sb
-        .from("missions")
-        .select("*, etudes(id, nom, numero)")
-        .eq("id", mid)
-        .single()
-      if (error) return { error: error.message }
-      return { data }
-    },
-    [`mission-detail`, id],
-    { tags: [MISSION_DETAIL_TAG(id)], revalidate: 300 }
-  )(id)
-
+// Détail d'une mission — PAS de cache pour garantir la fraîcheur après modification.
 export async function getMission(id: string) {
+  noStore()
   const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
-  return _getMissionCached(id)
+  const { data, error } = await supabase
+    .from("missions")
+    .select("*, etudes(id, nom, numero)")
+    .eq("id", id)
+    .single()
+  if (error) return { error: error.message }
+  return { data }
 }
 
 export async function createMission(formData: {
@@ -197,31 +173,23 @@ export async function candidaterMission(formData: {
   return { data }
 }
 
-// Cached per-user candidatures (3min TTL).
-// Invalidated on candidature changes via revalidateTag.
-const _getMesCandidaturesCached = (userId: string) =>
-  unstable_cache(
-    async (uid: string) => {
-      const sb = createAdminClient()
-      const { data, error } = await sb
-        .from("candidatures")
-        .select("*, missions(id, nom, statut)")
-        .eq("personne_id", uid)
-        .order("created_at", { ascending: false })
-      if (error) return { error: error.message }
-      return { data }
-    },
-    [`candidatures`, userId],
-    { tags: [CANDIDATURES_TAG(userId)], revalidate: 180 }
-  )(userId)
-
+// PAS de cache — les candidatures changent fréquemment et l'utilisateur
+// doit toujours voir leur état réel.
 export async function getMesCandidatures() {
+  noStore()
   const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
-  return _getMesCandidaturesCached(user.id)
+
+  const { data, error } = await supabase
+    .from("candidatures")
+    .select("*, missions(id, nom, statut)")
+    .eq("personne_id", user.id)
+    .order("created_at", { ascending: false })
+  if (error) return { error: error.message }
+  return { data }
 }
 
 export async function getCandidaturesMission(missionId: string) {
