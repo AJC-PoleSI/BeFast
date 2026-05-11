@@ -3,12 +3,13 @@
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noStore } from "next/cache"
-
-// Cache tags — used to invalidate cached queries on mutations
-const CLIENTS_TAG = "clients"
-const MEMBERS_TAG = "members"
-const PARAMETRES_TAG = "parametres"
-const ETUDES_TAG = "etudes"
+import {
+  CLIENTS_TAG,
+  MEMBERS_TAG,
+  PARAMETRES_TAG,
+  ETUDES_TAG,
+  ETUDE_DETAIL_TAG,
+} from "@/lib/cache-tags"
 
 // Cached version of getClients — clients rarely change.
 // Uses admin client (bypasses RLS) so unstable_cache works across requests.
@@ -59,6 +60,24 @@ const _getAllParametresCached = unstable_cache(
   { tags: [PARAMETRES_TAG], revalidate: 1800 }
 )
 
+// Cached list — visible to all auth users (RLS not user-specific).
+// Filters applied in-memory after the cached fetch.
+const _getEtudesCached = unstable_cache(
+  async () => {
+    const sb = createAdminClient()
+    const { data, error } = await sb
+      .from("etudes")
+      .select(
+        "id, nom, numero, statut, type, budget, budget_ht, frais_dossier, marge_pct, commentaire, client_id, suiveur_id, published, created_at, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)"
+      )
+      .order("created_at", { ascending: false })
+    if (error) return { error: error.message }
+    return { data }
+  },
+  [ETUDES_TAG],
+  { tags: [ETUDES_TAG], revalidate: 120 } // 2 min
+)
+
 export async function getEtudes(filters?: { statut?: string }) {
   const supabase = createClient()
   const {
@@ -66,21 +85,31 @@ export async function getEtudes(filters?: { statut?: string }) {
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
-  // Liste optimisée — ne pas tirer toutes les colonnes (perf).
-  // Le détail (getEtude) fait un SELECT complet sur demande.
-  let query = supabase
-    .from("etudes")
-    .select(
-      "id, nom, numero, statut, type, budget, budget_ht, frais_dossier, marge_pct, commentaire, client_id, suiveur_id, published, created_at, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)"
-    )
-    .order("created_at", { ascending: false })
-
-  if (filters?.statut) query = query.eq("statut", filters.statut)
-
-  const { data, error } = await query
-  if (error) return { error: error.message }
+  const result = await _getEtudesCached()
+  if ((result as any).error) return result
+  let data = (result as any).data as any[]
+  if (filters?.statut) data = data.filter((e) => e.statut === filters.statut)
   return { data }
 }
+
+// Cached etude detail — by ID, 5min TTL, invalidated on mutation
+const _getEtudeCached = (id: string) =>
+  unstable_cache(
+    async (eid: string) => {
+      const sb = createAdminClient()
+      const { data, error } = await sb
+        .from("etudes")
+        .select(
+          "*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)"
+        )
+        .eq("id", eid)
+        .single()
+      if (error) return { error: error.message }
+      return { data }
+    },
+    [`etude-detail`, id],
+    { tags: [ETUDE_DETAIL_TAG(id)], revalidate: 300 }
+  )(id)
 
 export async function getEtude(id: string) {
   const supabase = createClient()
@@ -89,16 +118,7 @@ export async function getEtude(id: string) {
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
-  const { data, error } = await supabase
-    .from("etudes")
-    .select(
-      "*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)"
-    )
-    .eq("id", id)
-    .single()
-
-  if (error) return { error: error.message }
-  return { data }
+  return _getEtudeCached(id)
 }
 
 export async function createEtude(formData: {
@@ -136,6 +156,7 @@ export async function createEtude(formData: {
     }
     return { error: error.message }
   }
+  revalidateTag(ETUDES_TAG)
   revalidatePath("/etudes")
   return { data }
 }
@@ -168,6 +189,8 @@ export async function updateEtude(
     .eq("id", id)
 
   if (error) return { error: error.message }
+  revalidateTag(ETUDES_TAG)
+  revalidateTag(ETUDE_DETAIL_TAG(id))
   revalidatePath("/etudes")
   revalidatePath(`/etudes/${id}`)
   return { success: true }
@@ -291,6 +314,8 @@ export async function toggleEtudePublished(id: string, published: boolean) {
 
   const { error } = await supabase.from("etudes").update({ published }).eq("id", id)
   if (error) return { error: error.message }
+  revalidateTag(ETUDES_TAG)
+  revalidateTag(ETUDE_DETAIL_TAG(id))
   revalidatePath("/etudes")
   revalidatePath(`/etudes/${id}`)
   return { success: true }
@@ -318,6 +343,7 @@ export async function deleteEtude(id: string) {
 
   const { error } = await supabase.from("etudes").delete().eq("id", id)
   if (error) return { error: error.message }
+  revalidateTag(ETUDES_TAG)
   revalidatePath("/etudes")
   return { success: true }
 }

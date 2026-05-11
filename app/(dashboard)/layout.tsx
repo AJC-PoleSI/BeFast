@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import type { PersonneWithRole, Permissions } from "@/types/database.types"
 import { DashboardShell } from "./dashboard-shell"
 import { UserProvider } from "@/hooks/useUser"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
 
 const emptyPermissions: Permissions = {
   dashboard: false,
@@ -42,13 +43,9 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  const { data: personne } = await supabase
-    .from("personnes")
-    .select("*, profils_types(*)")
-    .eq("id", user.id)
-    .single()
-
-  const profile = personne as PersonneWithRole | null
+  // Cached profile query — keyed by user.id. After first visit, this is a
+  // ~5ms cache hit (vs ~200ms DB query) for the next 5 minutes.
+  const profile = await getCachedProfile(user.id)
   const rolePerms = profile?.profils_types?.permissions ?? null
   const isAdmin = profile?.profils_types?.slug === "administrateur"
 
