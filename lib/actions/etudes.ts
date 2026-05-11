@@ -2,8 +2,62 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { revalidatePath } from "next/cache"
-import { unstable_noStore as noStore } from "next/cache"
+import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noStore } from "next/cache"
+
+// Cache tags — used to invalidate cached queries on mutations
+const CLIENTS_TAG = "clients"
+const MEMBERS_TAG = "members"
+const PARAMETRES_TAG = "parametres"
+const ETUDES_TAG = "etudes"
+
+// Cached version of getClients — clients rarely change.
+// Uses admin client (bypasses RLS) so unstable_cache works across requests.
+const _getClientsCached = unstable_cache(
+  async () => {
+    const sb = createAdminClient()
+    const { data, error } = await sb
+      .from("clients")
+      .select("id, nom, type, contact_nom, contact_email, contact_phone, actif")
+      .order("nom", { ascending: true })
+    if (error) return { error: error.message }
+    return { data }
+  },
+  [CLIENTS_TAG],
+  { tags: [CLIENTS_TAG], revalidate: 600 }
+)
+
+// Cached members list (validated personnes only)
+const _getMembersCached = unstable_cache(
+  async () => {
+    const sb = createAdminClient()
+    const { data, error } = await sb
+      .from("personnes")
+      .select("id, prenom, nom, email")
+      .eq("account_status", "validated")
+      .order("nom", { ascending: true })
+    if (error) return { error: error.message }
+    return { data }
+  },
+  [MEMBERS_TAG],
+  { tags: [MEMBERS_TAG], revalidate: 600 }
+)
+
+// Cached parametres (key/value map) — change rarely
+const _getAllParametresCached = unstable_cache(
+  async () => {
+    const sb = createAdminClient()
+    const { data, error } = await sb
+      .from("parametres")
+      .select("key, value, description")
+      .order("key")
+    if (error) return { error: error.message }
+    const map: Record<string, string> = {}
+    for (const p of data ?? []) map[p.key] = p.value ?? ""
+    return { data: map, list: data ?? [] }
+  },
+  [PARAMETRES_TAG],
+  { tags: [PARAMETRES_TAG], revalidate: 1800 }
+)
 
 export async function getEtudes(filters?: { statut?: string }) {
   const supabase = createClient()
@@ -12,10 +66,12 @@ export async function getEtudes(filters?: { statut?: string }) {
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
+  // Liste optimisée — ne pas tirer toutes les colonnes (perf).
+  // Le détail (getEtude) fait un SELECT complet sur demande.
   let query = supabase
     .from("etudes")
     .select(
-      "*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)"
+      "id, nom, numero, statut, type, budget, budget_ht, frais_dossier, marge_pct, commentaire, client_id, suiveur_id, published, created_at, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)"
     )
     .order("created_at", { ascending: false })
 
@@ -142,14 +198,7 @@ export async function getClients() {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
-
-  const { data, error } = await supabase
-    .from("clients")
-    .select("*")
-    .order("nom", { ascending: true })
-
-  if (error) return { error: error.message }
-  return { data }
+  return _getClientsCached()
 }
 
 export async function createClient_(formData: {
@@ -173,6 +222,7 @@ export async function createClient_(formData: {
     .single()
 
   if (error) return { error: error.message }
+  revalidateTag(CLIENTS_TAG)
   return { data }
 }
 
@@ -294,17 +344,7 @@ export async function getMembers() {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
-
-  // Tous les comptes actifs, sans filtre de rôle (garantit que le dropdown est peuplé)
-  const { data, error } = await supabase
-    .from("personnes")
-    .select("id, prenom, nom, email")
-    .eq("account_status", "validated")
-    .order("nom", { ascending: true })
-
-  if (error) return { error: error.message }
-  const members = (data ?? []).map(({ id, prenom, nom, email }) => ({ id, prenom, nom, email }))
-  return { data: members }
+  return _getMembersCached()
 }
 
 export async function getParametre(key: string) {
@@ -327,23 +367,18 @@ export async function setParametre(key: string, value: string) {
 
   const { error } = await supabase.from("parametres").upsert({ key, value }, { onConflict: "key" })
   if (error) return { error: error.message }
+  revalidateTag(PARAMETRES_TAG)
   revalidatePath("/administration")
   return { success: true }
 }
 
 export async function getAllParametres() {
-  noStore()
   const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
-
-  const { data, error } = await supabase.from("parametres").select("key, value, description").order("key")
-  if (error) return { error: error.message }
-  const map: Record<string, string> = {}
-  for (const p of data ?? []) map[p.key] = p.value ?? ""
-  return { data: map, list: data ?? [] }
+  return _getAllParametresCached()
 }
 
 export async function setParametres(updates: Record<string, string>) {
@@ -356,6 +391,7 @@ export async function setParametres(updates: Record<string, string>) {
   const rows = Object.entries(updates).map(([key, value]) => ({ key, value }))
   const { error } = await supabase.from("parametres").upsert(rows, { onConflict: "key" })
   if (error) return { error: error.message }
+  revalidateTag(PARAMETRES_TAG)
   revalidatePath("/administration")
   revalidatePath("/administration/structure")
   return { success: true }

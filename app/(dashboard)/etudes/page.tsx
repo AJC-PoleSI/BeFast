@@ -63,9 +63,9 @@ export default function EtudesPage() {
       const [etudesResult, clientsResult, membresResult] = await Promise.all([
         getEtudes(), getClients(), getMembers()
       ])
-      if (etudesResult.data) setEtudes(etudesResult.data)
-      if (clientsResult.data) setClients(clientsResult.data as Client[])
-      if (membresResult.data) setMembres(membresResult.data)
+      if ((etudesResult as any).data) setEtudes((etudesResult as any).data)
+      if ((clientsResult as any).data) setClients((clientsResult as any).data as Client[])
+      if ((membresResult as any).data) setMembres((membresResult as any).data)
       setLoading(false)
     }
     loadEtudes()
@@ -379,7 +379,7 @@ export default function EtudesPage() {
                 setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
                 // Refresh list
                 const fresh = await getEtudes()
-                if (fresh.data) setEtudes(fresh.data)
+                if ((fresh as any).data) setEtudes((fresh as any).data)
               }}
               className="p-6 space-y-4"
             >

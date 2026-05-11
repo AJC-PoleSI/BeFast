@@ -31,13 +31,13 @@ export default async function DashboardPage() {
   ])
 
   const personne = personneResult.data
-  const allMissions = (missionsResult.data || []) as MissionWithEtude[]
-  const allEtudes = etudesResult.data || []
-  const allCandidatures = (candidaturesResult.data || []) as CandidatureWithMission[]
+  const allMissions = ((missionsResult as any).data || []) as unknown as MissionWithEtude[]
+  const allEtudes = (etudesResult as any).data || []
+  const allCandidatures = ((candidaturesResult as any).data || []) as CandidatureWithMission[]
 
   const missions = allMissions.slice(0, 5)
   const candidatures = allCandidatures.slice(0, 3)
-  const etudesEnCours = allEtudes.filter((e) => e.statut === "en_cours")
+  const etudesEnCours = allEtudes.filter((e: any) => e.statut === "en_cours")
 
   const greeting = personne
     ? `Bienvenue, ${personne.prenom || personne.email}`

@@ -15,9 +15,11 @@ export async function getMissions(filters?: {
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
+  // Ne sélectionner que les colonnes nécessaires à l'affichage de la liste (perf).
+  // Les pages détail font des requêtes complètes (getMission) en cas de besoin.
   let query = supabase
     .from("missions")
-    .select("*, etudes(id, nom, numero, published)")
+    .select("id, nom, description, type, voie, classe, statut, nb_jeh, nb_intervenants, remuneration, etude_id, created_at, etudes(id, nom, numero, published)")
     // Les missions "chef_projet" (suivi de projet) ne sont jamais listées côté intervenant
     .neq("type", "chef_projet")
     .order("created_at", { ascending: false })
