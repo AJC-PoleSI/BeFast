@@ -60,6 +60,29 @@ const _getAllParametresCached = unstable_cache(
   { tags: [PARAMETRES_TAG], revalidate: 1800 }
 )
 
+// DEBUG: Test query without JOINs to verify data exists
+export async function getEtudesRaw(filters?: { statut?: string }) {
+  noStore()
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
+  let query = supabase
+    .from("etudes")
+    .select("*")
+    .order("created_at", { ascending: false })
+  if (filters?.statut) query = query.eq("statut", filters.statut)
+  const { data, error } = await query
+  if (error) {
+    console.error("[getEtudesRaw] Query error:", error)
+    return { error: error.message }
+  }
+  console.log("[getEtudesRaw] Raw data:", data?.length ?? 0, "études")
+  return { data }
+}
+
 // Liste des études — PAS de cache. Les utilisateurs créent/modifient
 // fréquemment et doivent toujours voir leur travail. La requête est rapide
 // car SELECT est déjà optimisé (colonnes spécifiques).
@@ -79,7 +102,21 @@ export async function getEtudes(filters?: { statut?: string }) {
     .order("created_at", { ascending: false })
   if (filters?.statut) query = query.eq("statut", filters.statut)
   const { data, error } = await query
-  if (error) return { error: error.message }
+  if (error) {
+    console.error("[getEtudes] Query error:", error)
+    return { error: error.message }
+  }
+  console.log("[getEtudes] Returned", data?.length ?? 0, "études. Filters:", filters)
+  if (data && data.length > 0) {
+    console.log("[getEtudes] First étude:", {
+      id: data[0].id,
+      nom: data[0].nom,
+      numero: data[0].numero,
+      created_at: data[0].created_at,
+      client_id: data[0].client_id,
+      suiveur_id: data[0].suiveur_id,
+    })
+  }
   return { data }
 }
 
@@ -124,6 +161,7 @@ export async function createEtude(formData: {
 
   if (!user) return { error: "Non authentifié" }
 
+  console.log("[createEtude] Creating étude:", formData.numero, formData.nom)
   const { data, error } = await supabase
     .from("etudes")
     .insert({
@@ -134,11 +172,13 @@ export async function createEtude(formData: {
     .single()
 
   if (error) {
+    console.error("[createEtude] Insert error:", error.code, error.message)
     if (error.code === "23505") {
       return { error: "Ce numéro d'étude existe déjà." }
     }
     return { error: error.message }
   }
+  console.log("[createEtude] Created successfully, ID:", data?.id)
   revalidateTag(ETUDES_TAG)
   revalidatePath("/etudes")
   return { data }
