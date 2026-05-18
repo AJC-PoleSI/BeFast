@@ -14,7 +14,7 @@ import {
 
 const ADMIN_NAV_LINKS = [
   { href: "/administration/structure", label: "Structure", icon: Settings },
-  { href: "/administration/membres", label: "Membres & Validation", icon: Users },
+  { href: "/membres", label: "Membres & Validation", icon: Users },
   { href: "/administration/droits", label: "Droits & Profils", icon: ShieldCheck },
   { href: "/administration/documents", label: "Modèles de Documents", icon: FileText },
   { href: "/administration/clients", label: "Gestion Clients", icon: Briefcase },
