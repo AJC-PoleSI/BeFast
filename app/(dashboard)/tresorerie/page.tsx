@@ -42,9 +42,11 @@ export default function TresoreriePage() {
     missions: MissionPayRow[]
     caParEtude: CaParEtude[]
     kpis: any
+    migrationMissing?: boolean
   } | null>(null)
   const [etudes, setEtudes] = useState<{ id: string; numero: string; nom: string }[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [searchFacture, setSearchFacture] = useState("")
   const [searchMission, setSearchMission] = useState("")
   const [activeTab, setActiveTab] = useState<Tab>("factures")
@@ -57,7 +59,12 @@ export default function TresoreriePage() {
       getTresorerieData(),
       getEtudesForFactureSelect(),
     ])
-    if ((res as any).data) setData((res as any).data)
+    if ((res as any).data) {
+      setData((res as any).data)
+      setLoadError(null)
+    } else if ((res as any).error) {
+      setLoadError((res as any).error)
+    }
     if ((eres as any).data) setEtudes((eres as any).data)
   }
 
@@ -104,7 +111,28 @@ export default function TresoreriePage() {
     )
   }
   if (!data) {
-    return <p className="text-sm text-red-500">Impossible de charger les données.</p>
+    return (
+      <div className="space-y-4">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-2">
+              <h2 className="font-bold text-amber-900">Migration SQL non appliquée</h2>
+              <p className="text-sm text-amber-800">
+                La table <code className="px-1.5 py-0.5 bg-amber-100 rounded text-xs font-mono">factures</code> et
+                les colonnes <code className="px-1.5 py-0.5 bg-amber-100 rounded text-xs font-mono">date_paiement</code>/<code className="px-1.5 py-0.5 bg-amber-100 rounded text-xs font-mono">numero_bv</code> sur <code className="px-1.5 py-0.5 bg-amber-100 rounded text-xs font-mono">missions</code> n&apos;existent pas encore dans la base.
+              </p>
+              <p className="text-sm text-amber-800">
+                Va sur le <a href="https://supabase.com/dashboard/project/rslztpjwrrjrvajkwcvo/sql" target="_blank" rel="noopener" className="underline font-medium">SQL Editor Supabase</a>, copie le contenu du fichier <code className="px-1.5 py-0.5 bg-amber-100 rounded text-xs font-mono">supabase/migrations/024_factures_tresorerie.sql</code> et exécute.
+              </p>
+              {loadError && (
+                <p className="text-xs text-amber-700 font-mono bg-amber-100 p-2 rounded mt-2">{loadError}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const kpis = data.kpis
@@ -130,12 +158,27 @@ export default function TresoreriePage() {
         </div>
         <button
           onClick={() => { setEditingFacture(null); setShowModal(true) }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors"
+          disabled={data.migrationMissing}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="w-4 h-4" />
           Nouvelle facture
         </button>
       </div>
+
+      {data.migrationMissing && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-800 space-y-1">
+            <p className="font-semibold">Migration SQL partielle ou manquante.</p>
+            <p>
+              Applique <code className="px-1.5 py-0.5 bg-amber-100 rounded text-xs font-mono">supabase/migrations/024_factures_tresorerie.sql</code> dans le{" "}
+              <a href="https://supabase.com/dashboard/project/rslztpjwrrjrvajkwcvo/sql" target="_blank" rel="noopener" className="underline font-medium">SQL Editor Supabase</a>{" "}
+              pour activer la création de factures et le suivi des paiements intervenants.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

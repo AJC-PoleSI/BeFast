@@ -73,18 +73,28 @@ export async function getTresorerieData() {
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
-  // Factures + études jointes
+  let migrationMissing = false
+
+  // Factures + études jointes — graceful fallback si la table n'existe pas encore
   const facturesRes = await supabase
     .from("factures")
     .select("*, etudes(id, numero, nom, type, budget_ht, budget)")
     .order("date_emission", { ascending: false, nullsFirst: false })
 
+  let facturesData: any[] = []
   if (facturesRes.error) {
-    return { error: facturesRes.error.message }
+    // Code 42P01 = "relation does not exist" → migration pas encore appliquée
+    if (facturesRes.error.code === "42P01" || /does not exist/i.test(facturesRes.error.message)) {
+      migrationMissing = true
+    } else {
+      return { error: facturesRes.error.message }
+    }
+  } else {
+    facturesData = facturesRes.data ?? []
   }
 
-  // Missions avec étude + intervenant
-  const missionsRes = await supabase
+  // Missions — essaie avec les nouvelles colonnes ; si elles n'existent pas, fallback sur l'ancien SELECT
+  let missionsRes = await supabase
     .from("missions")
     .select(
       "id, nom, etude_id, date_debut, date_fin, date_paiement, numero_bv, intervenant_id, remuneration, nb_jeh, nb_intervenants, etudes(id, numero, nom)"
@@ -92,7 +102,20 @@ export async function getTresorerieData() {
     .order("date_fin", { ascending: false, nullsFirst: false })
 
   if (missionsRes.error) {
-    return { error: missionsRes.error.message }
+    // Code 42703 = "column does not exist" → migration partielle
+    if (missionsRes.error.code === "42703" || /does not exist/i.test(missionsRes.error.message)) {
+      migrationMissing = true
+      const fallback = await supabase
+        .from("missions")
+        .select(
+          "id, nom, etude_id, date_debut, date_fin, intervenant_id, remuneration, nb_jeh, nb_intervenants, etudes(id, numero, nom)"
+        )
+        .order("date_fin", { ascending: false, nullsFirst: false })
+      if (fallback.error) return { error: fallback.error.message }
+      missionsRes = fallback as unknown as typeof missionsRes
+    } else {
+      return { error: missionsRes.error.message }
+    }
   }
 
   // Fetch intervenants (personnes) for any missions that have intervenant_id
@@ -111,7 +134,7 @@ export async function getTresorerieData() {
     }
   }
 
-  const factures: FactureRow[] = (facturesRes.data ?? []).map((f: any) => ({
+  const factures: FactureRow[] = facturesData.map((f: any) => ({
     id: f.id,
     numero: f.numero,
     nom: f.nom,
@@ -173,7 +196,7 @@ export async function getTresorerieData() {
     if (f.date_paiement) row.paye += f.montant_ht
   }
   // Add étude type/budget from facture rows
-  for (const f of facturesRes.data ?? []) {
+  for (const f of facturesData) {
     if (!f.etude_id || !f.etudes) continue
     const row = caMap.get(f.etude_id)
     if (row) {
@@ -198,6 +221,7 @@ export async function getTresorerieData() {
       factures,
       missions,
       caParEtude,
+      migrationMissing,
       kpis: {
         totalFacture,
         totalEncaisse,
