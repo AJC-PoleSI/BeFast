@@ -10,7 +10,7 @@ type PermKey =
   | "prospection" | "statistiques" | "administration"
   | "membres" | "documents" | "nouvelle_mission"
   | "voir_documents_membres" | "assigner_intervenants"
-  | "parametres_structure"
+  | "parametres_structure" | "voir_factures"
 
 const PERM_LABELS: Record<PermKey, { label: string; description: string; icon: string }> = {
   dashboard:               { label: "Tableau de bord",           description: "Accès à la page d'accueil",                         icon: "dashboard" },
@@ -26,6 +26,7 @@ const PERM_LABELS: Record<PermKey, { label: string; description: string; icon: s
   nouvelle_mission:        { label: "Créer une mission",          description: "Créer de nouvelles missions/études",                icon: "add_circle" },
   assigner_intervenants:   { label: "Assigner des intervenants",  description: "Peut assigner des intervenants aux missions (RH & SI)", icon: "person_add" },
   parametres_structure:    { label: "Paramètres structure",       description: "Accès aux paramètres globaux (TVA, etc.)",           icon: "settings" },
+  voir_factures:           { label: "Trésorerie",                 description: "Consulter et gérer les factures, paiements et rétributions intervenants", icon: "account_balance_wallet" },
 }
 
 const ALL_PERMS = Object.keys(PERM_LABELS) as PermKey[]

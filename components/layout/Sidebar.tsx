@@ -11,6 +11,7 @@ const NAV_ITEMS: (NavItem & { materialIcon: string })[] = [
   { label: "Mes Documents", href: "/documents", icon: "FileText", materialIcon: "folder_open", permission: "documents" },
   { label: "Études", href: "/etudes", icon: "GraduationCap", materialIcon: "school", permission: "etudes" },
   { label: "Prospection", href: "/prospection", icon: "TrendingUp", materialIcon: "timeline", permission: "prospection" },
+  { label: "Trésorerie", href: "/tresorerie", icon: "Wallet", materialIcon: "account_balance_wallet", permission: "voir_factures" },
   { label: "Membres", href: "/membres", icon: "Users", materialIcon: "group", permission: "membres" },
   { label: "Statistiques", href: "/statistiques", icon: "BarChart3", materialIcon: "bar_chart", permission: "statistiques" },
   { label: "Administration", href: "/administration", icon: "Settings", materialIcon: "admin_panel_settings", permission: "administration" },

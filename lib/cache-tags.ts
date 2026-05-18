@@ -14,3 +14,6 @@ export const MEMBERS_TAG = "members"
 export const PARAMETRES_TAG = "parametres"
 
 export const USER_PROFILE_TAG = (userId: string) => `user-profile:${userId}`
+
+export const FACTURES_TAG = "factures"
+export const TRESORERIE_TAG = "tresorerie"

@@ -181,6 +181,26 @@ export interface CandidatureWithMission extends Candidature {
   missions: Pick<Mission, "id" | "nom" | "statut"> | null
 }
 
+export interface Facture {
+  id: string
+  numero: string
+  nom: string | null
+  etude_id: string | null
+  bloc_id: string | null
+  montant_ht: number
+  date_emission: string | null
+  date_echeance: string | null
+  date_paiement: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface FactureWithEtude extends Facture {
+  etudes: Pick<Etude, "id" | "nom" | "numero"> | null
+}
+
 export interface EcheancierBloc {
   id: string
   etude_id: string
