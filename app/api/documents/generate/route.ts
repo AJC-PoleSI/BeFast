@@ -24,6 +24,7 @@ const CATEGORY_CODES: Record<string, { code: string; numbered: boolean }> = {
   bulletin_versement: { code: "BV", numbered: true },
   questionnaire_satisfaction: { code: "QS", numbered: false },
   rapport_pedagogique: { code: "RP", numbered: false },
+  facture: { code: "F", numbered: true },
 }
 
 function pad2(n: number): string {
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { template_id, scope, entity_id, intervenant_id } = body as {
     template_id: string
-    scope: "etude" | "mission" | "personne" | "general"
+    scope: "etude" | "mission" | "personne" | "general" | "facture"
     entity_id: string
     intervenant_id?: string
   }
@@ -93,6 +94,14 @@ export async function POST(req: NextRequest) {
       .single()
     etudeId = (m as any)?.etude_id || null
     etudeNumero = (m as any)?.etudes?.numero || ""
+  } else if (scope === "facture") {
+    const { data: f } = await sb
+      .from("factures")
+      .select("etude_id, etudes(numero)")
+      .eq("id", entity_id)
+      .single()
+    etudeId = (f as any)?.etude_id || null
+    etudeNumero = (f as any)?.etudes?.numero || ""
   }
 
   // Year (last 2 digits) + étude number (last 2 digits)

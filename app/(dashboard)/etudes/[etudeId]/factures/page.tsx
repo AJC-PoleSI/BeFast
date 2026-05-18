@@ -4,10 +4,19 @@ import { useEffect, useState, useCallback, useMemo } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
-import { ArrowLeft, Plus, Pencil, Banknote, Ban, Trash2, Loader2, ShieldAlert, FileDown, Check, Hourglass } from "lucide-react"
+import { ArrowLeft, Plus, Pencil, Banknote, Ban, Trash2, Loader2, ShieldAlert, FileDown, Check, Hourglass, Printer, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { useUser } from "@/hooks/useUser"
 import {
   getFacturesEtude,
@@ -20,6 +29,7 @@ import {
   type FraisRow,
   type FactureLigneInput,
 } from "@/lib/actions/factures-etude"
+import { listTemplates } from "@/lib/actions/documents"
 
 type LigneState = {
   type: "phase" | "frais"
@@ -60,6 +70,12 @@ export default function FacturesEtudePage() {
   const [acomptePct, setAcomptePct] = useState<number>(60)
   const [lignes, setLignes] = useState<LigneState[]>([])
   const [saving, setSaving] = useState(false)
+
+  // Génération document (template DOCX)
+  const [genFacture, setGenFacture] = useState<FactureEtude | null>(null)
+  const [factureTemplates, setFactureTemplates] = useState<any[]>([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
+  const [generating, setGenerating] = useState(false)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -307,6 +323,43 @@ export default function FacturesEtudePage() {
     }
   }
 
+  // Ouvre le modal de génération : charge les templates "facture"
+  const openGenerate = async (facture: FactureEtude) => {
+    setGenFacture(facture)
+    setSelectedTemplateId("")
+    const res = (await listTemplates()) as any
+    const all = res?.data ?? []
+    const factTpls = all.filter((t: any) => t.category === "facture")
+    setFactureTemplates(factTpls)
+    if (factTpls.length === 1) setSelectedTemplateId(factTpls[0].id)
+  }
+
+  const handleGenerate = async () => {
+    if (!genFacture || !selectedTemplateId) {
+      toast.error("Sélectionne un modèle")
+      return
+    }
+    setGenerating(true)
+    const res = await fetch("/api/documents/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        template_id: selectedTemplateId,
+        scope: "facture",
+        entity_id: genFacture.id,
+      }),
+    })
+    const json = await res.json()
+    setGenerating(false)
+    if (!res.ok) {
+      toast.error(json?.error || "Erreur génération")
+      return
+    }
+    toast.success("Facture générée")
+    window.open(`/api/documents/${json.data.id}/download`, "_blank")
+    setGenFacture(null)
+  }
+
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto p-6">
@@ -396,13 +449,22 @@ export default function FacturesEtudePage() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1">
-                    {/* Générer document PDF */}
+                    {/* Générer depuis un modèle DOCX */}
                     <button
-                      onClick={() => window.open(`/etudes/${etudeId}/factures/${f.id}/imprimer`, "_blank")}
+                      onClick={() => openGenerate(f)}
                       className="text-xs px-2 py-1.5 rounded text-[#00236f] hover:bg-[#00236f]/10 inline-flex items-center gap-1"
-                      title="Générer / imprimer la facture"
+                      title="Générer la facture à partir d'un modèle DOCX"
                     >
                       <FileDown className="h-4 w-4" />
+                    </button>
+
+                    {/* Vue imprimable HTML (fallback sans template) */}
+                    <button
+                      onClick={() => window.open(`/etudes/${etudeId}/factures/${f.id}/imprimer`, "_blank")}
+                      className="text-xs px-2 py-1.5 rounded text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 inline-flex items-center gap-1"
+                      title="Vue imprimable / PDF"
+                    >
+                      <Printer className="h-4 w-4" />
                     </button>
 
                     {/* Toggle paiement */}
@@ -588,6 +650,69 @@ export default function FacturesEtudePage() {
           </div>
         </div>
       )}
+
+      {/* Modal génération depuis modèle DOCX */}
+      <Dialog open={!!genFacture} onOpenChange={(o) => !o && setGenFacture(null)}>
+        <DialogContent>
+          <DialogClose onClose={() => setGenFacture(null)} />
+          <DialogHeader>
+            <DialogTitle>Générer la facture</DialogTitle>
+            <DialogDescription>
+              Sélectionne le modèle DOCX à utiliser. Les données de la facture seront injectées dans les placeholders {"{facture.*}"}, {"{lignes}"} (boucle), {"{client.*}"}, {"{etude.*}"} et {"{structure.*}"}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {factureTemplates.length === 0 ? (
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+                <p className="font-semibold mb-1">Aucun modèle de facture disponible</p>
+                <p>
+                  Ajoute un modèle DOCX dans{" "}
+                  <Link href="/administration/documents" className="underline font-medium">
+                    Administration → Gestion des documents
+                  </Link>
+                  {" "}sous la section <strong>Factures</strong>.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-xs">Modèle</Label>
+                <select
+                  className="w-full h-10 px-3 rounded-md border border-input text-sm bg-white"
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+                >
+                  <option value="">-- Choisis un modèle --</option>
+                  {factureTemplates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {genFacture && (
+              <div className="rounded-lg bg-zinc-50 border border-zinc-200 p-3 text-xs text-zinc-600">
+                Facture : <strong>{genFacture.nom ?? "Facture"}</strong> ·{" "}
+                <span className="font-mono">{genFacture.numero}</span> · {fmtEuro(genFacture.montant_ht)} €
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setGenFacture(null)}>Annuler</Button>
+            <Button
+              onClick={handleGenerate}
+              disabled={generating || !selectedTemplateId || factureTemplates.length === 0}
+              className="bg-[#00236f] text-white hover:bg-[#1e3a8a]"
+            >
+              {generating ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <FileText className="h-4 w-4 mr-1.5" />}
+              Générer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -104,6 +104,24 @@ export const DOCUMENT_FIELDS: FieldDef[] = [
   { placeholder: "nb_jeh", label: "Total JEH (racine)", source: "calculé depuis echeancier_blocs" },
   { placeholder: "nb_phases", label: "Nombre de phases (racine)", source: "calculé depuis echeancier_blocs" },
   { placeholder: "phases", label: "Tableau de phases (boucle {#phases})", source: "echeancier_blocs" },
+
+  // ── Facture (scope = "facture") ───────────────────────────
+  { placeholder: "facture.numero", label: "Numéro de facture", source: "factures.numero", example: "2615-F01" },
+  { placeholder: "facture.numero_dans_etude", label: "Numéro dans l'étude", source: "factures.numero_dans_etude", example: "1" },
+  { placeholder: "facture.nom", label: "Nom de la facture", source: "factures.nom", example: "Facture d'acompte" },
+  { placeholder: "facture.montant_ht", label: "Montant HT total", source: "factures.montant_ht", example: "3 000,00" },
+  { placeholder: "facture.montant_ht_brut", label: "Montant HT (nombre brut)", source: "calculé", example: "3000" },
+  { placeholder: "facture.date_emission", label: "Date d'émission (DD/MM/YYYY)", source: "factures.date_emission" },
+  { placeholder: "facture.date_echeance", label: "Date d'échéance (DD/MM/YYYY)", source: "factures.date_echeance" },
+  { placeholder: "facture.date_paiement", label: "Date de paiement (DD/MM/YYYY)", source: "factures.date_paiement" },
+  { placeholder: "facture.statut", label: "Statut (payée / en_attente)", source: "calculé" },
+  { placeholder: "facture.notes", label: "Notes", source: "factures.notes" },
+  { placeholder: "lignes", label: "Tableau des lignes (boucle {#lignes})", source: "facture_lignes" },
+  { placeholder: "lignes.libelle", label: "  → Libellé (dans {#lignes})", source: "facture_lignes.libelle" },
+  { placeholder: "lignes.montant", label: "  → Montant HT (dans {#lignes})", source: "facture_lignes.montant" },
+  { placeholder: "lignes.montant_total", label: "  → Montant total phase (dans {#lignes})", source: "facture_lignes.montant_total" },
+  { placeholder: "lignes.pourcentage", label: "  → % facturé (dans {#lignes})", source: "facture_lignes.pourcentage" },
+  { placeholder: "lignes.type", label: "  → Type (phase / frais)", source: "facture_lignes.type" },
 ]
 
 /** Returns fields filtered by a keyword (placeholder or label). */

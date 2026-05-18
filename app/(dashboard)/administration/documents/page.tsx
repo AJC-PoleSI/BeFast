@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import {
   FileText, Plus, Trash2, Download, Upload, Loader2, Search,
   X, Eye, RefreshCw, ChevronDown, ChevronRight, BookOpen, UserCheck,
-  Tag, Clock, File,
+  Tag, Clock, File, Banknote,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -28,11 +28,12 @@ import { TagsDictionary } from "@/components/documents/TagsDictionary"
 
 const CATEGORY_ETUDE = "etude_mission"
 const CATEGORY_INTERVENANT = "intervenant_rdm"
+const CATEGORY_FACTURE = "facture"
 
 const DOCUMENT_TYPES: {
   key: string
   label: string
-  category: typeof CATEGORY_ETUDE | typeof CATEGORY_INTERVENANT
+  category: typeof CATEGORY_ETUDE | typeof CATEGORY_INTERVENANT | typeof CATEGORY_FACTURE
 }[] = [
   // Cat 1 — Étude / Mission
   { key: "accord_confidentialite", label: "Accord de confidentialité Client", category: CATEGORY_ETUDE },
@@ -52,10 +53,13 @@ const DOCUMENT_TYPES: {
   { key: "bulletin_versement", label: "Bulletin de Versement", category: CATEGORY_INTERVENANT },
   { key: "questionnaire_satisfaction", label: "Questionnaire de satisfaction", category: CATEGORY_INTERVENANT },
   { key: "rapport_pedagogique", label: "Rapport pédagogique", category: CATEGORY_INTERVENANT },
+  // Cat 3 — Facture (générée depuis la trésorerie d'une étude)
+  { key: "facture", label: "Facture (modèle générique)", category: CATEGORY_FACTURE },
 ]
 
 const CAT_ETUDE_DOCS = DOCUMENT_TYPES.filter((d) => d.category === CATEGORY_ETUDE)
 const CAT_INTERVENANT_DOCS = DOCUMENT_TYPES.filter((d) => d.category === CATEGORY_INTERVENANT)
+const CAT_FACTURE_DOCS = DOCUMENT_TYPES.filter((d) => d.category === CATEGORY_FACTURE)
 
 /* ─── Component ─────────────────────────────────────────────── */
 
@@ -78,6 +82,7 @@ export default function DocumentTemplatesPage() {
   // Sections collapsed state
   const [collapsedEtude, setCollapsedEtude] = useState(false)
   const [collapsedIntervenant, setCollapsedIntervenant] = useState(false)
+  const [collapsedFacture, setCollapsedFacture] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -202,6 +207,7 @@ export default function DocumentTemplatesPage() {
 
   const filteredEtude = filterTypes(CAT_ETUDE_DOCS)
   const filteredIntervenant = filterTypes(CAT_INTERVENANT_DOCS)
+  const filteredFacture = filterTypes(CAT_FACTURE_DOCS)
 
   /* ─── Render document row ──────── */
 
@@ -578,6 +584,16 @@ export default function DocumentTemplatesPage() {
               collapsedIntervenant,
               setCollapsedIntervenant,
               "bg-emerald-50",
+            )}
+
+            {renderCategory(
+              "Factures",
+              "Modèle DOCX pour générer les factures depuis la trésorerie. Utilise les placeholders {facture.*}, {lignes} (boucle), {client.*}, {etude.*}, {structure.*}.",
+              <Banknote className="w-5 h-5 text-amber-600" />,
+              filteredFacture,
+              collapsedFacture,
+              setCollapsedFacture,
+              "bg-amber-50",
             )}
           </div>
         )}

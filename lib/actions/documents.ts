@@ -279,7 +279,7 @@ function fmtDate(value: any): string {
  * - {phases}, {planning}, {nb_jeh}, {nb_phases}
  */
 export async function buildTemplateContext(
-  scope: "etude" | "mission" | "personne" | "general",
+  scope: "etude" | "mission" | "personne" | "general" | "facture",
   entityId: string,
   intervenantId?: string
 ): Promise<Record<string, any>> {
@@ -664,6 +664,127 @@ export async function buildTemplateContext(
       etudiant_prenom: intervenantCtx.prenom,
       etudiant_nom: intervenantCtx.nom,
       ...organigramme,
+    }
+  }
+
+  if (scope === "facture") {
+    console.log("[DOC-GEN-V2] ===== FACTURE SCOPE =====")
+    console.log("[DOC-GEN-V2] factureId:", entityId)
+
+    // Étape 1 : facture + lignes (avec fallback si facture_lignes absent)
+    let factRes = await sb
+      .from("factures")
+      .select("*, facture_lignes(*)")
+      .eq("id", entityId)
+      .single()
+
+    let facture: any = null
+    let factureLignes: any[] = []
+    if (factRes.error) {
+      if (
+        factRes.error.code === "42P01" ||
+        factRes.error.code === "42703" ||
+        /does not exist/i.test(factRes.error.message)
+      ) {
+        const fb = await sb
+          .from("factures")
+          .select("id, numero, nom, montant_ht, date_emission, date_echeance, date_paiement, notes, etude_id")
+          .eq("id", entityId)
+          .single()
+        facture = fb.data
+      } else {
+        console.log("[DOC-GEN-V2] Facture fetch error:", factRes.error.message)
+        return base
+      }
+    } else {
+      facture = factRes.data
+      factureLignes = Array.isArray(factRes.data?.facture_lignes)
+        ? [...factRes.data.facture_lignes].sort((a: any, b: any) => (a.ordre || 0) - (b.ordre || 0))
+        : []
+    }
+    if (!facture) return base
+
+    // Étape 2 : étude + client + suiveur + blocs (en parallèle), + params
+    const params = await paramsPromise
+    let etudeRes = await sb.from("etudes").select("*").eq("id", facture.etude_id).single()
+    if (etudeRes.error && (etudeRes.error.code === "42703" || /does not exist/i.test(etudeRes.error.message))) {
+      etudeRes = await sb.from("etudes").select("id, numero, nom, budget_ht, frais_dossier, client_id, suiveur_id").eq("id", facture.etude_id).single() as any
+    }
+    const eAny: any = (etudeRes as any).data || {}
+
+    const [clientRes, suiveurRes, blocsRes] = await Promise.all([
+      eAny.client_id
+        ? sb.from("clients").select("*").eq("id", eAny.client_id).single()
+        : Promise.resolve({ data: null, error: null }),
+      eAny.suiveur_id
+        ? sb.from("personnes").select("id, prenom, nom, email").eq("id", eAny.suiveur_id).single()
+        : Promise.resolve({ data: null, error: null }),
+      sb.from("echeancier_blocs").select("*").eq("etude_id", facture.etude_id),
+    ])
+
+    const clientData: any = (clientRes as any).data || {}
+    const suiveur: any = (suiveurRes as any).data || {}
+    const blocs: any[] = (blocsRes as any).data || []
+
+    const budget_ht = Number(eAny.budget_ht) || 0
+    const frais = Number(eAny.frais_dossier) || 0
+    const margePct = Number(eAny.marge_pct) || 0
+    const tarif = budget_ht + frais + budget_ht * (margePct / 100)
+
+    const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(blocs)
+    const organigramme = buildOrganigramme(params)
+
+    // Lignes formatées pour la boucle {#lignes}
+    const lignes = factureLignes.map((l, i) => ({
+      numero: i + 1,
+      libelle: l.libelle ?? "",
+      type: l.type ?? "",
+      type_libelle: l.type === "frais" ? "Frais" : "Phase",
+      montant: Number(l.montant ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      montant_brut: Number(l.montant ?? 0),
+      montant_total: Number(l.montant_total ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      montant_total_brut: Number(l.montant_total ?? 0),
+      pourcentage: Number(l.pourcentage ?? 0).toFixed(0),
+      pourcentage_brut: Number(l.pourcentage ?? 0),
+    }))
+
+    const montantHtNum = Number(facture.montant_ht ?? 0)
+
+    return {
+      ...base,
+      reference: eAny.numero || "",
+      facture: {
+        ...facture,
+        date_emission: fmtDate(facture.date_emission),
+        date_echeance: fmtDate(facture.date_echeance),
+        date_paiement: fmtDate(facture.date_paiement),
+        date_emission_iso: facture.date_emission || "",
+        date_echeance_iso: facture.date_echeance || "",
+        date_paiement_iso: facture.date_paiement || "",
+        montant_ht: montantHtNum.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        montant_ht_brut: montantHtNum,
+        statut: facture.date_paiement ? "payée" : "en_attente",
+        nb_lignes: lignes.length,
+      },
+      lignes,
+      etude: {
+        ...eAny,
+        date_debut: fmtDate(eAny.date_debut),
+        date_fin: fmtDate(eAny.date_fin),
+        prix: tarif.toFixed(2),
+        frais: frais.toFixed(2),
+        tarif_ht: tarif.toFixed(2),
+        marge_euros: (budget_ht * (margePct / 100)).toFixed(2),
+        nb_jeh,
+        nb_phases,
+      },
+      client: clientData,
+      suiveur,
+      ...organigramme,
+      phases,
+      planning,
+      nb_jeh,
+      nb_phases,
     }
   }
 
