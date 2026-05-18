@@ -9,53 +9,17 @@ type FormState = Record<string, string>
 
 const SECTIONS = [
   {
-    title: "Identité de la structure",
+    title: "Identité légale",
     fields: [
       { key: "raison_sociale", label: "Raison sociale", type: "text" },
-      { key: "statuts_juridiques", label: "Statuts juridiques", type: "text" },
+      { key: "statut_juridique", label: "Statut juridique (ex: Association loi 1901)", type: "text" },
+      { key: "siret", label: "SIRET", type: "text" },
+      { key: "siren", label: "SIREN", type: "text" },
+      { key: "code_ape", label: "Code APE", type: "text" },
+      { key: "numero_tva", label: "N° TVA intracommunautaire", type: "text" },
+      { key: "numero_urssaf", label: "N° URSSAF", type: "text" },
       { key: "tribunal", label: "Tribunal de commerce", type: "text" },
-      { key: "passation", label: "Date de passation", type: "date" },
       { key: "nom_ecole", label: "Nom école/université", type: "text" },
-    ],
-  },
-  {
-    title: "Numérotation",
-    fields: [
-      { key: "numero_prochaine_facture", label: "Prochaine facture n°", type: "number" },
-      { key: "numero_prochaine_mission", label: "Prochaine mission n°", type: "number" },
-      { key: "numero_prochain_bv", label: "Prochain BV n°", type: "number" },
-      { key: "numero_prochain_avenant", label: "Prochain avenant n°", type: "number" },
-    ],
-  },
-  {
-    title: "Bureau",
-    fields: [
-      { key: "president_nom", label: "Président(e)", type: "text", genreKey: "president_genre" },
-      { key: "vice_president_nom", label: "Vice-président(e)", type: "text", genreKey: "vice_president_genre" },
-      { key: "tresorier_nom", label: "Trésorier(e)", type: "text", genreKey: "tresorier_genre" },
-      { key: "sg_nom", label: "Secrétaire général(e)", type: "text", genreKey: "sg_genre" },
-      { key: "rh_nom", label: "Responsable RH", type: "text", genreKey: "rh_genre" },
-      { key: "responsable_localite_nom", label: "Responsable localité", type: "text", genreKey: "responsable_localite_genre" },
-      { key: "devco_nom", label: "Responsable DEVCO", type: "text", genreKey: "devco_genre" },
-      { key: "si_nom", label: "Responsable SI", type: "text", genreKey: "si_genre" },
-    ],
-  },
-  {
-    title: "Financier",
-    fields: [
-      { key: "frais_structure", label: "Frais de structure (%)", type: "number" },
-      { key: "remuneration_defaut", label: "Rémunération par JEH (€)", type: "number" },
-      { key: "tva_rate", label: "Taux TVA (%)", type: "number" },
-    ],
-  },
-  {
-    title: "Coordonnées bancaires",
-    fields: [
-      { key: "rib", label: "RIB", type: "text" },
-      { key: "domiciliation", label: "Domiciliation", type: "text" },
-      { key: "iban", label: "IBAN", type: "text" },
-      { key: "bic", label: "BIC", type: "text" },
-      { key: "ordre_paiements", label: "Ordre de paiement (chèques)", type: "text" },
     ],
   },
   {
@@ -71,12 +35,44 @@ const SECTIONS = [
     ],
   },
   {
-    title: "Informations légales",
+    title: "Organigramme du mandat (signataires)",
     fields: [
-      { key: "siret", label: "SIRET", type: "text" },
-      { key: "code_ape", label: "Code APE", type: "text" },
-      { key: "numero_urssaf", label: "Numéro URSSAF", type: "text" },
-      { key: "numero_tva", label: "Numéro TVA intracom.", type: "text" },
+      { key: "president_nom", label: "Président(e)", type: "text", genreKey: "president_genre" },
+      { key: "vice_president_nom", label: "Vice-président(e)", type: "text", genreKey: "vice_president_genre" },
+      { key: "tresorier_nom", label: "Trésorier(e)", type: "text", genreKey: "tresorier_genre" },
+      { key: "sg_nom", label: "Secrétaire général(e)", type: "text", genreKey: "sg_genre" },
+      { key: "rh_nom", label: "Responsable RH", type: "text", genreKey: "rh_genre" },
+      { key: "responsable_localite_nom", label: "Responsable localité", type: "text", genreKey: "responsable_localite_genre" },
+      { key: "devco_nom", label: "Responsable DEVCO", type: "text", genreKey: "devco_genre" },
+      { key: "si_nom", label: "Responsable SI", type: "text", genreKey: "si_genre" },
+    ],
+  },
+  {
+    title: "Données financières",
+    fields: [
+      { key: "iban", label: "IBAN", type: "text" },
+      { key: "bic", label: "BIC", type: "text" },
+      { key: "banque_rib", label: "RIB", type: "text" },
+      { key: "banque_domiciliation", label: "Domiciliation bancaire", type: "text" },
+      { key: "ordre_cheques", label: "À l'ordre de (chèques)", type: "text" },
+      { key: "frais_structure", label: "Frais de structure (%)", type: "number" },
+      { key: "tarif_jeh_default", label: "TJH visé (€/JEH)", type: "number" },
+      { key: "tva_taux", label: "Taux TVA (%) — 0 si art. 293 B", type: "number" },
+    ],
+  },
+  {
+    title: "Numérotation",
+    fields: [
+      { key: "numero_prochaine_facture", label: "Prochaine facture n°", type: "number" },
+      { key: "numero_prochaine_mission", label: "Prochaine mission n°", type: "number" },
+      { key: "numero_prochain_bv", label: "Prochain BV n°", type: "number" },
+      { key: "numero_prochain_avenant", label: "Prochain avenant n°", type: "number" },
+    ],
+  },
+  {
+    title: "Autres",
+    fields: [
+      { key: "passation", label: "Date de passation du mandat", type: "date" },
     ],
   },
 ] as const

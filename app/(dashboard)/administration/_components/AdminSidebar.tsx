@@ -13,8 +13,7 @@ import {
 } from "lucide-react"
 
 const ADMIN_NAV_LINKS = [
-  { href: "/administration", label: "Structure", icon: Settings },
-  { href: "/administration/structure", label: "Paramètres structure", icon: Settings },
+  { href: "/administration/structure", label: "Structure", icon: Settings },
   { href: "/administration/membres", label: "Membres & Validation", icon: Users },
   { href: "/administration/droits", label: "Droits & Profils", icon: ShieldCheck },
   { href: "/administration/documents", label: "Modèles de Documents", icon: FileText },
@@ -27,12 +26,7 @@ export function AdminSidebar() {
 
   // On considère la route /administration pour les paramètres (ou par défaut)
   // et les autres comme sous-routes.
-  const isActive = (href: string) => {
-    if (href === "/administration") {
-      return pathname === "/administration" || pathname === "/administration/parametres"
-    }
-    return pathname.startsWith(href)
-  }
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/")
 
   return (
     <nav className="w-64 shrink-0 pr-8 hidden md:block">
