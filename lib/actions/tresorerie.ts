@@ -75,15 +75,25 @@ export async function getTresorerieData() {
 
   let migrationMissing = false
 
-  // Factures + études jointes — graceful fallback si la table n'existe pas encore
-  const facturesRes = await supabase
+  // Factures + études jointes — graceful fallback si la table ou une colonne n'existe pas encore
+  let facturesRes = await supabase
     .from("factures")
     .select("*, etudes(id, numero, nom, type, budget_ht, budget)")
     .order("date_emission", { ascending: false, nullsFirst: false })
 
+  // Si `budget` n'existe pas sur etudes (42703), retente sans
+  if (
+    facturesRes.error &&
+    (facturesRes.error.code === "42703" || /column.*budget.*does not exist/i.test(facturesRes.error.message))
+  ) {
+    facturesRes = await supabase
+      .from("factures")
+      .select("*, etudes(id, numero, nom, type, budget_ht)")
+      .order("date_emission", { ascending: false, nullsFirst: false })
+  }
+
   let facturesData: any[] = []
   if (facturesRes.error) {
-    // Code 42P01 = "relation does not exist" → migration pas encore appliquée
     if (facturesRes.error.code === "42P01" || /does not exist/i.test(facturesRes.error.message)) {
       migrationMissing = true
     } else {

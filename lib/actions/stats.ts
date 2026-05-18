@@ -12,8 +12,15 @@ export async function getStats() {
   const now = new Date()
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
-  const [etudesRes, missionsRes, candidaturesRes] = await Promise.all([
-    supabase.from("etudes").select("id, type, budget_ht, budget, statut, created_at"),
+  // Sélection résiliente : si `budget` n'existe pas sur etudes, retombe sur budget_ht seul
+  let etudesRes = await supabase.from("etudes").select("id, type, budget_ht, budget, statut, created_at")
+  if (
+    etudesRes.error &&
+    (etudesRes.error.code === "42703" || /column.*budget.*does not exist/i.test(etudesRes.error.message))
+  ) {
+    etudesRes = await supabase.from("etudes").select("id, type, budget_ht, statut, created_at") as any
+  }
+  const [missionsRes, candidaturesRes] = await Promise.all([
     supabase.from("missions").select("id, nb_jeh, remuneration, nb_intervenants, statut, created_at"),
     supabase.from("candidatures").select("id, personne_id, statut, created_at"),
   ])

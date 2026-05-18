@@ -93,12 +93,30 @@ export async function getFacturesEtude(etudeId: string) {
   if (denied) return denied
   const supabase = createClient()
 
-  // Étude (pour budget et frais)
-  const { data: etude, error: etErr } = await supabase
+  // Étude (pour budget et frais) — sélection résiliente : on essaie d'abord
+  // avec budget + marge_pct ; si une colonne manque on retombe sur budget_ht seul.
+  let etude: any = null
+  let etErr: any = null
+
+  const etRes1 = await supabase
     .from("etudes")
-    .select("id, numero, nom, budget_ht, budget, frais_dossier")
+    .select("id, numero, nom, budget_ht, budget, frais_dossier, marge_pct")
     .eq("id", etudeId)
     .single()
+
+  if (etRes1.error && (etRes1.error.code === "42703" || /does not exist/i.test(etRes1.error.message))) {
+    // Fallback : essaie uniquement les colonnes garanties
+    const etRes2 = await supabase
+      .from("etudes")
+      .select("id, numero, nom, budget_ht, frais_dossier")
+      .eq("id", etudeId)
+      .single()
+    etude = etRes2.data
+    etErr = etRes2.error
+  } else {
+    etude = etRes1.data
+    etErr = etRes1.error
+  }
   if (etErr) return { error: etErr.message }
 
   // Tarif JEH par défaut
@@ -164,8 +182,15 @@ export async function getFacturesEtude(etudeId: string) {
       : [],
   }))
 
-  // Budget HT total de l'étude (fallback si tarifJeh n'est pas configuré)
-  const budgetHtEtude = Number((etude as any).budget_ht ?? (etude as any).budget ?? 0)
+  // Budget HT total de l'étude (fallback si tarifJeh n'est pas configuré).
+  // Logique identique à la page étude : base + frais + (base × marge_pct / 100).
+  // On garde aussi le fallback sur `budget` au cas où, mais sans planter si absent.
+  const base = Number((etude as any).budget_ht ?? (etude as any).budget ?? 0)
+  const fraisDossier = Number((etude as any).frais_dossier ?? 0)
+  const margePct = Number((etude as any).marge_pct ?? 0)
+  const margeEuros = base * (margePct / 100)
+  // Total facturable au client = base + marge (les frais sont une ligne séparée)
+  const budgetHtEtude = base + margeEuros
   const totalJehEtude = (blocs ?? []).reduce((s: number, b: any) => s + Number(b.jeh ?? 0), 0)
 
   // Pour chaque phase, calcule le total déjà facturé (somme des lignes phase de toutes les factures)
@@ -271,13 +296,23 @@ export async function getFactureEtudeDetail(factureId: string) {
 
 async function generateNextNumeroDansEtude(etudeId: string): Promise<number> {
   const supabase = createClient()
-  const { data } = await supabase
+  const res = await supabase
     .from("factures")
     .select("numero_dans_etude")
     .eq("etude_id", etudeId)
     .order("numero_dans_etude", { ascending: false, nullsFirst: false })
     .limit(1)
-  const last = data?.[0]?.numero_dans_etude ?? 0
+  if (res.error) {
+    // Si numero_dans_etude n'existe pas (migration 025 pas appliquée), compte les factures
+    if (res.error.code === "42703" || /does not exist/i.test(res.error.message)) {
+      const count = await supabase
+        .from("factures")
+        .select("id", { count: "exact", head: true })
+        .eq("etude_id", etudeId)
+      return (count.count ?? 0) + 1
+    }
+  }
+  const last = res.data?.[0]?.numero_dans_etude ?? 0
   return (last ?? 0) + 1
 }
 
@@ -325,23 +360,36 @@ export async function createFactureEtude(input: {
 
   const num = await generateNextNumeroDansEtude(input.etude_id)
   const numeroGlobal = await generateGlobalNumero(et.numero, num)
+  const montantHtTotal = input.lignes
+    .filter((l) => Number(l.montant) > 0)
+    .reduce((s, l) => s + Number(l.montant), 0)
 
-  const { data: facture, error } = await supabase
-    .from("factures")
-    .insert({
-      etude_id: input.etude_id,
-      numero: numeroGlobal,
-      numero_dans_etude: num,
-      nom: input.nom ?? "Facture",
-      date_emission: input.date_emission ?? null,
-      date_echeance: input.date_echeance ?? null,
-      date_paiement: input.date_paiement ?? null,
-      notes: input.notes ?? null,
-      created_by: user.id,
-    })
-    .select()
-    .single()
-  if (error) return { error: error.message }
+  // Tente l'insert complet ; si numero_dans_etude n'existe pas, retombe sans
+  const insertPayload: any = {
+    etude_id: input.etude_id,
+    numero: numeroGlobal,
+    numero_dans_etude: num,
+    nom: input.nom ?? "Facture",
+    montant_ht: montantHtTotal, // fallback si trigger pas encore en place
+    date_emission: input.date_emission ?? null,
+    date_echeance: input.date_echeance ?? null,
+    date_paiement: input.date_paiement ?? null,
+    notes: input.notes ?? null,
+    created_by: user.id,
+  }
+
+  let factureRes = await supabase.from("factures").insert(insertPayload).select().single()
+
+  if (
+    factureRes.error &&
+    (factureRes.error.code === "42703" || /numero_dans_etude.*does not exist/i.test(factureRes.error.message))
+  ) {
+    // Migration 025 pas appliquée → insère sans numero_dans_etude
+    const { numero_dans_etude: _ignore, ...withoutNumDansEtude } = insertPayload
+    factureRes = await supabase.from("factures").insert(withoutNumDansEtude).select().single()
+  }
+  if (factureRes.error) return { error: factureRes.error.message }
+  const facture = factureRes.data
 
   // Insère les lignes (filtre celles à 0)
   const lignesToInsert = input.lignes
@@ -349,7 +397,6 @@ export async function createFactureEtude(input: {
     .map((l, i) => ({
       facture_id: facture.id,
       type: l.type,
-      // bloc_id "__etude__" = phase virtuelle (étude sans échéancier) → on stocke null
       bloc_id: l.type === "phase" && l.bloc_id && l.bloc_id !== "__etude__" ? l.bloc_id : null,
       libelle: l.libelle,
       montant_total: l.montant_total,
@@ -361,9 +408,14 @@ export async function createFactureEtude(input: {
   if (lignesToInsert.length > 0) {
     const { error: lErr } = await supabase.from("facture_lignes").insert(lignesToInsert)
     if (lErr) {
-      // Rollback : supprime la facture
-      await supabase.from("factures").delete().eq("id", facture.id)
-      return { error: lErr.message }
+      // Si la table facture_lignes n'existe pas, ce n'est pas grave : on garde la facture
+      // avec son montant_ht agrégé (déjà inséré ci-dessus).
+      if (lErr.code === "42P01" || /facture_lignes.*does not exist/i.test(lErr.message)) {
+        // Migration 025 pas encore appliquée : on continue sans les lignes
+      } else {
+        await supabase.from("factures").delete().eq("id", facture.id)
+        return { error: lErr.message }
+      }
     }
   }
 
@@ -424,13 +476,6 @@ export async function updateFactureEtude(
   }
 
   if (updates.lignes !== undefined) {
-    // Strategy simple : on supprime tout et on réinsère
-    const { error: delErr } = await supabase
-      .from("facture_lignes")
-      .delete()
-      .eq("facture_id", factureId)
-    if (delErr) return { error: delErr.message }
-
     const lignesToInsert = updates.lignes
       .filter((l) => Number(l.montant) > 0)
       .map((l, i) => ({
@@ -443,13 +488,29 @@ export async function updateFactureEtude(
         pourcentage: l.pourcentage,
         ordre: l.ordre ?? i,
       }))
+    const montantHtTotal = lignesToInsert.reduce((s, l) => s + Number(l.montant), 0)
 
-    if (lignesToInsert.length > 0) {
+    // Strategy simple : on supprime tout et on réinsère
+    const delRes = await supabase.from("facture_lignes").delete().eq("facture_id", factureId)
+    const facture_lignes_missing =
+      delRes.error &&
+      (delRes.error.code === "42P01" || /facture_lignes.*does not exist/i.test(delRes.error.message))
+
+    if (delRes.error && !facture_lignes_missing) return { error: delRes.error.message }
+
+    if (lignesToInsert.length > 0 && !facture_lignes_missing) {
       const { error: insErr } = await supabase.from("facture_lignes").insert(lignesToInsert)
-      if (insErr) return { error: insErr.message }
+      if (insErr) {
+        if (insErr.code === "42P01" || /facture_lignes.*does not exist/i.test(insErr.message)) {
+          // table absente → on met juste à jour le montant_ht de la facture
+          await supabase.from("factures").update({ montant_ht: montantHtTotal }).eq("id", factureId)
+        } else {
+          return { error: insErr.message }
+        }
+      }
     } else {
-      // Si toutes les lignes sont à 0, on remet montant_ht à 0
-      await supabase.from("factures").update({ montant_ht: 0 }).eq("id", factureId)
+      // Pas de lignes (ou table absente) → met à jour directement montant_ht sur la facture
+      await supabase.from("factures").update({ montant_ht: montantHtTotal }).eq("id", factureId)
     }
   }
 
