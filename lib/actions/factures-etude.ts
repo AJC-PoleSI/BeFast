@@ -117,19 +117,40 @@ export async function getFacturesEtude(etudeId: string) {
     .order("ordre", { ascending: true })
   if (blErr) return { error: blErr.message }
 
-  // Factures de l'étude avec leurs lignes
-  const { data: factures, error: fErr } = await supabase
+  // Factures de l'étude avec leurs lignes — fallback si facture_lignes n'existe pas encore
+  let facturesRaw: any[] = []
+  const facturesRes = await supabase
     .from("factures")
     .select("*, facture_lignes(*)")
     .eq("etude_id", etudeId)
-    .order("numero_dans_etude", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true })
-  if (fErr && fErr.code !== "42P01") return { error: fErr.message }
 
-  const facturesList: FactureEtude[] = (factures ?? []).map((f: any) => ({
+  if (facturesRes.error) {
+    // Si c'est une erreur de table manquante ou colonne manquante → fallback sans lignes
+    if (
+      facturesRes.error.code === "42P01" ||
+      facturesRes.error.code === "42703" ||
+      /does not exist/i.test(facturesRes.error.message)
+    ) {
+      // Essaie sans le join facture_lignes
+      const fallback = await supabase
+        .from("factures")
+        .select("id, numero, nom, montant_ht, date_emission, date_echeance, date_paiement, notes, etude_id, bloc_id")
+        .eq("etude_id", etudeId)
+        .order("created_at", { ascending: true })
+      if (!fallback.error) facturesRaw = fallback.data ?? []
+      // Si même le fallback échoue, on continue avec une liste vide (pas bloquant)
+    } else {
+      return { error: facturesRes.error.message }
+    }
+  } else {
+    facturesRaw = facturesRes.data ?? []
+  }
+
+  const facturesList: FactureEtude[] = facturesRaw.map((f: any) => ({
     id: f.id,
     numero: f.numero,
-    numero_dans_etude: f.numero_dans_etude,
+    numero_dans_etude: f.numero_dans_etude ?? null,
     nom: f.nom,
     montant_ht: Number(f.montant_ht ?? 0),
     date_emission: f.date_emission,
@@ -138,7 +159,9 @@ export async function getFacturesEtude(etudeId: string) {
     notes: f.notes,
     etude_id: f.etude_id,
     bloc_id: f.bloc_id,
-    lignes: (f.facture_lignes ?? []).sort((a: any, b: any) => a.ordre - b.ordre),
+    lignes: Array.isArray(f.facture_lignes)
+      ? f.facture_lignes.sort((a: any, b: any) => a.ordre - b.ordre)
+      : [],
   }))
 
   // Budget HT total de l'étude (fallback si tarifJeh n'est pas configuré)
