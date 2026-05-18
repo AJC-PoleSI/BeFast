@@ -1,8 +1,9 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next/cache"
-import { FACTURES_TAG, MISSIONS_TAG } from "@/lib/cache-tags"
+import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noStore } from "next/cache"
+import { createAdminClient } from "@/lib/supabase/admin"
+import { FACTURES_TAG, MISSIONS_TAG, TRESORERIE_TAG } from "@/lib/cache-tags"
 
 export type FactureRow = {
   id: string
@@ -65,15 +66,10 @@ function joursRetard(date_emission: string | null, date_paiement: string | null)
   return diff > 0 ? diff : null
 }
 
-export async function getTresorerieData() {
-  noStore()
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
-
-  let migrationMissing = false
+const _getTresorerieCached = unstable_cache(
+  async () => {
+    const supabase = createAdminClient()
+    let migrationMissing = false
 
   // Factures + études jointes — graceful fallback si la table ou une colonne n'existe pas encore
   let facturesRes = await supabase
@@ -245,6 +241,18 @@ export async function getTresorerieData() {
       },
     },
   }
+  },
+  [TRESORERIE_TAG],
+  { tags: [TRESORERIE_TAG, FACTURES_TAG, MISSIONS_TAG], revalidate: 30 }
+)
+
+export async function getTresorerieData() {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+  return _getTresorerieCached()
 }
 
 export async function getEtudesForFactureSelect() {

@@ -122,9 +122,8 @@ export default function AdminStatsDashboard() {
 
   useEffect(() => {
     getStats().then(res => {
-      if (res.data) setStats(res.data)
+      if ("data" in res && res.data) setStats(res.data)
       setLoading(false)
-      // trigger animations after a brief paint delay
       requestAnimationFrame(() => setTimeout(() => setVisible(true), 50))
     })
   }, [])

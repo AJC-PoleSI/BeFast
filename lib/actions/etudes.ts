@@ -60,64 +60,31 @@ const _getAllParametresCached = unstable_cache(
   { tags: [PARAMETRES_TAG], revalidate: 1800 }
 )
 
-// DEBUG: Test query without JOINs to verify data exists
-export async function getEtudesRaw(filters?: { statut?: string }) {
-  noStore()
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
+// Cached études list — admin client bypasses RLS (all JE members see all études).
+// Revalidated on any create/update/delete via revalidateTag(ETUDES_TAG).
+const _getEtudesCached = unstable_cache(
+  async (statut?: string) => {
+    const sb = createAdminClient()
+    let query = sb
+      .from("etudes")
+      .select("*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)")
+      .order("created_at", { ascending: false })
+    if (statut) query = query.eq("statut", statut)
+    const { data, error } = await query
+    if (error) return { error: error.message }
+    return { data }
+  },
+  [ETUDES_TAG],
+  { tags: [ETUDES_TAG], revalidate: 30 }
+)
 
-  let query = supabase
-    .from("etudes")
-    .select("*")
-    .order("created_at", { ascending: false })
-  if (filters?.statut) query = query.eq("statut", filters.statut)
-  const { data, error } = await query
-  if (error) {
-    console.error("[getEtudesRaw] Query error:", error)
-    return { error: error.message }
-  }
-  console.log("[getEtudesRaw] Raw data:", data?.length ?? 0, "études")
-  return { data }
-}
-
-// Liste des études — PAS de cache. Les utilisateurs créent/modifient
-// fréquemment et doivent toujours voir leur travail. La requête est rapide
-// car SELECT est déjà optimisé (colonnes spécifiques).
 export async function getEtudes(filters?: { statut?: string }) {
-  noStore()
   const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
-
-  let query = supabase
-    .from("etudes")
-    .select(
-      "*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)"
-    )
-    .order("created_at", { ascending: false })
-  if (filters?.statut) query = query.eq("statut", filters.statut)
-  const { data, error } = await query
-  if (error) {
-    console.error("[getEtudes] Query error:", error)
-    return { error: error.message }
-  }
-  console.log("[getEtudes] Returned", data?.length ?? 0, "études. Filters:", filters)
-  if (data && data.length > 0) {
-    console.log("[getEtudes] First étude:", {
-      id: data[0].id,
-      nom: data[0].nom,
-      numero: data[0].numero,
-      created_at: data[0].created_at,
-      client_id: data[0].client_id,
-      suiveur_id: data[0].suiveur_id,
-    })
-  }
-  return { data }
+  return _getEtudesCached(filters?.statut)
 }
 
 // Détail d'une étude — PAS de cache pour garantir la fraîcheur des données

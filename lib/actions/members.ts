@@ -1,8 +1,10 @@
 "use server"
 
+import { unstable_cache, revalidateTag } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { PersonneWithRole, ProfilType } from "@/types/database.types"
+import { MEMBERS_TAG } from "@/lib/cache-tags"
 
 async function getCallerRole(): Promise<string | null> {
   try {
@@ -25,23 +27,30 @@ async function getCallerRole(): Promise<string | null> {
   }
 }
 
+const _fetchAllMembers = unstable_cache(
+  async (): Promise<{ data: PersonneWithRole[] | null; error: string | null }> => {
+    try {
+      const admin = createAdminClient()
+      const { data, error } = await admin
+        .from("personnes")
+        .select("*, profils_types(*)")
+        .order("created_at", { ascending: false })
+
+      if (error) return { data: null, error: error.message }
+      return { data: data as PersonneWithRole[], error: null }
+    } catch (err) {
+      console.error("[getAllMembers] Exception:", err)
+      return { data: null, error: "Erreur serveur" }
+    }
+  },
+  ["all-members"],
+  { tags: [MEMBERS_TAG] }
+)
+
 export async function getAllMembers(): Promise<{ data: PersonneWithRole[] | null; error: string | null }> {
-  try {
-    const role = await getCallerRole()
-    if (role !== "administrateur") return { data: null, error: "Non autorisé" }
-
-    const admin = createAdminClient()
-    const { data, error } = await admin
-      .from("personnes")
-      .select("*, profils_types(*)")
-      .order("created_at", { ascending: false })
-
-    if (error) return { data: null, error: error.message }
-    return { data: data as PersonneWithRole[], error: null }
-  } catch (err) {
-    console.error("[getAllMembers] Exception:", err)
-    return { data: null, error: "Erreur serveur" }
-  }
+  const role = await getCallerRole()
+  if (role !== "administrateur") return { data: null, error: "Non autorisé" }
+  return _fetchAllMembers()
 }
 
 export async function updateMemberRole(personneId: string, roleSlug: string) {
@@ -64,6 +73,9 @@ export async function updateMemberRole(personneId: string, roleSlug: string) {
       .eq("id", personneId)
 
     if (error) return { success: false, error: error.message }
+
+    revalidateTag(MEMBERS_TAG)
+    revalidateTag("roles")
     return { success: true, profil: { id: profil.id, slug: roleSlug } }
   } catch (err) {
     console.error("[updateMemberRole] Exception:", err)
@@ -71,24 +83,31 @@ export async function updateMemberRole(personneId: string, roleSlug: string) {
   }
 }
 
+const _fetchAllRoles = unstable_cache(
+  async (): Promise<{ data: ProfilType[] | null; error: string | null }> => {
+    try {
+      const admin = createAdminClient()
+      const { data, error } = await admin
+        .from("profils_types")
+        .select("*")
+        .order("nom")
+
+      if (error) return { data: null, error: error.message }
+      return { data: data as ProfilType[], error: null }
+    } catch (err) {
+      console.error("[getAllRoles] Exception:", err)
+      return { data: null, error: "Erreur serveur" }
+    }
+  },
+  ["all-roles"],
+  { tags: ["roles"] }
+)
+
 export async function getAllRoles(): Promise<{ data: ProfilType[] | null; error: string | null }> {
-  try {
-    const client = createClient()
-    const { data: { user } } = await client.auth.getUser()
-    if (!user) return { data: null, error: "Non authentifié" }
-
-    const admin = createAdminClient()
-    const { data, error } = await admin
-      .from("profils_types")
-      .select("*")
-      .order("nom")
-
-    if (error) return { data: null, error: error.message }
-    return { data: data as ProfilType[], error: null }
-  } catch (err) {
-    console.error("[getAllRoles] Exception:", err)
-    return { data: null, error: "Erreur serveur" }
-  }
+  const client = createClient()
+  const { data: { user } } = await client.auth.getUser()
+  if (!user) return { data: null, error: "Non authentifié" }
+  return _fetchAllRoles()
 }
 
 export async function updateRolePermissions(roleId: string, permissions: Record<string, boolean>) {
