@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useReducer } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
-import { ArrowLeft, FileText, Download, Trash2, Sparkles, Loader2 } from "lucide-react"
+import { ArrowLeft, FileText, Download, Trash2, Sparkles, Loader2, Banknote } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
@@ -150,12 +150,19 @@ export default function EtudeDocumentsPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <Link href={`/etudes/${etudeId}`}>
-        <Button variant="ghost" size="sm" className="text-muted-foreground">
-          <ArrowLeft className="h-4 w-4 mr-1.5" />
-          Retour à l&apos;étude
-        </Button>
-      </Link>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <Link href={`/etudes/${etudeId}`}>
+          <Button variant="ghost" size="sm" className="text-muted-foreground">
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            Retour à l&apos;étude
+          </Button>
+        </Link>
+        <Link href={`/etudes/${etudeId}/factures`}>
+          <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
+            <Banknote className="h-4 w-4 mr-1.5" /> Factures
+          </Button>
+        </Link>
+      </div>
 
       <div>
         <h1 className="text-2xl font-bold text-[#00236f] mb-1">Documents de l&apos;étude</h1>

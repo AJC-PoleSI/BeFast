@@ -31,6 +31,7 @@ import {
   BarChart3,
   ListChecks,
   FileText,
+  Banknote,
   Users,
   CheckCircle2,
   XCircle,
@@ -294,11 +295,18 @@ export default function EtudeDetailPage() {
             Retour aux études
           </Button>
         </Link>
-        <Link href={`/etudes/${etudeId}/documents`}>
-          <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
-            <FileText className="h-4 w-4 mr-1.5" /> Documents
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link href={`/etudes/${etudeId}/factures`}>
+            <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
+              <Banknote className="h-4 w-4 mr-1.5" /> Factures
+            </Button>
+          </Link>
+          <Link href={`/etudes/${etudeId}/documents`}>
+            <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
+              <FileText className="h-4 w-4 mr-1.5" /> Documents
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Header card */}
