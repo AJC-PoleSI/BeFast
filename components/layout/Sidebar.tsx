@@ -32,6 +32,8 @@ export function Sidebar({ permissions, isAdmin, userName, open, onClose }: Sideb
     if (item.href === "/administration") {
       return !!isAdmin
     }
+    // Admins voient tout par défaut
+    if (isAdmin) return true
     return permissions && permissions[item.permission] === true
   })
 
