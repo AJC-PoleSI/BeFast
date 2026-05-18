@@ -109,19 +109,84 @@ export const DOCUMENT_FIELDS: FieldDef[] = [
   { placeholder: "facture.numero", label: "Numéro de facture", source: "factures.numero", example: "2615-F01" },
   { placeholder: "facture.numero_dans_etude", label: "Numéro dans l'étude", source: "factures.numero_dans_etude", example: "1" },
   { placeholder: "facture.nom", label: "Nom de la facture", source: "factures.nom", example: "Facture d'acompte" },
-  { placeholder: "facture.montant_ht", label: "Montant HT total", source: "factures.montant_ht", example: "3 000,00" },
+  { placeholder: "facture.type", label: "Type (acompte / intermediaire / solde)", source: "factures.type" },
+  { placeholder: "facture.type_libelle", label: "Type lisible (d'acompte / intermédiaire / de solde)", source: "calculé" },
+  { placeholder: "facture.is_acompte", label: "Booléen : est-ce un acompte ?", source: "calculé" },
+  { placeholder: "facture.is_intermediaire", label: "Booléen : est-ce une PVRI ?", source: "calculé" },
+  { placeholder: "facture.is_solde", label: "Booléen : est-ce un solde ?", source: "calculé" },
+  { placeholder: "facture.montant_ht", label: "Montant HT total (formaté)", source: "factures.montant_ht", example: "3 000,00" },
   { placeholder: "facture.montant_ht_brut", label: "Montant HT (nombre brut)", source: "calculé", example: "3000" },
+  { placeholder: "facture.montant_ttc", label: "Montant TTC (HT + TVA)", source: "calculé" },
+  { placeholder: "facture.net_a_payer", label: "Net à payer", source: "calculé" },
+  { placeholder: "facture.tva_taux", label: "Taux de TVA (%)", source: "parametres.tva_taux" },
+  { placeholder: "facture.tva_montant", label: "Montant TVA", source: "calculé" },
   { placeholder: "facture.date_emission", label: "Date d'émission (DD/MM/YYYY)", source: "factures.date_emission" },
   { placeholder: "facture.date_echeance", label: "Date d'échéance (DD/MM/YYYY)", source: "factures.date_echeance" },
   { placeholder: "facture.date_paiement", label: "Date de paiement (DD/MM/YYYY)", source: "factures.date_paiement" },
   { placeholder: "facture.statut", label: "Statut (payée / en_attente)", source: "calculé" },
   { placeholder: "facture.notes", label: "Notes", source: "factures.notes" },
+  { placeholder: "facture.reference_avenant", label: "Référence avenant (vide si aucun)", source: "factures.reference_avenant" },
+
+  // ── Alias FACTURATION (compatibilité avec ton template) ───
+  { placeholder: "facturation.numero_global", label: "Numéro complet (alias de facture.numero)", source: "factures.numero" },
+  { placeholder: "facturation.type", label: "Type (alias)", source: "factures.type" },
+  { placeholder: "facturation.emitted_at", label: "Date d'émission (alias)", source: "factures.date_emission" },
+  { placeholder: "facturation.due_at", label: "Date d'échéance (alias)", source: "factures.date_echeance" },
+  { placeholder: "facturation.montant_total", label: "Montant total HT (alias)", source: "factures.montant_ht" },
+
+  // ── Lignes de facture (boucle {#lignes}) ──────────────────
   { placeholder: "lignes", label: "Tableau des lignes (boucle {#lignes})", source: "facture_lignes" },
-  { placeholder: "lignes.libelle", label: "  → Libellé (dans {#lignes})", source: "facture_lignes.libelle" },
-  { placeholder: "lignes.montant", label: "  → Montant HT (dans {#lignes})", source: "facture_lignes.montant" },
-  { placeholder: "lignes.montant_total", label: "  → Montant total phase (dans {#lignes})", source: "facture_lignes.montant_total" },
-  { placeholder: "lignes.pourcentage", label: "  → % facturé (dans {#lignes})", source: "facture_lignes.pourcentage" },
+  { placeholder: "lignes.libelle", label: "  → Libellé (= nom de phase)", source: "facture_lignes.libelle" },
+  { placeholder: "lignes.nom", label: "  → Alias de libellé", source: "facture_lignes.libelle" },
+  { placeholder: "lignes.montant", label: "  → Montant HT facturé (formaté)", source: "facture_lignes.montant" },
+  { placeholder: "lignes.montant_brut", label: "  → Montant HT (nombre brut)", source: "facture_lignes.montant" },
+  { placeholder: "lignes.montant_total", label: "  → Montant total phase", source: "facture_lignes.montant_total" },
+  { placeholder: "lignes.pourcentage", label: "  → % facturé", source: "facture_lignes.pourcentage" },
   { placeholder: "lignes.type", label: "  → Type (phase / frais)", source: "facture_lignes.type" },
+  { placeholder: "lignes.nombre_jeh", label: "  → Nombre de JEH (inféré)", source: "calculé depuis bloc.jeh" },
+  { placeholder: "lignes.prix_jeh", label: "  → Prix unitaire JEH (€/JEH formaté)", source: "calculé" },
+  { placeholder: "lignes.prix_unitaire", label: "  → Alias prix_jeh", source: "calculé" },
+
+  // ── Alias JUNIOR (depuis parametres) ──────────────────────
+  { placeholder: "junior.raison_sociale", label: "Raison sociale JE", source: "parametres.raison_sociale" },
+  { placeholder: "junior.statut_juridique", label: "Statut juridique (Association loi 1901…)", source: "parametres.statut_juridique" },
+  { placeholder: "junior.adresse1", label: "Adresse ligne 1", source: "parametres.adresse_1" },
+  { placeholder: "junior.adresse2", label: "Adresse ligne 2", source: "parametres.adresse_2" },
+  { placeholder: "junior.code_postal", label: "Code postal", source: "parametres.code_postal" },
+  { placeholder: "junior.ville", label: "Ville", source: "parametres.ville" },
+  { placeholder: "junior.siret", label: "SIRET", source: "parametres.siret" },
+  { placeholder: "junior.siren", label: "SIREN", source: "parametres.siren" },
+  { placeholder: "junior.code_ape", label: "Code APE", source: "parametres.code_ape" },
+  { placeholder: "junior.n_urssaf", label: "N° URSSAF", source: "parametres.numero_urssaf" },
+  { placeholder: "junior.n_tva_intra", label: "N° TVA intracommunautaire", source: "parametres.numero_tva" },
+  { placeholder: "junior.banque_rib", label: "RIB", source: "parametres.banque_rib" },
+  { placeholder: "junior.banque_domiciliation", label: "Domiciliation bancaire", source: "parametres.banque_domiciliation" },
+  { placeholder: "junior.banque_iban", label: "IBAN (alias)", source: "parametres.iban" },
+  { placeholder: "junior.banque_bic", label: "BIC (alias)", source: "parametres.bic" },
+  { placeholder: "junior.ordre_cheques", label: "À l'ordre de (chèques)", source: "parametres.ordre_cheques" },
+
+  // ── Alias ENTREPRISE (= client) ───────────────────────────
+  { placeholder: "entreprise.nom", label: "Nom de l'entreprise cliente", source: "clients.nom" },
+  { placeholder: "entreprise.adresse", label: "Adresse client", source: "clients.adresse" },
+  { placeholder: "entreprise.code_postal", label: "Code postal client", source: "clients.code_postal" },
+  { placeholder: "entreprise.ville", label: "Ville client", source: "clients.ville" },
+  { placeholder: "entreprise.pays", label: "Pays client (France par défaut)", source: "clients.pays" },
+  { placeholder: "entreprise.email", label: "Email client", source: "clients.email" },
+  { placeholder: "entreprise.telephone", label: "Téléphone client", source: "clients.telephone" },
+
+  // ── Alias SIGNATAIRE (contact signataire chez le client) ──
+  { placeholder: "signataire.civilite", label: "Civilité (Monsieur/Madame)", source: "clients.contact_civilite" },
+  { placeholder: "signataire.prenom", label: "Prénom du signataire", source: "clients.contact_prenom" },
+  { placeholder: "signataire.nom", label: "Nom du signataire", source: "clients.contact_nom" },
+  { placeholder: "signataire.fonction", label: "Fonction du signataire", source: "clients.contact_fonction" },
+  { placeholder: "signataire.email", label: "Email du signataire", source: "clients.contact_email" },
+
+  // ── TVA ────────────────────────────────────────────────────
+  { placeholder: "tva", label: "Taux de TVA en %", source: "parametres.tva_taux", example: "0 (art. 293 B)" },
+
+  // ── Étude (compléments pour facturation) ─────────────────
+  { placeholder: "etude.numero_court", label: "Numéro d'étude (2 derniers chiffres)", source: "calculé", example: "15" },
+  { placeholder: "etude.reference_dernier_avenant", label: "Ref avenant (sinon '0')", source: "factures.reference_avenant" },
 ]
 
 /** Returns fields filtered by a keyword (placeholder or label). */

@@ -734,39 +734,169 @@ export async function buildTemplateContext(
     const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(blocs)
     const organigramme = buildOrganigramme(params)
 
+    // Helpers de formatage
+    const fmtNum = (n: number, dec = 2) =>
+      Number(n).toLocaleString("fr-FR", { minimumFractionDigits: dec, maximumFractionDigits: dec })
+
+    // Tarif unitaire de la facture (€/JEH) — utilisé pour les lignes "phase"
+    // On essaye d'inférer depuis le param tarif_jeh, sinon depuis le ratio total / total_jeh
+    const tarifJehParam = Number(params.tarif_jeh_default ?? 0) || 0
+    const totalJehBlocs = blocs.reduce((s, b: any) => s + (Number(b.jeh) || 0), 0)
+    const prixJehInfered =
+      tarifJehParam > 0
+        ? tarifJehParam
+        : totalJehBlocs > 0 && budget_ht > 0
+          ? budget_ht / totalJehBlocs
+          : 0
+
     // Lignes formatées pour la boucle {#lignes}
-    const lignes = factureLignes.map((l, i) => ({
-      numero: i + 1,
-      libelle: l.libelle ?? "",
-      type: l.type ?? "",
-      type_libelle: l.type === "frais" ? "Frais" : "Phase",
-      montant: Number(l.montant ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      montant_brut: Number(l.montant ?? 0),
-      montant_total: Number(l.montant_total ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      montant_total_brut: Number(l.montant_total ?? 0),
-      pourcentage: Number(l.pourcentage ?? 0).toFixed(0),
-      pourcentage_brut: Number(l.pourcentage ?? 0),
-    }))
+    const lignes = factureLignes.map((l, i) => {
+      const mont = Number(l.montant ?? 0)
+      const montTotal = Number(l.montant_total ?? 0)
+      const phaseBloc = l.bloc_id ? blocs.find((b: any) => b.id === l.bloc_id) : null
+      const nombreJehLigne =
+        phaseBloc?.jeh != null
+          ? Number(phaseBloc.jeh)
+          : prixJehInfered > 0
+            ? montTotal / prixJehInfered
+            : 0
+      const prixUnitLigne = nombreJehLigne > 0 ? montTotal / nombreJehLigne : 0
+      return {
+        numero: i + 1,
+        libelle: l.libelle ?? "",
+        nom: l.libelle ?? "", // alias pour les templates qui utilisent {nom} dans {#lignes}
+        type: l.type ?? "",
+        type_libelle: l.type === "frais" ? "Frais" : "Phase",
+        montant: fmtNum(mont, 2),
+        montant_brut: mont,
+        montant_ht: fmtNum(mont, 2),
+        montant_total: fmtNum(montTotal, 2),
+        montant_total_brut: montTotal,
+        pourcentage: Number(l.pourcentage ?? 0).toFixed(0),
+        pourcentage_brut: Number(l.pourcentage ?? 0),
+        // Alias compatibles avec le template "junior" :
+        nombre_jeh: Number(nombreJehLigne.toFixed(2)),
+        prix_jeh: fmtNum(prixUnitLigne, 2),
+        prix_jeh_brut: prixUnitLigne,
+        prix_unitaire: fmtNum(prixUnitLigne, 2),
+      }
+    })
 
     const montantHtNum = Number(facture.montant_ht ?? 0)
+    const factureType = (facture.type as string) || "acompte"
+    const typeLibelle =
+      factureType === "acompte"
+        ? "d'acompte"
+        : factureType === "intermediaire"
+          ? "intermédiaire"
+          : factureType === "solde"
+            ? "de solde"
+            : ""
+
+    // TVA — par défaut 0 (art. 293 B) sauf si paramètre tva_taux renseigné
+    const tvaTaux = Number(params.tva_taux ?? 0) || 0
+    const tvaMontant = (montantHtNum * tvaTaux) / 100
+    const totalTtc = montantHtNum + tvaMontant
+
+    // Numéro d'étude court (2 derniers chiffres)
+    const etudeNumeroShort = (eAny.numero || "").slice(-2)
+    const etudeRefComplete = eAny.numero || ""
+
+    // Objet "facture" enrichi (compatible {facture.*} ET {facturation.*})
+    const factureCtx = {
+      ...facture,
+      type: factureType,
+      type_libelle: typeLibelle,
+      is_acompte: factureType === "acompte",
+      is_intermediaire: factureType === "intermediaire",
+      is_solde: factureType === "solde",
+      // alias compatibles avec ton template :
+      numero_global: facture.numero,
+      numero_dans_etude: facture.numero_dans_etude ?? null,
+      emitted_at: fmtDate(facture.date_emission),
+      due_at: fmtDate(facture.date_echeance),
+      paid_at: fmtDate(facture.date_paiement),
+      date_emission: fmtDate(facture.date_emission),
+      date_echeance: fmtDate(facture.date_echeance),
+      date_paiement: fmtDate(facture.date_paiement),
+      date_emission_iso: facture.date_emission || "",
+      date_echeance_iso: facture.date_echeance || "",
+      date_paiement_iso: facture.date_paiement || "",
+      montant_ht: fmtNum(montantHtNum, 2),
+      montant_ht_brut: montantHtNum,
+      montant_total: fmtNum(montantHtNum, 2),
+      montant_total_brut: montantHtNum,
+      tva_taux: tvaTaux,
+      tva_montant: fmtNum(tvaMontant, 2),
+      tva_montant_brut: tvaMontant,
+      montant_ttc: fmtNum(totalTtc, 2),
+      montant_ttc_brut: totalTtc,
+      net_a_payer: fmtNum(totalTtc, 2),
+      statut: facture.date_paiement ? "payée" : "en_attente",
+      reference_avenant: facture.reference_avenant || "",
+      nb_lignes: lignes.length,
+    }
+
+    // ── ALIAS JUNIOR (depuis parametres + structure org) ──
+    const junior = {
+      raison_sociale: params.raison_sociale || "",
+      statut_juridique: params.statut_juridique || params.junior_statut_juridique || "",
+      adresse1: params.adresse_1 || params.adresse || "",
+      adresse2: params.adresse_2 || "",
+      adresse: [params.adresse_1, params.adresse_2].filter(Boolean).join(", "),
+      code_postal: params.code_postal || "",
+      ville: params.ville || "",
+      siret: params.siret || "",
+      siren: params.siren || "",
+      code_ape: params.code_ape || "",
+      n_urssaf: params.numero_urssaf || params.n_urssaf || "",
+      n_tva_intra: params.numero_tva || params.n_tva_intra || "",
+      telephone: params.telephone || "",
+      email: params.email_contact || params.email || "",
+      site_web: params.site_web || "",
+      banque_rib: params.banque_rib || "",
+      banque_domiciliation: params.banque_domiciliation || "",
+      banque_iban: params.iban || params.banque_iban || "",
+      banque_bic: params.bic || params.banque_bic || "",
+      iban: params.iban || "",
+      bic: params.bic || "",
+      ordre_cheques: params.ordre_cheques || params.banque_ordre_cheques || params.raison_sociale || "",
+      nom_ecole: params.nom_ecole || "",
+    }
+
+    // ── ALIAS ENTREPRISE (= client) ──
+    const entreprise = {
+      ...clientData,
+      nom: clientData?.nom || "",
+      adresse: clientData?.adresse || "",
+      code_postal: clientData?.code_postal || "",
+      ville: clientData?.ville || "",
+      pays: clientData?.pays || "France",
+      email: clientData?.email || "",
+      telephone: clientData?.telephone || "",
+    }
+
+    // ── ALIAS SIGNATAIRE (depuis client contact si dispo) ──
+    const signataire = {
+      civilite: clientData?.contact_civilite || clientData?.civilite || "",
+      titre: clientData?.contact_civilite || clientData?.civilite || "",
+      prenom: clientData?.contact_prenom || "",
+      nom: clientData?.contact_nom || clientData?.contact || "",
+      nom_complet: [clientData?.contact_prenom, clientData?.contact_nom]
+        .filter(Boolean)
+        .join(" "),
+      fonction: clientData?.contact_fonction || "",
+      email: clientData?.contact_email || clientData?.email || "",
+      telephone: clientData?.contact_telephone || clientData?.telephone || "",
+    }
 
     return {
       ...base,
-      reference: eAny.numero || "",
-      facture: {
-        ...facture,
-        date_emission: fmtDate(facture.date_emission),
-        date_echeance: fmtDate(facture.date_echeance),
-        date_paiement: fmtDate(facture.date_paiement),
-        date_emission_iso: facture.date_emission || "",
-        date_echeance_iso: facture.date_echeance || "",
-        date_paiement_iso: facture.date_paiement || "",
-        montant_ht: montantHtNum.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        montant_ht_brut: montantHtNum,
-        statut: facture.date_paiement ? "payée" : "en_attente",
-        nb_lignes: lignes.length,
-      },
+      reference: etudeRefComplete,
+      facture: factureCtx,
+      facturation: factureCtx, // alias pour {facturation.*}
       lignes,
+      tva: tvaTaux,
       etude: {
         ...eAny,
         date_debut: fmtDate(eAny.date_debut),
@@ -777,9 +907,15 @@ export async function buildTemplateContext(
         marge_euros: (budget_ht * (margePct / 100)).toFixed(2),
         nb_jeh,
         nb_phases,
+        numero: etudeRefComplete,
+        numero_court: etudeNumeroShort,
+        reference_dernier_avenant: facture.reference_avenant || eAny.reference_dernier_avenant || "0",
       },
       client: clientData,
+      entreprise,
+      signataire,
       suiveur,
+      junior,
       ...organigramme,
       phases,
       planning,

@@ -64,6 +64,8 @@ export default function FacturesEtudePage() {
 
   // Form state
   const [formNom, setFormNom] = useState("Facture")
+  const [formType, setFormType] = useState<"acompte" | "intermediaire" | "solde">("acompte")
+  const [formReferenceAvenant, setFormReferenceAvenant] = useState<string>("")
   const [formDateEmission, setFormDateEmission] = useState<string>("")
   const [formDateEcheance, setFormDateEcheance] = useState<string>("")
   const [formDatePaiement, setFormDatePaiement] = useState<string>("")
@@ -165,23 +167,43 @@ export default function FacturesEtudePage() {
     [phases, frais]
   )
 
-  const openCreate = () => {
+  // Crée une nouvelle facture pré-remplie selon son type (acompte / intermediaire / solde).
+  // - acompte : X % du restant à facturer (60% par défaut)
+  // - intermediaire (PVRI) : X % saisi par l'utilisateur (40% par défaut)
+  // - solde : 100% du restant à facturer (auto = 40% si 60% d'acompte déjà émis)
+  const openCreate = (type: "acompte" | "intermediaire" | "solde" = "acompte") => {
     setCreating(true)
     setEditingId(null)
     const today = new Date().toISOString().slice(0, 10)
     const echeance = new Date()
     echeance.setMonth(echeance.getMonth() + 1)
-    setFormNom("Facture d'acompte")
+
+    setFormType(type)
+    setFormReferenceAvenant("")
     setFormDateEmission(today)
     setFormDateEcheance(echeance.toISOString().slice(0, 10))
     setFormDatePaiement("")
-    setAcomptePct(60)
-    // Pré-remplit les montants avec un acompte 60% du reste à facturer
+
+    let pctDefault: number
+    let nomDefault: string
+    if (type === "acompte") {
+      pctDefault = 60
+      nomDefault = "Facture d'acompte"
+    } else if (type === "intermediaire") {
+      pctDefault = 40
+      nomDefault = "Facture intermédiaire (PVRI)"
+    } else {
+      pctDefault = 100 // solde = 100% du restant à facturer
+      nomDefault = "Facture de solde"
+    }
+    setFormNom(nomDefault)
+    setAcomptePct(pctDefault)
+
     const base = buildLignesFor(null)
     const preFilled = base.map((l) => {
       const reste = Math.max(0, l.montant_total - l.deja_facture_autres)
-      const montant = Math.round(reste * 0.6 * 100) / 100
-      return { ...l, montant, pourcentage: 60 }
+      const montant = Math.round(reste * (pctDefault / 100) * 100) / 100
+      return { ...l, montant, pourcentage: pctDefault }
     })
     setLignes(preFilled)
   }
@@ -190,6 +212,8 @@ export default function FacturesEtudePage() {
     setCreating(false)
     setEditingId(facture.id)
     setFormNom(facture.nom ?? "Facture")
+    setFormType((facture.type as any) ?? "acompte")
+    setFormReferenceAvenant(facture.reference_avenant ?? "")
     setFormDateEmission(facture.date_emission ?? "")
     setFormDateEcheance(facture.date_echeance ?? "")
     setFormDatePaiement(facture.date_paiement ?? "")
@@ -277,6 +301,8 @@ export default function FacturesEtudePage() {
       res = await createFactureEtude({
         etude_id: etudeId,
         nom: formNom || "Facture",
+        type: formType,
+        reference_avenant: formReferenceAvenant || null,
         date_emission: formDateEmission || null,
         date_echeance: formDateEcheance || null,
         date_paiement: formDatePaiement || null,
@@ -377,17 +403,34 @@ export default function FacturesEtudePage() {
             Retour à l&apos;étude{etude?.numero ? ` ${etude.numero}` : ""}
           </Button>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-[#00236f] text-white text-xs font-semibold">
             {factures.length}
           </span>
           <Button
-            onClick={openCreate}
+            onClick={() => openCreate("acompte")}
             size="sm"
-            className="bg-[#00236f] text-white hover:bg-[#1e3a8a] rounded-full w-9 h-9 p-0"
-            title="Nouvelle facture"
+            className="bg-[#00236f] text-white hover:bg-[#1e3a8a]"
+            title="Créer une facture d'acompte (60% par défaut)"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 mr-1" /> Acompte
+          </Button>
+          <Button
+            onClick={() => openCreate("intermediaire")}
+            size="sm"
+            variant="outline"
+            className="border-amber-500/40 text-amber-700 hover:bg-amber-50"
+            title="Facture intermédiaire (PVRI)"
+          >
+            <Plus className="h-4 w-4 mr-1" /> PVRI
+          </Button>
+          <Button
+            onClick={() => openCreate("solde")}
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            title="Facture de solde — facture automatiquement le reste à facturer"
+          >
+            <Plus className="h-4 w-4 mr-1" /> Solde
           </Button>
         </div>
       </div>
@@ -418,8 +461,24 @@ export default function FacturesEtudePage() {
                   className="bg-white rounded-xl border border-border shadow-sm p-4 flex items-center gap-3 flex-wrap"
                 >
                   <div className="flex-1 min-w-0 min-w-[200px]">
-                    <div className="text-lg font-bold text-[#00236f] flex items-center gap-2">
+                    <div className="text-lg font-bold text-[#00236f] flex items-center gap-2 flex-wrap">
                       {f.nom ?? "Facture"}
+                      {f.type && (
+                        <span
+                          className={
+                            "text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wide " +
+                            (f.type === "acompte"
+                              ? "bg-[#00236f]/10 text-[#00236f]"
+                              : f.type === "intermediaire"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-emerald-100 text-emerald-700")
+                          }
+                        >
+                          {f.type === "acompte" && "Acompte"}
+                          {f.type === "intermediaire" && "PVRI"}
+                          {f.type === "solde" && "Solde"}
+                        </span>
+                      )}
                       {f.numero && (
                         <span className="text-xs font-mono font-normal text-zinc-400">#{f.numero}</span>
                       )}
@@ -509,6 +568,44 @@ export default function FacturesEtudePage() {
       )}
       {(creating || editingId) && lignes.length > 0 && (
         <div className="bg-white rounded-xl border border-border shadow-sm p-6 space-y-6">
+          {/* Badge type + référence avenant */}
+          <div className="flex items-center gap-3 flex-wrap pb-2 border-b border-zinc-100">
+            <span
+              className={
+                "inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold " +
+                (formType === "acompte"
+                  ? "bg-[#00236f]/10 text-[#00236f]"
+                  : formType === "intermediaire"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-emerald-100 text-emerald-700")
+              }
+            >
+              {formType === "acompte" && "Facture d'acompte"}
+              {formType === "intermediaire" && "Facture intermédiaire (PVRI)"}
+              {formType === "solde" && "Facture de solde"}
+            </span>
+            <select
+              className="h-8 px-2 rounded-md border border-input text-xs bg-white"
+              value={formType}
+              onChange={(e) => setFormType(e.target.value as any)}
+              disabled={!creating}
+              title={!creating ? "Le type ne peut pas être changé après création" : "Changer le type"}
+            >
+              <option value="acompte">Acompte</option>
+              <option value="intermediaire">Intermédiaire (PVRI)</option>
+              <option value="solde">Solde</option>
+            </select>
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-zinc-500">Réf. avenant</Label>
+              <Input
+                value={formReferenceAvenant}
+                onChange={(e) => setFormReferenceAvenant(e.target.value)}
+                placeholder="0"
+                className="h-8 w-20 text-xs"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-1">
               <Label className="text-xs text-zinc-600">Nom</Label>

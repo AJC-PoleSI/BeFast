@@ -50,6 +50,8 @@ export type FactureLigne = {
   created_at: string
 }
 
+export type FactureType = "acompte" | "intermediaire" | "solde"
+
 export type FactureEtude = {
   id: string
   numero: string
@@ -62,6 +64,8 @@ export type FactureEtude = {
   notes: string | null
   etude_id: string | null
   bloc_id: string | null
+  type: FactureType | null
+  reference_avenant: string | null
   lignes: FactureLigne[]
 }
 
@@ -177,6 +181,8 @@ export async function getFacturesEtude(etudeId: string) {
     notes: f.notes,
     etude_id: f.etude_id,
     bloc_id: f.bloc_id,
+    type: (f.type as FactureType) ?? null,
+    reference_avenant: f.reference_avenant ?? null,
     lignes: Array.isArray(f.facture_lignes)
       ? f.facture_lignes.sort((a: any, b: any) => a.ordre - b.ordre)
       : [],
@@ -323,6 +329,8 @@ async function generateGlobalNumero(etudeNumero: string, num: number): Promise<s
 export async function createFactureEtude(input: {
   etude_id: string
   nom?: string | null
+  type?: FactureType | null
+  reference_avenant?: string | null
   date_emission?: string | null
   date_echeance?: string | null
   date_paiement?: string | null
@@ -364,13 +372,15 @@ export async function createFactureEtude(input: {
     .filter((l) => Number(l.montant) > 0)
     .reduce((s, l) => s + Number(l.montant), 0)
 
-  // Tente l'insert complet ; si numero_dans_etude n'existe pas, retombe sans
+  // Tente l'insert complet ; si une colonne manque (migration en retard), retombe en cascade
   const insertPayload: any = {
     etude_id: input.etude_id,
     numero: numeroGlobal,
     numero_dans_etude: num,
     nom: input.nom ?? "Facture",
-    montant_ht: montantHtTotal, // fallback si trigger pas encore en place
+    type: input.type ?? null,
+    reference_avenant: input.reference_avenant ?? null,
+    montant_ht: montantHtTotal,
     date_emission: input.date_emission ?? null,
     date_echeance: input.date_echeance ?? null,
     date_paiement: input.date_paiement ?? null,
@@ -378,15 +388,22 @@ export async function createFactureEtude(input: {
     created_by: user.id,
   }
 
-  let factureRes = await supabase.from("factures").insert(insertPayload).select().single()
+  // Liste des colonnes optionnelles qu'on retire si la migration n'est pas encore appliquée
+  const optionalCols = ["type", "reference_avenant", "numero_dans_etude"]
 
-  if (
+  let factureRes = await supabase.from("factures").insert(insertPayload).select().single()
+  let attempt = 0
+  while (
     factureRes.error &&
-    (factureRes.error.code === "42703" || /numero_dans_etude.*does not exist/i.test(factureRes.error.message))
+    (factureRes.error.code === "42703" || /does not exist/i.test(factureRes.error.message)) &&
+    attempt < optionalCols.length
   ) {
-    // Migration 025 pas appliquée → insère sans numero_dans_etude
-    const { numero_dans_etude: _ignore, ...withoutNumDansEtude } = insertPayload
-    factureRes = await supabase.from("factures").insert(withoutNumDansEtude).select().single()
+    // Retire la première colonne mentionnée dans l'erreur (ou la première optionnelle si on ne trouve pas)
+    const errMsg = factureRes.error.message.toLowerCase()
+    const colToRemove = optionalCols.find((c) => errMsg.includes(c)) || optionalCols[attempt]
+    delete insertPayload[colToRemove]
+    attempt++
+    factureRes = await supabase.from("factures").insert(insertPayload).select().single()
   }
   if (factureRes.error) return { error: factureRes.error.message }
   const facture = factureRes.data
