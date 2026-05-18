@@ -4,6 +4,28 @@ import { createClient } from "@/lib/supabase/server"
 import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next/cache"
 import { FACTURES_TAG, ETUDE_DETAIL_TAG } from "@/lib/cache-tags"
 
+// Vérifie que l'utilisateur a la permission voir_factures (ou est admin).
+// Retourne null si OK, sinon un objet { error } à propager.
+async function assertCanManageFactures(): Promise<{ error: string } | null> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
+  const { data: personne } = await supabase
+    .from("personnes")
+    .select("profils_types(slug, permissions)")
+    .eq("id", user.id)
+    .single()
+
+  const profil = (personne as any)?.profils_types
+  if (!profil) return { error: "Accès refusé" }
+  if (profil.slug === "administrateur") return null
+  if (profil.permissions?.voir_factures === true) return null
+  return { error: "Accès refusé — permission voir_factures requise" }
+}
+
 export type FactureLigneInput = {
   id?: string
   type: "phase" | "frais"
@@ -67,11 +89,9 @@ export type FraisRow = {
 
 export async function getFacturesEtude(etudeId: string) {
   noStore()
+  const denied = await assertCanManageFactures()
+  if (denied) return denied
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
 
   // Étude (pour budget et frais)
   const { data: etude, error: etErr } = await supabase
@@ -166,11 +186,9 @@ export async function getFacturesEtude(etudeId: string) {
 
 export async function getFactureEtudeDetail(factureId: string) {
   noStore()
+  const denied = await assertCanManageFactures()
+  if (denied) return denied
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
 
   const { data, error } = await supabase
     .from("factures")
@@ -216,11 +234,26 @@ export async function createFactureEtude(input: {
   notes?: string | null
   lignes: FactureLigneInput[]
 }) {
+  const denied = await assertCanManageFactures()
+  if (denied) return denied
   const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+
+  // Validation : montants doivent être positifs et finis
+  for (const l of input.lignes) {
+    if (!Number.isFinite(Number(l.montant)) || Number(l.montant) < 0) {
+      return { error: "Montant de ligne invalide" }
+    }
+    if (!Number.isFinite(Number(l.montant_total)) || Number(l.montant_total) < 0) {
+      return { error: "Montant total invalide" }
+    }
+    if (l.type !== "phase" && l.type !== "frais") {
+      return { error: "Type de ligne invalide" }
+    }
+  }
 
   // Récupère le numéro d'étude pour générer un numero global
   const { data: et, error: etErr } = await supabase
@@ -292,11 +325,23 @@ export async function updateFactureEtude(
     lignes?: FactureLigneInput[]
   }
 ) {
+  const denied = await assertCanManageFactures()
+  if (denied) return denied
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
+
+  if (updates.lignes !== undefined) {
+    for (const l of updates.lignes) {
+      if (!Number.isFinite(Number(l.montant)) || Number(l.montant) < 0) {
+        return { error: "Montant de ligne invalide" }
+      }
+      if (!Number.isFinite(Number(l.montant_total)) || Number(l.montant_total) < 0) {
+        return { error: "Montant total invalide" }
+      }
+      if (l.type !== "phase" && l.type !== "frais") {
+        return { error: "Type de ligne invalide" }
+      }
+    }
+  }
 
   const { data: existing, error: exErr } = await supabase
     .from("factures")
@@ -358,11 +403,9 @@ export async function updateFactureEtude(
 }
 
 export async function deleteFactureEtude(factureId: string) {
+  const denied = await assertCanManageFactures()
+  if (denied) return denied
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
 
   const { data: existing } = await supabase
     .from("factures")

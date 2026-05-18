@@ -4,10 +4,11 @@ import { useEffect, useState, useCallback, useMemo } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
-import { ArrowLeft, Plus, Pencil, Banknote, Ban, Trash2, Loader2 } from "lucide-react"
+import { ArrowLeft, Plus, Pencil, Banknote, Ban, Trash2, Loader2, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useUser } from "@/hooks/useUser"
 import {
   getFacturesEtude,
   createFactureEtude,
@@ -37,6 +38,8 @@ function fmtEuro(n: number): string {
 export default function FacturesEtudePage() {
   const params = useParams()
   const etudeId = params.etudeId as string
+  const { isAdmin, permissions, loading: authLoading } = useUser()
+  const canManage = isAdmin || !!permissions?.voir_factures
 
   const [loading, setLoading] = useState(true)
   const [etude, setEtude] = useState<any>(null)
@@ -74,8 +77,29 @@ export default function FacturesEtudePage() {
   }, [etudeId])
 
   useEffect(() => {
-    refresh()
-  }, [refresh])
+    if (!authLoading && canManage) refresh()
+  }, [authLoading, canManage, refresh])
+
+  // Permission gate
+  if (!authLoading && !canManage) {
+    return (
+      <div className="max-w-5xl mx-auto p-8">
+        <Link href={`/etudes/${etudeId}`}>
+          <Button variant="ghost" size="sm" className="text-muted-foreground mb-4">
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            Retour à l&apos;étude
+          </Button>
+        </Link>
+        <div className="bg-white rounded-xl border border-border p-8 text-center">
+          <ShieldAlert className="h-10 w-10 text-zinc-400 mx-auto mb-3" />
+          <h2 className="text-lg font-semibold text-zinc-700 mb-1">Accès refusé</h2>
+          <p className="text-sm text-zinc-500">
+            Tu n&apos;as pas la permission <code className="px-1 py-0.5 bg-zinc-100 rounded text-xs">voir_factures</code> pour accéder à cette page.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const editingFacture = useMemo(
     () => factures.find((f) => f.id === editingId) ?? null,
