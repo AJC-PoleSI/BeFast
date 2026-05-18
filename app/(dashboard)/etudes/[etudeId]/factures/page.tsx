@@ -160,7 +160,14 @@ export default function FacturesEtudePage() {
     setFormDateEcheance(echeance.toISOString().slice(0, 10))
     setFormDatePaiement("")
     setAcomptePct(60)
-    setLignes(buildLignesFor(null))
+    // Pré-remplit les montants avec un acompte 60% du reste à facturer
+    const base = buildLignesFor(null)
+    const preFilled = base.map((l) => {
+      const reste = Math.max(0, l.montant_total - l.deja_facture_autres)
+      const montant = Math.round(reste * 0.6 * 100) / 100
+      return { ...l, montant, pourcentage: 60 }
+    })
+    setLignes(preFilled)
   }
 
   const openEdit = (facture: FactureEtude) => {
@@ -223,8 +230,16 @@ export default function FacturesEtudePage() {
   )
 
   const handleSave = async () => {
+    if (lignes.length === 0) {
+      toast.error(
+        "Cette étude n'a ni budget HT ni phases d'échéancier. Renseigne le budget HT dans la fiche étude avant de créer une facture."
+      )
+      return
+    }
     if (lignes.every((l) => Number(l.montant) <= 0)) {
-      toast.error("Renseigne au moins une ligne avec un montant > 0")
+      toast.error(
+        "Tous les montants sont à 0. Clique sur « Appliquer » avec un % d'acompte, utilise « Solder » ou saisis un montant manuellement."
+      )
       return
     }
     setSaving(true)
@@ -390,7 +405,17 @@ export default function FacturesEtudePage() {
       )}
 
       {/* Formulaire création / édition */}
-      {(creating || editingId) && (
+      {(creating || editingId) && lignes.length === 0 && (
+        <div className="bg-white rounded-xl border border-amber-200 bg-amber-50/50 p-6 text-center text-sm text-amber-800 space-y-2">
+          <p className="font-semibold">Impossible de facturer cette étude</p>
+          <p>
+            L&apos;étude n&apos;a ni <strong>budget HT</strong> renseigné, ni <strong>phases d&apos;échéancier</strong> définies.<br />
+            Renseigne au moins le budget HT dans la fiche étude pour pouvoir créer une facture.
+          </p>
+          <Button variant="ghost" onClick={closeForm} size="sm">Fermer</Button>
+        </div>
+      )}
+      {(creating || editingId) && lignes.length > 0 && (
         <div className="bg-white rounded-xl border border-border shadow-sm p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-1">

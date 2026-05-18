@@ -141,9 +141,27 @@ export async function getFacturesEtude(etudeId: string) {
     lignes: (f.facture_lignes ?? []).sort((a: any, b: any) => a.ordre - b.ordre),
   }))
 
+  // Budget HT total de l'étude (fallback si tarifJeh n'est pas configuré)
+  const budgetHtEtude = Number((etude as any).budget_ht ?? (etude as any).budget ?? 0)
+  const totalJehEtude = (blocs ?? []).reduce((s: number, b: any) => s + Number(b.jeh ?? 0), 0)
+
   // Pour chaque phase, calcule le total déjà facturé (somme des lignes phase de toutes les factures)
+  // Stratégie pour montant_total :
+  //   1) si tarifJeh > 0 et phase.jeh > 0 → phase.jeh * tarifJeh
+  //   2) sinon, si budget_ht > 0 et somme(jeh) > 0 → distribue le budget proportionnellement à jeh
+  //   3) sinon, si une seule phase et budget_ht > 0 → tout le budget sur cette phase
+  //   4) sinon 0 (saisie manuelle)
   const phases: PhaseRow[] = (blocs ?? []).map((b: any) => {
-    const montantTotal = Number(b.jeh ?? 0) * tarifJeh
+    const jeh = Number(b.jeh ?? 0)
+    let montantTotal = 0
+    if (tarifJeh > 0 && jeh > 0) {
+      montantTotal = jeh * tarifJeh
+    } else if (budgetHtEtude > 0 && totalJehEtude > 0 && jeh > 0) {
+      montantTotal = Math.round(((jeh / totalJehEtude) * budgetHtEtude) * 100) / 100
+    } else if (budgetHtEtude > 0 && (blocs?.length ?? 0) === 1) {
+      montantTotal = budgetHtEtude
+    }
+
     const dejaFacture = facturesList.reduce((sum, f) => {
       const ligne = f.lignes.find((l) => l.type === "phase" && l.bloc_id === b.id)
       return sum + (ligne ? Number(ligne.montant) : 0)
@@ -151,7 +169,7 @@ export async function getFacturesEtude(etudeId: string) {
     return {
       id: b.id,
       nom: b.nom,
-      jeh: Number(b.jeh ?? 0),
+      jeh,
       ordre: b.ordre ?? 0,
       montant_total: montantTotal,
       deja_facture: dejaFacture,
@@ -159,6 +177,25 @@ export async function getFacturesEtude(etudeId: string) {
       pourcentage_facture: montantTotal > 0 ? (dejaFacture / montantTotal) * 100 : 0,
     }
   })
+
+  // Si aucune phase d'échéancier n'est définie mais budget_ht > 0,
+  // on crée une phase virtuelle "Étude" pour permettre la facturation.
+  if (phases.length === 0 && budgetHtEtude > 0) {
+    const dejaFacture = facturesList.reduce((sum, f) => {
+      const ligne = f.lignes.find((l) => l.type === "phase" && l.bloc_id === null)
+      return sum + (ligne ? Number(ligne.montant) : 0)
+    }, 0)
+    phases.push({
+      id: "__etude__",
+      nom: (etude as any).nom ?? "Étude",
+      jeh: 0,
+      ordre: 0,
+      montant_total: budgetHtEtude,
+      deja_facture: dejaFacture,
+      reste: Math.max(0, budgetHtEtude - dejaFacture),
+      pourcentage_facture: budgetHtEtude > 0 ? (dejaFacture / budgetHtEtude) * 100 : 0,
+    })
+  }
 
   // Frais
   const fraisTotal = Number((etude as any).frais_dossier ?? 0)
@@ -289,7 +326,8 @@ export async function createFactureEtude(input: {
     .map((l, i) => ({
       facture_id: facture.id,
       type: l.type,
-      bloc_id: l.type === "phase" ? l.bloc_id ?? null : null,
+      // bloc_id "__etude__" = phase virtuelle (étude sans échéancier) → on stocke null
+      bloc_id: l.type === "phase" && l.bloc_id && l.bloc_id !== "__etude__" ? l.bloc_id : null,
       libelle: l.libelle,
       montant_total: l.montant_total,
       montant: l.montant,
@@ -375,7 +413,7 @@ export async function updateFactureEtude(
       .map((l, i) => ({
         facture_id: factureId,
         type: l.type,
-        bloc_id: l.type === "phase" ? l.bloc_id ?? null : null,
+        bloc_id: l.type === "phase" && l.bloc_id && l.bloc_id !== "__etude__" ? l.bloc_id : null,
         libelle: l.libelle,
         montant_total: l.montant_total,
         montant: l.montant,
