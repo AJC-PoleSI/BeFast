@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
-import { ArrowLeft, Plus, Pencil, Banknote, Ban, Trash2, Loader2, ShieldAlert } from "lucide-react"
+import { ArrowLeft, Plus, Pencil, Banknote, Ban, Trash2, Loader2, ShieldAlert, FileDown, Check, Hourglass } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -358,45 +358,75 @@ export default function FacturesEtudePage() {
             </div>
           ) : (
             factures.map((f) => {
-              const statut = f.date_paiement ? "paye" : f.date_emission ? "emise" : "brouillon"
+              const isPaye = !!f.date_paiement
               return (
                 <div
                   key={f.id}
-                  className="bg-white rounded-xl border border-border shadow-sm p-4 flex items-center gap-4"
+                  className="bg-white rounded-xl border border-border shadow-sm p-4 flex items-center gap-3 flex-wrap"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="text-lg font-bold text-[#00236f]">{f.nom ?? "Facture"}</div>
+                  <div className="flex-1 min-w-0 min-w-[200px]">
+                    <div className="text-lg font-bold text-[#00236f] flex items-center gap-2">
+                      {f.nom ?? "Facture"}
+                      {f.numero && (
+                        <span className="text-xs font-mono font-normal text-zinc-400">#{f.numero}</span>
+                      )}
+                    </div>
                     <div className="text-xs text-zinc-500 mt-0.5">
-                      {f.date_emission && `émise le ${new Date(f.date_emission).toLocaleDateString("fr-FR")}`}
+                      {f.date_emission
+                        ? `émise le ${new Date(f.date_emission).toLocaleDateString("fr-FR")}`
+                        : "Brouillon"}
                       {f.date_echeance && ` · à échéance le ${new Date(f.date_echeance).toLocaleDateString("fr-FR")}`}
                     </div>
                   </div>
 
-                  {statut === "paye" ? (
-                    <span className="text-xs px-3 py-1 rounded bg-emerald-100 text-emerald-700 font-medium">
-                      Paiement reçu
+                  {/* Statut paiement (badge, non cliquable) */}
+                  {isPaye ? (
+                    <span className="text-xs px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium inline-flex items-center gap-1">
+                      <Check className="h-3 w-3" /> Payée
                     </span>
                   ) : (
-                    <button
-                      onClick={() => togglePaiement(f)}
-                      className="text-xs px-3 py-1 rounded bg-amber-400 hover:bg-amber-500 text-white font-medium"
-                      title="Marquer comme payée"
-                    >
-                      Paiement reçu
-                    </button>
+                    <span className="text-xs px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 font-medium inline-flex items-center gap-1">
+                      <Hourglass className="h-3 w-3" /> En attente
+                    </span>
                   )}
 
                   <div className="text-right">
                     <div className="text-lg font-bold text-[#00236f]">{fmtEuro(f.montant_ht)} €</div>
                   </div>
 
-                  <button
-                    onClick={() => openEdit(f)}
-                    className="text-zinc-400 hover:text-[#00236f]"
-                    title="Modifier"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
+                  {/* Actions */}
+                  <div className="flex items-center gap-1">
+                    {/* Générer document PDF */}
+                    <button
+                      onClick={() => window.open(`/etudes/${etudeId}/factures/${f.id}/imprimer`, "_blank")}
+                      className="text-xs px-2 py-1.5 rounded text-[#00236f] hover:bg-[#00236f]/10 inline-flex items-center gap-1"
+                      title="Générer / imprimer la facture"
+                    >
+                      <FileDown className="h-4 w-4" />
+                    </button>
+
+                    {/* Toggle paiement */}
+                    <button
+                      onClick={() => togglePaiement(f)}
+                      className={
+                        isPaye
+                          ? "text-xs px-2 py-1.5 rounded text-zinc-500 hover:bg-zinc-100"
+                          : "text-xs px-3 py-1.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white font-medium inline-flex items-center gap-1"
+                      }
+                      title={isPaye ? "Annuler le paiement" : "Marquer comme payée"}
+                    >
+                      {isPaye ? "Annuler paiement" : (<><Check className="h-3 w-3" /> Marquer payée</>)}
+                    </button>
+
+                    {/* Édition */}
+                    <button
+                      onClick={() => openEdit(f)}
+                      className="text-zinc-400 hover:text-[#00236f] p-1.5"
+                      title="Modifier"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               )
             })

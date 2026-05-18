@@ -553,3 +553,88 @@ export async function marquerFactureEtudePaiement(
 ) {
   return updateFactureEtude(factureId, { date_paiement })
 }
+
+// ============================================================
+// IMPRESSION — récupère facture + étude + client + structure
+// ============================================================
+export async function getFactureForPrint(factureId: string) {
+  noStore()
+  const denied = await assertCanManageFactures()
+  if (denied) return denied
+  const supabase = createClient()
+
+  // Facture + lignes (avec fallback si table absente)
+  let factureRes = await supabase
+    .from("factures")
+    .select("*, facture_lignes(*)")
+    .eq("id", factureId)
+    .single()
+
+  let lignes: any[] = []
+  let facture: any = null
+  if (factureRes.error) {
+    if (
+      factureRes.error.code === "42P01" ||
+      factureRes.error.code === "42703" ||
+      /does not exist/i.test(factureRes.error.message)
+    ) {
+      const fallback = await supabase
+        .from("factures")
+        .select("id, numero, nom, montant_ht, date_emission, date_echeance, date_paiement, notes, etude_id")
+        .eq("id", factureId)
+        .single()
+      if (fallback.error) return { error: fallback.error.message }
+      facture = fallback.data
+    } else {
+      return { error: factureRes.error.message }
+    }
+  } else {
+    facture = factureRes.data
+    lignes = Array.isArray(factureRes.data?.facture_lignes)
+      ? [...factureRes.data.facture_lignes].sort((a: any, b: any) => a.ordre - b.ordre)
+      : []
+  }
+
+  // Étude + client (résilient sur budget/marge_pct)
+  let etudeRes = await supabase
+    .from("etudes")
+    .select("id, numero, nom, budget_ht, budget, frais_dossier, marge_pct, clients(id, nom, email, telephone)")
+    .eq("id", facture.etude_id)
+    .single()
+  if (etudeRes.error && (etudeRes.error.code === "42703" || /does not exist/i.test(etudeRes.error.message))) {
+    etudeRes = await supabase
+      .from("etudes")
+      .select("id, numero, nom, budget_ht, frais_dossier, clients(id, nom, email, telephone)")
+      .eq("id", facture.etude_id)
+      .single() as any
+  }
+  const etude = etudeRes.data ?? null
+
+  // Paramètres structure (raison sociale, adresse, IBAN, etc.)
+  const { data: paramsRows } = await supabase.from("parametres").select("key, value")
+  const params: Record<string, string> = {}
+  for (const row of paramsRows ?? []) {
+    params[row.key] = row.value || ""
+  }
+
+  return {
+    data: {
+      facture,
+      lignes,
+      etude,
+      structure: {
+        raison_sociale: params.raison_sociale || "",
+        adresse: params.adresse || "",
+        code_postal: params.code_postal || "",
+        ville: params.ville || "",
+        siret: params.siret || "",
+        iban: params.iban || "",
+        bic: params.bic || "",
+        email: params.email_structure || params.email || "",
+        telephone: params.telephone_structure || params.telephone || "",
+        tva_intra: params.tva_intra || "",
+        president_nom: params.president_nom || "",
+      },
+    },
+  }
+}
