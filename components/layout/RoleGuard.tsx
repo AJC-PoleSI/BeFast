@@ -38,7 +38,8 @@ export function RoleGuard({ permission, requireAdmin, children }: RoleGuardProps
     )
   }
 
-  if (permission && (!permissions || permissions[permission] !== true)) {
+  // Les admins ont accès à toutes les pages (bypass de la permission)
+  if (permission && !isAdmin && (!permissions || permissions[permission] !== true)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
