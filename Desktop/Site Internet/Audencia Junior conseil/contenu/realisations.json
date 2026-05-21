@@ -1,0 +1,245 @@
+{
+  "_comment": "Source unique pour la page 'Nos réalisations' et chaque fiche détaillée. Voir contenu/README-realisations.md.",
+
+  "page": {
+    "titre": "Nos<strong>réalisations</strong>",
+    "eyebrow": "Portfolio · 2020 — 2026",
+    "intro": "Découvrez les missions menées par nos consultants juniors pour des PME, ETI et grands groupes. Chaque étude est conduite avec la rigueur d'Audencia et la méthodologie ISO 9001.",
+    "stats": [
+      { "valeur": "28",  "libelle": "Études réalisées" },
+      { "valeur": "12",  "libelle": "Secteurs couverts" },
+      { "valeur": "97%", "libelle": "Clients satisfaits" }
+    ]
+  },
+
+  "realisations": [
+    {
+      "slug": "bagelstein",
+      "client": "Bagelstein",
+      "client_initiale": "B.",
+      "client_label": "Bagelstein",
+      "annee": 2024,
+      "expertise": ["marketing"],
+      "secteur": "retail",
+      "secteur_libelle": "Restauration / Retail",
+      "tags": ["Marketing", "Étude de marché"],
+      "tags_detail": ["Marketing", "Étude de marché", "Étude quantitative", "Recommandations stratégiques"],
+      "titre": "Lancement d'une gamme végane en région nantaise",
+      "titre_detail": "Lancement d'un nouveau<strong>produit en région nantaise</strong>",
+      "description": "Étude de marché et recommandations stratégiques pour le déploiement d'une nouvelle gamme sur la zone nantaise avant scale-up national.",
+      "image": "photos/realisations/bagelstein.jpg",
+      "image_alt": "Photo Bagelstein",
+
+      "meta": {
+        "duree":     "3 mois",
+        "equipe":    "4 consultants",
+        "livrables": "2 rapports + soutenance"
+      },
+
+      "contexte": {
+        "intro": "Bagelstein, enseigne française de restauration rapide premium, souhaitait lancer une nouvelle gamme de bagels véganes sur le marché nantais avant un déploiement national.",
+        "enjeu": "L'enjeu : comprendre l'appétence d'une cible urbaine 25-40 ans, identifier les freins à l'achat et déterminer le positionnement prix optimal pour maximiser le taux de conversion à l'ouverture.",
+        "defi":  "Valider la viabilité commerciale d'une gamme végane en 3 mois, avec une équipe terrain restreinte et un budget d'étude maîtrisé.",
+        "objectifs": [
+          { "num": "01 · Dimensionner",  "texte": "Quantifier le potentiel de marché à 12 mois sur la zone" },
+          { "num": "02 · Cartographier", "texte": "Identifier les attentes et freins de la cible 25-40 ans" },
+          { "num": "03 · Recommander",   "texte": "Définir un pricing et un mix produit optimaux" }
+        ]
+      },
+
+      "approche": {
+        "intro": "Une méthodologie en 4 étapes, éprouvée sur plus de 200 missions, certifiée ISO 9001.",
+        "etapes": [
+          { "step": "Cadrage",   "titre": "Immersion et brief stratégique",       "description": "Atelier de cadrage avec les équipes Bagelstein, analyse des données internes (ventes, données clients) et revue documentaire du marché." },
+          { "step": "Collecte",  "titre": "Étude quanti & quali sur le terrain",  "description": "420 questionnaires en ligne, 18 entretiens semi-directifs et 3 focus groups menés sur la zone nantaise pendant 4 semaines." },
+          { "step": "Analyse",   "titre": "Modélisation et benchmark concurrentiel","description": "Analyse statistique, segmentation comportementale, mapping concurrentiel et veille des best practices en restauration végane." },
+          { "step": "Livrables", "titre": "Recommandations & soutenance",         "description": "Rapport stratégique 60 pages, deck de soutenance, plan d'actions priorisé et accompagnement pour la mise en œuvre." }
+        ]
+      },
+
+      "resultats": {
+        "intro": "Notre étude a permis à Bagelstein de sécuriser le lancement de sa gamme végane. Six mois après l'ouverture, les ventes dépassent les prévisions de <strong>+15%</strong>.",
+        "kpis": [
+          { "libelle": "Répondants collectés", "valeur": "420" },
+          { "libelle": "Intention d'achat",    "valeur": "+38%", "highlight": true },
+          { "libelle": "Segments identifiés",  "valeur": "3" },
+          { "libelle": "Prix psychologique",   "valeur": "€8,90" }
+        ],
+        "outcomes": [
+          { "titre": "Lancement réussi",     "texte": "Gamme végane lancée en septembre 2024 sur la zone nantaise, +15% vs prévisionnel." },
+          { "titre": "Déploiement national", "texte": "Validation pour 12 nouvelles villes en 2025 sur la base de nos recommandations." },
+          { "titre": "Partenariat continu",  "texte": "Mission de suivi confiée à AJC pour la phase de scale-up nationale." }
+        ]
+      },
+
+      "temoignage": {
+        "quote": "L'équipe d'Audencia Junior Conseil nous a livré une analyse fine et actionnable. Leur rigueur méthodologique et la qualité du livrable ont dépassé nos attentes.",
+        "auteur": "Marie D.",
+        "role": "Responsable Marketing · Bagelstein"
+      }
+    },
+
+    {
+      "slug": "maison-luxe",
+      "client": "LVMH",
+      "client_initiale": "L.",
+      "client_label": "Maison Luxe",
+      "annee": 2024,
+      "expertise": ["communication"],
+      "secteur": "luxe",
+      "secteur_libelle": "Luxe / Parfumerie",
+      "tags": ["Communication", "Stratégie éditoriale"],
+      "tags_detail": ["Communication", "Stratégie éditoriale", "Identité de marque"],
+      "titre": "Refonte de la stratégie éditoriale d'une maison de parfumerie",
+      "titre_detail": "Refonte de la stratégie<strong>éditoriale d'une maison de luxe</strong>",
+      "description": "Audit complet des prises de parole et construction d'un nouveau territoire d'expression sur 18 mois.",
+      "image": "photos/realisations/maison-luxe.jpg",
+      "image_alt": "Photo maison parfumerie",
+      "meta": { "duree": "5 mois", "equipe": "3 consultants", "livrables": "Plateforme de marque + guide éditorial" }
+    },
+    {
+      "slug": "saint-gobain",
+      "client": "Saint-Gobain",
+      "client_initiale": "SG",
+      "client_label": "Industrie",
+      "annee": 2023,
+      "expertise": ["rse"],
+      "secteur": "industrie",
+      "secteur_libelle": "Industrie",
+      "tags": ["RSE", "Bilan carbone"],
+      "tags_detail": ["RSE", "Bilan carbone", "Scope 1-2-3"],
+      "titre": "Diagnostic RSE et bilan carbone d'une division industrielle",
+      "titre_detail": "Diagnostic RSE et<strong>bilan carbone industriel</strong>",
+      "description": "Cartographie des émissions Scope 1, 2 & 3 et plan de réduction sur 5 ans pour une division de 1 200 collaborateurs.",
+      "image": "photos/realisations/saint-gobain.jpg",
+      "image_alt": "Photo site industriel",
+      "meta": { "duree": "4 mois", "equipe": "5 consultants", "livrables": "Bilan carbone + plan d'action 5 ans" }
+    },
+    {
+      "slug": "grdf",
+      "client": "GRDF",
+      "client_initiale": "G.",
+      "client_label": "Énergie",
+      "annee": 2023,
+      "expertise": ["bigdata"],
+      "secteur": "energie",
+      "secteur_libelle": "Énergie",
+      "tags": ["Big Data", "Dashboards"],
+      "tags_detail": ["Big Data", "Dashboards", "Power BI"],
+      "titre": "Construction d'un dashboard de pilotage commercial",
+      "titre_detail": "Dashboard de<strong>pilotage commercial</strong>",
+      "description": "Conception et déploiement d'un tableau de bord temps réel pour 80 commerciaux terrain, intégration de 6 sources de données.",
+      "image": "photos/realisations/grdf.jpg",
+      "image_alt": "Photo réseau gaz",
+      "meta": { "duree": "3 mois", "equipe": "3 consultants", "livrables": "Dashboard + documentation" }
+    },
+    {
+      "slug": "leroy-merlin",
+      "client": "Leroy Merlin",
+      "client_initiale": "LM",
+      "client_label": "Bricolage",
+      "annee": 2023,
+      "expertise": ["marketing"],
+      "secteur": "retail",
+      "secteur_libelle": "Retail",
+      "tags": ["Marketing", "Segmentation"],
+      "tags_detail": ["Marketing", "Segmentation", "Personas"],
+      "titre": "Segmentation comportementale des clients pro",
+      "titre_detail": "Segmentation comportementale<strong>des clients pro</strong>",
+      "description": "Identification de 5 segments stratégiques sur la cible artisans et création de personas pour la communication ciblée.",
+      "image": "photos/realisations/leroy-merlin.jpg",
+      "image_alt": "Photo enseigne bricolage",
+      "meta": { "duree": "4 mois", "equipe": "4 consultants", "livrables": "Personas + roadmap commerciale" }
+    },
+    {
+      "slug": "vinci",
+      "client": "Vinci",
+      "client_initiale": "V.",
+      "client_label": "BTP",
+      "annee": 2022,
+      "expertise": ["finance"],
+      "secteur": "services",
+      "secteur_libelle": "BTP / Immobilier",
+      "tags": ["Finance", "Business plan"],
+      "tags_detail": ["Finance", "Business plan", "Étude de rentabilité"],
+      "titre": "Étude de rentabilité d'un projet immobilier mixte",
+      "titre_detail": "Étude de rentabilité<strong>d'un projet immobilier</strong>",
+      "description": "Modélisation financière et analyse de risque pour un programme immobilier de 8 500 m² en région lyonnaise.",
+      "image": "photos/realisations/vinci.jpg",
+      "image_alt": "Photo projet immobilier",
+      "meta": { "duree": "3 mois", "equipe": "3 consultants", "livrables": "Business plan + analyse de risque" }
+    },
+    {
+      "slug": "bouygues-telecom",
+      "client": "Bouygues Telecom",
+      "client_initiale": "BT",
+      "client_label": "Telecom",
+      "annee": 2022,
+      "expertise": ["communication"],
+      "secteur": "tech",
+      "secteur_libelle": "Telecom",
+      "tags": ["Communication", "Plan média"],
+      "tags_detail": ["Communication", "Plan média", "B2B"],
+      "titre": "Plan média pour le lancement d'une offre fibre PME",
+      "titre_detail": "Plan média pour une<strong>offre fibre PME</strong>",
+      "description": "Recommandations de mix média et création des supports clés pour le lancement national de l'offre B2B fibre.",
+      "image": "photos/realisations/bouygues-telecom.jpg",
+      "image_alt": "Photo plan média",
+      "meta": { "duree": "2 mois", "equipe": "3 consultants", "livrables": "Plan média + maquettes supports" }
+    },
+    {
+      "slug": "sodexo",
+      "client": "Sodexo",
+      "client_initiale": "S.",
+      "client_label": "Restauration",
+      "annee": 2022,
+      "expertise": ["rse"],
+      "secteur": "services",
+      "secteur_libelle": "Restauration collective",
+      "tags": ["RSE", "Stratégie durable"],
+      "tags_detail": ["RSE", "Stratégie durable", "SDG"],
+      "titre": "Stratégie RSE pour la restauration collective",
+      "titre_detail": "Stratégie RSE pour la<strong>restauration collective</strong>",
+      "description": "Construction d'une roadmap RSE 2025 alignée sur les SDG et accompagnement du changement auprès des sites pilotes.",
+      "image": "photos/realisations/sodexo.jpg",
+      "image_alt": "Photo restauration collective",
+      "meta": { "duree": "4 mois", "equipe": "4 consultants", "livrables": "Roadmap RSE 2025 + guide pilotes" }
+    },
+    {
+      "slug": "credit-mutuel",
+      "client": "Crédit Mutuel",
+      "client_initiale": "CM",
+      "client_label": "Banque",
+      "annee": 2021,
+      "expertise": ["bigdata"],
+      "secteur": "services",
+      "secteur_libelle": "Banque / Assurance",
+      "tags": ["Big Data", "Analyse prédictive"],
+      "tags_detail": ["Big Data", "Analyse prédictive", "Scoring"],
+      "titre": "Modèle prédictif de churn pour les clients pros",
+      "titre_detail": "Modèle prédictif de<strong>churn clients pros</strong>",
+      "description": "Développement d'un modèle de scoring pour anticiper les départs et déploiement d'un plan de rétention ciblé.",
+      "image": "photos/realisations/credit-mutuel.jpg",
+      "image_alt": "Photo agence bancaire",
+      "meta": { "duree": "5 mois", "equipe": "4 consultants", "livrables": "Modèle de scoring + plan de rétention" }
+    }
+  ],
+
+  "temoignages": [
+    {
+      "quote": "Une équipe d'une grande rigueur. Les livrables sont actionnables dès la soutenance. Nous avons retrouvé une fraîcheur de regard sur notre marché.",
+      "auteur": "Marie D.",
+      "role": "Responsable Marketing · Restauration"
+    },
+    {
+      "quote": "Méthodologie irréprochable, écoute, qualité du livrable. Un partenariat à reconduire avec des étudiants engagés et bien formés.",
+      "auteur": "Pierre L.",
+      "role": "Directeur RSE · Industrie"
+    },
+    {
+      "quote": "Une fraîcheur stratégique précieuse, doublée d'une exécution professionnelle. Le rapport final a été directement présenté en comité de direction.",
+      "auteur": "Sophie M.",
+      "role": "Directrice de la communication · Luxe"
+    }
+  ]
+}

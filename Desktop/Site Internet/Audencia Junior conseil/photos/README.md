@@ -31,7 +31,12 @@ Pour ajouter un nouveau partenaire :
 
 ### Logos Clients
 - `clients/grdf.png`, `clients/lvmh.png`, etc.
-  (même logique que les partenaires)
+- `grdf.png`
+- `lvmh.png`
+- `vinci.png`
+- `bnp-paribas`
+- `total-energies.png`
+- `bagelstein.png`
 
 ## Format recommandé
 - JPEG ou WebP pour les photos
