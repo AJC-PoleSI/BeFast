@@ -1,0 +1,429 @@
+{
+  "services": [
+    {
+      "id": "etude-de-marche",
+      "domain": "marketing",
+      "titre": "Étude de marché",
+      "accroche": "Comprenez votre marché avant de vous y lancer.",
+      "description": "Nous réalisons des études de marché complètes pour vous aider à identifier les opportunités, les risques et les tendances de votre secteur. Nos consultants combinent approches qualitatives et quantitatives pour vous fournir une vision claire et actionnable.",
+      "approche": [
+        { "titre": "Cadrage", "texte": "Définition des objectifs, du périmètre géographique et des hypothèses de départ." },
+        { "titre": "Collecte", "texte": "Questionnaires, entretiens qualitatifs, observations terrain et analyse documentaire." },
+        { "titre": "Analyse", "texte": "Traitement statistique des données, benchmarks concurrentiels et segmentation." },
+        { "titre": "Restitution", "texte": "Rapport complet avec recommandations stratégiques et plan d'actions prioritaires." }
+      ],
+      "livrables": [
+        { "titre": "Rapport d'étude", "texte": "Document complet avec méthodologie, résultats et recommandations." },
+        { "titre": "Présentation exécutive", "texte": "Synthèse des insights clés pour la prise de décision." }
+      ]
+    },
+    {
+      "id": "segmentation-client",
+      "domain": "marketing",
+      "titre": "Segmentation client",
+      "accroche": "Identifiez et ciblez vos clients avec précision.",
+      "description": "La segmentation client permet de regrouper vos clients en groupes homogènes pour adapter vos offres et communications. Nous utilisons des méthodes statistiques avancées pour identifier les segments les plus porteurs.",
+      "approche": [
+        { "titre": "Analyse des données", "texte": "Collecte et nettoyage des données clients existantes." },
+        { "titre": "Modélisation", "texte": "Application de méthodes de clustering et d'analyse factorielle." },
+        { "titre": "Profilage", "texte": "Description détaillée de chaque segment : comportements, besoins, valeur." },
+        { "titre": "Recommandations", "texte": "Stratégie d'activation et plan d'actions par segment." }
+      ],
+      "livrables": [
+        { "titre": "Matrice de segmentation", "texte": "Définition claire des segments avec critères et tailles estimées." },
+        { "titre": "Fiches personas", "texte": "Profils détaillés de chaque segment pour guider les équipes." }
+      ]
+    },
+    {
+      "id": "analyse-concurrentielle",
+      "domain": "marketing",
+      "titre": "Analyse concurrentielle",
+      "accroche": "Connaissez vos concurrents mieux qu'ils ne se connaissent.",
+      "description": "Nous cartographions votre environnement concurrentiel pour identifier vos avantages différenciateurs et les axes de développement. Analyse des offres, positionnements, forces et faiblesses de vos concurrents.",
+      "approche": [
+        { "titre": "Identification", "texte": "Cartographie des acteurs directs, indirects et des nouveaux entrants." },
+        { "titre": "Collecte", "texte": "Analyse des offres, prix, communications et avis clients des concurrents." },
+        { "titre": "Benchmarking", "texte": "Comparaison structurée sur les critères clés de votre marché." },
+        { "titre": "Positionnement", "texte": "Identification de votre espace de différenciation et recommandations." }
+      ],
+      "livrables": [
+        { "titre": "Mapping concurrentiel", "texte": "Visualisation du positionnement de chaque acteur sur le marché." },
+        { "titre": "Benchmark détaillé", "texte": "Tableau comparatif complet avec scoring et analyse." }
+      ]
+    },
+    {
+      "id": "lancement-produit",
+      "domain": "marketing",
+      "titre": "Lancement produit",
+      "accroche": "Maximisez vos chances de succès dès le départ.",
+      "description": "Nous vous accompagnons dans toutes les étapes du lancement de votre produit ou service : étude de faisabilité, plan de lancement, stratégie go-to-market et mesure des performances.",
+      "approche": [
+        { "titre": "Faisabilité", "texte": "Analyse du marché cible, estimation de la demande et des barrières à l'entrée." },
+        { "titre": "Stratégie", "texte": "Définition du positionnement, du prix et des canaux de distribution." },
+        { "titre": "Plan de lancement", "texte": "Roadmap détaillée, budget et plan de communication associé." },
+        { "titre": "Suivi", "texte": "Définition des KPIs et tableau de bord de suivi post-lancement." }
+      ],
+      "livrables": [
+        { "titre": "Plan go-to-market", "texte": "Document stratégique complet pour le lancement." },
+        { "titre": "Roadmap d'exécution", "texte": "Planning détaillé des actions avec responsables et échéances." }
+      ]
+    },
+    {
+      "id": "strategie-de-marque",
+      "domain": "marketing",
+      "titre": "Stratégie de marque",
+      "accroche": "Construisez une marque forte et cohérente.",
+      "description": "Nous vous aidons à définir ou repositionner votre marque : plateforme de marque, architecture, identité verbale et guidelines. Une marque forte crée de la valeur et fidélise vos clients.",
+      "approche": [
+        { "titre": "Audit de marque", "texte": "Analyse de la perception actuelle de votre marque en interne et externe." },
+        { "titre": "Plateforme", "texte": "Définition de la mission, vision, valeurs et promesse de marque." },
+        { "titre": "Identité verbale", "texte": "Ton, vocabulaire, messages clés et argumentaires adaptés à chaque cible." },
+        { "titre": "Guidelines", "texte": "Charte éditoriale et recommandations pour une communication cohérente." }
+      ],
+      "livrables": [
+        { "titre": "Plateforme de marque", "texte": "Document fondateur de votre stratégie de marque." },
+        { "titre": "Charte éditoriale", "texte": "Guide de référence pour toutes vos communications." }
+      ]
+    },
+    {
+      "id": "strategie-editoriale",
+      "domain": "communication",
+      "titre": "Stratégie éditoriale",
+      "accroche": "Publiez moins, mais mieux.",
+      "description": "Nous définissons votre stratégie de contenu : thématiques, formats, fréquences et canaux adaptés à vos cibles. Une stratégie éditoriale efficace renforce votre autorité et crée du lien avec votre audience.",
+      "approche": [
+        { "titre": "Audit", "texte": "Analyse de vos contenus existants et de vos concurrents." },
+        { "titre": "Cibles", "texte": "Définition des personas et de leurs besoins en contenu." },
+        { "titre": "Plan éditorial", "texte": "Thématiques, formats, fréquences et canaux de diffusion." },
+        { "titre": "Calendrier", "texte": "Planning de publication sur 3 à 6 mois avec sujets détaillés." }
+      ],
+      "livrables": [
+        { "titre": "Stratégie éditoriale", "texte": "Document de référence pour votre ligne éditoriale." },
+        { "titre": "Calendrier éditorial", "texte": "Planning détaillé prêt à utiliser sur 6 mois." }
+      ]
+    },
+    {
+      "id": "identite-de-marque",
+      "domain": "communication",
+      "titre": "Identité de marque",
+      "accroche": "Une image forte et reconnaissable.",
+      "description": "Nous vous accompagnons dans la création ou refonte de votre identité visuelle et verbale. Logo, couleurs, typographies, ton de voix : tous les éléments qui construisent une marque mémorable.",
+      "approche": [
+        { "titre": "Brief créatif", "texte": "Compréhension de vos valeurs, cibles et ambitions." },
+        { "titre": "Exploration", "texte": "Pistes créatives, moodboards et benchmarks visuels." },
+        { "titre": "Développement", "texte": "Création des éléments graphiques et verbaux de l'identité." },
+        { "titre": "Charte", "texte": "Documentation complète pour une utilisation cohérente." }
+      ],
+      "livrables": [
+        { "titre": "Charte graphique", "texte": "Guide complet de votre identité visuelle." },
+        { "titre": "Fichiers sources", "texte": "Tous les éléments graphiques en formats utilisables." }
+      ]
+    },
+    {
+      "id": "plan-media",
+      "domain": "communication",
+      "titre": "Plan media",
+      "accroche": "Investissez au bon endroit, au bon moment.",
+      "description": "Nous construisons votre plan media en sélectionnant les canaux les plus efficaces selon vos objectifs et budget. Offline, online, earned media : une approche intégrée pour maximiser votre visibilité.",
+      "approche": [
+        { "titre": "Objectifs", "texte": "Définition des KPIs et du budget disponible." },
+        { "titre": "Canaux", "texte": "Sélection et pondération des médias selon vos cibles." },
+        { "titre": "Planning", "texte": "Calendrier de diffusion et arbitrages budgétaires." },
+        { "titre": "Mesure", "texte": "Indicateurs de performance et méthode de reporting." }
+      ],
+      "livrables": [
+        { "titre": "Plan media", "texte": "Tableau détaillé des investissements par canal et période." },
+        { "titre": "Brief achat d'espace", "texte": "Documents prêts pour consultation d'agences médias." }
+      ]
+    },
+    {
+      "id": "community-management",
+      "domain": "communication",
+      "titre": "Community management",
+      "accroche": "Animez votre communauté avec méthode.",
+      "description": "Nous définissons votre stratégie social media et créons les contenus adaptés à chaque plateforme. LinkedIn, Instagram, Facebook, TikTok : nous choisissons les bons canaux pour votre audience.",
+      "approche": [
+        { "titre": "Audit social", "texte": "Analyse de vos comptes actuels et de vos concurrents." },
+        { "titre": "Stratégie", "texte": "Choix des plateformes, ligne éditoriale et ton de marque." },
+        { "titre": "Contenus", "texte": "Création de posts, visuels et formats adaptés à chaque réseau." },
+        { "titre": "Reporting", "texte": "Analyse des performances et recommandations d'optimisation." }
+      ],
+      "livrables": [
+        { "titre": "Stratégie social media", "texte": "Document de référence pour votre présence sur les réseaux." },
+        { "titre": "Kit de contenus", "texte": "Posts et visuels prêts à publier sur plusieurs semaines." }
+      ]
+    },
+    {
+      "id": "communication-digitale",
+      "domain": "communication",
+      "titre": "Communication digitale",
+      "accroche": "Soyez visible là où vos clients vous cherchent.",
+      "description": "SEO, emailing, display, SEA : nous construisons votre stratégie de communication digitale pour générer de la visibilité et des conversions. Une approche data-driven pour optimiser chaque euro investi.",
+      "approche": [
+        { "titre": "Audit digital", "texte": "Analyse de votre présence en ligne et de vos performances actuelles." },
+        { "titre": "Stratégie", "texte": "Sélection des leviers et définition des objectifs SMART." },
+        { "titre": "Déploiement", "texte": "Mise en œuvre des actions prioritaires et suivi des résultats." },
+        { "titre": "Optimisation", "texte": "A/B testing, analyse des données et ajustements continus." }
+      ],
+      "livrables": [
+        { "titre": "Stratégie digitale", "texte": "Plan d'actions complet avec priorisation et budget." },
+        { "titre": "Dashboard de performance", "texte": "Tableau de bord pour suivre vos KPIs en temps réel." }
+      ]
+    },
+    {
+      "id": "diagnostic-rse",
+      "domain": "rse",
+      "titre": "Diagnostic RSE",
+      "accroche": "Où en êtes-vous sur la voie de la responsabilité ?",
+      "description": "Nous évaluons vos pratiques RSE actuelles selon les référentiels reconnus (GRI, ISO 26000, CSRD). Le diagnostic identifie vos forces, axes d'amélioration et priorités d'action.",
+      "approche": [
+        { "titre": "Collecte", "texte": "Entretiens, questionnaires et analyse documentaire interne." },
+        { "titre": "Évaluation", "texte": "Notation sur les piliers environnemental, social et gouvernance." },
+        { "titre": "Benchmark", "texte": "Comparaison avec les meilleures pratiques de votre secteur." },
+        { "titre": "Plan d'action", "texte": "Feuille de route priorisée avec objectifs et indicateurs." }
+      ],
+      "livrables": [
+        { "titre": "Rapport de diagnostic", "texte": "Évaluation complète de vos pratiques RSE avec scoring." },
+        { "titre": "Feuille de route RSE", "texte": "Plan d'actions prioritaires sur 1 à 3 ans." }
+      ]
+    },
+    {
+      "id": "bilan-carbone",
+      "domain": "rse",
+      "titre": "Bilan carbone",
+      "accroche": "Mesurez vos émissions pour mieux les réduire.",
+      "description": "Nous réalisons le bilan des émissions de gaz à effet de serre de votre organisation selon la méthode Bilan Carbone® ou GHG Protocol. Un outil indispensable pour piloter votre transition bas-carbone.",
+      "approche": [
+        { "titre": "Périmètre", "texte": "Définition des scopes 1, 2 et 3 à inclure dans le bilan." },
+        { "titre": "Collecte", "texte": "Recueil des données d'activité auprès de vos équipes." },
+        { "titre": "Calcul", "texte": "Application des facteurs d'émission et consolidation des résultats." },
+        { "titre": "Plan de réduction", "texte": "Identification des postes prioritaires et actions de réduction." }
+      ],
+      "livrables": [
+        { "titre": "Bilan carbone", "texte": "Rapport complet des émissions par scope et poste." },
+        { "titre": "Plan de décarbonation", "texte": "Feuille de route de réduction avec objectifs chiffrés." }
+      ]
+    },
+    {
+      "id": "strategie-developpement-durable",
+      "domain": "rse",
+      "titre": "Stratégie développement durable",
+      "accroche": "Intégrez la durabilité au cœur de votre modèle.",
+      "description": "Nous vous aidons à construire une stratégie de développement durable alignée sur vos enjeux et les attentes de vos parties prenantes. Objectifs, indicateurs, gouvernance et communication.",
+      "approche": [
+        { "titre": "Analyse de matérialité", "texte": "Identification des enjeux RSE prioritaires pour votre activité." },
+        { "titre": "Vision", "texte": "Définition des ambitions et objectifs à long terme." },
+        { "titre": "Feuille de route", "texte": "Plan d'actions détaillé avec responsabilités et ressources." },
+        { "titre": "Indicateurs", "texte": "Construction d'un tableau de bord de suivi des performances." }
+      ],
+      "livrables": [
+        { "titre": "Stratégie RSE", "texte": "Document stratégique complet avec vision et objectifs." },
+        { "titre": "Tableau de bord", "texte": "Indicateurs et outils de pilotage de la performance RSE." }
+      ]
+    },
+    {
+      "id": "rapport-extra-financier",
+      "domain": "rse",
+      "titre": "Rapport extra-financier",
+      "accroche": "Communiquez votre impact avec transparence.",
+      "description": "Nous rédigeons votre rapport extra-financier (DPEF, rapport RSE, rapport intégré) conforme aux réglementations en vigueur. Un exercice de transparence qui renforce la confiance de vos parties prenantes.",
+      "approche": [
+        { "titre": "Cadrage", "texte": "Choix du référentiel (GRI, ESRS, CSRD) et du périmètre de reporting." },
+        { "titre": "Collecte", "texte": "Structuration de la collecte de données auprès des équipes." },
+        { "titre": "Rédaction", "texte": "Production du rapport avec données, indicateurs et narratif." },
+        { "titre": "Validation", "texte": "Relecture, mise en forme et préparation à la publication." }
+      ],
+      "livrables": [
+        { "titre": "Rapport extra-financier", "texte": "Document finalisé conforme aux exigences réglementaires." },
+        { "titre": "Annexes de données", "texte": "Tableaux de données brutes et méthodologie de calcul." }
+      ]
+    },
+    {
+      "id": "csrd",
+      "domain": "rse",
+      "titre": "CSRD",
+      "accroche": "Anticipez les nouvelles obligations de reporting.",
+      "description": "La directive CSRD impose de nouvelles obligations de reporting ESG à partir de 2025. Nous vous accompagnons dans la mise en conformité : analyse d'écarts, collecte de données et rédaction des états de durabilité.",
+      "approche": [
+        { "titre": "Gap analysis", "texte": "Évaluation de votre niveau de maturité vis-à-vis des ESRS." },
+        { "titre": "Matérialité", "texte": "Réalisation de l'analyse de double matérialité requise par la CSRD." },
+        { "titre": "Collecte", "texte": "Mise en place du système de collecte des données requises." },
+        { "titre": "Reporting", "texte": "Rédaction des états de durabilité conformes aux ESRS." }
+      ],
+      "livrables": [
+        { "titre": "Rapport de gap analysis", "texte": "État des lieux et plan de mise en conformité CSRD." },
+        { "titre": "États de durabilité", "texte": "Document de reporting conforme aux exigences CSRD/ESRS." }
+      ]
+    },
+    {
+      "id": "analyse-de-donnees",
+      "domain": "bigdata",
+      "titre": "Analyse de données",
+      "accroche": "Transformez vos données en décisions.",
+      "description": "Nous analysons vos données pour en extraire des insights actionnables. Statistiques descriptives, analyses de corrélation, segmentation : nos consultants maîtrisent les outils d'analyse modernes.",
+      "approche": [
+        { "titre": "Audit des données", "texte": "Évaluation de la qualité et de la disponibilité de vos données." },
+        { "titre": "Nettoyage", "texte": "Traitement des valeurs manquantes, doublons et anomalies." },
+        { "titre": "Analyse", "texte": "Application des méthodes statistiques adaptées à vos questions." },
+        { "titre": "Restitution", "texte": "Présentation des résultats et recommandations actionnables." }
+      ],
+      "livrables": [
+        { "titre": "Rapport d'analyse", "texte": "Résultats complets avec méthodologie et interprétations." },
+        { "titre": "Fichiers de données", "texte": "Données nettoyées et annotées en format exploitable." }
+      ]
+    },
+    {
+      "id": "data-visualisation",
+      "domain": "bigdata",
+      "titre": "Data visualisation",
+      "accroche": "Rendez vos données lisibles et convaincantes.",
+      "description": "Nous transformons vos données en visualisations claires et percutantes. Graphiques, infographies, dashboards interactifs : des représentations visuelles qui facilitent la compréhension et la prise de décision.",
+      "approche": [
+        { "titre": "Compréhension", "texte": "Identification des messages à communiquer et du public cible." },
+        { "titre": "Choix des formats", "texte": "Sélection des types de visualisations adaptés à chaque donnée." },
+        { "titre": "Conception", "texte": "Création des visuels avec attention portée à l'expérience utilisateur." },
+        { "titre": "Intégration", "texte": "Intégration dans vos outils existants (PowerPoint, Power BI, Tableau)." }
+      ],
+      "livrables": [
+        { "titre": "Rapport visuel", "texte": "Ensemble de visualisations prêtes à utiliser en présentation." },
+        { "titre": "Fichiers sources", "texte": "Fichiers éditables pour mise à jour autonome." }
+      ]
+    },
+    {
+      "id": "tableaux-de-bord",
+      "domain": "bigdata",
+      "titre": "Tableaux de bord",
+      "accroche": "Pilotez votre activité en temps réel.",
+      "description": "Nous concevons et développons vos tableaux de bord de pilotage sous Power BI, Tableau ou Google Looker Studio. Suivi des KPIs, alertes automatiques et rapports programmés.",
+      "approche": [
+        { "titre": "Cadrage", "texte": "Définition des KPIs, sources de données et fréquence de mise à jour." },
+        { "titre": "Architecture", "texte": "Conception du modèle de données et des flux d'alimentation." },
+        { "titre": "Développement", "texte": "Construction du dashboard avec les visualisations adaptées." },
+        { "titre": "Formation", "texte": "Formation des utilisateurs et documentation d'utilisation." }
+      ],
+      "livrables": [
+        { "titre": "Dashboard opérationnel", "texte": "Tableau de bord fonctionnel connecté à vos sources de données." },
+        { "titre": "Documentation", "texte": "Guide d'utilisation et de maintenance du dashboard." }
+      ]
+    },
+    {
+      "id": "modelisation-predictive",
+      "domain": "bigdata",
+      "titre": "Modélisation prédictive",
+      "accroche": "Anticipez avant d'agir.",
+      "description": "Nous développons des modèles prédictifs pour anticiper les comportements clients, les ventes ou les risques. Machine learning, régressions, arbres de décision : des modèles adaptés à votre problématique.",
+      "approche": [
+        { "titre": "Problématique", "texte": "Formalisation du problème et définition de la variable cible." },
+        { "titre": "Données", "texte": "Collecte, nettoyage et feature engineering." },
+        { "titre": "Modélisation", "texte": "Entraînement et évaluation de plusieurs modèles." },
+        { "titre": "Déploiement", "texte": "Intégration du modèle dans vos processus métier." }
+      ],
+      "livrables": [
+        { "titre": "Modèle prédictif", "texte": "Code et documentation du modèle avec métriques de performance." },
+        { "titre": "Rapport de modélisation", "texte": "Explication des choix méthodologiques et des résultats." }
+      ]
+    },
+    {
+      "id": "business-intelligence",
+      "domain": "bigdata",
+      "titre": "Business Intelligence",
+      "accroche": "Une vision 360° de votre performance.",
+      "description": "Nous construisons votre infrastructure BI : entrepôt de données, ETL, couche sémantique et reporting. Une solution complète pour centraliser vos données et démocratiser l'accès à l'information.",
+      "approche": [
+        { "titre": "Audit", "texte": "Cartographie des sources de données et des besoins reporting." },
+        { "titre": "Architecture", "texte": "Conception de l'entrepôt de données et des flux de transformation." },
+        { "titre": "Développement", "texte": "Mise en place de l'infrastructure et des rapports." },
+        { "titre": "Formation", "texte": "Accompagnement des équipes à l'utilisation des outils." }
+      ],
+      "livrables": [
+        { "titre": "Infrastructure BI", "texte": "Système opérationnel de collecte, transformation et restitution." },
+        { "titre": "Catalogue de rapports", "texte": "Ensemble de rapports standards prêts à utiliser." }
+      ]
+    },
+    {
+      "id": "business-plan",
+      "domain": "finance",
+      "titre": "Business plan",
+      "accroche": "Construisez un plan financier solide et convaincant.",
+      "description": "Nous élaborons votre business plan financier : modèle de revenus, projections P&L, bilan et trésorerie sur 3 à 5 ans. Un outil indispensable pour lever des fonds ou convaincre vos partenaires.",
+      "approche": [
+        { "titre": "Compréhension", "texte": "Analyse du modèle d'affaires et des hypothèses de croissance." },
+        { "titre": "Modélisation", "texte": "Construction du modèle financier avec scénarios." },
+        { "titre": "Sensibilité", "texte": "Tests de résistance et analyse des hypothèses clés." },
+        { "titre": "Restitution", "texte": "Présentation des projections et recommandations financières." }
+      ],
+      "livrables": [
+        { "titre": "Modèle financier Excel", "texte": "Fichier dynamique avec toutes les projections et scénarios." },
+        { "titre": "Synthèse financière", "texte": "Présentation des chiffres clés pour vos interlocuteurs." }
+      ]
+    },
+    {
+      "id": "valorisation-d-entreprise",
+      "domain": "finance",
+      "titre": "Valorisation d'entreprise",
+      "accroche": "Quelle est la vraie valeur de votre entreprise ?",
+      "description": "Nous réalisons des valorisations d'entreprise selon les méthodes reconnues : DCF, comparables boursiers, transactions comparables. Une analyse rigoureuse pour vos levées de fonds, cessions ou acquisitions.",
+      "approche": [
+        { "titre": "Analyse", "texte": "Étude de l'activité, du marché et des perspectives de croissance." },
+        { "titre": "Méthodes", "texte": "Application des méthodes DCF, multiples et actif net réévalué." },
+        { "titre": "Réconciliation", "texte": "Pondération des méthodes et fourchette de valorisation." },
+        { "titre": "Note", "texte": "Rédaction de la note de valorisation avec justifications." }
+      ],
+      "livrables": [
+        { "titre": "Note de valorisation", "texte": "Document professionnel avec méthodologie et résultats." },
+        { "titre": "Modèle DCF", "texte": "Fichier Excel détaillé avec toutes les hypothèses." }
+      ]
+    },
+    {
+      "id": "analyse-financiere",
+      "domain": "finance",
+      "titre": "Analyse financière",
+      "accroche": "Comprendre les chiffres pour mieux décider.",
+      "description": "Nous analysons les états financiers de votre entreprise ou d'une cible d'acquisition : rentabilité, liquidité, solvabilité, efficacité opérationnelle. Un diagnostic complet pour éclairer vos décisions.",
+      "approche": [
+        { "titre": "Collecte", "texte": "Récupération des états financiers sur 3 à 5 exercices." },
+        { "titre": "Analyse horizontale", "texte": "Évolution des indicateurs dans le temps." },
+        { "titre": "Analyse verticale", "texte": "Structure du compte de résultat et du bilan." },
+        { "titre": "Ratios", "texte": "Calcul et interprétation des ratios clés vs. secteur." }
+      ],
+      "livrables": [
+        { "titre": "Rapport d'analyse", "texte": "Diagnostic complet avec ratios commentés et recommandations." },
+        { "titre": "Tableaux de synthèse", "texte": "Indicateurs clés mis en forme pour présentation." }
+      ]
+    },
+    {
+      "id": "etude-de-rentabilite",
+      "domain": "finance",
+      "titre": "Étude de rentabilité",
+      "accroche": "Ce projet vaut-il l'investissement ?",
+      "description": "Nous évaluons la rentabilité de vos projets d'investissement : VAN, TRI, délai de récupération, point mort. Une analyse rigoureuse pour prendre des décisions d'investissement éclairées.",
+      "approche": [
+        { "titre": "Cadrage", "texte": "Définition du projet, de l'horizon temporel et des hypothèses." },
+        { "titre": "Cash-flows", "texte": "Modélisation des flux de trésorerie sur la durée du projet." },
+        { "titre": "Indicateurs", "texte": "Calcul de la VAN, du TRI et du délai de récupération." },
+        { "titre": "Sensibilité", "texte": "Analyse de sensibilité aux variables clés du projet." }
+      ],
+      "livrables": [
+        { "titre": "Modèle de rentabilité", "texte": "Fichier Excel avec indicateurs et analyse de sensibilité." },
+        { "titre": "Note de synthèse", "texte": "Recommandation argumentée sur la faisabilité du projet." }
+      ]
+    },
+    {
+      "id": "due-diligence",
+      "domain": "finance",
+      "titre": "Due diligence",
+      "accroche": "Vérifiez avant d'acquérir.",
+      "description": "Nous réalisons des missions de due diligence financière dans le cadre de vos opérations de M&A. Analyse des comptes, identification des risques et ajustements de valorisation.",
+      "approche": [
+        { "titre": "Planification", "texte": "Définition du périmètre et de la liste des documents à analyser." },
+        { "titre": "Analyse", "texte": "Revue des états financiers, contrats et éléments hors bilan." },
+        { "titre": "Risques", "texte": "Identification des red flags et points d'attention." },
+        { "titre": "Rapport", "texte": "Synthèse des findings et ajustements recommandés." }
+      ],
+      "livrables": [
+        { "titre": "Rapport de due diligence", "texte": "Document complet avec findings et recommandations." },
+        { "titre": "Tableau des ajustements", "texte": "Liste des retraitements à appliquer à la valorisation." }
+      ]
+    }
+  ]
+}
