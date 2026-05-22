@@ -36,6 +36,7 @@ export default function MissionDocumentsPage() {
   const [selectedIntervenantId, setSelectedIntervenantId] = useState<string>("")
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
   const [showGenerateModal, setShowGenerateModal] = useState(false)
+  const [initialLoadDone, setInitialLoadDone] = useState(false)
 
   const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null)
 
@@ -46,10 +47,9 @@ export default function MissionDocumentsPage() {
       listEntityDocuments("mission", missionId),
       listMissionIntervenants(missionId),
     ])
-    // Show ALL templates (no scope filtering)
     setTemplates((tRes as any).data || [])
     setDocs((dRes as any).data || [])
-    
+
     const intervenantsList = (iRes as any).data || []
     setIntervenants(intervenantsList)
     if (intervenantsList.length === 1 && !selectedIntervenantId) {
@@ -57,11 +57,12 @@ export default function MissionDocumentsPage() {
     }
 
     setLoading(false)
-  }, [missionId, selectedIntervenantId])
+    setInitialLoadDone(true)
+  }, [missionId])
 
   useEffect(() => {
     refresh()
-  }, [refresh])
+  }, [missionId])
 
   const handleGenerate = async () => {
     if (!selectedTemplateId) {
@@ -103,6 +104,19 @@ export default function MissionDocumentsPage() {
     const res = await deleteGeneratedDocument(id)
     if ((res as any).error) toast.error((res as any).error)
     else { toast.success("Supprimé"); refresh() }
+  }
+
+  if (!initialLoadDone) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 text-[#00236f] mx-auto mb-4">
+            <div className="border-4 border-[#00236f]/20 border-t-[#00236f] rounded-full h-8 w-8"></div>
+          </div>
+          <p className="text-sm text-muted-foreground">Chargement des documents...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

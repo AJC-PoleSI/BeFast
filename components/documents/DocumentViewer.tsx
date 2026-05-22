@@ -7,6 +7,8 @@ import {
   DialogContent,
 } from "@/components/ui/dialog"
 
+let docxPreviewImported = false
+
 export function DocumentViewer({
   open,
   onOpenChange,
@@ -22,6 +24,7 @@ export function DocumentViewer({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const docxModuleRef = useRef<any>(null)
 
   const ext = fileName ? fileName.split(".").pop()?.toLowerCase() : ""
   const isDocx = ext === "docx"
@@ -43,15 +46,22 @@ export function DocumentViewer({
 
     const loadDocument = async () => {
       try {
-        const res = await fetch(url)
+        const res = await fetch(url, { cache: "force-cache" })
         if (!res.ok) throw new Error("Erreur lors du chargement du fichier")
         const blob = await res.blob()
-        
+
         if (!active) return
 
         if (isDocx) {
-          const docx = await import("docx-preview")
+          // Pre-import docx-preview module once to avoid repeated imports
+          if (!docxModuleRef.current) {
+            docxModuleRef.current = await import("docx-preview")
+            docxPreviewImported = true
+          }
+          const docx = docxModuleRef.current
           if (containerRef.current) {
+            // Clear container before rendering
+            containerRef.current.innerHTML = ""
             await docx.renderAsync(blob, containerRef.current, undefined, {
               className: "docx-viewer-content",
               inWrapper: false,

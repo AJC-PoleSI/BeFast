@@ -141,27 +141,42 @@ export function renderTemplate(
   const zip = new PizZip(templateBuffer as any)
 
   // Nettoyage des éléments invisibles qui peuvent casser un tag {balise}
-  const cleanXml = (xml: string): string =>
-    xml
-      .replace(/<w:proofErr[^/]*\/>/g, "")
-      .replace(/<w:proofErr[^>]*>[\s\S]*?<\/w:proofErr>/g, "")
-      .replace(/<w:bookmarkStart[^/]*\/>/g, "")
-      .replace(/<w:bookmarkEnd[^/]*\/>/g, "")
-      .replace(/<w:commentRangeStart[^/]*\/>/g, "")
-      .replace(/<w:commentRangeEnd[^/]*\/>/g, "")
-      .replace(/<w:commentReference[^/]*\/>/g, "")
-      .replace(/<w:lastRenderedPageBreak[^/]*\/>/g, "")
-      .replace(/<w:noProof[^/]*\/>/g, "")
-      .replace(/<w:rFonts[^>]*>/g, "")
-      .replace(/<w:rStyle[^/]*\/>/g, "")
-      .replace(/<w:rsidR[^/]*\/>/g, "")
-      .replace(/<w:rsidRPr[^/]*\/>/g, "")
-      .replace(/<w:rsidSect[^/]*\/>/g, "")
-      .replace(/<w:lang[^/]*\/>/g, "")
-      .replace(/<w:instrText[^>]*>[\s\S]*?<\/w:instrText>/g, "")
-      // Pour PowerPoint
-      .replace(/<a:bookmarkStart[^/]*\/>/g, "")
-      .replace(/<a:bookmarkEnd[^/]*\/>/g, "")
+  const cleanXml = (xml: string): string => {
+    let cleaned = xml
+    // Remove empty runs containing only invisible elements
+    cleaned = cleaned.replace(/<w:r>(?:<w:(?:proofErr|rStyle|rsidR|rsidRPr|noProof|lang)[^>]*\/?>)*<\/w:r>/g, "")
+
+    // Remove proof errors (spell check)
+    cleaned = cleaned.replace(/<w:proofErr[^/]*\/>/g, "")
+    cleaned = cleaned.replace(/<w:proofErr[^>]*>[\s\S]*?<\/w:proofErr>/g, "")
+
+    // Remove bookmarks and comment ranges
+    cleaned = cleaned.replace(/<w:bookmarkStart[^/]*\/>/g, "")
+    cleaned = cleaned.replace(/<w:bookmarkEnd[^/]*\/>/g, "")
+    cleaned = cleaned.replace(/<w:commentRangeStart[^/]*\/>/g, "")
+    cleaned = cleaned.replace(/<w:commentRangeEnd[^/]*\/>/g, "")
+    cleaned = cleaned.replace(/<w:commentReference[^/]*\/>/g, "")
+
+    // Remove page breaks and rendering hints
+    cleaned = cleaned.replace(/<w:lastRenderedPageBreak[^/]*\/>/g, "")
+    cleaned = cleaned.replace(/<w:noProof[^/]*\/>/g, "")
+
+    // Remove style attributes that don't affect structure
+    cleaned = cleaned.replace(/<w:rStyle[^/]*\/>/g, "")
+    cleaned = cleaned.replace(/<w:rsidR[^/]*\/>/g, "")
+    cleaned = cleaned.replace(/<w:rsidRPr[^/]*\/>/g, "")
+    cleaned = cleaned.replace(/<w:rsidSect[^/]*\/>/g, "")
+    cleaned = cleaned.replace(/<w:lang[^/]*\/>/g, "")
+
+    // Remove instruction texts (fields)
+    cleaned = cleaned.replace(/<w:instrText[^>]*>[\s\S]*?<\/w:instrText>/g, "")
+
+    // PowerPoint elements
+    cleaned = cleaned.replace(/<a:bookmarkStart[^/]*\/>/g, "")
+    cleaned = cleaned.replace(/<a:bookmarkEnd[^/]*\/>/g, "")
+
+    return cleaned
+  }
 
   for (const file of Object.keys(zip.files)) {
     // Nettoyer les fichiers word (DOCX) ou ppt (PPTX)
