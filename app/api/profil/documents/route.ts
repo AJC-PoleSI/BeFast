@@ -8,6 +8,7 @@ import {
   ACCEPTED_FILE_TYPES,
 } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
+import { buildPersonneDocPath } from "@/lib/scaleway/paths"
 import { PutObjectCommand } from "@aws-sdk/client-s3"
 import { NextResponse } from "next/server"
 
@@ -131,9 +132,19 @@ export async function POST(request: Request) {
     }
 
     const ext = file.name.split(".").pop() || "pdf"
-    const filePath = `${user.id}/${docType}/document.${ext}`
-
     const admin = createAdminClient()
+
+    // Récupère le vrai nom/prénom pour la nomenclature Scaleway
+    const { data: personne } = await admin
+      .from("personnes")
+      .select("prenom, nom")
+      .eq("id", user.id)
+      .single()
+
+    const prenom = personne?.prenom || "Inconnu"
+    const nom = personne?.nom || user.id.slice(0, 8)
+
+    const filePath = buildPersonneDocPath(user.id, prenom, nom, docType, ext)
 
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
