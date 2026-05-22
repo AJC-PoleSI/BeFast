@@ -298,7 +298,7 @@ export async function buildTemplateContext(
 
   const base: Record<string, any> = {
     date: formatDateFR(today),
-    today: today,
+    today: formatDateFR(today),
     date_iso: today.toISOString().slice(0, 10),
     annee: String(today.getFullYear()),
   }

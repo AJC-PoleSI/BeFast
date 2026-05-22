@@ -7,6 +7,8 @@ import {
   MAX_FILE_SIZE,
   ACCEPTED_FILE_TYPES,
 } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
+import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
+import { PutObjectCommand } from "@aws-sdk/client-s3"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
@@ -136,14 +138,18 @@ export async function POST(request: Request) {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    const { error: uploadError } = await admin.storage
-      .from("documents-personnes")
-      .upload(filePath, buffer, {
-        contentType: file.type,
-        upsert: true,
-      })
-
-    if (uploadError) {
+    try {
+      await scalewayS3.send(
+        new PutObjectCommand({
+          Bucket: SCALEWAY_BUCKET,
+          Key: filePath,
+          Body: buffer,
+          ContentType: file.type,
+          Metadata: { "original-name": file.name },
+        })
+      )
+    } catch (uploadErr) {
+      console.error("Scaleway upload error:", uploadErr)
       return NextResponse.json(
         { error: "Erreur lors de l'upload du fichier" },
         { status: 500 }

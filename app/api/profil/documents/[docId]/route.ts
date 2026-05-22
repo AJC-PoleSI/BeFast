@@ -2,6 +2,8 @@ import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
+import { DeleteObjectCommand } from "@aws-sdk/client-s3"
 import { NextResponse } from "next/server"
 
 export async function DELETE(
@@ -42,13 +44,13 @@ export async function DELETE(
       )
     }
 
-    // Delete file from storage
-    const { error: storageError } = await admin.storage
-      .from("documents-personnes")
-      .remove([doc.file_path])
-
-    if (storageError) {
-      console.error("Storage delete error:", storageError)
+    // Delete file from Scaleway
+    try {
+      await scalewayS3.send(
+        new DeleteObjectCommand({ Bucket: SCALEWAY_BUCKET, Key: doc.file_path })
+      )
+    } catch (storageErr) {
+      console.error("Scaleway delete error:", storageErr)
     }
 
     // Delete database record

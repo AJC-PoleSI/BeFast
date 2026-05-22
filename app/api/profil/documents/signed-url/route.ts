@@ -2,6 +2,9 @@ import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
+import { GetObjectCommand } from "@aws-sdk/client-s3"
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
@@ -63,18 +66,13 @@ export async function POST(request: Request) {
       }
     }
 
-    const { data: signedUrlData, error } = await admin.storage
-      .from("documents-personnes")
-      .createSignedUrl(filePath, 3600) // 1 hour
+    const signedUrl = await getSignedUrl(
+      scalewayS3,
+      new GetObjectCommand({ Bucket: SCALEWAY_BUCKET, Key: filePath }),
+      { expiresIn: 3600 } // 1 hour
+    )
 
-    if (error) {
-      return NextResponse.json(
-        { error: "Erreur lors de la génération de l'URL" },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ url: signedUrlData.signedUrl })
+    return NextResponse.json({ url: signedUrl })
   } catch {
     return NextResponse.json(
       { error: "Une erreur est survenue." },
