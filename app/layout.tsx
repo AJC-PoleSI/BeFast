@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata: Metadata = {
   title: "BeFast — Odensia Junior Conseil",
@@ -33,6 +34,7 @@ export default function RootLayout({
         {children}
         <Toaster position="top-right" />
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   )

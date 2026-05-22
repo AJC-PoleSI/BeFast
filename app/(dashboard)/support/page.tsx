@@ -1,59 +1,75 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { toast } from 'sonner';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
-const reportSchema = z.object({
-  email: z.string().email('Email invalide'),
-  subject: z.string().min(5, 'Le sujet doit contenir au moins 5 caractères'),
-  description: z.string().min(20, 'La description doit contenir au moins 20 caractères'),
-  page: z.string().optional(),
-});
-
-type ReportFormData = z.infer<typeof reportSchema>;
+interface SupportReport {
+  email: string;
+  subject: string;
+  description: string;
+  page?: string;
+}
 
 export default function SupportPage() {
   const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<ReportFormData>({
-    resolver: zodResolver(reportSchema),
-    defaultValues: {
-      email: '',
-      subject: '',
-      description: '',
-      page: typeof window !== 'undefined' ? window.location.pathname : '',
-    },
+  const [formData, setFormData] = useState<SupportReport>({
+    email: '',
+    subject: '',
+    description: '',
+    page: typeof window !== 'undefined' ? window.location.pathname : '',
   });
 
-  const onSubmit = async (data: ReportFormData) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.email || !formData.subject || !formData.description) {
+      toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    if (formData.subject.length < 5) {
+      toast.error('Le sujet doit contenir au moins 5 caractères');
+      return;
+    }
+
+    if (formData.description.length < 20) {
+      toast.error('La description doit contenir au moins 20 caractères');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch('/api/support/report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de l\'envoi du signalement');
+        const error = await response.json();
+        throw new Error(error.error || 'Erreur lors de l\'envoi du signalement');
       }
 
       toast.success('Signalement envoyé avec succès. Merci pour votre retour!');
-      form.reset();
+      setFormData({
+        email: '',
+        subject: '',
+        description: '',
+        page: typeof window !== 'undefined' ? window.location.pathname : '',
+      });
     } catch (error) {
       toast.error('Erreur: ' + (error instanceof Error ? error.message : 'Impossible d\'envoyer le signalement'));
     } finally {
@@ -76,86 +92,63 @@ export default function SupportPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
                 name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <input
-                        {...field}
-                        type="email"
-                        placeholder="votre@email.com"
-                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
+                type="email"
+                placeholder="votre@email.com"
+                value={formData.email}
+                onChange={handleChange}
+                required
               />
+            </div>
 
-              <FormField
-                control={form.control}
+            <div className="space-y-2">
+              <Label htmlFor="subject">Sujet</Label>
+              <Input
+                id="subject"
                 name="subject"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sujet</FormLabel>
-                    <FormControl>
-                      <input
-                        {...field}
-                        type="text"
-                        placeholder="Résumé du problème"
-                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
+                type="text"
+                placeholder="Résumé du problème"
+                value={formData.subject}
+                onChange={handleChange}
+                required
               />
+            </div>
 
-              <FormField
-                control={form.control}
+            <div className="space-y-2">
+              <Label htmlFor="page">Page (optionnel)</Label>
+              <Input
+                id="page"
                 name="page"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Page (optionnel)</FormLabel>
-                    <FormControl>
-                      <input
-                        {...field}
-                        type="text"
-                        placeholder="URL de la page où le problème s'est produit"
-                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </FormControl>
-                    <FormDescription>Rempli automatiquement si possible</FormDescription>
-                  </FormItem>
-                )}
+                type="text"
+                placeholder="URL de la page où le problème s'est produit"
+                value={formData.page}
+                onChange={handleChange}
               />
+              <p className="text-sm text-gray-500">Rempli automatiquement si possible</p>
+            </div>
 
-              <FormField
-                control={form.control}
+            <div className="space-y-2">
+              <Label htmlFor="description">Description du problème</Label>
+              <Textarea
+                id="description"
                 name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description du problème</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        placeholder="Décrivez en détail le problème rencontré, les étapes pour le reproduire, messages d'erreur, etc."
-                        rows={6}
-                        className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
+                placeholder="Décrivez en détail le problème rencontré, les étapes pour le reproduire, messages d'erreur, etc."
+                value={formData.description}
+                onChange={handleChange}
+                rows={6}
+                required
               />
+            </div>
 
-              <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading ? 'Envoi en cours...' : 'Envoyer le signalement'}
-              </Button>
-            </form>
-          </Form>
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading ? 'Envoi en cours...' : 'Envoyer le signalement'}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
