@@ -23,7 +23,6 @@ import {
   DialogClose,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { DocumentViewer } from "@/components/documents/DocumentViewer"
 
 type FormState = {
   selectedTemplateId: string
@@ -78,7 +77,6 @@ export default function EtudeDocumentsPage() {
   const [missions, setMissions] = useState<any[]>([])
   const [generating, setGenerating] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -207,7 +205,7 @@ export default function EtudeDocumentsPage() {
               <div
                 key={d.id}
                 className="bg-white rounded-xl border border-border shadow-sm p-3 flex items-center justify-between gap-3 cursor-pointer hover:border-[#00236f]/30 transition-colors"
-                onClick={() => setPreviewDoc({ url: `/api/documents/${d.id}/preview`, name: d.file_name })}
+                onClick={() => window.open(`/api/documents/${d.id}/download`, "_blank")}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <FileText className="h-4 w-4 text-[#00236f] shrink-0" />
@@ -322,12 +320,6 @@ export default function EtudeDocumentsPage() {
         </DialogContent>
       </Dialog>
 
-      <DocumentViewer
-        open={!!previewDoc}
-        onOpenChange={(open) => !open && setPreviewDoc(null)}
-        url={previewDoc?.url || null}
-        fileName={previewDoc?.name || null}
-      />
     </div>
   )
 }
