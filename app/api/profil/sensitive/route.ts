@@ -1,9 +1,12 @@
+export const dynamic = "force-dynamic"
+
 import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { encryptToString } from "@/lib/encryption"
 import {
+
   sensitiveFieldSchema,
   nssSchema,
   ibanSchema,

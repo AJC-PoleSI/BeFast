@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
@@ -5,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
 import { DeleteObjectCommand } from "@aws-sdk/client-s3"
 import { NextResponse } from "next/server"
+
 
 export async function DELETE(
   request: Request,

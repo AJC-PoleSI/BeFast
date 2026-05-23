@@ -1,8 +1,11 @@
+export const dynamic = "force-dynamic"
+
 import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import {
+
   VALID_DOC_TYPES,
   MAX_FILE_SIZE,
   ACCEPTED_FILE_TYPES,

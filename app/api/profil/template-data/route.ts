@@ -1,4 +1,7 @@
+export const dynamic = "force-dynamic"
+
 import "server-only"
+
 
 import { createClient } from "@/lib/supabase/server"
 import { decryptFromString } from "@/lib/encryption"

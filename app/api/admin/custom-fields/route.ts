@@ -1,9 +1,12 @@
+export const dynamic = "force-dynamic"
+
 import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { customFieldSchema } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 import { NextResponse } from "next/server"
+
 
 async function verifyAdmin(supabase: ReturnType<typeof createClient>) {
   const {

@@ -1,7 +1,10 @@
+export const dynamic = "force-dynamic"
+
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { decryptData } from "@/lib/crypto"
 import { NextRequest, NextResponse } from "next/server"
+
 
 const MASTER_KEY = process.env.ENCRYPTION_MASTER_KEY || "default-key"
 

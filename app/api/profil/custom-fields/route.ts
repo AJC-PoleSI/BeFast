@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
@@ -5,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { customFieldValueSchema } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 import { NextResponse } from "next/server"
 import { z } from "zod"
+
 
 export async function GET(request: Request) {
   try {

@@ -1,7 +1,10 @@
+export const dynamic = "force-dynamic"
+
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { renderTemplate } from "@/lib/docx/template-engine"
 import { buildTemplateContext } from "@/lib/actions/documents"
+
 
 // Allow up to 30 seconds for DOCX rendering
 export const maxDuration = 30
