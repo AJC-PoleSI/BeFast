@@ -32,6 +32,7 @@ import {
   XCircle,
   Clock,
   Loader2,
+  User,
   Mail,
   FileText,
   Receipt
