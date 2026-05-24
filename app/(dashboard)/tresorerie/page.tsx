@@ -37,6 +37,7 @@ function fmtDate(d: string | null | undefined): string {
 }
 
 export default function TresoreriePage() {
+  const [data, setData] = useState<{
     factures: FactureRow[]
     missions: MissionPayRow[]
     notes_de_frais: any[]
