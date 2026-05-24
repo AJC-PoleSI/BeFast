@@ -248,7 +248,7 @@ export default function MissionDetailPage() {
           </Button>
         </Link>
         <div className="flex items-center gap-2">
-          {((myCandidature?.statut === "acceptee") || (isAGC && mission.intervenant_id)) && (
+          {((myCandidature?.statut === "acceptee") || (isAGC && (mission as any).intervenant_id)) && (
             <>
               <Link href={`/missions/${mission.id}/interne`}>
                 <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
