@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Loader2, Plus, X, Pencil, Trash2, Check, Wallet, Clock, AlertTriangle, CircleCheck, Euro, Banknote, Search } from "lucide-react"
+import { Loader2, Plus, X, Pencil, Trash2, Check, Wallet, Clock, AlertTriangle, CircleCheck, Euro, Banknote, Search, Receipt, Download, FileText, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import {
   getTresorerieData,
@@ -16,7 +16,7 @@ import {
   type CaParEtude,
 } from "@/lib/actions/tresorerie"
 
-type Tab = "factures" | "ca" | "missions"
+type Tab = "factures" | "ca" | "missions" | "notes"
 
 const STATUT_FACTURE_CHIP: Record<FactureRow["statut"], { label: string; cls: string }> = {
   payee: { label: "Payée", cls: "bg-emerald-100 text-emerald-700" },
@@ -37,9 +37,9 @@ function fmtDate(d: string | null | undefined): string {
 }
 
 export default function TresoreriePage() {
-  const [data, setData] = useState<{
     factures: FactureRow[]
     missions: MissionPayRow[]
+    notes_de_frais: any[]
     caParEtude: CaParEtude[]
     kpis: any
     migrationMissing?: boolean
@@ -53,6 +53,20 @@ export default function TresoreriePage() {
   const [showModal, setShowModal] = useState(false)
   const [editingFacture, setEditingFacture] = useState<FactureRow | null>(null)
   const [showPayMission, setShowPayMission] = useState<MissionPayRow | null>(null)
+
+  const handleNoteFraisAction = async (id: string, action: "valider" | "rejeter" | "payer") => {
+    try {
+      const res = await fetch("/api/tresorerie/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action }),
+      })
+      if (!res.ok) throw new Error("Erreur lors de l'action")
+      reload()
+    } catch (error: any) {
+      alert(error.message)
+    }
+  }
 
   const reload = async () => {
     const [res, eres] = await Promise.all([
@@ -156,14 +170,28 @@ export default function TresoreriePage() {
             Suivi des factures, paiements clients et rétribution des intervenants
           </p>
         </div>
-        <button
-          onClick={() => { setEditingFacture(null); setShowModal(true) }}
-          disabled={data.migrationMissing}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Plus className="w-4 h-4" />
-          Nouvelle facture
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setActiveTab("notes")}
+            className="relative flex items-center gap-2 bg-indigo-50 border border-indigo-100 px-3 py-2 rounded-xl text-indigo-700 hover:bg-indigo-100 transition-colors"
+          >
+            <Receipt className="w-5 h-5" />
+            <span className="text-sm font-semibold">Notes de frais déposées</span>
+            {kpis.nbNotesSoumises > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm">
+                {kpis.nbNotesSoumises}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => { setEditingFacture(null); setShowModal(true) }}
+            disabled={data.migrationMissing}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-4 h-4" />
+            Nouvelle facture
+          </button>
+        </div>
       </div>
 
       {data.migrationMissing && (
@@ -235,6 +263,7 @@ export default function TresoreriePage() {
           { key: "factures" as Tab, label: `Suivi des factures (${data.factures.length})` },
           { key: "ca" as Tab, label: "CA facturé" },
           { key: "missions" as Tab, label: `Suivi des missions (${data.missions.length})` },
+          { key: "notes" as Tab, label: `Notes de frais (${data.notes_de_frais.length})` },
         ].map((t) => (
           <button
             key={t.key}
@@ -529,6 +558,98 @@ export default function TresoreriePage() {
                               className="px-2.5 py-1 rounded-md text-xs font-medium text-zinc-500 bg-zinc-50 border border-zinc-200 hover:bg-zinc-100 transition-colors"
                             >
                               Annuler paiement
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Notes de frais ───────────────────────────── */}
+      {activeTab === "notes" && (
+        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-zinc-100 flex justify-between items-center">
+            <div>
+              <h2 className="font-manrope font-bold text-[#00236f] text-base">Notes de Frais</h2>
+              <p className="text-xs text-zinc-500 mt-0.5">Validation et paiement des frais des intervenants.</p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                  <th className="px-4 py-3">Numéro</th>
+                  <th className="px-4 py-3">Mission / Étude</th>
+                  <th className="px-4 py-3">Intervenant</th>
+                  <th className="px-4 py-3">Statut</th>
+                  <th className="px-4 py-3">Montant</th>
+                  <th className="px-4 py-3 text-right">Justificatifs</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {data.notes_de_frais.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-10 text-center text-zinc-400 text-sm">
+                      Aucune note de frais.
+                    </td>
+                  </tr>
+                ) : (
+                  data.notes_de_frais.map((note) => (
+                    <tr key={note.id} className="hover:bg-zinc-50 transition-colors">
+                      <td className="px-4 py-3 font-mono text-zinc-700">{note.numero_note_de_frais}</td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-[#00236f]">{note.mission?.nom}</div>
+                        <div className="text-xs text-zinc-500">{note.mission?.etudes?.numero}</div>
+                      </td>
+                      <td className="px-4 py-3 text-zinc-700">
+                        {note.intervenant?.prenom} {note.intervenant?.nom}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                          note.statut === 'paye' ? 'bg-emerald-100 text-emerald-700' :
+                          note.statut === 'valide' ? 'bg-blue-100 text-blue-700' :
+                          note.statut === 'soumis' ? 'bg-amber-100 text-amber-700' :
+                          'bg-zinc-100 text-zinc-600'
+                        }`}>
+                          {note.statut.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-[#00236f]">{fmtEUR(note.montant_total)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          {note.fichiers_justificatifs?.map((url: string, i: number) => (
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="p-1 rounded-md bg-zinc-100 text-zinc-600 hover:text-blue-600" title={`Fichier ${i+1}`}>
+                              <FileText className="w-4 h-4" />
+                            </a>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-xs font-semibold"
+                            onClick={() => alert("Génération Excel (remplacement des balises) : Cette fonctionnalité sera implémentée prochainement. Pour le moment les infos sont : " + JSON.stringify({ montant: note.montant_total, intervenant: note.intervenant?.prenom + " " + note.intervenant?.nom, mission: note.mission?.nom }))}
+                          >
+                            <Download className="w-3.5 h-3.5" /> Générer
+                          </button>
+                          
+                          {note.statut === 'soumis' && (
+                            <>
+                              <button onClick={() => handleNoteFraisAction(note.id, 'valider')} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors text-xs font-semibold">
+                                <CheckCircle className="w-3.5 h-3.5" /> Valider
+                              </button>
+                            </>
+                          )}
+                          {note.statut === 'valide' && (
+                            <button onClick={() => handleNoteFraisAction(note.id, 'payer')} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-xs font-semibold">
+                              <Banknote className="w-3.5 h-3.5" /> Marquer Payée
                             </button>
                           )}
                         </div>

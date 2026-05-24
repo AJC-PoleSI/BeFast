@@ -216,10 +216,23 @@ export async function getTresorerieData() {
   const totalRetributionDue = missions.filter((m) => !m.paye).reduce((s, m) => s + m.montant, 0)
   const totalRetributionVersee = missions.filter((m) => m.paye).reduce((s, m) => s + m.montant, 0)
 
+  const notesRes = await supabase
+    .from("notes_de_frais")
+    .select(`
+      id, numero_note_de_frais, montant_total, description, fichiers_justificatifs, statut, submitted_at, validated_at,
+      intervenant:intervenant_id(prenom, nom),
+      mission:mission_id(nom, etudes(numero))
+    `)
+    .neq("statut", "brouillon")
+    .order("submitted_at", { ascending: false })
+
+  const notes_de_frais = notesRes.data ?? []
+
   return {
     data: {
       factures,
       missions,
+      notes_de_frais,
       caParEtude,
       migrationMissing,
       kpis: {
@@ -232,6 +245,7 @@ export async function getTresorerieData() {
         nbFactures: factures.length,
         nbFacturesImpayees: factures.filter((f) => !f.date_paiement).length,
         nbMissionsAPayer: missions.filter((m) => !m.paye).length,
+        nbNotesSoumises: notes_de_frais.filter((n: any) => n.statut === 'soumis').length
       },
     },
   }
