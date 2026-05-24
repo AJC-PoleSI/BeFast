@@ -32,9 +32,9 @@ import {
   XCircle,
   Clock,
   Loader2,
-  User,
   Mail,
   FileText,
+  Receipt
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -245,13 +245,22 @@ export default function MissionDetailPage() {
             Retour aux missions
           </Button>
         </Link>
-        {canSelectCandidates && (
-          <Link href={`/missions/${mission.id}/documents`}>
-            <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
-              <FileText className="h-4 w-4 mr-1.5" /> Documents
-            </Button>
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          {(myCandidature?.statut === "acceptee" || isAGC) && (
+            <Link href={`/missions/${mission.id}/notes-de-frais`}>
+              <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
+                <Receipt className="h-4 w-4 mr-1.5" /> Notes de frais
+              </Button>
+            </Link>
+          )}
+          {canSelectCandidates && (
+            <Link href={`/missions/${mission.id}/documents`}>
+              <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
+                <FileText className="h-4 w-4 mr-1.5" /> Documents
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Mission info */}

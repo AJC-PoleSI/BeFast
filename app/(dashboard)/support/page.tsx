@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 
 interface SupportReport {
   email: string;
-  subject: string;
+  type_probleme: string;
   description: string;
   page?: string;
 }
@@ -19,7 +20,7 @@ export default function SupportPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<SupportReport>({
     email: '',
-    subject: '',
+    type_probleme: 'Bug technique',
     description: '',
     page: typeof window !== 'undefined' ? window.location.pathname : '',
   });
@@ -32,16 +33,18 @@ export default function SupportPage() {
     }));
   };
 
+  const handleTypeChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      type_probleme: value,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.subject || !formData.description) {
+    if (!formData.email || !formData.type_probleme || !formData.description) {
       toast.error('Veuillez remplir tous les champs obligatoires');
-      return;
-    }
-
-    if (formData.subject.length < 5) {
-      toast.error('Le sujet doit contenir au moins 5 caractères');
       return;
     }
 
@@ -66,7 +69,7 @@ export default function SupportPage() {
       toast.success('Signalement envoyé avec succès. Merci pour votre retour!');
       setFormData({
         email: '',
-        subject: '',
+        type_probleme: 'Bug technique',
         description: '',
         page: typeof window !== 'undefined' ? window.location.pathname : '',
       });
@@ -106,17 +109,30 @@ export default function SupportPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="subject">Sujet</Label>
-              <Input
-                id="subject"
-                name="subject"
-                type="text"
-                placeholder="Résumé du problème"
-                value={formData.subject}
-                onChange={handleChange}
-                required
-              />
+            <div className="space-y-3">
+              <Label>Type de problème</Label>
+              <RadioGroup
+                value={formData.type_probleme}
+                onValueChange={handleTypeChange}
+                className="flex flex-col space-y-1"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Bug technique" id="type-bug" />
+                  <Label htmlFor="type-bug" className="font-normal cursor-pointer">Bug technique</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Erreur d'affichage" id="type-affichage" />
+                  <Label htmlFor="type-affichage" className="font-normal cursor-pointer">Erreur d'affichage</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Lenteur / Performance" id="type-lenteur" />
+                  <Label htmlFor="type-lenteur" className="font-normal cursor-pointer">Lenteur / Performance</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Autre" id="type-autre" />
+                  <Label htmlFor="type-autre" className="font-normal cursor-pointer">Autre</Label>
+                </div>
+              </RadioGroup>
             </div>
 
             <div className="space-y-2">

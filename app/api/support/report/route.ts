@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createClient } from '@/lib/supabase/server';
 
 const reportSchema = z.object({
   email: z.string().email('Email invalide'),
-  subject: z.string().min(5, 'Le sujet doit contenir au moins 5 caractères'),
+  type_probleme: z.string(),
   description: z.string().min(20, 'La description doit contenir au moins 20 caractères'),
   page: z.string().optional(),
 });
@@ -16,14 +17,33 @@ export async function POST(request: NextRequest) {
 
     // Validate request
     const validatedData = reportSchema.parse(body);
+    const supabase = createClient();
+    
+    // Get current user if any
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // Log the report (you can store it in a database later)
-    console.log('📋 New Support Report:', {
+    // Insert into DB
+    const { error: dbError } = await supabase
+      .from('support_tickets')
+      .insert({
+        utilisateur_id: user?.id || null,
+        email: validatedData.email,
+        type_probleme: validatedData.type_probleme,
+        description: validatedData.description,
+        page_url: validatedData.page || null,
+      });
+
+    if (dbError) {
+      console.error('Erreur DB support_tickets:', dbError);
+      throw new Error('Erreur lors de l\'enregistrement en base de données');
+    }
+
+    console.log('📋 Support Report saved to DB:', {
       timestamp: new Date().toISOString(),
       ...validatedData,
     });
 
-    // TODO: Send email notification to support.info@ajc-mail.com
+    // TODO: Send email notification to systeme.info@ajc-mail.com
     // when email service is configured
 
     return NextResponse.json(
