@@ -35,7 +35,8 @@ import {
   User,
   Mail,
   FileText,
-  Receipt
+  Receipt,
+  MessageSquare
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -247,12 +248,19 @@ export default function MissionDetailPage() {
           </Button>
         </Link>
         <div className="flex items-center gap-2">
-          {(myCandidature?.statut === "acceptee" || isAGC) && (
-            <Link href={`/missions/${mission.id}/notes-de-frais`}>
-              <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
-                <Receipt className="h-4 w-4 mr-1.5" /> Notes de frais
-              </Button>
-            </Link>
+          {((myCandidature?.statut === "acceptee") || (isAGC && mission.intervenant_id)) && (
+            <>
+              <Link href={`/missions/${mission.id}/interne`}>
+                <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
+                  <MessageSquare className="h-4 w-4 mr-1.5" /> Espace de travail
+                </Button>
+              </Link>
+              <Link href={`/missions/${mission.id}/notes-de-frais`}>
+                <Button size="sm" variant="outline" className="border-[#00236f]/30 text-[#00236f] hover:bg-[#00236f]/5">
+                  <Receipt className="h-4 w-4 mr-1.5" /> Notes de frais
+                </Button>
+              </Link>
+            </>
           )}
           {canSelectCandidates && (
             <Link href={`/missions/${mission.id}/documents`}>
