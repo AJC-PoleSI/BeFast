@@ -194,9 +194,9 @@
     </div>
   </div>
 
-  <!-- RIGHT: Formspree form -->
+  <!-- RIGHT: Contact form (Resend via /api/contact) -->
   <div class="contact-form-wrap">
-    <form id="contact-form" action="https://formspree.io/f/mjglyryz" method="POST">
+    <form id="contact-form">
       <div class="form-row">
         <div>
           <label for="prenom" class="form-label">Prénom *</label>
@@ -319,7 +319,7 @@
     if (select) select.value = domaine;
   }
 
-  // Formspree AJAX submission (no page reload)
+  // Soumission du formulaire → /api/contact (Resend)
   const form = document.getElementById('contact-form');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -327,11 +327,21 @@
     const origText = btn.textContent;
     btn.textContent = 'Envoi en cours…';
     btn.disabled = true;
+
+    const data = {
+      prenom:  form.querySelector('#prenom').value.trim(),
+      nom:     form.querySelector('#nom').value.trim(),
+      email:   form.querySelector('#email').value.trim(),
+      societe: form.querySelector('#societe').value.trim(),
+      domaine: form.querySelector('#domaine').value,
+      message: form.querySelector('#message').value.trim(),
+    };
+
     try {
-      const res = await fetch(form.action, {
+      const res = await fetch('/api/contact', {
         method: 'POST',
-        body: new FormData(form),
-        headers: { 'Accept': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
       });
       if (res.ok) {
         form.reset();
@@ -339,10 +349,13 @@
         btn.textContent = origText;
         btn.disabled = false;
       } else {
+        const err = await res.json().catch(() => ({}));
+        console.error('Erreur API:', err);
         btn.textContent = 'Erreur — réessayer';
         btn.disabled = false;
       }
-    } catch {
+    } catch (err) {
+      console.error('Erreur réseau:', err);
       btn.textContent = 'Erreur — réessayer';
       btn.disabled = false;
     }
