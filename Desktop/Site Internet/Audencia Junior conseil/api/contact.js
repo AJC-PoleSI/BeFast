@@ -119,7 +119,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Audencia Junior Conseil <noreply@ajc-mail.com>',
+        from: 'Audencia Junior Conseil <noreply@audenciajuniorconseil.com>',
         to: ['contact@ajc-mail.com'],
         reply_to: email,
         subject: `[AJC] ${domaineLabel} — ${prenom} ${nom}`,
