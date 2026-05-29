@@ -13,8 +13,8 @@ export default function AutoLogin() {
       if (!user) {
         console.log("🚀 Tentative de connexion automatique...");
         const { error } = await supabase.auth.signInWithPassword({
-          email: process.env.NEXT_PUBLIC_AUTO_LOGIN_EMAIL || 'admin@befast.fr',
-          password: process.env.NEXT_PUBLIC_AUTO_LOGIN_PASSWORD || 'BeFast2024!Admin',
+          email: process.env.NEXT_PUBLIC_AUTO_LOGIN_EMAIL || '',
+          password: process.env.NEXT_PUBLIC_AUTO_LOGIN_PASSWORD || '',
         });
         
         if (error) {
