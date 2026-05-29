@@ -1,12 +1,16 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
-
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
+
+  // EXCEPTION TEMPORAIRE POUR LE MODULE PROPOSITIONS (DEV)
+  if (request.nextUrl.pathname.startsWith('/test-propositions') || request.nextUrl.pathname.startsWith('/test-dashboard-propositions')) {
+    return response
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
