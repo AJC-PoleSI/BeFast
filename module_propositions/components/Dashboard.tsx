@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { mockSavedPropales, mockCDPs } from '../data/mockDB';
+import { mockSavedPropales } from '../data/mockDB';
 import { createClient } from '@/lib/supabase/client';
-import { Trash2, Edit, FileCheck, Search, Filter, Shield, List, Calendar as CalendarIcon, Clock, BarChart3, Copy, Download } from 'lucide-react';
+import { Trash2, Edit, FileCheck, Search, Filter, Shield, List, Calendar as CalendarIcon, Clock, BarChart3, Copy, Download, Plus } from 'lucide-react';
 
 // --- UTILS POUR L'ÉCHÉANCIER ---
 function getNextMonday(date: Date | string) {
@@ -35,13 +35,12 @@ export default function Dashboard() {
 
   const fetchPropales = async () => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.from('proposals').select('*, proposal_phases(*)');
       
-      if (error) {
-        console.warn("Supabase introuvable ou tables non créées, utilisation des données fictives :", error.message);
-        setPropales(mockSavedPropales);
-      } else if (data) {
-        const formatted = data.map((p: any) => ({
+      let finalPropales = [];
+      if (data && data.length > 0) {
+        finalPropales = data.map((p: any) => ({
           id: p.id,
           cdpId: p.cdp_id,
           clientName: p.client_company,
@@ -56,30 +55,59 @@ export default function Dashboard() {
              dureeSemaines: ph.duree_semaines
           })) : []
         }));
-        // Si la base est vide pour l'instant, on laisse les fausses données pour tester le visuel
-        setPropales(formatted.length > 0 ? formatted : mockSavedPropales);
+      } else {
+        // Fallback sur localStorage
+        if (typeof window !== 'undefined') {
+          const savedRaw = localStorage.getItem('befast_saved_proposals');
+          if (savedRaw) {
+            finalPropales = JSON.parse(savedRaw);
+          }
+        }
       }
+      
+      // Si toujours vide, on charge les mocks en mémoire pour la démo
+      setPropales(finalPropales.length > 0 ? finalPropales : mockSavedPropales);
     } catch (err) {
       console.error(err);
-      setPropales(mockSavedPropales);
+      let localPropales = [];
+      if (typeof window !== 'undefined') {
+        const savedRaw = localStorage.getItem('befast_saved_proposals');
+        if (savedRaw) {
+          localPropales = JSON.parse(savedRaw);
+        }
+      }
+      setPropales(localPropales.length > 0 ? localPropales : mockSavedPropales);
     }
     setIsLoading(false);
   };
 
   const getStatusBadge = (status: string) => {
     switch(status) {
-      case 'envoyée': return <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full uppercase">Envoyée</span>;
-      case 'validée': return <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full uppercase">Validée</span>;
-      case 'refusée': return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-bold rounded-full uppercase">Refusée</span>;
-      case 'CE éditée': return <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-full uppercase">CE Éditée</span>;
-      default: return <span className="px-2 py-1 bg-slate-100 text-slate-800 text-xs font-bold rounded-full uppercase">{status}</span>;
+      case 'envoyée': return <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold rounded-full">Envoyée</span>;
+      case 'validée': return <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold rounded-full">Validée</span>;
+      case 'refusée': return <span className="px-2.5 py-0.5 bg-red-50 text-red-700 border border-red-200 text-xs font-semibold rounded-full">Refusée</span>;
+      case 'CE éditée': return <span className="px-2.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 text-xs font-semibold rounded-full">CE Éditée</span>;
+      default: return <span className="px-2.5 py-0.5 bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold rounded-full">{status}</span>;
     }
   };
 
   const handleDelete = async (id: string) => {
     if(confirm(`Voulez-vous vraiment supprimer la proposition ${id} ?`)) {
       // Tente de supprimer dans Supabase
-      await supabase.from('proposals').delete().eq('id', id);
+      try {
+        await supabase.from('proposals').delete().eq('id', id);
+      } catch (e) {}
+      
+      // Supprimer dans localStorage
+      if (typeof window !== 'undefined') {
+        const savedRaw = localStorage.getItem('befast_saved_proposals');
+        if (savedRaw) {
+          const list = JSON.parse(savedRaw);
+          const filtered = list.filter((p: any) => p.id !== id);
+          localStorage.setItem('befast_saved_proposals', JSON.stringify(filtered));
+        }
+      }
+      
       setPropales(propales.filter(p => p.id !== id));
     }
   };
@@ -119,15 +147,24 @@ export default function Dashboard() {
     const payload = {
       id: propale.id,
       client_company: propale.clientName,
+      is_autoentrepreneur: !!propale.isAutoentrepreneur,
       client_civilite: propale.clientCivilite,
+      client_first_name: propale.clientFirstName,
+      client_last_name: propale.clientLastName,
       client_email: propale.clientEmail,
+      client_phone: propale.clientPhone,
       study_type: propale.studyType,
+      cdp_id: propale.cdpId,
       context_situation: propale.contextSituation,
       context_intervention: propale.contextIntervention,
       context_enjeu: propale.contextEnjeu,
       cdc_objectifs: propale.cdcObjectifs,
       cdc_contraintes: propale.cdcContraintes,
       cdc_livrables: propale.cdcLivrables,
+      suivi_jeh_count: propale.suiviJehCount,
+      suivi_jeh_price: propale.suiviJehPrice,
+      global_frais_annexes: propale.globalFraisAnnexes,
+      start_date: propale.date,
       total_ht: propale.totalHT,
       total_ttc: propale.totalTTC,
       phases: propale.phases || []
@@ -245,50 +282,57 @@ export default function Dashboard() {
   const maxLoad = Math.max(...loadData.map(d => d.count), 1);
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 md:p-8 animate-in fade-in duration-500">
+    <div className="w-full max-w-7xl mx-auto p-4 md:p-6 animate-in fade-in duration-300">
       
       {/* SIMULATEUR DE VUE */}
-      <div className="bg-slate-900 text-white p-3 rounded-lg flex items-center justify-between mb-8 shadow-md">
-        <div className="flex items-center gap-3 text-sm font-medium">
-          <Shield size={18} className="text-emerald-400" />
-          <span>Mode Test : Vous simulez la vue de :</span>
+      <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-xl flex flex-wrap items-center justify-between mb-6 gap-3 shadow-sm">
+        <div className="flex items-center gap-3 text-sm font-semibold">
+          <Shield size={18} className="text-amber-600 shrink-0" />
+          <span>Mode simulation : vous visualisez en tant que :</span>
         </div>
         <select 
           value={viewAs} 
           onChange={(e) => setViewAs(e.target.value)}
-          className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          className="bg-white border border-amber-200 text-amber-900 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none font-medium shadow-sm transition-all"
         >
           <option value="admin">Administrateur (Toutes les propales)</option>
-          {mockCDPs.map(cdp => (
+          {[
+            { id: 1, initials: "JDU", firstName: "Jean", lastName: "Dupont" },
+            { id: 2, initials: "ALM", firstName: "Alice", lastName: "Martin" },
+            { id: 3, initials: "JQD", firstName: "Jacques", lastName: "Durand" }
+          ].map(cdp => (
             <option key={cdp.id} value={cdp.initials}>{cdp.firstName} {cdp.lastName} ({cdp.initials})</option>
           ))}
         </select>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900">Mon Dashboard</h1>
-          <p className="text-slate-500 mt-1">Gérez vos propositions commerciales et conventions d'études.</p>
+          <h1 className="text-2xl font-manrope font-black text-[#00236f]">Suivi des Propositions</h1>
+          <p className="text-sm text-zinc-500 mt-1">Gérez et suivez le statut de vos propositions commerciales et conventions d'études.</p>
         </div>
         
-        <div className="flex gap-3 items-center">
-          <div className="bg-slate-200 p-1 rounded-lg flex text-sm font-bold">
+        <div className="flex gap-3 items-center w-full md:w-auto shrink-0">
+          <div className="bg-zinc-100 p-1 rounded-xl flex text-xs font-bold border border-zinc-200">
             <button 
               onClick={() => setDisplayMode('liste')} 
-              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${displayMode === 'liste' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all ${displayMode === 'liste' ? 'bg-white text-zinc-800 shadow-sm font-semibold' : 'text-zinc-500 hover:text-zinc-700'}`}
             >
-              <List size={16} /> Liste
+              <List size={14} /> Liste
             </button>
             <button 
               onClick={() => setDisplayMode('calendrier')} 
-              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${displayMode === 'calendrier' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all ${displayMode === 'calendrier' ? 'bg-white text-zinc-800 shadow-sm font-semibold' : 'text-zinc-500 hover:text-zinc-700'}`}
             >
-              <CalendarIcon size={16} /> Suivi CE
+              <CalendarIcon size={14} /> Calendrier CE
             </button>
           </div>
           
-          <button onClick={() => window.location.href='/test-propositions'} className="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-sm ml-2">
-            + Nouvelle Proposition
+          <button 
+            onClick={() => window.location.href='/test-propositions'} 
+            className="bg-[#00236f] hover:bg-[#00174a] text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow flex items-center gap-2"
+          >
+            <Plus size={16} /> Nouvelle Proposition
           </button>
         </div>
       </div>
@@ -337,7 +381,7 @@ export default function Dashboard() {
                 <tbody className="divide-y divide-slate-100">
                   {filteredPropales.map(p => (
                     <tr key={p.id} className="hover:bg-slate-50/80 transition-colors group">
-                      <td className="px-6 py-4 font-mono font-bold text-blue-700">{p.id}</td>
+                      <td className="px-6 py-4 font-mono font-bold text-[#00236f]">{p.id}</td>
                       <td className="px-6 py-4 text-slate-500">{new Date(p.date).toLocaleDateString('fr-FR')}</td>
                       <td className="px-6 py-4 font-semibold text-slate-800">{p.clientName}</td>
                       <td className="px-6 py-4 text-slate-600">{p.studyType}</td>
@@ -350,7 +394,7 @@ export default function Dashboard() {
                               <FileCheck size={16} /> <span className="hidden xl:inline">Passer en CE</span>
                             </button>
                           )}
-                          <button onClick={() => handleEdit(p.id)} title="Modifier la proposition" className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                          <button onClick={() => handleEdit(p.id)} title="Modifier la proposition" className="p-2 text-slate-600 hover:text-[#00236f] hover:bg-[#d0d8ff]/30 rounded-lg transition-colors">
                             <Edit size={16} />
                           </button>
                           <button onClick={() => handleGeneratePpt(p.id)} title="Générer le PowerPoint" className="p-2 text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors">

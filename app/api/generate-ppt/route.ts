@@ -3,7 +3,7 @@ import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import fs from 'fs';
 import path from 'path';
-import { mockCDPs } from '@/module_propositions/data/mockDB';
+import personnesDB from '@/local_db/personnes.json';
 
 /**
  * PowerPoint stocke parfois les balises {TAG} en plusieurs fragments XML séparés.
@@ -41,13 +41,44 @@ function escapeXml(unsafe: any): string {
   });
 }
 
+/**
+ * Modifie le texte d'une zone de texte PowerPoint identifiée par son nom.
+ * Cette fonction remplace tout le contenu textuel par un paragraphe propre pour éviter les coupures de PowerPoint.
+ */
+function setShapeText(xmlStr: string, shapeName: string, text: string): string {
+  // Regex pour trouver le conteneur du TextBox par son nom unique et isoler sa zone de texte <p:txBody>
+  const shapeRegex = new RegExp(`(<p:sp>(?:(?!</p:sp>)[\\s\\S])*?name="${shapeName}"(?:(?!</p:sp>)[\\s\\S])*?<p:txBody>(?:(?!</p:sp>)[\\s\\S])*?)(<a:p>(?:(?!</p:txBody>)[\\s\\S])*?</p:txBody>)`);
+  const match = xmlStr.match(shapeRegex);
+  if (!match) {
+    console.warn(`[PPT] Shape de texte "${shapeName}" introuvable pour remplacement de texte.`);
+    return xmlStr;
+  }
+  
+  // Reconstruire un paragraphe propre avec le texte échappé aux couleurs AJC
+  const newParagraphs = `
+            <a:p>
+              <a:pPr algn="ctr"/>
+              <a:r>
+                <a:rPr lang="fr-FR" sz="1200" b="1">
+                  <a:solidFill><a:srgbClr val="002C5A"/></a:solidFill>
+                  <a:latin typeface="Montserrat"/>
+                </a:rPr>
+                <a:t>${escapeXml(text)}</a:t>
+              </a:r>
+            </a:p>
+          </p:txBody>`;
+  
+  return xmlStr.replace(match[0], match[1] + newParagraphs);
+}
+
 function generateBudgetTableXml(phases: any[], suiviJeh: number, suiviHt: number, suiviTtc: number, totalHt: number, totalTtc: number, x: number, y: number, cx: number, cy: number): string {
+  // Proportions aérées et centrées : largeur totale = 16 000 000 EMUs
   const tblGrid = `
     <a:tblGrid>
-      <a:gridCol w="4572000"/>
-      <a:gridCol w="1828800"/>
-      <a:gridCol w="2438400"/>
-      <a:gridCol w="2438400"/>
+      <a:gridCol w="6500000"/>
+      <a:gridCol w="2500000"/>
+      <a:gridCol w="3500000"/>
+      <a:gridCol w="3500000"/>
     </a:tblGrid>
   `;
 
@@ -74,30 +105,23 @@ function generateBudgetTableXml(phases: any[], suiviJeh: number, suiviHt: number
     `;
   }
 
+  // Ligne Suivi Chef de Projet (police normale sans italique)
   rowsXml += `
     <a:tr h="457200">
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1200" i="1"><a:solidFill><a:srgbClr val="555555"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>Suivi Chef de Projet</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="EEF2FA"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1200" i="1"><a:solidFill><a:srgbClr val="555555"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${suiviJeh}</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="EEF2FA"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1200" i="1"><a:solidFill><a:srgbClr val="555555"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${suiviHt.toLocaleString('fr-FR')} €</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="EEF2FA"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1200" i="1"><a:solidFill><a:srgbClr val="555555"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${suiviTtc.toLocaleString('fr-FR')} €</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="EEF2FA"/></a:solidFill></a:tcPr></a:tc>
+      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="555555"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>Suivi Chef de Projet</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="EEF2FA"/></a:solidFill></a:tcPr></a:tc>
+      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="555555"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${suiviJeh}</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="EEF2FA"/></a:solidFill></a:tcPr></a:tc>
+      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="555555"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${suiviHt.toLocaleString('fr-FR')} €</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="EEF2FA"/></a:solidFill></a:tcPr></a:tc>
+      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="555555"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${suiviTtc.toLocaleString('fr-FR')} €</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="EEF2FA"/></a:solidFill></a:tcPr></a:tc>
     </a:tr>
   `;
 
-  rowsXml += `
-    <a:tr h="533400">
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1400" b="1"><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>TOTAL HT</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E8EEF7"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E8EEF7"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1400" b="1"><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${totalHt.toLocaleString('fr-FR')} €</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E8EEF7"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E8EEF7"/></a:solidFill></a:tcPr></a:tc>
-    </a:tr>
-  `;
-
+  // Unique ligne de TOTAL fusionnant HT et TTC en rouge premium (E34670)
   rowsXml += `
     <a:tr h="609600">
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1600" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>TOTAL TTC</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E34670"/></a:solidFill></a:tcPr></a:tc>
+      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1600" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>TOTAL</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E34670"/></a:solidFill></a:tcPr></a:tc>
       <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E34670"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E34670"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1600" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${totalTtc.toLocaleString('fr-FR')} €</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E34670"/></a:solidFill></a:tcPr></a:tc>
+      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1600" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${totalHt.toLocaleString('fr-FR')} € HT</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E34670"/></a:solidFill></a:tcPr></a:tc>
+      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1600" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${totalTtc.toLocaleString('fr-FR')} € TTC</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E34670"/></a:solidFill></a:tcPr></a:tc>
     </a:tr>
   `;
 
@@ -128,8 +152,11 @@ function generateBudgetTableXml(phases: any[], suiviJeh: number, suiviHt: number
 }
 
 function generateGanttTableXml(phases: any[], phaseWeeks: any[], numWeeks: number, weekColWidth: number, x: number, y: number, cx: number, cy: number): string {
+  // Le planning complet intègre systématiquement : 1 sem Préparation + numWeeks d'études + 1 sem Finalisation
+  const totalWeeks = numWeeks + 2;
+  
   let tblGrid = '<a:tblGrid><a:gridCol w="4000000"/><a:gridCol w="1200000"/>';
-  for (let w = 1; w <= numWeeks; w++) {
+  for (let w = 1; w <= totalWeeks; w++) {
     tblGrid += `<a:gridCol w="${weekColWidth}"/>`;
   }
   tblGrid += '</a:tblGrid>';
@@ -137,22 +164,47 @@ function generateGanttTableXml(phases: any[], phaseWeeks: any[], numWeeks: numbe
   let trHeader = `<a:tr h="600000">`;
   trHeader += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1300" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>PHASES DE L&apos;ÉTUDE</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>`;
   trHeader += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1300" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>DURÉE</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>`;
+  
+  // En-tête des semaines
+  trHeader += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1000" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>PRÉPA</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>`;
   for (let w = 1; w <= numWeeks; w++) {
-    trHeader += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1200" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>S${w}</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>`;
+    trHeader += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1100" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>S${w}</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>`;
   }
+  trHeader += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1000" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>BILAN</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>`;
   trHeader += `</a:tr>`;
 
   let rowsXml = trHeader;
+
+  // 1. Ligne de Préparation (Semaine 1) - Coloriée en Or soft
+  let prepRow = `<a:tr h="550000">`;
+  prepRow += `<a:tc><a:txBody><a:bodyPr lIns="100000" rIns="100000" tIns="50000" bIns="50000"/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1100" b="1"><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>Préparation &amp; Recrutement</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>`;
+  prepRow += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1100"><a:solidFill><a:srgbClr val="333333"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>1 sem.</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>`;
+  
+  // Semaine de prépa coloriée en Or soft (D4AF37)
+  prepRow += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="D4AF37"/></a:solidFill></a:tcPr></a:tc>`;
+  
+  // Les autres semaines restent blanches
+  for (let w = 1; w <= numWeeks + 1; w++) {
+    prepRow += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:tcPr></a:tc>`;
+  }
+  prepRow += `</a:tr>`;
+  rowsXml += prepRow;
+
+  // 2. Lignes des phases normales (décalées de +1 pour laisser la place à la prépa)
   for (let i = 0; i < phases.length; i++) {
     const p = phases[i];
     const pDuree = Number(p.dureeSemaines || p.duree_semaines || 1);
     const activeRange = phaseWeeks[i];
-    const phaseColor = '105BA6'; // Uniform medium-dark blue (AJC brand color)
+    const phaseColor = '105BA6'; // Bleu AJC
 
     let rowXml = `<a:tr h="550000">`;
     rowXml += `<a:tc><a:txBody><a:bodyPr lIns="100000" rIns="100000" tIns="50000" bIns="50000"/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1100" b="1"><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${escapeXml(p.name)}</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>`;
     rowXml += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1100"><a:solidFill><a:srgbClr val="333333"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${pDuree} sem.</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>`;
     
+    // Semaine de prépa blanche
+    rowXml += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:tcPr></a:tc>`;
+    
+    // Semaines d'étude
     for (let w = 1; w <= numWeeks; w++) {
       const isActive = w >= activeRange.start && w <= activeRange.end;
       if (isActive) {
@@ -161,9 +213,26 @@ function generateGanttTableXml(phases: any[], phaseWeeks: any[], numWeeks: numbe
         rowXml += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:tcPr></a:tc>`;
       }
     }
+    
+    // Semaine de bilan/finalisation blanche
+    rowXml += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:tcPr></a:tc>`;
     rowXml += `</a:tr>`;
     rowsXml += rowXml;
   }
+
+  // 3. Ligne de Finalisation (Clôture en Bronze/Orange à la dernière semaine)
+  let finalRow = `<a:tr h="550000">`;
+  finalRow += `<a:tc><a:txBody><a:bodyPr lIns="100000" rIns="100000" tIns="50000" bIns="50000"/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1100" b="1"><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>Finalisation &amp; Clôture administrative</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>`;
+  finalRow += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1100"><a:solidFill><a:srgbClr val="333333"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>1 sem.</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>`;
+  
+  // Semaines d'étude et de prépa restent blanches
+  for (let w = 1; w <= numWeeks + 1; w++) {
+    finalRow += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:tcPr></a:tc>`;
+  }
+  // Dernière semaine de finalisation coloriée en Or (D4AF37)
+  finalRow += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="D4AF37"/></a:solidFill></a:tcPr></a:tc>`;
+  finalRow += `</a:tr>`;
+  rowsXml += finalRow;
 
   return `
     <p:graphicFrame>
@@ -245,14 +314,14 @@ export async function POST(req: Request) {
 
   // 1. Résolution globale du CDP et de sa civilité (genre)
   if (data.cdp_id && (!data.cdp_first_name || !data.cdp_last_name)) {
-    const cdp = mockCDPs.find((c: any) => c.id === Number(data.cdp_id));
+    const cdp = personnesDB.find((c: any) => c.id === Number(data.cdp_id));
     if (cdp) {
       data.cdp_civilite = cdp.civilite || 'M.';
       data.cdp_first_name = cdp.firstName;
       data.cdp_last_name = cdp.lastName;
-      data.cdp_initials = cdp.initials;
+      data.cdp_initials = (cdp.firstName.charAt(0) + (cdp.lastName?.charAt(0) || '')).toUpperCase();
       data.cdp_email = cdp.email;
-      data.cdp_phone = '+33 6 12 34 56 78';
+      data.cdp_phone = '+33 6 12 34 56 78'; // Numéro fictif
     }
   }
 
@@ -276,6 +345,27 @@ export async function POST(req: Request) {
                      .replace(/typeface="Montserrat-UltraBold"/g, 'typeface="Montserrat"')
                      .replace(/typeface="Montserrat ExtraBold"/g, 'typeface="Montserrat"')
                      .replace(/typeface="Montserrat-ExtraBold"/g, 'typeface="Montserrat"');
+
+        // Forcer l'auto-ajustement des cadres de texte (autofit) sur toutes les slides
+        fixed = fixed.replace(/<a:noAutofit\s*\/>/g, '<a:normAutofit/>');
+
+        // Retirer le P devant le numéro de proposition {NUM_PROP}
+        fixed = fixed.replace(/P\{NUM_PROP\}/g, '{NUM_PROP}')
+                     .replace(/P-\{NUM_PROP\}/g, '{NUM_PROP}')
+                     .replace(/P\s+\{NUM_PROP\}/g, '{NUM_PROP}');
+
+        // Aligner à gauche la slide 9 (Contexte et Enjeux)
+        if (fixed.includes('{SITUATION_CTX}') || fixed.includes('SITUATION_CTX')) {
+          fixed = fixed.replace(/algn="ctr"/g, 'algn="l"');
+        }
+
+        // Mettre en gras la balise de l'entreprise {CLIENT_COMPANY}
+        fixed = fixed.replace(/(<a:rPr[^>]*?)(b="0"|b="false")?([^>]*?>\s*<a:t>\{CLIENT_COMPANY\})/g, (match, prefix, boldAttr, suffix) => {
+          if (prefix.includes(' b="')) {
+            return prefix.replace(/b="[^"]*"/, 'b="1"') + suffix;
+          }
+          return prefix + ' b="1"' + suffix;
+        });
 
         if (fixed !== xmlContent) {
           zip.file(filename, fixed);
@@ -339,6 +429,7 @@ export async function POST(req: Request) {
 
         let updatedPresXml = presXml;
         let updatedPresRelsXml = presRelsXml;
+        let contentTypesXml = zip.file('[Content_Types].xml')!.asText();
 
         for (const s of staticSlidesToDelete) {
           // Supprimer de presentation.xml
@@ -349,6 +440,12 @@ export async function POST(req: Request) {
           // Supprimer de presentation.xml.rels
           updatedPresRelsXml = updatedPresRelsXml.replace(
             new RegExp(`<Relationship[^>]*Id="${s.rId}"[^>]*/>`, 'g'), 
+            ''
+          );
+          // Supprimer de [Content_Types].xml pour éviter les incohérences de fichiers absents !
+          const partName = `/ppt/slides/${s.file}`;
+          contentTypesXml = contentTypesXml.replace(
+            new RegExp(`<Override[^>]*PartName="${partName}"[^>]*/>`, 'g'),
             ''
           );
           // Supprimer le fichier slide du ZIP
@@ -368,7 +465,6 @@ export async function POST(req: Request) {
         const existingIds = slides.map(s => parseInt(s.id, 10)).filter(id => !isNaN(id));
         let nextSlideId = Math.max(...existingIds, 255) + 1;
 
-        let contentTypesXml = zip.file('[Content_Types].xml')!.asText();
         let newSldIdTags = '';
 
         // Générer une slide pour chaque phase
@@ -380,6 +476,10 @@ export async function POST(req: Request) {
 
           // Dupliquer le XML et injecter directement les valeurs
           let newXml = fixBrokenTags(originalSlideXml);
+          
+          // Forcer l'auto-ajustement des cadres de texte (autofit) en remplaçant noAutofit par normAutofit
+          newXml = newXml.replace(/<a:noAutofit\s*\/>/g, '<a:normAutofit/>');
+
           newXml = newXml
             .replace(/{NOM_PHASE}/g, escapeXml(p.name || `Phase ${i + 1}`))
             .replace(/{INDEX}/g, String(i + 1))
@@ -462,7 +562,7 @@ export async function POST(req: Request) {
           budgetXml,
           '{TABLE_BUDGET}',
           (x, y, cx, cy) => generateBudgetTableXml(phases, suiviJeh, suiviHt, suiviTtc, totalHt, totalTtc, x, y, cx, cy),
-          { x: 457200, y: 1143000, cx: 11277600, cy: 4800000 }
+          { x: 1144000, y: 2000000, cx: 16000000, cy: 4800000 }
         );
       } else if (budgetXml.includes('PHASE_NOM_PLACEHOLDER')) {
         // Repérer la ligne du tableau contenant PHASE_NOM_PLACEHOLDER
@@ -580,15 +680,14 @@ export async function POST(req: Request) {
       const textNames = ['TextBox 39', 'TextBox 41', 'TextBox 42', 'TextBox 43', 'TextBox 44'];
       const arrowNames = ['AutoShape 18', 'AutoShape 19', 'AutoShape 20', 'AutoShape 21'];
 
-      // Remplacer les noms des phases dans les zones de texte existantes
-      for (let i = 1; i <= 5; i++) {
-        const phaseName = phases[i - 1]?.name || '';
-        methXml = methXml.replace('<a:t>Nom de la </a:t>', '<a:t></a:t>');
-        methXml = methXml.replace(new RegExp(`<a:t>Phase ${i}<\\/a:t>`), `<a:t>${escapeXml(phaseName)}</a:t>`);
+      // Remplacer les noms des phases avec notre outil de modification de zone de texte robuste !
+      const limit = Math.min(5, nbPhases);
+      for (let i = 0; i < limit; i++) {
+        const phaseName = phases[i]?.name || '';
+        methXml = setShapeText(methXml, textNames[i], phaseName);
       }
 
       // Mettre à jour les coordonnées des formes actives d'origine
-      const limit = Math.min(5, nbPhases);
       for (let i = 0; i < limit; i++) {
         methXml = updateShapeCoords(methXml, circleNames[i], 'grpSp', circleX[i], 2443956, Math.round(1407262 * scale), Math.round(1242249 * scale));
         methXml = updateShapeCoords(methXml, textNames[i], 'sp', textX[i], 3926683, Math.round(2444156 * scale), Math.round(727710 * scale));
@@ -698,22 +797,44 @@ export async function POST(req: Request) {
         const pDuree = Number(p.dureeSemaines || p.duree_semaines || 1);
         let startWeek = 1;
 
-        const pStartAfter = p.startAfterPhaseId !== undefined ? String(p.startAfterPhaseId) : 'project_start';
-        if (i > 0 && pStartAfter && pStartAfter !== 'project_start') {
-          const prevEnd = phaseEndWeekMap.get(pStartAfter);
-          if (prevEnd !== undefined) {
-            startWeek = prevEnd + 1;
-          } else {
-            const prevEndFallback = phaseWeeks[i - 1]?.end;
-            if (prevEndFallback !== undefined) {
-              startWeek = prevEndFallback + 1;
+        const pStartAfter = p.startAfterPhaseId !== undefined ? String(p.startAfterPhaseId) : (p.start_after_phase_id !== undefined ? String(p.start_after_phase_id) : 'project_start');
+        
+        if (pStartAfter && pStartAfter !== 'project_start') {
+          // On cherche la phase de référence dans nos phases précédentes
+          let refPhaseIndex = -1;
+          for (let j = 0; j < i; j++) {
+            const prevP = phases[j];
+            const prevId = prevP.phaseId !== undefined ? String(prevP.phaseId) : (prevP.id !== undefined ? String(prevP.id) : String(j));
+            if (prevId === pStartAfter) {
+              refPhaseIndex = j;
+              break;
             }
           }
-        } else if (i > 0) {
-          const prevEndFallback = phaseWeeks[i - 1]?.end;
-          if (prevEndFallback !== undefined) {
-            startWeek = prevEndFallback + 1;
+          
+          if (refPhaseIndex !== -1) {
+            const refEnd = phaseWeeks[refPhaseIndex]?.end;
+            if (refEnd !== undefined) {
+              startWeek = refEnd + 1;
+            }
+          } else {
+            // Fallback: Si la phase de référence n'est pas trouvée par ID, on essaie comme index direct
+            const possibleIndex = parseInt(pStartAfter, 10);
+            if (!isNaN(possibleIndex) && possibleIndex >= 0 && possibleIndex < i) {
+              const refEnd = phaseWeeks[possibleIndex]?.end;
+              if (refEnd !== undefined) {
+                startWeek = refEnd + 1;
+              }
+            } else {
+              // Fallback séquentiel standard
+              const prevEndFallback = phaseWeeks[i - 1]?.end;
+              if (prevEndFallback !== undefined) {
+                startWeek = prevEndFallback + 1;
+              }
+            }
           }
+        } else {
+          // Si pStartAfter est 'project_start' ou non défini, la phase commence en semaine 1 !
+          startWeek = 1;
         }
         
         const endWeek = startWeek + pDuree - 1;
@@ -726,19 +847,20 @@ export async function POST(req: Request) {
         }
       }
       const numWeeks = totalWeeks > 0 ? totalWeeks : 6;
-      const weekColWidth = Math.floor(10800000 / numWeeks);
+      // Augmenter la taille du planning pour qu'il prenne plus de place
+      const weekColWidth = Math.floor(11800000 / (numWeeks + 2));
 
       if (ganttXml.includes('{TABLE_GANTT}')) {
         ganttXml = replacePlaceholderShapeWithTable(
           ganttXml,
           '{TABLE_GANTT}',
           (x, y, cx, cy) => generateGanttTableXml(phases, phaseWeeks, numWeeks, weekColWidth, x, y, cx, cy),
-          { x: 1144000, y: 2500000, cx: 16000000, cy: 4800000 }
+          { x: 744000, y: 2200000, cx: 16800000, cy: 5800000 }
         );
         zip.file(ganttSlideFile, ganttXml);
       } else {
         const footerNoteXml = `<p:sp><p:nvSpPr><p:cNvPr id="57" name="ZoneTexte 22"><a:extLst><a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}"><a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{D1DCB3D2-8430-857D-E7B5-EFC76A56D1B8}"/></a:ext></a:extLst></p:cNvPr><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="9296400" y="10052471"/><a:ext cx="9139040" cy="253916"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr wrap="square" rtlCol="0"><a:spAutoFit/></a:bodyPr><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1050" noProof="0"><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill><a:effectLst/><a:latin typeface="Montserrat" panose="00000500000000000000" pitchFamily="2" charset="0"/></a:rPr><a:t>Cette proposition commerciale n'a aucune valeur contractuelle, l'acceptation de celle-ci se fera par le biais de la Convention d'Etude </a:t></a:r><a:endParaRPr lang="fr-FR" sz="1050" noProof="0"><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill><a:effectLst/></a:endParaRPr></a:p></p:txBody></p:sp>`;
-        const ganttTableXml = generateGanttTableXml(phases, phaseWeeks, numWeeks, weekColWidth, 1144000, 2500000, 16000000, 4800000);
+        const ganttTableXml = generateGanttTableXml(phases, phaseWeeks, numWeeks, weekColWidth, 744000, 2200000, 16800000, 5800000);
         
         const newGanttSlideXml = [
           '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
@@ -836,7 +958,7 @@ export async function POST(req: Request) {
       MAIL_CDP: data.cdp_email || '',
       NUM_CDP: data.cdp_phone || '',
       TITRE_CDP: cdpTitle, // Injecte dynamiquement "Chef de Projet" ou "Cheffe de Projet"
-      DUREE_TOTALE: String(dureeTotale),
+      DUREE_TOTALE: String(dureeTotale + 2),
       DATE_REDACTION: dateRedacStr,
       DATE_VALIDITE: dateValStr,
       phases: [] // Déjà traité manuellement par notre injecteur de slides
@@ -869,7 +991,7 @@ export async function POST(req: Request) {
     });
 
   } catch (fatalError: any) {
-    console.error('[PPT] Erreur fatale de génération :', fatalError?.message);
+    console.error('[PPT] Erreur fatale de génération :', fatalError?.stack || fatalError?.message);
     return NextResponse.json({
       error: `Erreur de génération : ${fatalError?.message || 'Erreur inconnue'}`
     }, { status: 500 });

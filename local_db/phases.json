@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "name": "Recherche et documentation",
+    "objectifs": "Constituer une base documentaire solide sur le sujet de l'étude afin d'identifier les acteurs clés, les tendances du marché et les meilleures pratiques existantes. Cette phase vise à cartographier l'environnement dans lequel évolue le client.",
+    "methodologie": "- Ciblage des sources d'information pertinentes (rapports sectoriels, études académiques, bases de données spécialisées).\n- Collecte et tri de la documentation existante.\n- Synthèse des données collectées sous forme de notes structurées.\n- Validation des sources par recoupement.",
+    "contraintes": "Accès limité à certaines bases de données payantes. Vérification systématique de la fiabilité et de la date des sources.",
+    "dureeSemaines": 2,
+    "intervenantsCount": 3,
+    "jehPrice": 100
+  },
+  {
+    "id": 2,
+    "name": "Création d'un questionnaire",
+    "objectifs": "Concevoir un outil de collecte de données primaires (questionnaire quantitatif ou guide d'entretien qualitatif) adapté à la problématique du client. L'objectif est d'obtenir des données représentatives et exploitables pour l'analyse.",
+    "methodologie": "- Revue de littérature pour identifier les thèmes clés.\n- Définition des hypothèses à tester et des informations à collecter.\n- Rédaction du questionnaire / guide d'entretien.\n- Test pilote auprès d'un échantillon restreint pour valider la compréhension des questions.\n- Finalisation et mise en forme du questionnaire.",
+    "contraintes": "Le questionnaire ne doit pas excéder une durée de passation de 10 minutes pour les formats quantitatifs. Respect des règles RGPD pour la collecte de données personnelles.",
+    "dureeSemaines": 2,
+    "intervenantsCount": 3,
+    "jehPrice": 100
+  },
+  {
+    "id": 3,
+    "name": "Passation du questionnaire",
+    "objectifs": "Administrer le questionnaire ou réaliser les entretiens auprès de la cible définie afin d'atteindre un volume de réponses statistiquement significatif. L'objectif est d'obtenir des données fiables et représentatives.",
+    "methodologie": "- Prise de contact avec les répondants cibles (emailing, appels, réseaux sociaux).\n- Suivi du taux de réponse et relances si nécessaire.\n- Gestion du fichier de données en temps réel.\n- Clôture de la collecte une fois le quota atteint.",
+    "contraintes": "Quota de réponses minimum à atteindre avant clôture. Délai de collecte imposé par le planning global de l'étude.",
+    "dureeSemaines": 2,
+    "intervenantsCount": 3,
+    "jehPrice": 100
+  },
+  {
+    "id": 4,
+    "name": "Analyse du questionnaire",
+    "objectifs": "Traiter et interpréter les données collectées (quantitatives ou qualitatives) afin de dégager des tendances, des insights et des enseignements actionnables pour le client.",
+    "methodologie": "- Nettoyage et structuration des données brutes.\n- Analyse quantitative via outils statistiques (Excel, Google Sheets, SPSS).\n- Analyse qualitative par codage thématique pour les entretiens.\n- Visualisation des résultats (graphiques, tableaux croisés).\n- Interprétation et mise en perspective des résultats.",
+    "contraintes": "La rigueur statistique est primordiale pour les études quantitatives. Les conclusions doivent rester factuelle et ancrées dans les données.",
+    "dureeSemaines": 2,
+    "intervenantsCount": 3,
+    "jehPrice": 100
+  },
+  {
+    "id": 5,
+    "name": "Benchmark",
+    "objectifs": "Analyser les pratiques, offres et performances des acteurs de référence sur un marché ou secteur donné, afin d'identifier les standards du secteur, les innovations et les opportunités de différenciation pour le client.",
+    "methodologie": "- Identification et sélection des acteurs à benchmarker (concurrents directs, indirects, bonnes pratiques hors secteur).\n- Collecte des données sur les critères retenus (offre, prix, canaux, communication, expérience client).\n- Analyse comparative et construction d'une grille de benchmark.\n- Identification des facteurs clés de succès et des axes d'amélioration.\n- Formulation de recommandations.",
+    "contraintes": "Accès à l'information limité pour certains acteurs (données non publiques). Le périmètre du benchmark doit être clairement défini avec le client en amont.",
+    "dureeSemaines": 2,
+    "intervenantsCount": 3,
+    "jehPrice": 100
+  },
+  {
+    "id": 6,
+    "name": "Plan d'action",
+    "objectifs": "Traduire les enseignements de l'étude en un plan d'action concret, priorisé et opérationnel pour le client. L'objectif est de proposer des recommandations réalistes avec un calendrier de mise en oeuvre.",
+    "methodologie": "- Synthèse des conclusions clés de l'étude.\n- Identification des leviers d'action prioritaires en concertation avec le client.\n- Structuration des actions selon une matrice impact/effort.\n- Rédaction de fiches actions détaillées (quoi, qui, quand, comment, indicateurs).\n- Présentation et validation du plan avec le client.",
+    "contraintes": "Les recommandations doivent tenir compte des contraintes budgétaires et opérationnelles du client. Le plan doit être réaliste et actionnable à court et moyen terme.",
+    "dureeSemaines": 2,
+    "intervenantsCount": 3,
+    "jehPrice": 100
+  },
+  {
+    "id": 7,
+    "name": "Business Plan",
+    "objectifs": "Élaborer un document de référence complet présentant le projet d'entreprise du client sous ses dimensions stratégique, commerciale, opérationnelle et financière, afin de convaincre des partenaires ou investisseurs.",
+    "methodologie": "- Entretien approfondi avec le client pour comprendre son projet et ses ambitions.\n- Analyse de marché et étude de la concurrence.\n- Définition du modèle économique (Business Model Canvas).\n- Élaboration des projections financières (compte de résultat, plan de trésorerie, seuil de rentabilité).\n- Rédaction du Business Plan complet et mise en forme finale.",
+    "contraintes": "Les hypothèses financières doivent être justifiées et prudentes. La cohérence entre le modèle économique et les projections financières est impérative.",
+    "dureeSemaines": 2,
+    "intervenantsCount": 3,
+    "jehPrice": 100
+  },
+  {
+    "id": 8,
+    "name": "Rétro-planning",
+    "objectifs": "Construire un planning de projet détaillé permettant au client de visualiser et de piloter l'ensemble des étapes de son projet, en partant de la date de fin souhaitée pour remonter jusqu'au démarrage.",
+    "methodologie": "- Compréhension du contexte et des contraintes temporelles du projet.\n- Identification de toutes les tâches et jalons clés.\n- Estimation de la durée de chaque tâche.\n- Construction du rétro-planning (Gantt ou tableau).\n- Identification du chemin critique et des risques de délai.",
+    "contraintes": "Le planning doit intégrer des marges de sécurité raisonnables. Il doit être validé avec le client avant diffusion.",
+    "dureeSemaines": 2,
+    "intervenantsCount": 3,
+    "jehPrice": 100
+  },
+  {
+    "id": 9,
+    "name": "Création d'une base de données",
+    "objectifs": "Constituer et structurer un fichier de données organisé (prospects, contacts, partenaires, produits, etc.) répondant aux besoins opérationnels du client, prêt à être exploité et maintenu.",
+    "methodologie": "- Définition des informations à collecter et de la structure de la base (colonnes, catégories).\n- Identification des sources de données (internet, annuaires, réseaux sociaux, données internes).\n- Collecte et saisie systématique des données.\n- Nettoyage et déduplication de la base.\n- Livraison sous format Excel ou autre outil défini avec le client.",
+    "contraintes": "Respect du RGPD pour les données à caractère personnel. La qualité des données prime sur la quantité.",
+    "dureeSemaines": 2,
+    "intervenantsCount": 3,
+    "jehPrice": 100
+  }
+]
