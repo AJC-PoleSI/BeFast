@@ -75,11 +75,20 @@ export async function getTresorerieData() {
 
   let migrationMissing = false
 
-  // Factures + études jointes — graceful fallback si la table n'existe pas encore
-  const facturesRes = await supabase
-    .from("factures")
-    .select("*, etudes(id, numero, nom, type, budget_ht, budget)")
-    .order("date_emission", { ascending: false, nullsFirst: false })
+  // Factures et missions sont indépendantes → on lance les deux requêtes en parallèle
+  // (gros gain de latence par rapport à un enchaînement séquentiel).
+  const [facturesRes, missionsRes0] = await Promise.all([
+    supabase
+      .from("factures")
+      .select("*, etudes(id, numero, nom, type, budget_ht, budget)")
+      .order("date_emission", { ascending: false, nullsFirst: false }),
+    supabase
+      .from("missions")
+      .select(
+        "id, nom, etude_id, date_debut, date_fin, date_paiement, numero_bv, intervenant_id, remuneration, nb_jeh, nb_intervenants, etudes(id, numero, nom)"
+      )
+      .order("date_fin", { ascending: false, nullsFirst: false }),
+  ])
 
   let facturesData: any[] = []
   if (facturesRes.error) {
@@ -93,13 +102,8 @@ export async function getTresorerieData() {
     facturesData = facturesRes.data ?? []
   }
 
-  // Missions — essaie avec les nouvelles colonnes ; si elles n'existent pas, fallback sur l'ancien SELECT
-  let missionsRes = await supabase
-    .from("missions")
-    .select(
-      "id, nom, etude_id, date_debut, date_fin, date_paiement, numero_bv, intervenant_id, remuneration, nb_jeh, nb_intervenants, etudes(id, numero, nom)"
-    )
-    .order("date_fin", { ascending: false, nullsFirst: false })
+  // Missions — si les nouvelles colonnes n'existent pas, fallback sur l'ancien SELECT
+  let missionsRes = missionsRes0
 
   if (missionsRes.error) {
     // Code 42703 = "column does not exist" → migration partielle

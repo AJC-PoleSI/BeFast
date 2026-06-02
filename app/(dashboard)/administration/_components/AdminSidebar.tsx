@@ -10,7 +10,8 @@ import {
   ArrowDownUp,
   Users,
   Briefcase,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Database
 } from "lucide-react"
 
 const ADMIN_NAV_LINKS = [
@@ -21,6 +22,7 @@ const ADMIN_NAV_LINKS = [
   { href: "/administration/droits", label: "Droits & Profils", icon: ShieldCheck },
   { href: "/administration/documents", label: "Modèles de Documents", icon: FileText },
   { href: "/administration/clients", label: "Gestion Clients", icon: Briefcase },
+  { href: "/administration/donnees", label: "Explorateur de données", icon: Database },
   { href: "/administration/import-export", label: "Import / Export", icon: ArrowDownUp },
 ]
 
