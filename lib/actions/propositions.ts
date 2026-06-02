@@ -36,11 +36,25 @@ export async function getProposalMembers() {
   if (!user) return { error: "Non authentifié" }
 
   const sb = createAdminClient()
-  const { data, error } = await sb
+
+  // Exclude intervenants — only show validated AJC members as CDP candidates
+  const { data: intervenantType } = await sb
+    .from("profils_types")
+    .select("id")
+    .eq("slug", "intervenant")
+    .maybeSingle()
+
+  let query = sb
     .from("personnes")
     .select("id, prenom, nom, email")
     .eq("account_status", "validated")
     .order("nom", { ascending: true })
+
+  if (intervenantType?.id) {
+    query = query.neq("profil_type_id", intervenantType.id)
+  }
+
+  const { data, error } = await query
   if (error) return { error: error.message }
   return { data }
 }
