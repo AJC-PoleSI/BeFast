@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, MoreVertical, Loader, ExternalLink, ShieldCheck, ShieldAlert, CheckCircle2, Clock } from "lucide-react"
+import { Search, MoreVertical, Loader, ExternalLink, ShieldCheck, ShieldAlert, CheckCircle2, Clock, XCircle, Ban, X } from "lucide-react"
 import Link from "next/link"
 import { getAllMembers, updateMemberRole, getAllRoles } from "@/lib/actions/members"
 import type { PersonneWithRole, ProfilType } from "@/types/database.types"
@@ -79,6 +79,19 @@ export default function AdminMembersPage() {
   const [roleFilter, setRoleFilter] = useState("Tous")
   const [statusFilter, setStatusFilter] = useState("Tous")
   const [updating, setUpdating] = useState<string | null>(null)
+  const [rejectTarget, setRejectTarget] = useState<PersonneWithRole | null>(null)
+
+  async function patchStatus(id: string, account_status: string, rejection_reason?: string) {
+    setUpdating(id)
+    const res = await fetch(`/api/admin/personnes/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ account_status, rejection_reason }),
+    })
+    if (res.ok) await loadMembers()
+    else alert("Erreur lors de la mise à jour du compte")
+    setUpdating(null)
+  }
 
   async function loadMembers() {
     const [membersResult, rolesResult] = await Promise.all([getAllMembers(), getAllRoles()])
@@ -108,7 +121,7 @@ export default function AdminMembersPage() {
     setUpdating(null)
   }
 
-  const pendingCount = members.filter(m => m.account_status !== "validated").length
+  const pendingCount = members.filter(m => m.account_status === "pending_validation").length
 
   return (
     <div className="p-8 h-full flex flex-col space-y-6">
@@ -153,7 +166,8 @@ export default function AdminMembersPage() {
                 {[
                   { value: "Tous", label: "Tous" },
                   { value: "pending_validation", label: "En attente" },
-                  { value: "validated", label: "Validés" }
+                  { value: "validated", label: "Validés" },
+                  { value: "rejected", label: "Rejetés" }
                 ].map((s) => (
                   <button
                     key={s.value}
@@ -240,6 +254,11 @@ export default function AdminMembersPage() {
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             Validé
                           </div>
+                        ) : m.account_status === "rejected" ? (
+                          <div className="flex items-center gap-1.5 text-red-600 font-medium text-xs" title={(m as any).rejection_reason || undefined}>
+                            <XCircle className="w-3.5 h-3.5" />
+                            Rejeté
+                          </div>
                         ) : (
                           <div className="flex items-center gap-1.5 text-amber-600 font-medium text-xs">
                             <Clock className="w-3.5 h-3.5" />
@@ -258,22 +277,22 @@ export default function AdminMembersPage() {
                           </Link>
                           {m.account_status !== "validated" && (
                             <button
-                              onClick={async () => {
-                                setUpdating(m.id)
-                                const res = await fetch(`/api/admin/personnes/${m.id}`, {
-                                  method: "PATCH",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ account_status: "validated" }),
-                                })
-                                if (res.ok) await loadMembers()
-                                else alert("Erreur lors de la validation")
-                                setUpdating(null)
-                              }}
+                              onClick={() => patchStatus(m.id, "validated")}
                               disabled={updating === m.id}
                               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-[#00236f] text-white hover:bg-[#1e3a8a] shadow-sm disabled:opacity-50"
                             >
                               <ShieldCheck className="w-3.5 h-3.5" />
                               Valider le compte
+                            </button>
+                          )}
+                          {m.account_status !== "rejected" && (
+                            <button
+                              onClick={() => setRejectTarget(m)}
+                              disabled={updating === m.id}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 disabled:opacity-50"
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                              Rejeter
                             </button>
                           )}
                           <RoleDropdown
@@ -294,6 +313,73 @@ export default function AdminMembersPage() {
 
         <div className="px-6 py-3 border-t border-zinc-100 bg-zinc-50 text-xs text-zinc-400">
           {filteredMembers.length} membre{filteredMembers.length > 1 ? "s" : ""} affiché{filteredMembers.length > 1 ? "s" : ""}
+        </div>
+      </div>
+
+      {rejectTarget && (
+        <RejectModal
+          member={rejectTarget}
+          submitting={updating === rejectTarget.id}
+          onClose={() => setRejectTarget(null)}
+          onConfirm={async (reason) => {
+            await patchStatus(rejectTarget.id, "rejected", reason)
+            setRejectTarget(null)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function RejectModal({ member, submitting, onClose, onConfirm }: {
+  member: PersonneWithRole
+  submitting: boolean
+  onClose: () => void
+  onConfirm: (reason: string) => void
+}) {
+  const [reason, setReason] = useState("")
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100">
+          <h2 className="font-manrope font-bold text-red-600 text-lg flex items-center gap-2">
+            <Ban className="w-5 h-5" /> Rejeter le compte
+          </h2>
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-zinc-600">
+            Vous êtes sur le point de rejeter le compte de{" "}
+            <span className="font-semibold text-zinc-800">{member.prenom} {member.nom}</span>.
+          </p>
+          <div>
+            <label className="block text-xs font-semibold text-zinc-600 mb-1">
+              Commentaire (optionnel)
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              placeholder="Motif du rejet — laissez vide si aucun."
+              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 resize-none"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-1">
+            <button onClick={onClose} className="px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg">
+              Annuler
+            </button>
+            <button
+              onClick={() => onConfirm(reason)}
+              disabled={submitting}
+              className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+            >
+              {submitting && <Loader className="h-4 w-4 animate-spin" />}
+              Confirmer le rejet
+            </button>
+          </div>
         </div>
       </div>
     </div>

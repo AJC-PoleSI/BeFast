@@ -15,8 +15,16 @@ import {
   type MissionPayRow,
   type CaParEtude,
 } from "@/lib/actions/tresorerie"
+import { getBudgetValidations, decideBudget, type BudgetValidationRow } from "@/lib/actions/propositions"
 
-type Tab = "factures" | "ca" | "missions" | "notes"
+type Tab = "factures" | "ca" | "missions" | "notes" | "validation"
+
+const BUDGET_STATUS_CHIP: Record<string, { label: string; cls: string }> = {
+  brouillon: { label: "Brouillon", cls: "bg-zinc-100 text-zinc-600" },
+  en_attente_validation: { label: "À valider", cls: "bg-amber-100 text-amber-700" },
+  valide: { label: "Validé", cls: "bg-emerald-100 text-emerald-700" },
+  rejete: { label: "Rejeté", cls: "bg-red-100 text-red-700" },
+}
 
 const STATUT_FACTURE_CHIP: Record<FactureRow["statut"], { label: string; cls: string }> = {
   payee: { label: "Payée", cls: "bg-emerald-100 text-emerald-700" },
@@ -54,6 +62,23 @@ export default function TresoreriePage() {
   const [showModal, setShowModal] = useState(false)
   const [editingFacture, setEditingFacture] = useState<FactureRow | null>(null)
   const [showPayMission, setShowPayMission] = useState<MissionPayRow | null>(null)
+  const [budgetRows, setBudgetRows] = useState<BudgetValidationRow[] | null>(null)
+  const [rejectBudget, setRejectBudget] = useState<BudgetValidationRow | null>(null)
+  const [budgetBusy, setBudgetBusy] = useState<string | null>(null)
+
+  const loadBudgets = async () => {
+    const res = await getBudgetValidations()
+    // En cas de "Non autorisé" (non-admin), on laisse budgetRows à null -> onglet masqué.
+    if ((res as any).data) setBudgetRows((res as any).data)
+  }
+
+  const handleDecideBudget = async (id: string, decision: "valide" | "rejete", comment?: string) => {
+    setBudgetBusy(id)
+    const res = await decideBudget(id, decision, comment)
+    setBudgetBusy(null)
+    if ((res as any).error) { alert((res as any).error); return }
+    await loadBudgets()
+  }
 
   const handleNoteFraisAction = async (id: string, action: "valider" | "rejeter" | "payer") => {
     try {
@@ -86,6 +111,7 @@ export default function TresoreriePage() {
   useEffect(() => {
     setLoading(true)
     reload().finally(() => setLoading(false))
+    loadBudgets()
   }, [])
 
   const facturesFiltrees = useMemo(() => {
@@ -265,6 +291,16 @@ export default function TresoreriePage() {
           { key: "ca" as Tab, label: "CA facturé" },
           { key: "missions" as Tab, label: `Suivi des missions (${data.missions.length})` },
           { key: "notes" as Tab, label: `Notes de frais (${data.notes_de_frais.length})` },
+          ...(budgetRows
+            ? [{
+                key: "validation" as Tab,
+                label: `Validation de budget${
+                  budgetRows.filter((b) => b.budget_status === "en_attente_validation").length
+                    ? ` (${budgetRows.filter((b) => b.budget_status === "en_attente_validation").length})`
+                    : ""
+                }`,
+              }]
+            : []),
         ].map((t) => (
           <button
             key={t.key}
@@ -664,6 +700,94 @@ export default function TresoreriePage() {
         </div>
       )}
 
+      {/* ─── Validation de budget (admin) ───────────────────── */}
+      {activeTab === "validation" && budgetRows && (
+        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-zinc-100">
+            <h2 className="font-manrope font-bold text-[#00236f] text-base">Validation de budget des propositions</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Tant qu'un budget n'est pas validé, la proposition ne peut pas être réalisée (passage en CE / signature bloqués).
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                  <th className="px-4 py-3">Propale</th>
+                  <th className="px-4 py-3">Client</th>
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">Statut budget</th>
+                  <th className="px-4 py-3 text-right">Total HT</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {budgetRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center text-zinc-400 text-sm">
+                      Aucune proposition à valider.
+                    </td>
+                  </tr>
+                ) : (
+                  budgetRows.map((b) => {
+                    const chip = BUDGET_STATUS_CHIP[b.budget_status] ?? BUDGET_STATUS_CHIP.brouillon
+                    return (
+                      <tr key={b.id} className="hover:bg-zinc-50 transition-colors align-top">
+                        <td className="px-4 py-3 font-mono text-[#00236f] font-medium">{b.id}</td>
+                        <td className="px-4 py-3 text-zinc-700">{b.client_company ?? "—"}</td>
+                        <td className="px-4 py-3 text-zinc-600">{b.study_type ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${chip.cls}`}>{chip.label}</span>
+                          {b.budget_status === "rejete" && b.budget_comment && (
+                            <p className="text-xs text-red-500 mt-1 max-w-[220px]">{b.budget_comment}</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-[#00236f] tabular-nums">{fmtEUR(b.total_ht)}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {b.budget_status !== "valide" && (
+                              <button
+                                onClick={() => handleDecideBudget(b.id, "valide")}
+                                disabled={budgetBusy === b.id}
+                                className="px-2.5 py-1 rounded-md text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                              >
+                                Valider
+                              </button>
+                            )}
+                            {b.budget_status !== "rejete" && (
+                              <button
+                                onClick={() => setRejectBudget(b)}
+                                disabled={budgetBusy === b.id}
+                                className="px-2.5 py-1 rounded-md text-xs font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-50"
+                              >
+                                Rejeter
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modale rejet de budget ── */}
+      {rejectBudget && (
+        <RejectBudgetModal
+          row={rejectBudget}
+          busy={budgetBusy === rejectBudget.id}
+          onClose={() => setRejectBudget(null)}
+          onConfirm={async (comment) => {
+            await handleDecideBudget(rejectBudget.id, "rejete", comment)
+            setRejectBudget(null)
+          }}
+        />
+      )}
+
       {/* ── Modale facture ── */}
       {showModal && (
         <FactureModal
@@ -848,6 +972,62 @@ function FactureModal({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────── */
+/*  Reject budget modal                                        */
+/* ────────────────────────────────────────────────────────── */
+function RejectBudgetModal({
+  row,
+  busy,
+  onClose,
+  onConfirm,
+}: {
+  row: BudgetValidationRow
+  busy: boolean
+  onClose: () => void
+  onConfirm: (comment: string) => void
+}) {
+  const [comment, setComment] = useState(row.budget_comment ?? "")
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100">
+          <h2 className="font-manrope font-bold text-red-600 text-lg">Rejeter le budget</h2>
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-zinc-600">
+            Proposition <span className="font-mono font-semibold text-zinc-800">{row.id}</span>
+            {row.client_company ? <> — {row.client_company}</> : null}.
+          </p>
+          <div>
+            <label className="block text-xs font-semibold text-zinc-600 mb-1">Motif du rejet (optionnel)</label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+              placeholder="Expliquez ce qui doit être corrigé dans le budget…"
+              className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 resize-none"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-1">
+            <button onClick={onClose} className="px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg">Annuler</button>
+            <button
+              onClick={() => onConfirm(comment)}
+              disabled={busy}
+              className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+            >
+              {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+              Confirmer le rejet
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )

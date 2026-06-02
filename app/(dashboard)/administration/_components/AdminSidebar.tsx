@@ -2,19 +2,21 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  ShieldCheck, 
-  Settings, 
-  FileText, 
-  BarChart4, 
-  ArrowDownUp, 
-  Users, 
-  Briefcase 
+import {
+  ShieldCheck,
+  Settings,
+  FileText,
+  BarChart4,
+  ArrowDownUp,
+  Users,
+  Briefcase,
+  SlidersHorizontal
 } from "lucide-react"
 
 const ADMIN_NAV_LINKS = [
   { href: "/administration", label: "Structure", icon: Settings },
   { href: "/administration/structure", label: "Paramètres structure", icon: Settings },
+  { href: "/administration/controle-donnees", label: "Contrôle des données", icon: SlidersHorizontal },
   { href: "/administration/membres", label: "Membres & Validation", icon: Users },
   { href: "/administration/droits", label: "Droits & Profils", icon: ShieldCheck },
   { href: "/administration/documents", label: "Modèles de Documents", icon: FileText },

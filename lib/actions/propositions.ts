@@ -168,7 +168,7 @@ export async function saveProposal(input: ProposalInput) {
   // On ne touche pas au statut existant si la propale existe déjà (sauf 1ère création)
   const { data: existing } = await supabase
     .from("proposals")
-    .select("id, status, etude_id")
+    .select("id, status, etude_id, budget_status")
     .eq("id", input.id)
     .maybeSingle()
 
@@ -184,6 +184,15 @@ export async function saveProposal(input: ProposalInput) {
   } else {
     // garde le statut courant si non fourni explicitement
     delete payload.status
+  }
+
+  // Validation de budget : enregistrer/modifier un budget l'envoie en validation,
+  // sauf s'il est déjà validé (on ne re-soumet pas un budget validé tel quel).
+  const currentBudgetStatus = (existing as any)?.budget_status as string | undefined
+  if (currentBudgetStatus !== "valide") {
+    payload.budget_status = "en_attente_validation"
+    payload.budget_submitted_at = new Date().toISOString()
+    payload.budget_comment = null
   }
 
   const { error: upErr } = await supabase.from("proposals").upsert(payload)
@@ -221,6 +230,19 @@ export async function updateProposalStatus(id: string, status: string) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+
+  // Garde-fou : une propale ne peut être réalisée (passage en CE ou signée)
+  // que si son budget a été validé par la trésorerie.
+  if (status === "CE éditée" || status === "CE signée") {
+    const { data: prop } = await supabase
+      .from("proposals")
+      .select("budget_status")
+      .eq("id", id)
+      .single()
+    if ((prop as any)?.budget_status !== "valide") {
+      return { error: "Budget non validé : la proposition ne peut pas être réalisée tant que la trésorerie n'a pas validé le budget." }
+    }
+  }
 
   const { error } = await supabase
     .from("proposals")
@@ -270,6 +292,11 @@ export async function signProposal(id: string) {
   // Déjà signée -> on renvoie l'étude existante
   if (prop.etude_id) {
     return { data: { etudeId: prop.etude_id }, already: true }
+  }
+
+  // Garde-fou : pas de réalisation tant que le budget n'est pas validé.
+  if ((prop as any).budget_status !== "valide") {
+    return { error: "Budget non validé : impossible de signer la CE tant que la trésorerie n'a pas validé le budget de cette proposition." }
   }
 
   // 1. Résoudre / créer le client
@@ -400,4 +427,75 @@ export async function signProposal(id: string) {
   revalidatePath("/etudes")
   revalidatePath("/test-dashboard-propositions")
   return { data: { etudeId } }
+}
+
+// ============================================================
+// VALIDATION DE BUDGET (Trésorerie — administrateur)
+// ============================================================
+
+async function isCallerAdmin(): Promise<boolean> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+  const sb = createAdminClient()
+  const { data } = await sb
+    .from("personnes")
+    .select("profils_types(slug)")
+    .eq("id", user.id)
+    .single()
+  return (data?.profils_types as any)?.slug === "administrateur"
+}
+
+export type BudgetValidationRow = {
+  id: string
+  client_company: string | null
+  study_type: string | null
+  cdp_id: string | null
+  total_ht: number | null
+  total_ttc: number | null
+  budget_status: string
+  budget_comment: string | null
+  budget_submitted_at: string | null
+  created_at: string
+}
+
+// Liste des propales pour la validation de budget (admin uniquement).
+export async function getBudgetValidations() {
+  noStore()
+  if (!(await isCallerAdmin())) return { error: "Non autorisé" }
+
+  const sb = createAdminClient()
+  const { data, error } = await sb
+    .from("proposals")
+    .select("id, client_company, study_type, cdp_id, total_ht, total_ttc, budget_status, budget_comment, budget_submitted_at, created_at")
+    .order("budget_submitted_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+  if (error) return { error: error.message }
+  return { data: data as BudgetValidationRow[] }
+}
+
+// Valider ou rejeter le budget d'une propale (admin uniquement).
+export async function decideBudget(id: string, decision: "valide" | "rejete", comment?: string) {
+  if (!(await isCallerAdmin())) return { error: "Non autorisé" }
+
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const sb = createAdminClient()
+
+  const { error } = await sb
+    .from("proposals")
+    .update({
+      budget_status: decision,
+      budget_comment: comment?.trim() || null,
+      budget_validated_by: user?.id ?? null,
+      budget_validated_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+  if (error) return { error: error.message }
+
+  revalidateTag(PROPOSALS_TAG)
+  revalidatePath("/tresorerie")
+  revalidatePath("/test-dashboard-propositions")
+  return { success: true }
 }

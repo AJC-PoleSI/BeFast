@@ -52,7 +52,10 @@ export interface Personne {
   profil_type_id: string | null
   avatar_url: string | null
   actif: boolean
-  account_status: "pending_validation" | "validated"
+  account_status: "pending_validation" | "validated" | "rejected"
+  rejection_reason: string | null
+  rejected_at: string | null
+  rejected_by: string | null
   created_at: string
   updated_at: string
 }
