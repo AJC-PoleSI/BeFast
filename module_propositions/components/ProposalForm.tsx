@@ -256,6 +256,8 @@ export default function ProposalForm() {
   const watchPhases = watch('phases');
   const watchStartDate = watch('projectStartDate');
   const watchGlobalFraisAnnexes = watch('globalFraisAnnexes');
+  const watchMargeJe = watch('margeJe' as any);
+  const watchFraisDossier = watch('fraisDossier' as any);
 
   // CHARGEMENT DES MEMBRES AJC (CDP)
   useEffect(() => {
@@ -536,8 +538,8 @@ export default function ProposalForm() {
       totalPhasesJeh += (Number(p.jehCount || 0) * Number(p.jehPrice || 100));
     });
     const suiviTotal = (Number(watch('suiviJehCount') || 0) * Number(watch('suiviJehPrice') || 0));
-    const margeJe = totalPhasesJeh * (Number(watch('margeJe') || 0) / 100);
-    const fraisDossier = Number(watch('fraisDossier') || 0);
+    const margeJe = totalPhasesJeh * (Number(watchMargeJe || 0) / 100);
+    const fraisDossier = Number(watchFraisDossier || 0);
     const fraisAnnexes = Number(watchGlobalFraisAnnexes || 0);
     const totalHT = totalPhasesJeh + suiviTotal + margeJe + fraisDossier + fraisAnnexes;
     const tva = totalHT * 0.20;
