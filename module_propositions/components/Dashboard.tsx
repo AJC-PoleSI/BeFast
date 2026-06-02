@@ -69,6 +69,7 @@ export default function Dashboard() {
           totalHT: p.total_ht,
           totalTTC: p.total_ttc,
           status: p.status,
+          budgetStatus: p.budget_status,
           etudeId: p.etude_id,
           phases: (p.proposal_phases || [])
             .slice()
@@ -95,6 +96,15 @@ export default function Dashboard() {
       case 'CE éditée': return <span className="px-2.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 text-xs font-semibold rounded-full">CE Éditée</span>;
       case 'CE signée': return <span className="px-2.5 py-0.5 bg-[#00236f] text-white border border-[#00236f] text-xs font-semibold rounded-full">CE Signée</span>;
       default: return <span className="px-2.5 py-0.5 bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold rounded-full">{status}</span>;
+    }
+  };
+
+  const getBudgetBadge = (budgetStatus?: string) => {
+    switch (budgetStatus) {
+      case 'valide': return <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold rounded-full">Budget validé</span>;
+      case 'en_attente_validation': return <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-semibold rounded-full">Budget à valider</span>;
+      case 'rejete': return <span className="px-2 py-0.5 bg-red-50 text-red-700 border border-red-200 text-[10px] font-semibold rounded-full">Budget rejeté</span>;
+      default: return null;
     }
   };
 
@@ -399,7 +409,12 @@ export default function Dashboard() {
                       <td className="px-6 py-4 font-semibold text-slate-800">{p.clientName}</td>
                       <td className="px-6 py-4 text-slate-600">{p.studyType}</td>
                       <td className="px-6 py-4 text-right font-bold text-slate-800">{p.totalHT?.toLocaleString('fr-FR')} €</td>
-                      <td className="px-6 py-4 text-center">{getStatusBadge(p.status)}</td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex flex-col items-center gap-1">
+                          {getStatusBadge(p.status)}
+                          {getBudgetBadge(p.budgetStatus)}
+                        </div>
+                      </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                           {p.status !== 'CE éditée' && p.status !== 'CE signée' && (

@@ -7,6 +7,7 @@ import { Calendar, Briefcase, Plus, Trash2, FileText, Settings, Download, Users,
 import { studyTypes } from '../data/mockDB';
 import phasesDB from '../../local_db/phases.json';
 import { getProposalMembers, getProposal, saveProposal } from '@/lib/actions/propositions';
+import { getParametres } from '@/lib/actions/parametres';
 
 // --- COULEURS GANTT (identiques à la page Étude) ---
 const GANTT_COLORS = [
@@ -202,6 +203,7 @@ export default function ProposalForm() {
   const [members, setMembers] = useState<{ id: string; prenom: string; nom: string; email: string }[]>([]);
   const [nbWeeks, setNbWeeks] = useState(12);
   const [isSaving, setIsSaving] = useState(false);
+  const [defaultJehPrice, setDefaultJehPrice] = useState(100);
 
   const { register, control, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
@@ -265,6 +267,31 @@ export default function ProposalForm() {
       if (res && 'data' in res && res.data) setMembers(res.data as any);
     });
   }, []);
+
+  // PRÉ-REMPLISSAGE DEPUIS LES PARAMÈTRES DE PILOTAGE (Contrôle des données)
+  // Uniquement pour une NOUVELLE propale (pas en édition d'une existante).
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('id')) return;
+    getParametres().then(res => {
+      const p = res?.data;
+      if (!p) return;
+      const num = (v?: string) => (v !== undefined && v !== '' ? Number(v) : undefined);
+      const jeh = num(p['prix_jeh_moyen']);
+      if (jeh !== undefined) setDefaultJehPrice(jeh);
+      const suivi = num(p['prix_suivi_jeh_moyen']);
+      const frais = num(p['frais_dossier_moyen']);
+      const marge = num(p['marge_je_moyenne_pct']);
+      if (suivi !== undefined) setValue('suiviJehPrice', suivi);
+      if (frais !== undefined) setValue('fraisDossier', frais);
+      if (marge !== undefined) setValue('margeJe', marge as any);
+      if (p['propale_context_situation_default']) setValue('contextSituation', p['propale_context_situation_default']);
+      if (p['propale_context_intervention_default']) setValue('contextIntervention', p['propale_context_intervention_default']);
+      if (p['propale_context_enjeu_default']) setValue('contextEnjeu', p['propale_context_enjeu_default']);
+      if (p['propale_cdc_objectifs_default']) setValue('cdcObjectifs', p['propale_cdc_objectifs_default']);
+      if (p['propale_cdc_contraintes_default']) setValue('cdcContraintes', p['propale_cdc_contraintes_default']);
+      if (p['propale_cdc_livrables_default']) setValue('cdcLivrables', p['propale_cdc_livrables_default']);
+    });
+  }, [setValue]);
 
   // CHARGEMENT D'UNE PROPALE EXISTANTE (édition)
   useEffect(() => {
@@ -380,7 +407,7 @@ export default function ProposalForm() {
         intervenantsCount: 3,
         intervenantsNiveau: 'L3',
         jehCount: 3,
-        jehPrice: 100,
+        jehPrice: defaultJehPrice,
       });
     } else {
       const phaseData = phasesDB.find(p => p.id === phaseId);
@@ -396,7 +423,7 @@ export default function ProposalForm() {
           intervenantsCount: phaseData.intervenantsCount || 3,
           intervenantsNiveau: 'L3',
           jehCount: phaseData.intervenantsCount || 3,
-          jehPrice: phaseData.jehPrice || 100,
+          jehPrice: phaseData.jehPrice || defaultJehPrice,
         });
       }
     }
