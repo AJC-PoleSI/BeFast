@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS public.proposals (
   -- Client : référence réelle optionnelle + champs libres (saisie rapide)
   client_id            UUID REFERENCES public.clients(id) ON DELETE SET NULL,
   client_company       TEXT,
-  is_autoentrepreneur  BOOLEAN DEFAULT false,
+  taille_entreprise    TEXT CHECK (taille_entreprise IN ('microentreprise','petite entreprise','PME','ETI','grand groupe')),
   client_civilite      TEXT,
   client_first_name    TEXT,
   client_last_name     TEXT,
