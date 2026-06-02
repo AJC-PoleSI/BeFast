@@ -141,6 +141,8 @@ export type ProposalInput = {
   study_type?: string
   start_date?: string
   global_frais_annexes?: number
+  frais_dossier?: number
+  marge_je?: number
   suivi_jeh_count?: number
   suivi_jeh_price?: number
   total_ht?: number

@@ -224,6 +224,8 @@ export default function ProposalForm() {
       cdcContraintes: '',
       cdcLivrables: '',
       globalFraisAnnexes: 0,
+      fraisDossier: 0,
+      margeJe: 0,
       suiviJehCount: 1,
       suiviJehPrice: 100,
       projectStartDate: getNextMonday(new Date()).toISOString().slice(0, 10),
@@ -296,6 +298,8 @@ export default function ProposalForm() {
       setValue('suiviJehCount', data.suivi_jeh_count ?? 1);
       setValue('suiviJehPrice', data.suivi_jeh_price ?? 100);
       setValue('globalFraisAnnexes', data.global_frais_annexes ?? 0);
+      setValue('fraisDossier', (data as any).frais_dossier ?? 0);
+      setValue('margeJe', (data as any).marge_je ?? 0);
       if (data.start_date) setValue('projectStartDate', getNextMonday(data.start_date).toISOString().slice(0, 10));
 
       const phases = (data.proposal_phases || []).slice().sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
@@ -430,6 +434,8 @@ export default function ProposalForm() {
       suivi_jeh_count: Number(data.suiviJehCount || 0),
       suivi_jeh_price: Number(data.suiviJehPrice || 0),
       global_frais_annexes: Number(data.globalFraisAnnexes || 0),
+      frais_dossier: Number((data as any).fraisDossier || 0),
+      marge_je: Number((data as any).margeJe || 0),
       start_date: data.projectStartDate,
       total_ht: totalHT,
       total_ttc: totalTTC,
@@ -525,15 +531,18 @@ export default function ProposalForm() {
   };
 
   const calculateBudget = () => {
-    let totalHT = 0;
+    let totalPhasesJeh = 0;
     watchPhases.forEach(p => {
-      totalHT += (Number(p.jehCount || 0) * Number(p.jehPrice || 100));
+      totalPhasesJeh += (Number(p.jehCount || 0) * Number(p.jehPrice || 100));
     });
-    totalHT += (Number(watch('suiviJehCount') || 0) * Number(watch('suiviJehPrice') || 0));
-    totalHT += Number(watchGlobalFraisAnnexes || 0);
+    const suiviTotal = (Number(watch('suiviJehCount') || 0) * Number(watch('suiviJehPrice') || 0));
+    const margeJe = totalPhasesJeh * (Number(watch('margeJe') || 0) / 100);
+    const fraisDossier = Number(watch('fraisDossier') || 0);
+    const fraisAnnexes = Number(watchGlobalFraisAnnexes || 0);
+    const totalHT = totalPhasesJeh + suiviTotal + margeJe + fraisDossier + fraisAnnexes;
     const tva = totalHT * 0.20;
     const totalTTC = totalHT + tva;
-    return { totalHT, tva, totalTTC };
+    return { totalHT, tva, totalTTC, totalPhasesJeh, suiviTotal, margeJe, fraisDossier, fraisAnnexes };
   };
   const budget = calculateBudget();
 
@@ -902,17 +911,82 @@ export default function ProposalForm() {
             })}
           </div>
 
-          <div className="flex items-center justify-between border-t border-slate-200 pt-4">
-            <label className="font-bold text-slate-700 text-sm">Frais Annexes Globaux (€)</label>
-            <Controller
-              name="globalFraisAnnexes"
-              control={control}
-              render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
-            />
+          <div className="border-t border-slate-200 pt-4 space-y-3">
+            {/* Marge JE */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-amber-50 rounded border border-amber-200 text-sm">
+              <div className="flex-1">
+                <span className="font-bold text-amber-900">Marge JE (%)</span>
+                <p className="text-xs text-amber-600 mt-0.5">Appliquée sur les JEH des phases</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Controller
+                  name={"margeJe" as any}
+                  control={control}
+                  render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} max={100} className="w-[100px]" />}
+                />
+                <span className="font-bold text-amber-900 w-[100px] text-right">
+                  + {budget.margeJe.toLocaleString('fr-FR')} €
+                </span>
+              </div>
+            </div>
+
+            {/* Frais de dossier */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-purple-50 rounded border border-purple-200 text-sm">
+              <div className="flex-1">
+                <span className="font-bold text-purple-900">Frais de dossier (€)</span>
+                <p className="text-xs text-purple-600 mt-0.5">Montant fixe facturé à l'ouverture</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Controller
+                  name={"fraisDossier" as any}
+                  control={control}
+                  render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[100px]" />}
+                />
+                <span className="font-bold text-purple-900 w-[100px] text-right">
+                  {budget.fraisDossier.toLocaleString('fr-FR')} €
+                </span>
+              </div>
+            </div>
+
+            {/* Frais annexes */}
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-200 text-sm">
+              <label className="font-bold text-slate-700">Frais Annexes Globaux (€)</label>
+              <Controller
+                name="globalFraisAnnexes"
+                control={control}
+                render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
+              />
+            </div>
           </div>
 
           <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 space-y-2">
-            <div className="flex justify-between items-center text-slate-300 font-medium">
+            <div className="flex justify-between items-center text-slate-400 text-sm">
+              <span>JEH phases</span>
+              <span>{budget.totalPhasesJeh.toLocaleString('fr-FR')} €</span>
+            </div>
+            <div className="flex justify-between items-center text-slate-400 text-sm">
+              <span>Suivi CDP</span>
+              <span>{budget.suiviTotal.toLocaleString('fr-FR')} €</span>
+            </div>
+            {budget.margeJe > 0 && (
+              <div className="flex justify-between items-center text-amber-400 text-sm">
+                <span>Marge JE</span>
+                <span>+ {budget.margeJe.toLocaleString('fr-FR')} €</span>
+              </div>
+            )}
+            {budget.fraisDossier > 0 && (
+              <div className="flex justify-between items-center text-purple-400 text-sm">
+                <span>Frais de dossier</span>
+                <span>{budget.fraisDossier.toLocaleString('fr-FR')} €</span>
+              </div>
+            )}
+            {budget.fraisAnnexes > 0 && (
+              <div className="flex justify-between items-center text-slate-400 text-sm">
+                <span>Frais annexes</span>
+                <span>{budget.fraisAnnexes.toLocaleString('fr-FR')} €</span>
+              </div>
+            )}
+            <div className="border-t border-slate-700 pt-2 flex justify-between items-center text-slate-300 font-medium">
               <span>Total HT</span>
               <span>{budget.totalHT.toLocaleString('fr-FR')} €</span>
             </div>
