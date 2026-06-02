@@ -93,4 +93,32 @@ INSERT INTO public.marges_recommandees (taille_entreprise, marge_pct) VALUES
   ('grand groupe',      15)
 ON CONFLICT (taille_entreprise) DO NOTHING;
 
+
+-- ╔══════════════════════════════════════════════════════════════╗
+-- ║ 4 — 029_provenance_phases_budget.sql                         ║
+-- ║   Provenance étude + table phases_defaut (seed) + budget_etude║
+-- ╚══════════════════════════════════════════════════════════════╝
+-- ⚠️ Le seed des phases est long : colle plutôt le CONTENU COMPLET du
+--    fichier supabase/migrations/029_provenance_phases_budget.sql ici.
+--    (non recopié dans ce condensé pour rester lisible)
+
+
+-- ╔══════════════════════════════════════════════════════════════╗
+-- ║ 5 — OPÉRATIONS (à lancer après les migrations)               ║
+-- ╚══════════════════════════════════════════════════════════════╝
+
+-- 5a. Recharge le cache de schéma PostgREST → corrige l'erreur
+--     "Could not find the 'budget_comment' column ... in the schema cache".
+NOTIFY pgrst, 'reload schema';
+
+-- 5b. S'assure que TON compte est administrateur et a un nom
+--     (débloque : onglet validation budget, rejet de membres, apparition comme CDP).
+--     ⚠️ Remplace l'email ci-dessous par le tien.
+UPDATE public.personnes
+SET profil_type_id = (SELECT id FROM public.profils_types WHERE slug = 'administrateur'),
+    account_status = 'validated',
+    prenom = COALESCE(NULLIF(prenom, ''), 'Baptiste'),
+    nom    = COALESCE(NULLIF(nom, ''), 'Le Bec')
+WHERE email = 'TON_EMAIL_ICI';
+
 -- ════════════════════════════ FIN ══════════════════════════════
