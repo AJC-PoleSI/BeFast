@@ -3,8 +3,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath } from "next/cache"
+import type { ParametresMap, MargesMap } from "@/lib/proposals-constants"
 
-export type ParametresMap = Record<string, string>
+export type { ParametresMap, MargesMap }
 
 // Lecture de tous les paramètres globaux (clé -> valeur).
 // Accessible à tout membre authentifié (RLS public read).
@@ -50,16 +51,6 @@ export async function saveParametres(values: ParametresMap): Promise<{ success: 
 }
 
 // ---- Marges recommandées par taille d'entreprise ----
-
-export const TAILLES_ENTREPRISE = [
-  "microentreprise",
-  "petite entreprise",
-  "PME",
-  "ETI",
-  "grand groupe",
-] as const
-
-export type MargesMap = Record<string, number>
 
 // Map taille -> marge_pct. Accessible à tout membre authentifié.
 export async function getMargesRecommandees(): Promise<{ data: MargesMap | null; error: string | null }> {

@@ -7,7 +7,8 @@ import { Calendar, Briefcase, Plus, Trash2, FileText, Settings, Download, Users,
 import { studyTypes } from '../data/mockDB';
 import phasesDB from '../../local_db/phases.json';
 import { getProposalMembers, getProposal, saveProposal } from '@/lib/actions/propositions';
-import { getParametres, getMargesRecommandees, TAILLES_ENTREPRISE, type MargesMap } from '@/lib/actions/parametres';
+import { getParametres, getMargesRecommandees } from '@/lib/actions/parametres';
+import { TAILLES_ENTREPRISE, type MargesMap } from '@/lib/proposals-constants';
 
 // --- COULEURS GANTT (identiques à la page Étude) ---
 const GANTT_COLORS = [

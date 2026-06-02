@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { Save, Loader2, SlidersHorizontal, Euro, FileText, Gauge, Download, X } from "lucide-react"
-import { getParametres, saveParametres, type ParametresMap, getMargesRecommandees, saveMargesRecommandees, TAILLES_ENTREPRISE, type MargesMap } from "@/lib/actions/parametres"
+import { getParametres, saveParametres, getMargesRecommandees, saveMargesRecommandees } from "@/lib/actions/parametres"
+import { TAILLES_ENTREPRISE, type ParametresMap, type MargesMap } from "@/lib/proposals-constants"
 import { toast } from "sonner"
 
 // Champs pilotables, regroupés par section. `key` = clé dans la table parametres.
