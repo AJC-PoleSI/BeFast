@@ -3,10 +3,8 @@ export const dynamic = "force-dynamic"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { encryptData, decryptData, generateEncryptionSalt } from "@/lib/crypto"
+import { getMasterKey } from "@/lib/crypto-key"
 import { NextRequest, NextResponse } from "next/server"
-
-
-const MASTER_KEY = process.env.ENCRYPTION_MASTER_KEY || "default-key"
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,6 +12,7 @@ export async function GET(req: NextRequest) {
     const { data: { user }, error: authError } = await sb.auth.getUser()
     if (authError || !user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
+    const MASTER_KEY = getMasterKey()
     const admin = createAdminClient()
     const { data: profile, error } = await admin
       .from("personnes")
@@ -49,6 +48,7 @@ export async function PUT(req: NextRequest) {
     if (authError || !user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
     const body = await req.json()
+    const MASTER_KEY = getMasterKey()
     const admin = createAdminClient()
 
     const { data: profile } = await admin
@@ -124,10 +124,35 @@ export async function PATCH(req: NextRequest) {
     const targetUserId = searchParams.get("targetUserId") ?? user.id
 
     const admin = createAdminClient()
-    const ALLOWED = ["prenom", "nom", "portable", "promo", "adresse", "ville", "code_postal", "pole"] as const
+
+    // --- Contrôle d'accès ---
+    // On résout le rôle de l'appelant pour décider de ce qu'il peut modifier.
+    const { data: caller } = await admin
+      .from("personnes")
+      .select("profils_types(slug)")
+      .eq("id", user.id)
+      .single()
+    const isAdmin = (caller?.profils_types as any)?.slug === "administrateur"
+
+    // Seul un administrateur peut modifier le profil d'un AUTRE utilisateur.
+    if (targetUserId !== user.id && !isAdmin) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
+    }
+
+    // Champs en libre-service (modifiables par l'utilisateur sur son propre profil).
+    const ALLOWED = ["prenom", "nom", "portable", "promo", "adresse", "ville", "code_postal"] as const
     const updates: Record<string, string | null> = {}
     for (const field of ALLOWED) {
       if (body[field] !== undefined) updates[field] = body[field] || null
+    }
+    // Le pôle pilote les permissions : seul un administrateur peut l'attribuer
+    // (sinon n'importe quel membre pourrait s'auto-élever ses droits).
+    if (isAdmin && body.pole !== undefined) {
+      updates.pole = body.pole || null
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: "Aucun champ modifiable fourni" }, { status: 400 })
     }
 
     const { data: updated, error } = await admin
