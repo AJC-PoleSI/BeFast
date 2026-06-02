@@ -3,8 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { encryptData, decryptData, generateEncryptionSalt } from "@/lib/crypto"
-
-const MASTER_KEY = process.env.ENCRYPTION_MASTER_KEY || "default-key"
+import { getMasterKey } from "@/lib/crypto-key"
 
 export async function getDecryptedProfile(userId: string) {
   try {
@@ -13,6 +12,21 @@ export async function getDecryptedProfile(userId: string) {
     if (!user) return { error: "Non authentifié" }
 
     const admin = createAdminClient()
+
+    // Contrôle d'accès : on ne déchiffre les données sensibles (NSS, IBAN…)
+    // que pour soi-même, ou si l'appelant est administrateur.
+    if (user.id !== userId) {
+      const { data: caller } = await admin
+        .from("personnes")
+        .select("profils_types(slug)")
+        .eq("id", user.id)
+        .single()
+      if ((caller?.profils_types as any)?.slug !== "administrateur") {
+        return { error: "Non autorisé" }
+      }
+    }
+
+    const MASTER_KEY = getMasterKey()
     const { data: profile, error } = await admin
       .from("personnes")
       .select("*")
@@ -47,6 +61,7 @@ export async function updateProfileWithEncryption(userId: string, updates: Recor
     const { data: { user } } = await client.auth.getUser()
     if (!user || user.id !== userId) return { error: "Non autorisé" }
 
+    const MASTER_KEY = getMasterKey()
     const admin = createAdminClient()
     const { data: profile } = await admin
       .from("personnes")

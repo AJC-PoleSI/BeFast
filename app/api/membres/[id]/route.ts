@@ -3,10 +3,8 @@ export const dynamic = "force-dynamic"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { decryptData } from "@/lib/crypto"
+import { getMasterKey } from "@/lib/crypto-key"
 import { NextRequest, NextResponse } from "next/server"
-
-
-const MASTER_KEY = process.env.ENCRYPTION_MASTER_KEY || "default-key"
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -16,6 +14,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     const targetId = params.id
 
+    const MASTER_KEY = getMasterKey()
     const admin = createAdminClient()
     const { data: caller } = await admin
       .from("personnes")
