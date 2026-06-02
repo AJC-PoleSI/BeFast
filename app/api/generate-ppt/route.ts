@@ -312,25 +312,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Corps de requête invalide.' }, { status: 400 });
   }
 
-  // 1. Résolution globale du CDP et de sa civilité (genre) depuis Supabase (table profiles)
+  // 1. Résolution globale du CDP depuis la vraie table personnes (par UUID)
   if (data.cdp_id && (!data.cdp_first_name || !data.cdp_last_name)) {
-    try {
-      const admin = createAdminClient();
-      const { data: cdp } = await admin
-        .from('personnes')
-        .select('prenom, nom, email, portable')
-        .eq('id', data.cdp_id)
-        .single();
-      if (cdp) {
-        data.cdp_civilite = data.cdp_civilite || 'M.'; // personnes ne stocke pas la civilité
-        data.cdp_first_name = cdp.prenom;
-        data.cdp_last_name = cdp.nom;
-        data.cdp_initials = ((cdp.prenom?.charAt(0) || '') + (cdp.nom?.charAt(0) || '')).toUpperCase();
-        data.cdp_email = cdp.email;
-        data.cdp_phone = cdp.portable || '+33 6 12 34 56 78';
-      }
-    } catch (e) {
-      console.warn('[PPT] Résolution du CDP depuis Supabase impossible :', (e as any)?.message);
+    const sb = createAdminClient();
+    const { data: cdp } = await sb
+      .from('personnes')
+      .select('prenom, nom, email, portable')
+      .eq('id', data.cdp_id)
+      .maybeSingle();
+    if (cdp) {
+      data.cdp_civilite = data.cdp_civilite || 'M.';
+      data.cdp_first_name = cdp.prenom || '';
+      data.cdp_last_name = cdp.nom || '';
+      data.cdp_initials = ((cdp.prenom?.charAt(0) || '') + (cdp.nom?.charAt(0) || '')).toUpperCase();
+      data.cdp_email = cdp.email || '';
+      data.cdp_phone = cdp.portable || '';
     }
   }
 

@@ -112,3 +112,35 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const sb = createClient()
+    const { data: { user }, error: authError } = await sb.auth.getUser()
+    if (authError || !user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+
+    const body = await req.json()
+    const { searchParams } = new URL(req.url)
+    const targetUserId = searchParams.get("targetUserId") ?? user.id
+
+    const admin = createAdminClient()
+    const ALLOWED = ["prenom", "nom", "portable", "promo", "adresse", "ville", "code_postal", "pole"] as const
+    const updates: Record<string, string | null> = {}
+    for (const field of ALLOWED) {
+      if (body[field] !== undefined) updates[field] = body[field] || null
+    }
+
+    const { data: updated, error } = await admin
+      .from("personnes")
+      .update(updates)
+      .eq("id", targetUserId)
+      .select()
+      .single()
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ data: updated })
+  } catch (error: any) {
+    console.error("[PATCH /api/profil]", error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
