@@ -17,6 +17,15 @@ export default function Home() {
             Se connecter
           </Link>
 
+          <div>
+            <Link
+              href="/inscription"
+              className="inline-block px-6 py-3 border border-[#00236f] text-[#00236f] hover:bg-[#00236f] hover:text-white rounded-lg font-semibold transition-colors"
+            >
+              Créer un compte
+            </Link>
+          </div>
+
           <div className="text-sm text-zinc-600">
             <Link href="/diagnostic" className="text-blue-600 hover:underline">
               Diagnostic →
