@@ -285,7 +285,7 @@ export default function AdminMembersPage() {
                               Valider le compte
                             </button>
                           )}
-                          {m.account_status !== "rejected" && (
+                          {m.account_status === "pending_validation" && (
                             <button
                               onClick={() => setRejectTarget(m)}
                               disabled={updating === m.id}

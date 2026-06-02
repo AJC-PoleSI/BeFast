@@ -120,7 +120,7 @@ export default function Dashboard() {
   };
 
   const handleEdit = (id: string) => {
-    window.location.href = `/test-propositions?id=${id}`;
+    window.location.href = `/prospection/nouvelle?id=${id}`;
   };
 
   const handleDuplicate = (id: string) => {
@@ -351,7 +351,7 @@ export default function Dashboard() {
           </div>
 
           <button
-            onClick={() => window.location.href='/test-propositions'}
+            onClick={() => window.location.href='/prospection/nouvelle'}
             className="bg-[#00236f] hover:bg-[#00174a] text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow flex items-center gap-2"
           >
             <Plus size={16} /> Nouvelle Proposition

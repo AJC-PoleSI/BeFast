@@ -1,9 +1,6 @@
-import Dashboard from "../../../module_propositions/components/Dashboard";
+import { redirect } from "next/navigation";
 
-export default function DashboardPropositionsPage() {
-  return (
-    <div className="space-y-6">
-      <Dashboard />
-    </div>
-  );
+// Ancienne route — déplacée vers /prospection.
+export default function LegacyDashboardPropositionsPage() {
+  redirect("/prospection");
 }

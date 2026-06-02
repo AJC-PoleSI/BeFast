@@ -56,7 +56,17 @@ export async function getProposalMembers() {
 
   const { data, error } = await query
   if (error) return { error: error.message }
-  return { data }
+
+  // On écarte les enregistrements vides (sans prénom NI nom) qui produisaient
+  // des lignes "()" dans le menu CDP. À défaut de nom, on retombe sur l'email.
+  const cleaned = (data ?? [])
+    .filter((m: any) => (m.prenom?.trim() || m.nom?.trim() || m.email?.trim()))
+    .map((m: any) => ({
+      ...m,
+      prenom: m.prenom?.trim() || "",
+      nom: m.nom?.trim() || (m.prenom?.trim() ? "" : (m.email?.trim() || "Sans nom")),
+    }))
+  return { data: cleaned }
 }
 
 export async function getProposalClients() {
@@ -220,7 +230,7 @@ export async function saveProposal(input: ProposalInput) {
   }
 
   revalidateTag(PROPOSALS_TAG)
-  revalidatePath("/test-dashboard-propositions")
+  revalidatePath("/prospection")
   return { data: { id: input.id } }
 }
 
@@ -250,7 +260,7 @@ export async function updateProposalStatus(id: string, status: string) {
     .eq("id", id)
   if (error) return { error: error.message }
   revalidateTag(PROPOSALS_TAG)
-  revalidatePath("/test-dashboard-propositions")
+  revalidatePath("/prospection")
   return { success: true }
 }
 
@@ -264,7 +274,7 @@ export async function deleteProposal(id: string) {
   const { error } = await supabase.from("proposals").delete().eq("id", id)
   if (error) return { error: error.message }
   revalidateTag(PROPOSALS_TAG)
-  revalidatePath("/test-dashboard-propositions")
+  revalidatePath("/prospection")
   return { success: true }
 }
 
@@ -425,7 +435,7 @@ export async function signProposal(id: string) {
   revalidateTag(CLIENTS_TAG)
   revalidateTag(MEMBERS_TAG)
   revalidatePath("/etudes")
-  revalidatePath("/test-dashboard-propositions")
+  revalidatePath("/prospection")
   return { data: { etudeId } }
 }
 
@@ -496,6 +506,6 @@ export async function decideBudget(id: string, decision: "valide" | "rejete", co
 
   revalidateTag(PROPOSALS_TAG)
   revalidatePath("/tresorerie")
-  revalidatePath("/test-dashboard-propositions")
+  revalidatePath("/prospection")
   return { success: true }
 }

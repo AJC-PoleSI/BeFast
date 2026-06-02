@@ -523,7 +523,7 @@ export default function ProposalForm() {
 
     if (action === 'save') {
       setIsSaving(false);
-      router.push('/test-dashboard-propositions');
+      router.push('/prospection');
       return;
     }
 
@@ -580,7 +580,7 @@ export default function ProposalForm() {
       a.remove();
 
       setIsSaving(false);
-      router.push('/test-dashboard-propositions');
+      router.push('/prospection');
     } catch (err) {
       setIsSaving(false);
       alert("❌ Erreur de réseau ou de génération.");

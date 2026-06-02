@@ -1,17 +1,11 @@
-import ProposalForm from '@/module_propositions/components/ProposalForm';
-import AutoLogin from '@/components/AutoLogin';
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: 'Générateur de Propositions Commerciales',
-};
-
-export default function TestPropositionsPage() {
-  return (
-    <div className="space-y-6">
-      <AutoLogin />
-      <div className="w-full">
-        <ProposalForm />
-      </div>
-    </div>
-  );
+// Ancienne route — déplacée vers /prospection/nouvelle.
+// On conserve l'éventuel ?id= pour l'édition d'une proposition existante.
+export default function LegacyProposalFormPage({
+  searchParams,
+}: {
+  searchParams: { id?: string };
+}) {
+  redirect(searchParams.id ? `/prospection/nouvelle?id=${searchParams.id}` : "/prospection/nouvelle");
 }
