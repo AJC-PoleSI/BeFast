@@ -132,7 +132,7 @@ export type ProposalInput = {
   cdp_custom?: string | null
   client_id?: string | null
   client_company?: string
-  is_autoentrepreneur?: boolean
+  taille_entreprise?: string | null
   client_civilite?: string
   client_first_name?: string
   client_last_name?: string

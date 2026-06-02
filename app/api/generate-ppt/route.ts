@@ -938,7 +938,7 @@ export async function POST(req: Request) {
       PRON: data.client_civilite === 'M.' ? 'Monsieur' : 'Madame',
       CLIENT_PRENOM: data.client_first_name || '',
       CLIENT_NOM: data.client_last_name || '',
-      CLIENT_COMPANY: (data.is_autoentrepreneur || data.isAutoentrepreneur)
+      CLIENT_COMPANY: (data.taille_entreprise === 'microentreprise' || data.is_autoentrepreneur || data.isAutoentrepreneur)
         ? `${data.client_civilite || 'M.'} ${data.client_first_name || ''} ${data.client_last_name || ''}`.trim()
         : (data.client_company || ''),
       MAIL_CLIENT: data.client_email || '',

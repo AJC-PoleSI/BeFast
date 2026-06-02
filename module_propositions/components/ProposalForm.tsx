@@ -7,7 +7,7 @@ import { Calendar, Briefcase, Plus, Trash2, FileText, Settings, Download, Users,
 import { studyTypes } from '../data/mockDB';
 import phasesDB from '../../local_db/phases.json';
 import { getProposalMembers, getProposal, saveProposal } from '@/lib/actions/propositions';
-import { getParametres } from '@/lib/actions/parametres';
+import { getParametres, getMargesRecommandees, TAILLES_ENTREPRISE, type MargesMap } from '@/lib/actions/parametres';
 
 // --- COULEURS GANTT (identiques à la page Étude) ---
 const GANTT_COLORS = [
@@ -204,6 +204,7 @@ export default function ProposalForm() {
   const [nbWeeks, setNbWeeks] = useState(12);
   const [isSaving, setIsSaving] = useState(false);
   const [defaultJehPrice, setDefaultJehPrice] = useState(100);
+  const [marges, setMarges] = useState<MargesMap>({});
 
   const { register, control, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
@@ -211,7 +212,7 @@ export default function ProposalForm() {
       cdpSelect: '',
       cdpCustom: '',
       companyName: '',
-      isAutoentrepreneur: false,
+      tailleEntreprise: 'PME',
       clientCivilite: 'M.',
       clientFirstName: '',
       clientLastName: '',
@@ -260,6 +261,8 @@ export default function ProposalForm() {
   const watchGlobalFraisAnnexes = watch('globalFraisAnnexes');
   const watchMargeJe = watch('margeJe' as any);
   const watchFraisDossier = watch('fraisDossier' as any);
+  const watchTaille = watch('tailleEntreprise' as any);
+  const tailleTouchedRef = useRef(false);
 
   // CHARGEMENT DES MEMBRES AJC (CDP)
   useEffect(() => {
@@ -280,10 +283,10 @@ export default function ProposalForm() {
       if (jeh !== undefined) setDefaultJehPrice(jeh);
       const suivi = num(p['prix_suivi_jeh_moyen']);
       const frais = num(p['frais_dossier_moyen']);
-      const marge = num(p['marge_je_moyenne_pct']);
       if (suivi !== undefined) setValue('suiviJehPrice', suivi);
       if (frais !== undefined) setValue('fraisDossier', frais);
-      if (marge !== undefined) setValue('margeJe', marge as any);
+      // La marge par défaut vient de la taille (PME) via marges_recommandees ;
+      // on tombe sur marge_je_moyenne_pct seulement si la table n'a rien.
       if (p['propale_context_situation_default']) setValue('contextSituation', p['propale_context_situation_default']);
       if (p['propale_context_intervention_default']) setValue('contextIntervention', p['propale_context_intervention_default']);
       if (p['propale_context_enjeu_default']) setValue('contextEnjeu', p['propale_context_enjeu_default']);
@@ -292,6 +295,30 @@ export default function ProposalForm() {
       if (p['propale_cdc_livrables_default']) setValue('cdcLivrables', p['propale_cdc_livrables_default']);
     });
   }, [setValue]);
+
+  // CHARGEMENT DES MARGES RECOMMANDÉES (par taille d'entreprise)
+  useEffect(() => {
+    getMargesRecommandees().then(res => {
+      if (res?.data) setMarges(res.data);
+    });
+  }, []);
+
+  // Quand l'utilisateur change la taille de structure, on pré-règle la marge JE
+  // sur la marge recommandée correspondante (sans écraser une saisie manuelle au 1er rendu).
+  useEffect(() => {
+    if (!tailleTouchedRef.current) return;
+    const m = marges[watchTaille as string];
+    if (m !== undefined) setValue('margeJe' as any, m);
+  }, [watchTaille, marges, setValue]);
+
+  // Applique la marge recommandée par défaut (PME) une fois les marges chargées,
+  // uniquement pour une NOUVELLE propale et tant que l'utilisateur n'a pas touché la taille.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('id')) return;
+    if (tailleTouchedRef.current) return;
+    const m = marges[watchTaille as string];
+    if (m !== undefined) setValue('margeJe' as any, m);
+  }, [marges, watchTaille, setValue]);
 
   // CHARGEMENT D'UNE PROPALE EXISTANTE (édition)
   useEffect(() => {
@@ -308,7 +335,7 @@ export default function ProposalForm() {
       isIdEditedRef.current = true;
       setValue('propaleId', data.id);
       setValue('companyName', data.client_company || '');
-      setValue('isAutoentrepreneur', !!data.is_autoentrepreneur);
+      setValue('tailleEntreprise', data.taille_entreprise || 'PME');
       setValue('cdpSelect', data.cdp_id ? String(data.cdp_id) : (data.cdp_custom ? 'autre' : ''));
       setValue('cdpCustom', data.cdp_custom || '');
       setValue('clientCivilite', data.client_civilite || 'M.');
@@ -447,7 +474,7 @@ export default function ProposalForm() {
       cdp_id: data.cdpSelect && data.cdpSelect !== 'autre' ? data.cdpSelect : null,
       cdp_custom: data.cdpSelect === 'autre' ? (data.cdpCustom || null) : null,
       client_company: data.companyName,
-      is_autoentrepreneur: data.isAutoentrepreneur,
+      taille_entreprise: data.tailleEntreprise,
       client_civilite: data.clientCivilite,
       client_first_name: data.clientFirstName,
       client_last_name: data.clientLastName,
@@ -613,14 +640,24 @@ export default function ProposalForm() {
             <div className="space-y-4">
               <h3 className="font-semibold text-slate-700 border-b pb-2">Client</h3>
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-slate-700">Entreprise</label>
-                  <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer hover:text-blue-600 transition-colors bg-slate-100 px-2 py-1 rounded">
-                    <input type="checkbox" {...register('isAutoentrepreneur')} className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
-                    Auto-entrepreneur
-                  </label>
-                </div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Entreprise</label>
                 <input type="text" {...register('companyName')} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nom de l'entreprise (ou de la personne)" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Taille de la structure</label>
+                <select
+                  {...register('tailleEntreprise')}
+                  onChange={(e) => { tailleTouchedRef.current = true; setValue('tailleEntreprise', e.target.value as any); }}
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white capitalize"
+                >
+                  {TAILLES_ENTREPRISE.map((t) => (
+                    <option key={t} value={t} className="capitalize">{t}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-400 mt-1">
+                  Ajuste automatiquement la marge JE recommandée
+                  {marges[watchTaille as string] !== undefined ? ` (${marges[watchTaille as string]} %)` : ''}.
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Contact Principal</label>
@@ -898,18 +935,24 @@ export default function ProposalForm() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-blue-50 rounded border border-blue-200 text-sm relative overflow-hidden">
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
               <span className="font-bold text-blue-900 w-full sm:w-1/3 truncate pl-2">Suivi de projet (CDP)</span>
-              <div className="flex gap-2 w-full sm:w-2/3 items-center">
-                <Controller
-                  name="suiviJehCount"
-                  control={control}
-                  render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
-                />
-                <Controller
-                  name="suiviJehPrice"
-                  control={control}
-                  render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
-                />
-                <span className="font-bold text-blue-900 ml-auto my-auto">
+              <div className="flex gap-2 w-full sm:w-2/3 items-end">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wide text-blue-700/70 mb-0.5">Nb JEH</label>
+                  <Controller
+                    name="suiviJehCount"
+                    control={control}
+                    render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wide text-blue-700/70 mb-0.5">Prix (€)</label>
+                  <Controller
+                    name="suiviJehPrice"
+                    control={control}
+                    render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
+                  />
+                </div>
+                <span className="font-bold text-blue-900 ml-auto mb-1.5">
                   {(Number(watch('suiviJehCount') || 0) * Number(watch('suiviJehPrice') || 0)).toLocaleString('fr-FR')} €
                 </span>
               </div>
@@ -922,18 +965,24 @@ export default function ProposalForm() {
               return (
                 <div key={field.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-slate-50 rounded border border-slate-200 text-sm">
                   <span className="font-bold text-slate-700 w-full sm:w-1/3 truncate">{index + 1}. {phase?.name}</span>
-                  <div className="flex gap-2 w-full sm:w-2/3">
-                    <Controller
-                      name={`phases.${index}.jehCount` as const}
-                      control={control}
-                      render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
-                    />
-                    <Controller
-                      name={`phases.${index}.jehPrice` as const}
-                      control={control}
-                      render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={80} className="w-[120px]" />}
-                    />
-                    <span className="font-bold text-slate-800 ml-auto my-auto">{totalPhase.toLocaleString('fr-FR')} €</span>
+                  <div className="flex gap-2 w-full sm:w-2/3 items-end">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-0.5">Nb JEH</label>
+                      <Controller
+                        name={`phases.${index}.jehCount` as const}
+                        control={control}
+                        render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-0.5">Prix (€)</label>
+                      <Controller
+                        name={`phases.${index}.jehPrice` as const}
+                        control={control}
+                        render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={80} className="w-[120px]" />}
+                      />
+                    </div>
+                    <span className="font-bold text-slate-800 ml-auto mb-1.5">{totalPhase.toLocaleString('fr-FR')} €</span>
                   </div>
                 </div>
               );

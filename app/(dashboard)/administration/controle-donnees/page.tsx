@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Save, Loader2, SlidersHorizontal, Euro, FileText, Gauge, Download, X } from "lucide-react"
-import { getParametres, saveParametres, type ParametresMap } from "@/lib/actions/parametres"
+import { getParametres, saveParametres, type ParametresMap, getMargesRecommandees, saveMargesRecommandees, TAILLES_ENTREPRISE, type MargesMap } from "@/lib/actions/parametres"
 import { toast } from "sonner"
 
 // Champs pilotables, regroupés par section. `key` = clé dans la table parametres.
@@ -29,27 +29,30 @@ const CONTENU_FIELDS: { key: string; label: string }[] = [
 
 export default function ControleDonneesPage() {
   const [values, setValues] = useState<ParametresMap>({})
+  const [marges, setMarges] = useState<MargesMap>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showExport, setShowExport] = useState(false)
 
   useEffect(() => {
-    getParametres().then((res) => {
+    Promise.all([getParametres(), getMargesRecommandees()]).then(([res, mres]) => {
       if (res.error) setError(res.error)
       else setValues(res.data ?? {})
+      if (mres.data) setMarges(mres.data)
       setLoading(false)
     })
   }, [])
 
   const set = (key: string, v: string) => setValues((prev) => ({ ...prev, [key]: v }))
+  const setMarge = (taille: string, v: string) => setMarges((prev) => ({ ...prev, [taille]: v === "" ? 0 : Number(v) }))
 
   const handleSave = async () => {
     setSaving(true)
-    const res = await saveParametres(values)
+    const [res, mres] = await Promise.all([saveParametres(values), saveMargesRecommandees(marges)])
     setSaving(false)
-    if (res.success) toast.success("Paramètres enregistrés", { position: "top-right" })
-    else toast.error(res.error ?? "Erreur", { position: "top-right" })
+    if (res.success && mres.success) toast.success("Paramètres enregistrés", { position: "top-right" })
+    else toast.error(res.error ?? mres.error ?? "Erreur", { position: "top-right" })
   }
 
   if (loading) {
@@ -127,6 +130,30 @@ export default function ControleDonneesPage() {
           </div>
           <p className="text-xs text-zinc-400 mt-4">
             Ces bornes servent de garde-fou indicatif lors de la saisie du prix JEH dans une proposition.
+          </p>
+        </Section>
+
+        {/* MARGES RECOMMANDÉES PAR TAILLE D'ENTREPRISE */}
+        <Section icon={<Gauge className="w-5 h-5 text-[#00236f]" />} title="Marges recommandées par taille d'entreprise" full>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-5">
+            {TAILLES_ENTREPRISE.map((t) => (
+              <div key={t}>
+                <label className="block text-xs font-semibold text-zinc-600 mb-1.5 uppercase tracking-wide capitalize">{t}</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={marges[t] ?? ""}
+                    onChange={(e) => setMarge(t, e.target.value)}
+                    className="w-full h-10 px-3 pr-8 rounded-lg border border-zinc-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 transition-all"
+                  />
+                  <span className="absolute right-3 top-2.5 text-zinc-400 text-sm">%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-zinc-400 mt-4">
+            Dans le générateur de propositions, choisir une taille de structure applique automatiquement la marge JE correspondante.
           </p>
         </Section>
 

@@ -152,7 +152,7 @@ export default function Dashboard() {
     const payload = {
       id: propale.id,
       client_company: propale.clientName,
-      is_autoentrepreneur: !!propale.isAutoentrepreneur,
+      taille_entreprise: propale.tailleEntreprise,
       client_civilite: propale.clientCivilite,
       client_first_name: propale.clientFirstName,
       client_last_name: propale.clientLastName,
