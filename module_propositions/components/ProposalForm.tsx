@@ -5,9 +5,34 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { Calendar, Briefcase, Plus, Trash2, FileText, Settings, Download, Users, Calculator, FileSignature, Save } from 'lucide-react';
 import { studyTypes } from '../data/mockDB';
-import phasesDB from '../../local_db/phases.json';
+import phasesJson from '../../local_db/phases.json';
 import { getProposalMembers, getProposal, saveProposal } from '@/lib/actions/propositions';
 import { getParametres, getMargesRecommandees } from '@/lib/actions/parametres';
+import { getPhasesDefaut } from '@/lib/actions/phases';
+
+// Catalogue de phases utilisé par le formulaire (forme normalisée).
+type PhaseCatalogue = {
+  id: number;
+  name: string;
+  objectifs: string;
+  methodologie: string;
+  contraintes: string;
+  dureeSemaines: number;
+  intervenantsCount: number;
+  jehPrice: number;
+};
+
+// Fallback : le JSON local, si la table phases_defaut n'est pas encore disponible.
+const phasesFallback: PhaseCatalogue[] = (phasesJson as any[]).map((p) => ({
+  id: p.id,
+  name: p.name,
+  objectifs: p.objectifs ?? '',
+  methodologie: p.methodologie ?? '',
+  contraintes: p.contraintes ?? '',
+  dureeSemaines: p.dureeSemaines ?? 2,
+  intervenantsCount: p.intervenantsCount ?? 3,
+  jehPrice: p.jehPrice ?? 100,
+}));
 import { TAILLES_ENTREPRISE, type MargesMap } from '@/lib/proposals-constants';
 
 // --- COULEURS GANTT (identiques à la page Étude) ---
@@ -206,6 +231,7 @@ export default function ProposalForm() {
   const [isSaving, setIsSaving] = useState(false);
   const [defaultJehPrice, setDefaultJehPrice] = useState(100);
   const [marges, setMarges] = useState<MargesMap>({});
+  const [phasesDB, setPhasesDB] = useState<PhaseCatalogue[]>(phasesFallback);
 
   const { register, control, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
@@ -214,6 +240,7 @@ export default function ProposalForm() {
       cdpCustom: '',
       companyName: '',
       tailleEntreprise: 'PME',
+      provenance: 'Prospection',
       clientCivilite: 'M.',
       clientFirstName: '',
       clientLastName: '',
@@ -304,6 +331,25 @@ export default function ProposalForm() {
     });
   }, []);
 
+  // CHARGEMENT DES PHASES PAR DÉFAUT depuis la table phases_defaut (pilotables).
+  // Fallback automatique sur le JSON local si la table est vide / indisponible.
+  useEffect(() => {
+    getPhasesDefaut().then(res => {
+      if (res?.data && res.data.length > 0) {
+        setPhasesDB(res.data.map((p) => ({
+          id: p.id,
+          name: p.nom,
+          objectifs: p.objectifs ?? '',
+          methodologie: p.methodologie ?? '',
+          contraintes: p.contraintes ?? '',
+          dureeSemaines: p.duree_semaines ?? 2,
+          intervenantsCount: p.intervenants_defaut ?? 3,
+          jehPrice: Number(p.jeh_defaut) ?? 100,
+        })));
+      }
+    });
+  }, []);
+
   // Quand l'utilisateur change la taille de structure, on pré-règle la marge JE
   // sur la marge recommandée correspondante (sans écraser une saisie manuelle au 1er rendu).
   useEffect(() => {
@@ -337,6 +383,7 @@ export default function ProposalForm() {
       setValue('propaleId', data.id);
       setValue('companyName', data.client_company || '');
       setValue('tailleEntreprise', data.taille_entreprise || 'PME');
+      setValue('provenance', data.provenance || 'Prospection');
       setValue('cdpSelect', data.cdp_id ? String(data.cdp_id) : (data.cdp_custom ? 'autre' : ''));
       setValue('cdpCustom', data.cdp_custom || '');
       setValue('clientCivilite', data.client_civilite || 'M.');
@@ -476,6 +523,7 @@ export default function ProposalForm() {
       cdp_custom: data.cdpSelect === 'autre' ? (data.cdpCustom || null) : null,
       client_company: data.companyName,
       taille_entreprise: data.tailleEntreprise,
+      provenance: data.provenance,
       client_civilite: data.clientCivilite,
       client_first_name: data.clientFirstName,
       client_last_name: data.clientLastName,
@@ -659,6 +707,17 @@ export default function ProposalForm() {
                   Ajuste automatiquement la marge JE recommandée
                   {marges[watchTaille as string] !== undefined ? ` (${marges[watchTaille as string]} %)` : ''}.
                 </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Provenance de l'étude</label>
+                <select
+                  {...register('provenance')}
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                >
+                  <option value="Prospection">Prospection</option>
+                  <option value="Appel d'offres">Appel d'offres</option>
+                  <option value="Contact spontané">Contact spontané</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Contact Principal</label>

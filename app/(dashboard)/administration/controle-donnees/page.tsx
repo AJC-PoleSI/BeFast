@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Save, Loader2, SlidersHorizontal, Euro, FileText, Gauge, Download, X } from "lucide-react"
+import { Save, Loader2, SlidersHorizontal, Euro, FileText, Gauge } from "lucide-react"
 import { getParametres, saveParametres, getMargesRecommandees, saveMargesRecommandees } from "@/lib/actions/parametres"
 import { TAILLES_ENTREPRISE, type ParametresMap, type MargesMap } from "@/lib/proposals-constants"
 import { toast } from "sonner"
@@ -34,7 +34,6 @@ export default function ControleDonneesPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showExport, setShowExport] = useState(false)
 
   useEffect(() => {
     Promise.all([getParametres(), getMargesRecommandees()]).then(([res, mres]) => {
@@ -91,26 +90,15 @@ export default function ControleDonneesPage() {
             Pilotez les valeurs par défaut des propositions, les prix moyens et les fourchettes de prix.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowExport(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-zinc-200 text-[#00236f] text-sm font-semibold hover:bg-zinc-50 transition-all shadow-sm"
-          >
-            <Download className="w-4 h-4" />
-            Exporter les données
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-all shadow-sm disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Enregistrer
-          </button>
-        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-all shadow-sm disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Enregistrer
+        </button>
       </div>
-
-      {showExport && <ExportModal onClose={() => setShowExport(false)} />}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-8">
         {/* PRIX MOYENS */}
@@ -174,92 +162,6 @@ export default function ControleDonneesPage() {
             ))}
           </div>
         </Section>
-      </div>
-    </div>
-  )
-}
-
-const EXPORTABLE = [
-  { type: "membres", label: "Membres" },
-  { type: "clients", label: "Clients" },
-  { type: "etudes", label: "Études" },
-  { type: "missions", label: "Missions" },
-  { type: "factures", label: "Factures (trésorerie)" },
-  { type: "propositions", label: "Propositions" },
-]
-
-function ExportModal({ onClose }: { onClose: () => void }) {
-  const [selected, setSelected] = useState<string[]>(EXPORTABLE.map((e) => e.type))
-  const [busy, setBusy] = useState(false)
-
-  const toggle = (type: string) =>
-    setSelected((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
-
-  const handleExport = async () => {
-    setBusy(true)
-    for (const type of selected) {
-      try {
-        const res = await fetch(`/api/admin/export?type=${type}`)
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}))
-          toast.error(`${type} : ${err.error ?? "échec de l'export"}`, { position: "top-right" })
-          continue
-        }
-        const blob = await res.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = url
-        a.download = `befast_${type}_${new Date().toISOString().slice(0, 10)}.csv`
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        a.remove()
-      } catch {
-        toast.error(`${type} : erreur réseau`, { position: "top-right" })
-      }
-    }
-    setBusy(false)
-    onClose()
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100">
-          <h2 className="font-manrope font-bold text-[#00236f] text-lg flex items-center gap-2">
-            <Download className="w-5 h-5" /> Exporter les données
-          </h2>
-          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="p-6 space-y-4">
-          <p className="text-sm text-zinc-600">Sélectionnez les jeux de données à télécharger au format CSV.</p>
-          <div className="space-y-2">
-            {EXPORTABLE.map((e) => (
-              <label key={e.type} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-zinc-200 cursor-pointer hover:bg-zinc-50">
-                <input
-                  type="checkbox"
-                  checked={selected.includes(e.type)}
-                  onChange={() => toggle(e.type)}
-                  className="w-4 h-4 rounded border-zinc-300 text-[#00236f] focus:ring-[#00236f]"
-                />
-                <span className="text-sm text-zinc-700">{e.label}</span>
-              </label>
-            ))}
-          </div>
-          <div className="flex justify-end gap-3 pt-1">
-            <button onClick={onClose} className="px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg">Annuler</button>
-            <button
-              onClick={handleExport}
-              disabled={busy || selected.length === 0}
-              className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-[#00236f] text-white rounded-lg hover:bg-[#1e3a8a] disabled:opacity-50"
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              Télécharger ({selected.length})
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   )

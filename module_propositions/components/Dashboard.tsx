@@ -351,6 +351,13 @@ export default function Dashboard() {
           </div>
 
           <button
+            onClick={() => window.location.href='/prospection/phases'}
+            className="bg-white border border-zinc-200 text-[#00236f] px-4 py-2 rounded-xl text-sm font-bold transition-all hover:bg-zinc-50 flex items-center gap-2"
+            title="Personnaliser les phases par défaut"
+          >
+            <BarChart3 size={16} /> Pilotage des phases
+          </button>
+          <button
             onClick={() => window.location.href='/prospection/nouvelle'}
             className="bg-[#00236f] hover:bg-[#00174a] text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow flex items-center gap-2"
           >

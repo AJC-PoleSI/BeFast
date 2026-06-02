@@ -143,6 +143,7 @@ export type ProposalInput = {
   client_id?: string | null
   client_company?: string
   taille_entreprise?: string | null
+  provenance?: string
   client_civilite?: string
   client_first_name?: string
   client_last_name?: string
@@ -415,6 +416,19 @@ export async function signProposal(id: string) {
   if (missions.length > 0) {
     const { error: miErr } = await sb.from("missions").insert(missions)
     if (miErr) return { error: `Missions: ${miErr.message}` }
+  }
+
+  // 3bis. Tracer le budget effectif par phase (alimente le prix JEH brut moyen).
+  // Best-effort : si la table budget_etude n'existe pas encore, on n'échoue pas.
+  const budgetRows = phases.map((ph: any) => ({
+    etude_id: etudeId,
+    phase: ph.name,
+    nb_jeh: Number(ph.jeh_count || 0),
+    prix_jeh: Number(ph.jeh_price || 0),
+    marge_pct: Number((prop as any).marge_je || 0),
+  }))
+  if (budgetRows.length > 0) {
+    await sb.from("budget_etude").insert(budgetRows)
   }
 
   // 4. Marquer la propale comme signée + lier l'étude
