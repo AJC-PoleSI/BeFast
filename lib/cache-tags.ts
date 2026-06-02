@@ -17,3 +17,5 @@ export const USER_PROFILE_TAG = (userId: string) => `user-profile:${userId}`
 
 export const FACTURES_TAG = "factures"
 export const TRESORERIE_TAG = "tresorerie"
+
+export const PROPOSALS_TAG = "proposals"

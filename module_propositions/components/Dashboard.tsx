@@ -1,16 +1,21 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { mockSavedPropales } from '../data/mockDB';
-import { createClient } from '@/lib/supabase/client';
-import { Trash2, Edit, FileCheck, Search, Filter, Shield, List, Calendar as CalendarIcon, Clock, BarChart3, Copy, Download, Plus } from 'lucide-react';
+import {
+  getProposals,
+  updateProposalStatus,
+  deleteProposal,
+  signProposal,
+  getProposalMembers,
+} from '@/lib/actions/propositions';
+import { Trash2, Edit, FileCheck, Search, Filter, Shield, List, Calendar as CalendarIcon, Clock, BarChart3, Copy, Download, Plus, FileSignature, ExternalLink, Loader2 } from 'lucide-react';
 
 // --- UTILS POUR L'ÉCHÉANCIER ---
 function getNextMonday(date: Date | string) {
   const d = new Date(date);
   const day = d.getDay();
   if (day === 1) return d;
-  const diff = d.getDate() + (day === 0 ? 1 : 8 - day); 
+  const diff = d.getDate() + (day === 0 ? 1 : 8 - day);
   return new Date(d.setDate(diff));
 }
 
@@ -22,61 +27,62 @@ function addWeeks(date: Date, weeks: number) {
 
 export default function Dashboard() {
   const [propales, setPropales] = useState<any[]>([]);
+  const [members, setMembers] = useState<{ id: string; prenom: string; nom: string; initials: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [signingId, setSigningId] = useState<string | null>(null);
   const [viewAs, setViewAs] = useState<string>('admin');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [displayMode, setDisplayMode] = useState<'liste' | 'calendrier'>('liste');
-  const supabase = createClient();
 
   useEffect(() => {
     fetchPropales();
+    loadMembers();
   }, []);
 
+  const loadMembers = async () => {
+    const res = await getProposalMembers();
+    if (res?.data) {
+      setMembers(
+        res.data.map((m: any) => ({
+          id: m.id,
+          prenom: m.prenom,
+          nom: m.nom,
+          initials: ((m.prenom?.charAt(0) || '') + (m.nom?.charAt(0) || '')).toUpperCase(),
+        }))
+      );
+    }
+  };
+
   const fetchPropales = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase.from('proposals').select('*, proposal_phases(*)');
-      
-      let finalPropales = [];
-      if (data && data.length > 0) {
-        finalPropales = data.map((p: any) => ({
+    setIsLoading(true);
+    const res = await getProposals();
+    if (res?.data) {
+      setPropales(
+        res.data.map((p: any) => ({
           id: p.id,
           cdpId: p.cdp_id,
-          clientName: p.client_company,
-          studyType: p.study_type,
+          cdpCustom: p.cdp_custom,
+          clientName: p.client_company || '',
+          studyType: p.study_type || '',
           date: p.start_date,
           totalHT: p.total_ht,
           totalTTC: p.total_ttc,
           status: p.status,
-          phases: p.proposal_phases ? p.proposal_phases.map((ph: any) => ({
-             ...ph,
-             name: ph.name,
-             dureeSemaines: ph.duree_semaines
-          })) : []
-        }));
-      } else {
-        // Fallback sur localStorage
-        if (typeof window !== 'undefined') {
-          const savedRaw = localStorage.getItem('befast_saved_proposals');
-          if (savedRaw) {
-            finalPropales = JSON.parse(savedRaw);
-          }
-        }
-      }
-      
-      // Si toujours vide, on charge les mocks en mémoire pour la démo
-      setPropales(finalPropales.length > 0 ? finalPropales : mockSavedPropales);
-    } catch (err) {
-      console.error(err);
-      let localPropales = [];
-      if (typeof window !== 'undefined') {
-        const savedRaw = localStorage.getItem('befast_saved_proposals');
-        if (savedRaw) {
-          localPropales = JSON.parse(savedRaw);
-        }
-      }
-      setPropales(localPropales.length > 0 ? localPropales : mockSavedPropales);
+          etudeId: p.etude_id,
+          phases: (p.proposal_phases || [])
+            .slice()
+            .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
+            .map((ph: any) => ({
+              ...ph,
+              name: ph.name,
+              dureeSemaines: ph.duree_semaines,
+              semaineDebut: ph.semaine_debut,
+            })),
+        }))
+      );
+    } else {
+      setPropales([]);
     }
     setIsLoading(false);
   };
@@ -87,27 +93,18 @@ export default function Dashboard() {
       case 'validée': return <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold rounded-full">Validée</span>;
       case 'refusée': return <span className="px-2.5 py-0.5 bg-red-50 text-red-700 border border-red-200 text-xs font-semibold rounded-full">Refusée</span>;
       case 'CE éditée': return <span className="px-2.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 text-xs font-semibold rounded-full">CE Éditée</span>;
+      case 'CE signée': return <span className="px-2.5 py-0.5 bg-[#00236f] text-white border border-[#00236f] text-xs font-semibold rounded-full">CE Signée</span>;
       default: return <span className="px-2.5 py-0.5 bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold rounded-full">{status}</span>;
     }
   };
 
   const handleDelete = async (id: string) => {
-    if(confirm(`Voulez-vous vraiment supprimer la proposition ${id} ?`)) {
-      // Tente de supprimer dans Supabase
-      try {
-        await supabase.from('proposals').delete().eq('id', id);
-      } catch (e) {}
-      
-      // Supprimer dans localStorage
-      if (typeof window !== 'undefined') {
-        const savedRaw = localStorage.getItem('befast_saved_proposals');
-        if (savedRaw) {
-          const list = JSON.parse(savedRaw);
-          const filtered = list.filter((p: any) => p.id !== id);
-          localStorage.setItem('befast_saved_proposals', JSON.stringify(filtered));
-        }
+    if (confirm(`Voulez-vous vraiment supprimer la proposition ${id} ?`)) {
+      const res = await deleteProposal(id);
+      if (res?.error) {
+        alert('❌ ' + res.error);
+        return;
       }
-      
       setPropales(propales.filter(p => p.id !== id));
     }
   };
@@ -123,7 +120,6 @@ export default function Dashboard() {
     const baseId = id.replace(/-copie(-\d+)?$/, '');
     let newId = `${baseId}-copie`;
     let counter = 1;
-    // On vérifie uniquement dans le state local, pas dans mockSavedPropales
     while (propales.some(p => p.id === newId)) {
       counter++;
       newId = `${baseId}-copie-${counter}`;
@@ -134,7 +130,6 @@ export default function Dashboard() {
     duplicatedPropale.date = new Date().toISOString().split('T')[0];
     duplicatedPropale.status = 'brouillon';
 
-    // On ne push plus dans mockSavedPropales ici pour éviter le doublon avec le state
     const newList = [...propales, duplicatedPropale];
     setPropales(newList);
   };
@@ -196,23 +191,44 @@ export default function Dashboard() {
   };
 
   const handleTransformCE = async (id: string) => {
-    alert(`La propale ${id} va passer en statut Validée/CE Éditée.\nOuverture du menu pour préciser les caractéristiques de la Convention d'Étude...`);
-    await supabase.from('proposals').update({ status: 'CE éditée' }).eq('id', id);
+    const res = await updateProposalStatus(id, 'CE éditée');
+    if (res?.error) {
+      alert('❌ ' + res.error);
+      return;
+    }
     setPropales(propales.map(p => p.id === id ? { ...p, status: 'CE éditée' } : p));
   };
 
+  // Signature de la CE -> création automatique d'une Étude réelle
+  // (phases -> échéancier + missions, budget, suivi, client).
+  const handleSignCE = async (id: string) => {
+    if (!confirm(`Signer la CE ${id} ?\n\nUne Étude réelle sera créée automatiquement (phases, échéancier, missions, budget et client).`)) return;
+    setSigningId(id);
+    const res = await signProposal(id);
+    setSigningId(null);
+    if (res?.error) {
+      alert('❌ ' + res.error);
+      return;
+    }
+    const etudeId = res?.data?.etudeId;
+    setPropales(propales.map(p => p.id === id ? { ...p, status: 'CE signée', etudeId } : p));
+    if (etudeId && confirm('✅ Étude créée avec succès.\n\nVoulez-vous ouvrir la nouvelle étude maintenant ?')) {
+      window.location.href = `/etudes/${etudeId}`;
+    }
+  };
+
   // Filtrage par Rôle
-  let filteredPropales = viewAs === 'admin' 
-    ? propales 
+  let filteredPropales = viewAs === 'admin'
+    ? propales
     : propales.filter(p => p.id.startsWith(viewAs));
 
   // Filtrage par Texte
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
-    filteredPropales = filteredPropales.filter(p => 
-      p.id.toLowerCase().includes(q) || 
-      p.clientName.toLowerCase().includes(q) ||
-      p.studyType.toLowerCase().includes(q)
+    filteredPropales = filteredPropales.filter(p =>
+      p.id.toLowerCase().includes(q) ||
+      (p.clientName || '').toLowerCase().includes(q) ||
+      (p.studyType || '').toLowerCase().includes(q)
     );
   }
 
@@ -222,8 +238,8 @@ export default function Dashboard() {
   }
 
   // === LOGIQUE CALENDRIER ===
-  const cePropales = filteredPropales.filter(p => p.status === 'CE éditée');
-  
+  const cePropales = filteredPropales.filter(p => p.status === 'CE éditée' || p.status === 'CE signée');
+
   // Extraction de toutes les phases avec leurs dates
   const allPhases: any[] = [];
   const loadMap = new Map<number, { date: Date, count: number }>();
@@ -233,7 +249,7 @@ export default function Dashboard() {
     ce.phases?.forEach((phase: any) => {
       const startDate = new Date(currentDate);
       const endDate = addWeeks(new Date(startDate), phase.dureeSemaines);
-      
+
       allPhases.push({
         ceId: ce.id,
         clientName: ce.clientName,
@@ -283,25 +299,21 @@ export default function Dashboard() {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-6 animate-in fade-in duration-300">
-      
+
       {/* SIMULATEUR DE VUE */}
       <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-xl flex flex-wrap items-center justify-between mb-6 gap-3 shadow-sm">
         <div className="flex items-center gap-3 text-sm font-semibold">
           <Shield size={18} className="text-amber-600 shrink-0" />
           <span>Mode simulation : vous visualisez en tant que :</span>
         </div>
-        <select 
-          value={viewAs} 
+        <select
+          value={viewAs}
           onChange={(e) => setViewAs(e.target.value)}
           className="bg-white border border-amber-200 text-amber-900 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none font-medium shadow-sm transition-all"
         >
           <option value="admin">Administrateur (Toutes les propales)</option>
-          {[
-            { id: 1, initials: "JDU", firstName: "Jean", lastName: "Dupont" },
-            { id: 2, initials: "ALM", firstName: "Alice", lastName: "Martin" },
-            { id: 3, initials: "JQD", firstName: "Jacques", lastName: "Durand" }
-          ].map(cdp => (
-            <option key={cdp.id} value={cdp.initials}>{cdp.firstName} {cdp.lastName} ({cdp.initials})</option>
+          {members.map(m => (
+            <option key={m.id} value={m.initials}>{m.prenom} {m.nom} ({m.initials})</option>
           ))}
         </select>
       </div>
@@ -311,25 +323,25 @@ export default function Dashboard() {
           <h1 className="text-2xl font-manrope font-black text-[#00236f]">Suivi des Propositions</h1>
           <p className="text-sm text-zinc-500 mt-1">Gérez et suivez le statut de vos propositions commerciales et conventions d'études.</p>
         </div>
-        
+
         <div className="flex gap-3 items-center w-full md:w-auto shrink-0">
           <div className="bg-zinc-100 p-1 rounded-xl flex text-xs font-bold border border-zinc-200">
-            <button 
-              onClick={() => setDisplayMode('liste')} 
+            <button
+              onClick={() => setDisplayMode('liste')}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all ${displayMode === 'liste' ? 'bg-white text-zinc-800 shadow-sm font-semibold' : 'text-zinc-500 hover:text-zinc-700'}`}
             >
               <List size={14} /> Liste
             </button>
-            <button 
-              onClick={() => setDisplayMode('calendrier')} 
+            <button
+              onClick={() => setDisplayMode('calendrier')}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all ${displayMode === 'calendrier' ? 'bg-white text-zinc-800 shadow-sm font-semibold' : 'text-zinc-500 hover:text-zinc-700'}`}
             >
               <CalendarIcon size={14} /> Calendrier CE
             </button>
           </div>
-          
-          <button 
-            onClick={() => window.location.href='/test-propositions'} 
+
+          <button
+            onClick={() => window.location.href='/test-propositions'}
             className="bg-[#00236f] hover:bg-[#00174a] text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow flex items-center gap-2"
           >
             <Plus size={16} /> Nouvelle Proposition
@@ -343,15 +355,15 @@ export default function Dashboard() {
           <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 items-center">
             <div className="flex-1 relative min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher un ID, un client, un type d'étude..." 
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+                placeholder="Rechercher un ID, un client, un type d'étude..."
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <select 
+            <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-slate-600 font-medium"
@@ -361,6 +373,7 @@ export default function Dashboard() {
               <option value="validée">Validée</option>
               <option value="refusée">Refusée</option>
               <option value="CE éditée">CE Éditée</option>
+              <option value="CE signée">CE Signée</option>
             </select>
           </div>
 
@@ -382,16 +395,26 @@ export default function Dashboard() {
                   {filteredPropales.map(p => (
                     <tr key={p.id} className="hover:bg-slate-50/80 transition-colors group">
                       <td className="px-6 py-4 font-mono font-bold text-[#00236f]">{p.id}</td>
-                      <td className="px-6 py-4 text-slate-500">{new Date(p.date).toLocaleDateString('fr-FR')}</td>
+                      <td className="px-6 py-4 text-slate-500">{p.date ? new Date(p.date).toLocaleDateString('fr-FR') : '—'}</td>
                       <td className="px-6 py-4 font-semibold text-slate-800">{p.clientName}</td>
                       <td className="px-6 py-4 text-slate-600">{p.studyType}</td>
                       <td className="px-6 py-4 text-right font-bold text-slate-800">{p.totalHT?.toLocaleString('fr-FR')} €</td>
                       <td className="px-6 py-4 text-center">{getStatusBadge(p.status)}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                          {p.status !== 'CE éditée' && (
+                          {p.status !== 'CE éditée' && p.status !== 'CE signée' && (
                             <button onClick={() => handleTransformCE(p.id)} title="Transformer en CE" className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1 border border-transparent hover:border-emerald-200 text-xs font-bold">
                               <FileCheck size={16} /> <span className="hidden xl:inline">Passer en CE</span>
+                            </button>
+                          )}
+                          {p.status === 'CE éditée' && (
+                            <button onClick={() => handleSignCE(p.id)} disabled={signingId === p.id} title="Signer la CE et créer l'étude" className="p-2 text-white bg-[#00236f] hover:bg-[#00174a] rounded-lg transition-colors flex items-center gap-1 text-xs font-bold disabled:opacity-60">
+                              {signingId === p.id ? <Loader2 size={16} className="animate-spin" /> : <FileSignature size={16} />} <span className="hidden xl:inline">{signingId === p.id ? 'Signature…' : 'Signer la CE'}</span>
+                            </button>
+                          )}
+                          {p.status === 'CE signée' && p.etudeId && (
+                            <button onClick={() => window.location.href = `/etudes/${p.etudeId}`} title="Voir l'étude créée" className="p-2 text-[#00236f] hover:bg-[#d0d8ff]/30 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold">
+                              <ExternalLink size={16} /> <span className="hidden xl:inline">Voir l'étude</span>
                             </button>
                           )}
                           <button onClick={() => handleEdit(p.id)} title="Modifier la proposition" className="p-2 text-slate-600 hover:text-[#00236f] hover:bg-[#d0d8ff]/30 rounded-lg transition-colors">
@@ -413,7 +436,7 @@ export default function Dashboard() {
                   {filteredPropales.length === 0 && (
                     <tr>
                       <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                        Aucune proposition trouvée.
+                        {isLoading ? 'Chargement…' : 'Aucune proposition trouvée.'}
                       </td>
                     </tr>
                   )}
@@ -427,7 +450,7 @@ export default function Dashboard() {
       {/* VUE CALENDRIER (CE Uniquement) */}
       {displayMode === 'calendrier' && (
         <div className="animate-in fade-in">
-          
+
           {cePropales.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-xl border border-slate-200 text-slate-500">
               <CalendarIcon size={48} className="mx-auto text-slate-300 mb-4" />
@@ -435,13 +458,13 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
+
               {/* PARTIE 1 : PROCHAINES ÉCHÉANCES */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                 <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                   <Clock className="text-blue-600" /> Prochaines échéances (CE)
                 </h2>
-                
+
                 <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                   {upcomingDeadlines.map((p, i) => (
                     <div key={i} className={`flex justify-between items-center p-3 transition-colors border rounded-lg ${
@@ -478,7 +501,7 @@ export default function Dashboard() {
                   <BarChart3 className="text-blue-600" /> Charge de production
                 </h2>
                 <p className="text-sm text-slate-500 mb-8">Nombre de phases de CE actives en simultané par semaine.</p>
-                
+
                 <div className="flex-1 w-full overflow-x-auto hide-scrollbar">
                   {loadData.length > 0 ? (() => {
                     const svgWidth = Math.max(600, loadData.length * 80);
@@ -502,7 +525,7 @@ export default function Dashboard() {
                             <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
                           </linearGradient>
                         </defs>
-                        
+
                         {/* Lignes de guide (Grille horizontale) */}
                         {[0, 0.5, 1].map(ratio => {
                           const yPos = padding + ratio * (svgHeight - padding * 2);
@@ -520,17 +543,17 @@ export default function Dashboard() {
                         {points.length > 1 && (
                           <polygon points={polygonPoints} fill="url(#curveGradient)" />
                         )}
-                        
+
                         {/* La courbe principale */}
                         <polyline points={polylinePoints} fill="none" stroke="#3b82f6" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-sm" />
-                        
+
                         {/* Points et Interactions */}
                         {points.map((p, i) => (
                           <g key={i} className="group cursor-pointer">
                             <line x1={p.x} y1={p.y} x2={p.x} y2={svgHeight - 15} stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4 4" className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                            
+
                             <circle cx={p.x} cy={p.y} r="6" fill="#ffffff" stroke="#3b82f6" strokeWidth="3" className="transition-all duration-300 group-hover:r-[8px] group-hover:stroke-[4px]" />
-                            
+
                             <text x={p.x} y={p.y - 15} textAnchor="middle" fill="#1e293b" fontSize="14" fontWeight="bold" className="opacity-0 group-hover:opacity-100 transition-opacity">
                               {p.d.count} {p.d.count > 1 ? 'phases' : 'phase'}
                             </text>

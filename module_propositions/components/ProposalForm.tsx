@@ -3,13 +3,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { Calendar, User, Briefcase, Plus, Trash2, FileText, Settings, Download, ArrowLeft, ArrowRight, Eye, Users, Calculator, FileSignature, Save } from 'lucide-react';
-import { studyTypes, mockSavedPropales } from '../data/mockDB';
-import personnesDB from '../../local_db/personnes.json';
-import clientsDB from '../../local_db/clients.json';
-import etudesDB from '../../local_db/etudes.json';
+import { Calendar, Briefcase, Plus, Trash2, FileText, Settings, Download, Users, Calculator, FileSignature, Save } from 'lucide-react';
+import { studyTypes } from '../data/mockDB';
 import phasesDB from '../../local_db/phases.json';
-import { createClient } from '@/lib/supabase/client';
+import { getProposalMembers, getProposal, saveProposal } from '@/lib/actions/propositions';
+
+// --- COULEURS GANTT (identiques à la page Étude) ---
+const GANTT_COLORS = [
+  "#00236f", "#2563eb", "#0891b2", "#059669", "#65a30d",
+  "#d97706", "#dc2626", "#db2777", "#7c3aed", "#475569",
+];
 
 // --- UTILS POUR GÉNÉRER L'ID ---
 function generatePropaleId(initials: string) {
@@ -25,13 +28,13 @@ function getNextMonday(date: Date | string) {
   const d = new Date(date);
   const day = d.getDay();
   if (day === 1) return d;
-  const diff = d.getDate() + (day === 0 ? 1 : 8 - day); 
+  const diff = d.getDate() + (day === 0 ? 1 : 8 - day);
   return new Date(d.setDate(diff));
 }
 
 function addWeeks(date: Date, weeks: number) {
   const d = new Date(date);
-  d.setDate(d.getDate() + weeks * 7 - 3);
+  d.setDate(d.getDate() + weeks * 7 - 3); // Finit un vendredi
   return d;
 }
 
@@ -40,7 +43,7 @@ const FastNumberInput = ({ value, onChange, min = 0, className = "" }: any) => {
   const [val, setVal] = useState(value);
   const intervalRef = useRef<any>(null);
   const timeoutRef = useRef<any>(null);
-  
+
   useEffect(() => { setVal(value) }, [value]);
 
   const handleChange = (newVal: number) => {
@@ -54,7 +57,7 @@ const FastNumberInput = ({ value, onChange, min = 0, className = "" }: any) => {
     handleChange(Number(val) + direction);
     let speed = 1;
     let ticks = 0;
-    
+
     timeoutRef.current = setTimeout(() => {
       intervalRef.current = setInterval(() => {
         ticks++;
@@ -67,7 +70,7 @@ const FastNumberInput = ({ value, onChange, min = 0, className = "" }: any) => {
           return finalVal;
         });
       }, 100);
-    }, 400); 
+    }, 400);
   };
 
   const stopHold = () => {
@@ -84,11 +87,122 @@ const FastNumberInput = ({ value, onChange, min = 0, className = "" }: any) => {
   )
 }
 
+// === GANTT ÉDITABLE (calqué sur la page Étude) ===
+// Les barres sont positionnées sur semaineDebut/dureeSemaines et déplaçables /
+// redimensionnables à la souris ; toute modification remonte dans le formulaire.
+const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate }: any) => {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<any>(null);
+
+  const weekStartDate = (semaine: number) => {
+    const d = new Date(projectMonday);
+    d.setDate(d.getDate() + (semaine - 1) * 7);
+    return d;
+  };
+
+  const beginDrag = (e: React.MouseEvent, index: number, mode: 'move' | 'resize') => {
+    e.preventDefault();
+    e.stopPropagation();
+    const track = trackRef.current;
+    if (!track) return;
+    const pxPerWeek = track.getBoundingClientRect().width / nbWeeks;
+    dragRef.current = {
+      index,
+      mode,
+      startX: e.clientX,
+      startSemaine: phases[index].semaineDebut || 1,
+      startDuree: phases[index].dureeSemaines || 1,
+      pxPerWeek,
+    };
+
+    const onMove = (ev: MouseEvent) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const delta = Math.round((ev.clientX - drag.startX) / drag.pxPerWeek);
+      if (drag.mode === 'move') {
+        const maxStart = Math.max(1, nbWeeks - drag.startDuree + 1);
+        const newSemaine = Math.max(1, Math.min(maxStart, drag.startSemaine + delta));
+        onChange(drag.index, { semaineDebut: newSemaine });
+      } else {
+        const maxDuree = nbWeeks - drag.startSemaine + 1;
+        const newDuree = Math.max(1, Math.min(maxDuree, drag.startDuree + delta));
+        onChange(drag.index, { dureeSemaines: newDuree });
+      }
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-[640px]">
+        {/* En-têtes des semaines */}
+        <div className="flex border-b border-slate-200 mb-2">
+          <div className="w-44 shrink-0" />
+          <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${nbWeeks}, minmax(0, 1fr))` }}>
+            {Array.from({ length: nbWeeks }).map((_, i) => (
+              <div key={i} className="text-center text-[10px] font-bold text-slate-400 py-1 border-l border-slate-100">
+                S{i + 1}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Lignes de phases */}
+        <div className="space-y-2">
+          {phases.map((phase: any, index: number) => {
+            const debut = phase.semaineDebut || 1;
+            const duree = phase.dureeSemaines || 1;
+            const start = weekStartDate(debut);
+            const end = addWeeks(start, duree);
+            return (
+              <div key={phase.phaseId ?? index} className="flex items-center">
+                <div className="w-44 shrink-0 pr-3">
+                  <div className="text-xs font-bold text-slate-700 truncate">{index + 1}. {phase.name}</div>
+                  <div className="text-[10px] text-slate-400 font-mono">{formatDate(start)} → {formatDate(end)}</div>
+                </div>
+                <div ref={index === 0 ? trackRef : undefined} className="flex-1 relative h-9 bg-slate-50 rounded border border-slate-100">
+                  <div
+                    onMouseDown={(e) => beginDrag(e, index, 'move')}
+                    className="absolute top-1 bottom-1 rounded-md cursor-grab active:cursor-grabbing shadow-sm flex items-center px-2 group"
+                    style={{
+                      left: `${((debut - 1) / nbWeeks) * 100}%`,
+                      width: `${(duree / nbWeeks) * 100}%`,
+                      minWidth: 36,
+                      backgroundColor: GANTT_COLORS[index % GANTT_COLORS.length],
+                    }}
+                    title={`${phase.name} — S${debut} → S${debut + duree - 1}`}
+                  >
+                    <span className="text-[10px] font-bold text-white truncate select-none">{duree} sem.</span>
+                    {/* Poignée de redimensionnement */}
+                    <div
+                      onMouseDown={(e) => beginDrag(e, index, 'resize')}
+                      className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-r-md bg-black/10 group-hover:bg-black/25"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ProposalForm() {
   const router = useRouter();
   const [isIdEdited, setIsIdEdited] = useState(false);
   const isIdEditedRef = useRef(false);
-  
+  const [members, setMembers] = useState<{ id: string; prenom: string; nom: string; email: string }[]>([]);
+  const [nbWeeks, setNbWeeks] = useState(12);
+  const [isSaving, setIsSaving] = useState(false);
+
   const { register, control, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
       propaleId: '',
@@ -113,14 +227,14 @@ export default function ProposalForm() {
       suiviJehCount: 1,
       suiviJehPrice: 100,
       projectStartDate: getNextMonday(new Date()).toISOString().slice(0, 10),
-      phases: [] as { 
-        phaseId: string | number, 
-        name: string, 
-        objectifs: string, 
-        methodologie: string, 
-        contraintes: string, 
+      phases: [] as {
+        phaseId: string | number,
+        name: string,
+        objectifs: string,
+        methodologie: string,
+        contraintes: string,
         dureeSemaines: number,
-        startAfterPhaseId: string | number,
+        semaineDebut: number,
         intervenantsCount: number,
         intervenantsNiveau: string,
         jehCount: number,
@@ -141,136 +255,87 @@ export default function ProposalForm() {
   const watchStartDate = watch('projectStartDate');
   const watchGlobalFraisAnnexes = watch('globalFraisAnnexes');
 
-  const supabase = createClient();
+  // CHARGEMENT DES MEMBRES AJC (CDP)
+  useEffect(() => {
+    getProposalMembers().then(res => {
+      if (res && 'data' in res && res.data) setMembers(res.data as any);
+    });
+  }, []);
 
-  // LOAD FROM URL
+  // CHARGEMENT D'UNE PROPALE EXISTANTE (édition)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     if (!id) return;
 
-    const fetchPropale = async () => {
-      let propale: any = null;
-
-      // Fallback local: chercher dans localStorage
-      if (typeof window !== 'undefined') {
-        const savedRaw = localStorage.getItem('befast_saved_proposals');
-        if (savedRaw) {
-          const list = JSON.parse(savedRaw);
-          propale = list.find((p: any) => p.id === id);
-        }
-      }
-
-      // Si non trouvé en local, chercher dans le mock en mémoire
-      if (!propale) {
-        propale = mockSavedPropales.find(p => p.id === id);
-      }
-
-      // Tentative de lecture depuis Supabase
-      try {
-        const { data } = await supabase.from('proposals').select('*, proposal_phases(*)').eq('id', id).single();
-        if (data) {
-          propale = {
-            id: data.id,
-            clientName: data.client_company,
-            isAutoentrepreneur: data.is_autoentrepreneur,
-            clientCivilite: data.client_civilite,
-            clientFirstName: data.client_first_name,
-            clientLastName: data.client_last_name,
-            clientEmail: data.client_email,
-            clientPhone: data.client_phone,
-            studyType: data.study_type,
-            cdpId: data.cdp_id,
-            contextSituation: data.context_situation,
-            contextIntervention: data.context_intervention,
-            contextEnjeu: data.context_enjeu,
-            cdcObjectifs: data.cdc_objectifs,
-            cdcContraintes: data.cdc_contraintes,
-            cdcLivrables: data.cdc_livrables,
-            suiviJehCount: data.suivi_jeh_count,
-            suiviJehPrice: data.suivi_jeh_price,
-            globalFraisAnnexes: data.global_frais_annexes,
-            phases: data.proposal_phases ? data.proposal_phases.map((ph: any) => ({
-              ...ph,
-              name: ph.name,
-              dureeSemaines: ph.duree_semaines,
-              jehCount: ph.jeh_count,
-              jehPrice: ph.jeh_price,
-              intervenantsCount: ph.intervenants_count,
-              intervenantsNiveau: ph.intervenants_niveau,
-              startAfterPhaseId: ph.order_index === 0 ? 'project_start' : (data.proposal_phases[ph.order_index - 1]?.id || 'project_start')
-            })) : []
-          };
-        }
-      } catch (e) {
-        console.warn("Supabase injoignable, utilisation des données locales persistées.");
-      }
-
-      if (!propale) return;
+    getProposal(id).then(res => {
+      if (!res || 'error' in res || !('data' in res) || !res.data) return;
+      const data: any = res.data;
 
       setIsIdEdited(true);
       isIdEditedRef.current = true;
-      setValue('propaleId', propale.id);
-      setValue('companyName', propale.clientName || '');
-      setValue('isAutoentrepreneur', !!propale.isAutoentrepreneur);
-      setValue('cdpSelect', propale.cdpId ? String(propale.cdpId) : '');
-      setValue('clientCivilite', propale.clientCivilite || 'M.');
-      setValue('clientFirstName', propale.clientFirstName || '');
-      setValue('clientLastName', propale.clientLastName || '');
-      setValue('clientEmail', propale.clientEmail || '');
-      setValue('clientPhone', propale.clientPhone || '');
-      setValue('studyTypeSelect', studyTypes.includes(propale.studyType) ? propale.studyType : 'autre');
-      if (!studyTypes.includes(propale.studyType)) {
-        setValue('studyTypeCustom', propale.studyType);
-      }
-      setValue('contextSituation', propale.contextSituation || '');
-      setValue('contextIntervention', propale.contextIntervention || '');
-      setValue('contextEnjeu', propale.contextEnjeu || '');
-      setValue('cdcObjectifs', propale.cdcObjectifs || '');
-      setValue('cdcContraintes', propale.cdcContraintes || '');
-      setValue('cdcLivrables', propale.cdcLivrables || '');
-      setValue('suiviJehCount', propale.suiviJehCount !== undefined ? propale.suiviJehCount : 1);
-      setValue('suiviJehPrice', propale.suiviJehPrice !== undefined ? propale.suiviJehPrice : 200);
+      setValue('propaleId', data.id);
+      setValue('companyName', data.client_company || '');
+      setValue('isAutoentrepreneur', !!data.is_autoentrepreneur);
+      setValue('cdpSelect', data.cdp_id ? String(data.cdp_id) : (data.cdp_custom ? 'autre' : ''));
+      setValue('cdpCustom', data.cdp_custom || '');
+      setValue('clientCivilite', data.client_civilite || 'M.');
+      setValue('clientFirstName', data.client_first_name || '');
+      setValue('clientLastName', data.client_last_name || '');
+      setValue('clientEmail', data.client_email || '');
+      setValue('clientPhone', data.client_phone || '');
+      setValue('studyTypeSelect', studyTypes.includes(data.study_type) ? data.study_type : 'autre');
+      if (!studyTypes.includes(data.study_type)) setValue('studyTypeCustom', data.study_type || '');
+      setValue('contextSituation', data.context_situation || '');
+      setValue('contextIntervention', data.context_intervention || '');
+      setValue('contextEnjeu', data.context_enjeu || '');
+      setValue('cdcObjectifs', data.cdc_objectifs || '');
+      setValue('cdcContraintes', data.cdc_contraintes || '');
+      setValue('cdcLivrables', data.cdc_livrables || '');
+      setValue('suiviJehCount', data.suivi_jeh_count ?? 1);
+      setValue('suiviJehPrice', data.suivi_jeh_price ?? 100);
+      setValue('globalFraisAnnexes', data.global_frais_annexes ?? 0);
+      if (data.start_date) setValue('projectStartDate', getNextMonday(data.start_date).toISOString().slice(0, 10));
 
-      if (propale.phases && propale.phases.length > 0) {
+      const phases = (data.proposal_phases || []).slice().sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
+      if (phases.length > 0) {
         removePhase();
-        propale.phases.forEach((p: any, i: number) => {
+        let cursor = 1;
+        phases.forEach((p: any, i: number) => {
+          const duree = p.duree_semaines || 1;
+          const debut = p.semaine_debut > 0 ? p.semaine_debut : cursor;
+          cursor = debut + duree;
           append({
-            phaseId: p.phaseId || Date.now() + i,
+            phaseId: p.id || Date.now() + i,
             name: p.name,
             objectifs: p.objectifs || '',
             methodologie: p.methodologie || '',
             contraintes: p.contraintes || '',
-            dureeSemaines: p.dureeSemaines || 1,
-            startAfterPhaseId: p.startAfterPhaseId || 'project_start',
-            intervenantsCount: p.intervenantsCount || 1,
-            intervenantsNiveau: p.intervenantsNiveau || 'L3',
-            jehCount: p.intervenantsCount || p.jehCount || 1,
-            jehPrice: p.jehPrice || 100
+            dureeSemaines: duree,
+            semaineDebut: debut,
+            intervenantsCount: p.intervenants_count || 1,
+            intervenantsNiveau: p.intervenants_niveau || 'L3',
+            jehCount: p.jeh_count || 1,
+            jehPrice: p.jeh_price || 100
           });
         });
       }
-    };
-
-    fetchPropale();
+    });
   }, [setValue, append, removePhase]);
 
-
-  // AUTO GENERATE ID
+  // AUTO GÉNÉRATION DE L'ID À PARTIR DU MEMBRE CHOISI
   useEffect(() => {
     if (isIdEditedRef.current) return;
     let initials = 'XXX';
     if (watchCdpSelect === 'autre' && watchCdpCustom) {
       initials = watchCdpCustom.substring(0, 3).toUpperCase();
     } else if (watchCdpSelect && watchCdpSelect !== 'autre') {
-      const selectedCdp = personnesDB.find(c => c.id.toString() === watchCdpSelect);
-      if (selectedCdp && selectedCdp.firstName) {
-        initials = (selectedCdp.firstName.charAt(0) + (selectedCdp.lastName?.charAt(0) || '')).toUpperCase();
-      }
+      const m = members.find(c => c.id === watchCdpSelect);
+      if (m) initials = ((m.prenom?.charAt(0) || '') + (m.nom?.charAt(0) || '')).toUpperCase() || 'XXX';
     }
     setValue('propaleId', generatePropaleId(initials));
-  }, [watchCdpSelect, watchCdpCustom, isIdEdited, setValue]);
+  }, [watchCdpSelect, watchCdpCustom, members, setValue]);
 
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue('propaleId', e.target.value);
@@ -289,21 +354,14 @@ export default function ProposalForm() {
     setValue('projectStartDate', nextMonday.toISOString().slice(0, 10));
   };
 
+  // Semaine de départ par défaut = juste après la dernière phase
+  const nextFreeWeek = () => {
+    if (!watchPhases || watchPhases.length === 0) return 1;
+    return Math.max(...watchPhases.map(p => (p.semaineDebut || 1) + (p.dureeSemaines || 1))) ;
+  };
+
   const handleAddPhase = (phaseId: number | 'custom') => {
-    const defaultIntervenants = 3;
-    const baseFields = {
-      intervenantsCount: defaultIntervenants,
-      intervenantsNiveau: 'L3',
-      jehCount: defaultIntervenants, // Automatiquement égal au nb intervenants
-      jehPrice: 100,
-      startAfterPhaseId: 'project_start' as const
-    };
-
-    // Par défaut, on fait suivre la phase précédente
-    if (watchPhases.length > 0) {
-      baseFields.startAfterPhaseId = watchPhases[watchPhases.length - 1].phaseId as any;
-    }
-
+    const debut = nextFreeWeek();
     if (phaseId === 'custom') {
       append({
         phaseId: Date.now(),
@@ -312,7 +370,11 @@ export default function ProposalForm() {
         methodologie: "",
         contraintes: "",
         dureeSemaines: 2,
-        ...baseFields
+        semaineDebut: debut,
+        intervenantsCount: 3,
+        intervenantsNiveau: 'L3',
+        jehCount: 3,
+        jehPrice: 100,
       });
     } else {
       const phaseData = phasesDB.find(p => p.id === phaseId);
@@ -324,28 +386,33 @@ export default function ProposalForm() {
           methodologie: phaseData.methodologie,
           contraintes: phaseData.contraintes || "",
           dureeSemaines: phaseData.dureeSemaines || 2,
+          semaineDebut: debut,
           intervenantsCount: phaseData.intervenantsCount || 3,
           intervenantsNiveau: 'L3',
           jehCount: phaseData.intervenantsCount || 3,
           jehPrice: phaseData.jehPrice || 100,
-          startAfterPhaseId: baseFields.startAfterPhaseId
         });
       }
     }
   };
 
-  const onSubmit = async (data: any, action: 'save' | 'generate') => {
-    // 1. Calcul du budget en direct pour la sauvegarde
+  // Maj depuis le Gantt (déplacement / redimensionnement)
+  const handleGanttChange = (index: number, patch: { semaineDebut?: number; dureeSemaines?: number }) => {
+    if (patch.semaineDebut !== undefined) setValue(`phases.${index}.semaineDebut`, patch.semaineDebut);
+    if (patch.dureeSemaines !== undefined) setValue(`phases.${index}.dureeSemaines`, patch.dureeSemaines);
+  };
+
+  const buildPayload = (data: any) => {
     let totalHT = 0;
     data.phases.forEach((p: any) => { totalHT += (Number(p.jehCount || 0) * Number(p.jehPrice || 0)); });
     totalHT += (Number(data.suiviJehCount || 0) * Number(data.suiviJehPrice || 0));
     totalHT += Number(data.globalFraisAnnexes || 0);
     const totalTTC = totalHT * 1.20;
 
-    // 2. Préparation des données pour Supabase
-    const propaleToSave = {
+    return {
       id: data.propaleId,
-      cdp_id: data.cdpSelect !== 'autre' ? Number(data.cdpSelect) : null,
+      cdp_id: data.cdpSelect && data.cdpSelect !== 'autre' ? data.cdpSelect : null,
+      cdp_custom: data.cdpSelect === 'autre' ? (data.cdpCustom || null) : null,
       client_company: data.companyName,
       is_autoentrepreneur: data.isAutoentrepreneur,
       client_civilite: data.clientCivilite,
@@ -366,152 +433,103 @@ export default function ProposalForm() {
       start_date: data.projectStartDate,
       total_ht: totalHT,
       total_ttc: totalTTC,
-      status: 'envoyée'
+      phases: data.phases.map((p: any) => ({
+        name: p.name,
+        objectifs: p.objectifs,
+        methodologie: p.methodologie,
+        contraintes: p.contraintes,
+        duree_semaines: Number(p.dureeSemaines || 1),
+        semaine_debut: Number(p.semaineDebut || 1),
+        intervenants_count: Number(p.intervenantsCount || 1),
+        intervenants_niveau: p.intervenantsNiveau,
+        jeh_count: Number(p.jehCount || p.intervenantsCount || 1),
+        jeh_price: Number(p.jehPrice || 100)
+      }))
     };
+  };
 
-    // 3. Upsert Supabase (Proposals)
-    const { error: propError } = await supabase.from('proposals').upsert(propaleToSave);
-    if (propError) {
-       console.warn("Erreur Supabase (Proposals), enregistrement local :", propError.message);
-    } else {
-       // Si OK, on gère les phases
-       await supabase.from('proposal_phases').delete().eq('proposal_id', data.propaleId);
-       if (data.phases && data.phases.length > 0) {
-         const phasesToSave = data.phases.map((p: any, index: number) => ({
-           proposal_id: data.propaleId,
-           order_index: index,
-           name: p.name,
-           objectifs: p.objectifs,
-           methodologie: p.methodologie,
-           contraintes: p.contraintes,
-           duree_semaines: Number(p.dureeSemaines || 1),
-           intervenants_count: Number(p.intervenantsCount || 1),
-           intervenants_niveau: p.intervenantsNiveau,
-           jeh_count: Number(p.intervenantsCount || p.jehCount || 1),
-           jeh_price: Number(p.jehPrice || 100)
-         }));
-         await supabase.from('proposal_phases').insert(phasesToSave);
-       }
-    }
-
-    // 4. Mettre à jour la base mock en fallback & localStorage
-    const mockPropale = {
-      id: data.propaleId,
-      clientName: data.companyName,
-      isAutoentrepreneur: !!data.isAutoentrepreneur,
-      clientCivilite: data.clientCivilite,
-      clientFirstName: data.clientFirstName,
-      clientLastName: data.clientLastName,
-      clientEmail: data.clientEmail,
-      clientPhone: data.clientPhone,
-      studyType: data.studyTypeSelect !== 'autre' ? data.studyTypeSelect : data.studyTypeCustom,
-      cdpId: data.cdpSelect !== 'autre' ? Number(data.cdpSelect) : null,
-      cdpCustom: data.cdpCustom,
-      contextSituation: data.contextSituation,
-      contextIntervention: data.contextIntervention,
-      contextEnjeu: data.contextEnjeu,
-      cdcObjectifs: data.cdcObjectifs,
-      cdcContraintes: data.cdcContraintes,
-      cdcLivrables: data.cdcLivrables,
-      suiviJehCount: Number(data.suiviJehCount || 0),
-      suiviJehPrice: Number(data.suiviJehPrice || 0),
-      globalFraisAnnexes: Number(data.globalFraisAnnexes || 0),
-      date: data.projectStartDate,
-      totalHT,
-      totalTTC,
-      phases: data.phases,
-      status: 'envoyée'
-    };
-
-    const index = mockSavedPropales.findIndex(p => p.id === data.propaleId);
-    if (index !== -1) mockSavedPropales[index] = mockPropale;
-    else mockSavedPropales.push(mockPropale);
-
-    if (typeof window !== 'undefined') {
-      const savedRaw = localStorage.getItem('befast_saved_proposals');
-      let localSavedList = savedRaw ? JSON.parse(savedRaw) : [];
-      const existingIndex = localSavedList.findIndex((p: any) => p.id === data.propaleId);
-      if (existingIndex !== -1) {
-        localSavedList[existingIndex] = mockPropale;
-      } else {
-        localSavedList.push(mockPropale);
-      }
-      localStorage.setItem('befast_saved_proposals', JSON.stringify(localSavedList));
+  const onSubmit = async (data: any, action: 'save' | 'generate') => {
+    setIsSaving(true);
+    const payload = buildPayload(data);
+    const res = await saveProposal(payload as any);
+    if (res && 'error' in res && res.error) {
+      setIsSaving(false);
+      alert("❌ Erreur d'enregistrement : " + res.error);
+      return;
     }
 
     if (action === 'save') {
-      alert("L'étude a bien été sauvegardée sur le Dashboard !");
+      setIsSaving(false);
       router.push('/test-dashboard-propositions');
-    } else {
-      try {
-        // Résoudre les informations du CDP pour la génération du PPT
-        const cdpInfo: any = {};
-        if (data.cdpSelect === 'autre') {
-          const nameParts = (data.cdpCustom || '').trim().split(/\s+/);
-          cdpInfo.cdp_civilite = 'M.'; // Par défaut pour la saisie manuelle
-          cdpInfo.cdp_first_name = nameParts[0] || 'Chef de Projet';
-          cdpInfo.cdp_last_name = nameParts.slice(1).join(' ') || '';
-          cdpInfo.cdp_initials = (cdpInfo.cdp_first_name.charAt(0) + (cdpInfo.cdp_last_name.charAt(0) || '')).toUpperCase() || 'CP';
-          cdpInfo.cdp_email = `${cdpInfo.cdp_first_name.toLowerCase()}.${cdpInfo.cdp_last_name.toLowerCase()}@ajc-mail.com`;
-          cdpInfo.cdp_phone = '+33 6 00 00 00 00';
-        } else if (data.cdpSelect) {
-          const selectedCdp = personnesDB.find(c => c.id.toString() === data.cdpSelect);
-          if (selectedCdp) {
-            cdpInfo.cdp_civilite = selectedCdp.civilite || 'M.';
-            cdpInfo.cdp_first_name = selectedCdp.firstName;
-            cdpInfo.cdp_last_name = selectedCdp.lastName;
-            cdpInfo.cdp_initials = (selectedCdp.firstName.charAt(0) + (selectedCdp.lastName?.charAt(0) || '')).toUpperCase();
-            cdpInfo.cdp_email = selectedCdp.email;
-            cdpInfo.cdp_phone = '+33 6 12 34 56 78'; // Numéro fictif
-          }
-        }
+      return;
+    }
 
-        const payloadForPpt = {
-          ...propaleToSave,
-          ...cdpInfo,
-          phases: data.phases // S'assurer que les phases sont bien transmises !
-        };
-
-        const response = await fetch('/api/generate-ppt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payloadForPpt)
-        });
-        
-        if (!response.ok) {
-           const error = await response.json();
-           alert("❌ Erreur de génération : " + error.error);
-           return;
+    // Génération du PowerPoint
+    try {
+      const cdpInfo: any = {};
+      if (data.cdpSelect === 'autre') {
+        const nameParts = (data.cdpCustom || '').trim().split(/\s+/);
+        cdpInfo.cdp_civilite = 'M.';
+        cdpInfo.cdp_first_name = nameParts[0] || 'Chef de Projet';
+        cdpInfo.cdp_last_name = nameParts.slice(1).join(' ') || '';
+        cdpInfo.cdp_initials = (cdpInfo.cdp_first_name.charAt(0) + (cdpInfo.cdp_last_name.charAt(0) || '')).toUpperCase() || 'CP';
+        cdpInfo.cdp_email = `${cdpInfo.cdp_first_name.toLowerCase()}.${(cdpInfo.cdp_last_name || '').toLowerCase()}@ajc-mail.com`;
+        cdpInfo.cdp_phone = '';
+      } else if (data.cdpSelect) {
+        const m = members.find(c => c.id === data.cdpSelect);
+        if (m) {
+          cdpInfo.cdp_civilite = 'M.';
+          cdpInfo.cdp_first_name = m.prenom;
+          cdpInfo.cdp_last_name = m.nom;
+          cdpInfo.cdp_initials = ((m.prenom?.charAt(0) || '') + (m.nom?.charAt(0) || '')).toUpperCase();
+          cdpInfo.cdp_email = m.email;
+          cdpInfo.cdp_phone = '';
         }
-        
-        // Téléchargement du fichier PPTX généré
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Proposition_${data.companyName || 'AJC'}.pptx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        a.remove();
-        
-        alert("✅ L'étude a été sauvegardée et le PowerPoint a été téléchargé avec succès !");
-        router.push('/test-dashboard-propositions');
-      } catch (err) {
-        alert("❌ Erreur de réseau ou de génération.");
       }
+
+      const payloadForPpt = {
+        ...payload,
+        ...cdpInfo,
+        phases: payload.phases,
+      };
+
+      const response = await fetch('/api/generate-ppt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadForPpt)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        setIsSaving(false);
+        alert("❌ Erreur de génération : " + error.error);
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Proposition_${data.companyName || 'AJC'}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+
+      setIsSaving(false);
+      router.push('/test-dashboard-propositions');
+    } catch (err) {
+      setIsSaving(false);
+      alert("❌ Erreur de réseau ou de génération.");
     }
   };
 
   const calculateBudget = () => {
     let totalHT = 0;
     watchPhases.forEach(p => {
-      // Calcul du budget basé sur le nombre de JEH de chaque phase
       totalHT += (Number(p.jehCount || 0) * Number(p.jehPrice || 100));
     });
-    // Add Suivi de projet
     totalHT += (Number(watch('suiviJehCount') || 0) * Number(watch('suiviJehPrice') || 0));
-    // Add Frais Annexes
     totalHT += Number(watchGlobalFraisAnnexes || 0);
     const tva = totalHT * 0.20;
     const totalTTC = totalHT + tva;
@@ -519,35 +537,12 @@ export default function ProposalForm() {
   };
   const budget = calculateBudget();
 
-  // CALCUL ECHEANCIER AVEC DEPENDANCES
-  const calculatePhasesDates = () => {
-    const dates = [];
-    const dateMap = new Map(); // map stringified phaseId to Date
-
-    for (let i = 0; i < watchPhases.length; i++) {
-      const phase = watchPhases[i];
-      let startDate;
-      
-      if (phase.startAfterPhaseId === 'project_start' || i === 0) {
-        startDate = new Date(getNextMonday(watchStartDate));
-      } else {
-        const refEndDate = dateMap.get(String(phase.startAfterPhaseId));
-        if (refEndDate) {
-          startDate = new Date(refEndDate);
-        } else {
-          // Fallback au cas où la phase ciblée n'existe pas
-          startDate = new Date(getNextMonday(watchStartDate));
-        }
-      }
-      
-      const endDate = addWeeks(startDate, phase.dureeSemaines || 1);
-      
-      dates.push({ startDate, endDate });
-      dateMap.set(String(phase.phaseId), new Date(endDate));
-    }
-    return dates;
-  };
-  const phasesDates = calculatePhasesDates();
+  // Bornes du Gantt : on grossit automatiquement si une phase déborde
+  const projectMonday = getNextMonday(watchStartDate);
+  const maxWeek = watchPhases.length > 0
+    ? Math.max(...watchPhases.map(p => (p.semaineDebut || 1) + (p.dureeSemaines || 1) - 1))
+    : 0;
+  const ganttWeeks = Math.max(nbWeeks, maxWeek);
   const formatDate = (d: Date) => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
   return (
@@ -559,7 +554,7 @@ export default function ProposalForm() {
           margin: 0;
         }
       `}} />
-      
+
       {/* 1. INFOS GENERALES */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="bg-slate-900 px-6 py-4 border-b border-slate-800">
@@ -571,9 +566,9 @@ export default function ProposalForm() {
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex flex-col sm:flex-row sm:items-center gap-4">
             <label className="text-sm font-semibold text-blue-900 min-w-max">ID de Proposition :</label>
             <input type="text" value={watch('propaleId')} onChange={handleIdChange}
-              className="w-full sm:max-w-sm rounded-md border border-blue-200 px-3 py-2 bg-white text-blue-900 font-mono focus:ring-2 focus:ring-blue-500 outline-none placeholder:italic placeholder:text-slate-400" 
+              className="w-full sm:max-w-sm rounded-md border border-blue-200 px-3 py-2 bg-white text-blue-900 font-mono focus:ring-2 focus:ring-blue-500 outline-none placeholder:italic placeholder:text-slate-400"
               placeholder="Modifiable manuellement..." />
-            {isIdEdited && <span className="text-xs text-blue-700">✍️ Modifié manuellement ou chargé</span>}
+            {isIdEdited && <span className="text-xs text-blue-700">Modifié manuellement ou chargé</span>}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -607,9 +602,9 @@ export default function ProposalForm() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Chef de Projet (CDP)</label>
                 <select {...register('cdpSelect')} className="w-full rounded-md border border-slate-300 px-3 py-2 mb-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                  <option value="">Sélectionner un CDP...</option>
-                  {personnesDB.filter(p => p.role === 'CDP').map(cdp => (
-                    <option key={cdp.id} value={cdp.id}>{cdp.firstName} {cdp.lastName}</option>
+                  <option value="">Sélectionner un membre AJC...</option>
+                  {members.map(m => (
+                    <option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>
                   ))}
                   <option value="autre">Autre (Saisir manuellement)...</option>
                 </select>
@@ -670,12 +665,12 @@ export default function ProposalForm() {
             <span className="text-sm font-medium text-blue-900 block mb-3">Ajouter des phases à la proposition :</span>
             <div className="flex flex-wrap gap-2">
               {phasesDB.map(phase => (
-                <button type="button" key={phase.id} onClick={() => handleAddPhase(phase.id)} 
+                <button type="button" key={phase.id} onClick={() => handleAddPhase(phase.id)}
                   className="bg-white border border-blue-200 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-1">
                   <Plus size={14} /> {phase.name}
                 </button>
               ))}
-              <button type="button" onClick={() => handleAddPhase('custom')} 
+              <button type="button" onClick={() => handleAddPhase('custom')}
                 className="bg-slate-800 text-white px-3 py-1.5 rounded-full text-sm font-medium hover:bg-black transition-colors flex items-center gap-1 ml-auto">
                 <Plus size={14} /> Autre (Nouvelle phase)
               </button>
@@ -692,21 +687,10 @@ export default function ProposalForm() {
                     </div>
                     <input type="text" {...register(`phases.${index}.name` as const)} className="font-bold text-lg text-slate-800 w-full border-none bg-transparent focus:ring-0 p-0" placeholder="Nom de la phase" />
                   </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
-                      <span className="text-xs font-semibold text-slate-500 uppercase">Débute après :</span>
-                      <select {...register(`phases.${index}.startAfterPhaseId` as const)} className="text-sm bg-transparent font-medium text-slate-700 outline-none max-w-[200px] truncate">
-                        <option value="project_start">Le lancement du projet</option>
-                        {watchPhases.slice(0, index).map((p, i) => (
-                          <option key={p.phaseId} value={p.phaseId}>La phase {i + 1}. {p.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <button type="button" onClick={() => removePhase(index)} className="text-slate-400 hover:text-red-500 transition-colors bg-slate-50 p-2 rounded-md hover:bg-red-50">
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
+
+                  <button type="button" onClick={() => removePhase(index)} className="text-slate-400 hover:text-red-500 transition-colors bg-slate-50 p-2 rounded-md hover:bg-red-50 shrink-0">
+                    <Trash2 size={18} />
+                  </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
@@ -717,8 +701,8 @@ export default function ProposalForm() {
                     <div><label className="block text-sm font-semibold text-slate-700 mb-1">Contraintes spécifiques</label><textarea {...register(`phases.${index}.contraintes` as const)} className="w-full h-24 rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Limite d'engagement..." /></div>
                   </div>
                 </div>
-                
-                {/* WIDGET DE DURÉE MINIATURISÉ EN BAS À DROITE */}
+
+                {/* WIDGET DE DURÉE EN BAS À DROITE */}
                 <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm text-xs">
                   <span className="font-semibold text-slate-500 uppercase flex items-center gap-1">
                     <Calendar size={12} className="text-blue-600"/> Durée :
@@ -761,21 +745,20 @@ export default function ProposalForm() {
                 <div className="flex gap-4 w-full sm:w-2/3 items-end">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase">Nombre</label>
-                    <input 
-                      type="number" 
-                      step="1" 
-                      min="0" 
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
                       value={watchPhases[index]?.intervenantsCount || 0}
                       onChange={(e) => {
                         const val = parseInt(e.target.value) || 0;
                         const currentPhase = watchPhases[index];
-                        // Si le nombre de JEH est égal au nombre d'intervenants actuel, on synchronise
                         if (currentPhase.jehCount === currentPhase.intervenantsCount) {
                           setValue(`phases.${index}.jehCount`, val);
                         }
                         setValue(`phases.${index}.intervenantsCount`, val);
                       }}
-                      className="w-24 rounded border border-slate-300 px-3 py-2 outline-none focus:border-blue-500 bg-white" 
+                      className="w-24 rounded border border-slate-300 px-3 py-2 outline-none focus:border-blue-500 bg-white"
                     />
                   </div>
                   <div>
@@ -817,122 +800,129 @@ export default function ProposalForm() {
         </div>
       </div>
 
-      {/* 6. ÉCHÉANCIER & BUDGET */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="bg-slate-900 px-6 py-4 border-b border-slate-800">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Calendar className="text-blue-400" /> 6. Échéancier
-            </h2>
-          </div>
-          <div className="p-6">
-            <div className="mb-6">
-              <label className="block text-sm font-bold text-slate-800 mb-2">Date de début de l'étude</label>
-              <input 
-                type="date" 
-                value={watchStartDate}
-                onChange={handleStartDateChange}
-                className="w-full max-w-xs rounded-md border border-slate-300 px-4 py-2 font-medium focus:ring-2 focus:ring-blue-500 outline-none bg-white" 
-              />
-            </div>
-            <div className="space-y-3">
-              {phaseFields.map((field, index) => {
-                const dates = phasesDates[index];
-                if (!dates) return null;
-                return (
-                  <div key={field.id} className="flex justify-between items-center p-3 bg-slate-50 rounded border border-slate-200 relative overflow-hidden group">
-                    <span className="font-bold text-slate-700 text-sm">
-                      {index + 1}. {watchPhases[index]?.name}
-                    </span>
-                    <span className="text-xs font-mono text-slate-500 bg-white px-2 py-1 rounded border border-slate-200 shadow-sm">
-                      {formatDate(dates.startDate)} → {formatDate(dates.endDate)}
-                    </span>
-                  </div>
-                );
-              })}
-              {phaseFields.length === 0 && <p className="text-slate-500 text-sm italic">Ajoutez des phases pour générer l'échéancier.</p>}
-            </div>
+      {/* 6. ÉCHÉANCIER (GANTT) */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-slate-900 px-6 py-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <Calendar className="text-blue-400" /> 6. Échéancier (Gantt)
+          </h2>
+          <div className="flex items-center gap-2 text-sm">
+            <label className="text-slate-300">Durée affichée :</label>
+            <select
+              value={nbWeeks}
+              onChange={(e) => setNbWeeks(Number(e.target.value))}
+              className="rounded-md border border-slate-600 bg-slate-800 text-white px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {[4, 6, 8, 10, 12, 16, 20, 24, 30, 36, 52].map(w => (
+                <option key={w} value={w}>{w} semaines</option>
+              ))}
+            </select>
           </div>
         </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="bg-slate-900 px-6 py-4 border-b border-slate-800">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Calculator className="text-blue-400" /> 7. Budget
-            </h2>
+        <div className="p-6">
+          <div className="mb-6">
+            <label className="block text-sm font-bold text-slate-800 mb-2">Date de début de l'étude</label>
+            <input
+              type="date"
+              value={watchStartDate}
+              onChange={handleStartDateChange}
+              className="w-full max-w-xs rounded-md border border-slate-300 px-4 py-2 font-medium focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+            />
           </div>
-          <div className="p-6 space-y-6">
-            <div className="space-y-3">
-              
-              {/* Ligne automatique Suivi de projet */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-blue-50 rounded border border-blue-200 text-sm relative overflow-hidden">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
-                <span className="font-bold text-blue-900 w-full sm:w-1/3 truncate pl-2">Suivi de projet (CDP)</span>
-                <div className="flex gap-2 w-full sm:w-2/3 items-center">
-                  <Controller
-                    name="suiviJehCount"
-                    control={control}
-                    render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
-                  />
-                  <Controller
-                    name="suiviJehPrice"
-                    control={control}
-                    render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
-                  />
-                  <span className="font-bold text-blue-900 ml-auto my-auto">
-                    {(Number(watch('suiviJehCount') || 0) * Number(watch('suiviJehPrice') || 0)).toLocaleString('fr-FR')} €
-                  </span>
-                </div>
-              </div>
-
-              {/* Lignes des phases */}
-              {phaseFields.map((field, index) => {
-                const phase = watchPhases[index];
-                const totalPhase = (Number(phase?.jehCount || 0) * Number(phase?.jehPrice || 0));
-                return (
-                  <div key={field.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-slate-50 rounded border border-slate-200 text-sm">
-                    <span className="font-bold text-slate-700 w-full sm:w-1/3 truncate">{index + 1}. {phase?.name}</span>
-                    <div className="flex gap-2 w-full sm:w-2/3">
-                      <Controller
-                        name={`phases.${index}.jehCount` as const}
-                        control={control}
-                        render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
-                      />
-                      <Controller
-                        name={`phases.${index}.jehPrice` as const}
-                        control={control}
-                        render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={80} className="w-[120px]" />}
-                      />
-                      <span className="font-bold text-slate-800 ml-auto my-auto">{totalPhase.toLocaleString('fr-FR')} €</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center justify-between border-t border-slate-200 pt-4">
-              <label className="font-bold text-slate-700 text-sm">Frais Annexes Globaux (€)</label>
-              <Controller
-                name="globalFraisAnnexes"
-                control={control}
-                render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
+          {phaseFields.length === 0 ? (
+            <p className="text-slate-500 text-sm italic">Ajoutez des phases pour générer l'échéancier.</p>
+          ) : (
+            <>
+              <p className="text-xs text-slate-500 mb-4">Glissez une barre pour la déplacer, ou tirez son bord droit pour ajuster sa durée. Les dates et le budget restent connectés aux phases.</p>
+              <GanttChart
+                phases={watchPhases}
+                projectMonday={projectMonday}
+                nbWeeks={ganttWeeks}
+                onChange={handleGanttChange}
+                formatDate={formatDate}
               />
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* 7. BUDGET */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-slate-900 px-6 py-4 border-b border-slate-800">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <Calculator className="text-blue-400" /> 7. Budget
+          </h2>
+        </div>
+        <div className="p-6 space-y-6">
+          <div className="space-y-3">
+
+            {/* Ligne automatique Suivi de projet */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-blue-50 rounded border border-blue-200 text-sm relative overflow-hidden">
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
+              <span className="font-bold text-blue-900 w-full sm:w-1/3 truncate pl-2">Suivi de projet (CDP)</span>
+              <div className="flex gap-2 w-full sm:w-2/3 items-center">
+                <Controller
+                  name="suiviJehCount"
+                  control={control}
+                  render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
+                />
+                <Controller
+                  name="suiviJehPrice"
+                  control={control}
+                  render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
+                />
+                <span className="font-bold text-blue-900 ml-auto my-auto">
+                  {(Number(watch('suiviJehCount') || 0) * Number(watch('suiviJehPrice') || 0)).toLocaleString('fr-FR')} €
+                </span>
+              </div>
             </div>
 
-            <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 space-y-2">
-              <div className="flex justify-between items-center text-slate-300 font-medium">
-                <span>Total HT</span>
-                <span>{budget.totalHT.toLocaleString('fr-FR')} €</span>
-              </div>
-              <div className="flex justify-between items-center text-slate-300 font-medium">
-                <span>TVA (20%)</span>
-                <span>{budget.tva.toLocaleString('fr-FR')} €</span>
-              </div>
-              <div className="border-t border-slate-700 pt-2 flex justify-between items-center font-black text-xl text-green-400">
-                <span>Total TTC</span>
-                <span>{budget.totalTTC.toLocaleString('fr-FR')} €</span>
-              </div>
+            {/* Lignes des phases */}
+            {phaseFields.map((field, index) => {
+              const phase = watchPhases[index];
+              const totalPhase = (Number(phase?.jehCount || 0) * Number(phase?.jehPrice || 0));
+              return (
+                <div key={field.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-slate-50 rounded border border-slate-200 text-sm">
+                  <span className="font-bold text-slate-700 w-full sm:w-1/3 truncate">{index + 1}. {phase?.name}</span>
+                  <div className="flex gap-2 w-full sm:w-2/3">
+                    <Controller
+                      name={`phases.${index}.jehCount` as const}
+                      control={control}
+                      render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
+                    />
+                    <Controller
+                      name={`phases.${index}.jehPrice` as const}
+                      control={control}
+                      render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={80} className="w-[120px]" />}
+                    />
+                    <span className="font-bold text-slate-800 ml-auto my-auto">{totalPhase.toLocaleString('fr-FR')} €</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between border-t border-slate-200 pt-4">
+            <label className="font-bold text-slate-700 text-sm">Frais Annexes Globaux (€)</label>
+            <Controller
+              name="globalFraisAnnexes"
+              control={control}
+              render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
+            />
+          </div>
+
+          <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 space-y-2">
+            <div className="flex justify-between items-center text-slate-300 font-medium">
+              <span>Total HT</span>
+              <span>{budget.totalHT.toLocaleString('fr-FR')} €</span>
+            </div>
+            <div className="flex justify-between items-center text-slate-300 font-medium">
+              <span>TVA (20%)</span>
+              <span>{budget.tva.toLocaleString('fr-FR')} €</span>
+            </div>
+            <div className="border-t border-slate-700 pt-2 flex justify-between items-center font-black text-xl text-green-400">
+              <span>Total TTC</span>
+              <span>{budget.totalTTC.toLocaleString('fr-FR')} €</span>
             </div>
           </div>
         </div>
@@ -944,17 +934,19 @@ export default function ProposalForm() {
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>Modifications prêtes à être enregistrées</span>
         </div>
-        <button 
-          type="button" 
-          onClick={() => handleSubmit((data) => onSubmit(data, 'save'))()} 
-          className="w-full sm:w-auto bg-[#00236f] hover:bg-[#00174a] text-white px-8 py-3 rounded-xl font-bold transition-all flex justify-center items-center gap-2 shadow-sm hover:shadow"
+        <button
+          type="button"
+          disabled={isSaving}
+          onClick={() => handleSubmit((data) => onSubmit(data, 'save'))()}
+          className="w-full sm:w-auto bg-[#00236f] hover:bg-[#00174a] disabled:opacity-60 text-white px-8 py-3 rounded-xl font-bold transition-all flex justify-center items-center gap-2 shadow-sm hover:shadow"
         >
           <Save size={18} /> Sauvegarder & Fermer
         </button>
-        <button 
-          type="button" 
-          onClick={() => handleSubmit((data) => onSubmit(data, 'generate'))()} 
-          className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold transition-all flex justify-center items-center gap-2 shadow-sm hover:shadow"
+        <button
+          type="button"
+          disabled={isSaving}
+          onClick={() => handleSubmit((data) => onSubmit(data, 'generate'))()}
+          className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-8 py-3 rounded-xl font-bold transition-all flex justify-center items-center gap-2 shadow-sm hover:shadow"
         >
           <Download size={18} /> Générer PowerPoint
         </button>
