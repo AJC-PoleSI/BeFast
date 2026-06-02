@@ -3,7 +3,7 @@ import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import fs from 'fs';
 import path from 'path';
-import personnesDB from '@/local_db/personnes.json';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 /**
  * PowerPoint stocke parfois les balises {TAG} en plusieurs fragments XML séparés.
@@ -312,16 +312,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Corps de requête invalide.' }, { status: 400 });
   }
 
-  // 1. Résolution globale du CDP et de sa civilité (genre)
+  // 1. Résolution globale du CDP et de sa civilité (genre) depuis Supabase (table profiles)
   if (data.cdp_id && (!data.cdp_first_name || !data.cdp_last_name)) {
-    const cdp = personnesDB.find((c: any) => c.id === Number(data.cdp_id));
-    if (cdp) {
-      data.cdp_civilite = cdp.civilite || 'M.';
-      data.cdp_first_name = cdp.firstName;
-      data.cdp_last_name = cdp.lastName;
-      data.cdp_initials = (cdp.firstName.charAt(0) + (cdp.lastName?.charAt(0) || '')).toUpperCase();
-      data.cdp_email = cdp.email;
-      data.cdp_phone = '+33 6 12 34 56 78'; // Numéro fictif
+    try {
+      const admin = createAdminClient();
+      const { data: cdp } = await admin
+        .from('personnes')
+        .select('prenom, nom, email, portable')
+        .eq('id', data.cdp_id)
+        .single();
+      if (cdp) {
+        data.cdp_civilite = data.cdp_civilite || 'M.'; // personnes ne stocke pas la civilité
+        data.cdp_first_name = cdp.prenom;
+        data.cdp_last_name = cdp.nom;
+        data.cdp_initials = ((cdp.prenom?.charAt(0) || '') + (cdp.nom?.charAt(0) || '')).toUpperCase();
+        data.cdp_email = cdp.email;
+        data.cdp_phone = cdp.portable || '+33 6 12 34 56 78';
+      }
+    } catch (e) {
+      console.warn('[PPT] Résolution du CDP depuis Supabase impossible :', (e as any)?.message);
     }
   }
 

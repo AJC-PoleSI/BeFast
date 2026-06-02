@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { mockSavedPropales } from '../data/mockDB';
 import { createClient } from '@/lib/supabase/client';
+import { listPropales, loadCdps, loadPropale, updatePropaleStatut, deletePropale } from '../data/propaleRepo';
 import { Trash2, Edit, FileCheck, Search, Filter, Shield, List, Calendar as CalendarIcon, Clock, BarChart3, Copy, Download, Plus } from 'lucide-react';
 
 // --- UTILS POUR L'ÉCHÉANCIER ---
@@ -27,56 +27,24 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [displayMode, setDisplayMode] = useState<'liste' | 'calendrier'>('liste');
+  const [cdps, setCdps] = useState<any[]>([]);
   const supabase = createClient();
 
   useEffect(() => {
     fetchPropales();
+    loadCdps(supabase).then(data => {
+      setCdps(data.map(c => ({ id: c.id, initials: ((c.prenom?.charAt(0) || '') + (c.nom?.charAt(0) || '')).toUpperCase(), prenom: c.prenom, nom: c.nom })));
+    });
   }, []);
 
   const fetchPropales = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const { data, error } = await supabase.from('proposals').select('*, proposal_phases(*)');
-      
-      let finalPropales = [];
-      if (data && data.length > 0) {
-        finalPropales = data.map((p: any) => ({
-          id: p.id,
-          cdpId: p.cdp_id,
-          clientName: p.client_company,
-          studyType: p.study_type,
-          date: p.start_date,
-          totalHT: p.total_ht,
-          totalTTC: p.total_ttc,
-          status: p.status,
-          phases: p.proposal_phases ? p.proposal_phases.map((ph: any) => ({
-             ...ph,
-             name: ph.name,
-             dureeSemaines: ph.duree_semaines
-          })) : []
-        }));
-      } else {
-        // Fallback sur localStorage
-        if (typeof window !== 'undefined') {
-          const savedRaw = localStorage.getItem('befast_saved_proposals');
-          if (savedRaw) {
-            finalPropales = JSON.parse(savedRaw);
-          }
-        }
-      }
-      
-      // Si toujours vide, on charge les mocks en mémoire pour la démo
-      setPropales(finalPropales.length > 0 ? finalPropales : mockSavedPropales);
+      const data = await listPropales(supabase);
+      setPropales(data.map(p => ({ ...p, cdpInitials: p.cdpName ? p.cdpName.split(' ').map((s: string) => s.charAt(0)).join('').toUpperCase() : '' })));
     } catch (err) {
       console.error(err);
-      let localPropales = [];
-      if (typeof window !== 'undefined') {
-        const savedRaw = localStorage.getItem('befast_saved_proposals');
-        if (savedRaw) {
-          localPropales = JSON.parse(savedRaw);
-        }
-      }
-      setPropales(localPropales.length > 0 ? localPropales : mockSavedPropales);
+      setPropales([]);
     }
     setIsLoading(false);
   };
@@ -93,21 +61,9 @@ export default function Dashboard() {
 
   const handleDelete = async (id: string) => {
     if(confirm(`Voulez-vous vraiment supprimer la proposition ${id} ?`)) {
-      // Tente de supprimer dans Supabase
       try {
-        await supabase.from('proposals').delete().eq('id', id);
+        await deletePropale(supabase, id);
       } catch (e) {}
-      
-      // Supprimer dans localStorage
-      if (typeof window !== 'undefined') {
-        const savedRaw = localStorage.getItem('befast_saved_proposals');
-        if (savedRaw) {
-          const list = JSON.parse(savedRaw);
-          const filtered = list.filter((p: any) => p.id !== id);
-          localStorage.setItem('befast_saved_proposals', JSON.stringify(filtered));
-        }
-      }
-      
       setPropales(propales.filter(p => p.id !== id));
     }
   };
@@ -140,35 +96,37 @@ export default function Dashboard() {
   };
 
   const handleGeneratePpt = async (id: string) => {
-    const propale = propales.find(p => p.id === id);
-    if (!propale) return;
+    // On recharge la proposition complète (le format liste du dashboard est partiel)
+    const full = await loadPropale(supabase, id);
+    if (!full) { alert('❌ Proposition introuvable.'); return; }
 
-    // On convertit le format dashboard vers le format attendu par l'API
+    // On convertit le format formulaire vers le format attendu par l'API
     const payload = {
-      id: propale.id,
-      client_company: propale.clientName,
-      is_autoentrepreneur: !!propale.isAutoentrepreneur,
-      client_civilite: propale.clientCivilite,
-      client_first_name: propale.clientFirstName,
-      client_last_name: propale.clientLastName,
-      client_email: propale.clientEmail,
-      client_phone: propale.clientPhone,
-      study_type: propale.studyType,
-      cdp_id: propale.cdpId,
-      context_situation: propale.contextSituation,
-      context_intervention: propale.contextIntervention,
-      context_enjeu: propale.contextEnjeu,
-      cdc_objectifs: propale.cdcObjectifs,
-      cdc_contraintes: propale.cdcContraintes,
-      cdc_livrables: propale.cdcLivrables,
-      suivi_jeh_count: propale.suiviJehCount,
-      suivi_jeh_price: propale.suiviJehPrice,
-      global_frais_annexes: propale.globalFraisAnnexes,
-      start_date: propale.date,
-      total_ht: propale.totalHT,
-      total_ttc: propale.totalTTC,
-      phases: propale.phases || []
+      id: full.id,
+      client_company: full.clientName,
+      is_autoentrepreneur: !!full.isAutoentrepreneur,
+      client_civilite: full.clientCivilite,
+      client_first_name: full.clientFirstName,
+      client_last_name: full.clientLastName,
+      client_email: full.clientEmail,
+      client_phone: full.clientPhone,
+      study_type: full.studyType,
+      cdp_id: full.cdpId,
+      context_situation: full.contextSituation,
+      context_intervention: full.contextIntervention,
+      context_enjeu: full.contextEnjeu,
+      cdc_objectifs: full.cdcObjectifs,
+      cdc_contraintes: full.cdcContraintes,
+      cdc_livrables: full.cdcLivrables,
+      suivi_jeh_count: full.suiviJehCount,
+      suivi_jeh_price: full.suiviJehPrice,
+      global_frais_annexes: full.globalFraisAnnexes,
+      start_date: full.date,
+      total_ht: full.totalHT,
+      total_ttc: full.totalTTC,
+      phases: full.phases || []
     };
+    const propale = { clientName: full.clientName };
 
     try {
       const response = await fetch('/api/generate-ppt', {
@@ -197,14 +155,14 @@ export default function Dashboard() {
 
   const handleTransformCE = async (id: string) => {
     alert(`La propale ${id} va passer en statut Validée/CE Éditée.\nOuverture du menu pour préciser les caractéristiques de la Convention d'Étude...`);
-    await supabase.from('proposals').update({ status: 'CE éditée' }).eq('id', id);
+    await updatePropaleStatut(supabase, id, 'CE éditée');
     setPropales(propales.map(p => p.id === id ? { ...p, status: 'CE éditée' } : p));
   };
 
   // Filtrage par Rôle
-  let filteredPropales = viewAs === 'admin' 
-    ? propales 
-    : propales.filter(p => p.id.startsWith(viewAs));
+  let filteredPropales = viewAs === 'admin'
+    ? propales
+    : propales.filter(p => p.cdpInitials === viewAs || p.id.startsWith(viewAs));
 
   // Filtrage par Texte
   if (searchQuery) {
@@ -296,12 +254,8 @@ export default function Dashboard() {
           className="bg-white border border-amber-200 text-amber-900 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none font-medium shadow-sm transition-all"
         >
           <option value="admin">Administrateur (Toutes les propales)</option>
-          {[
-            { id: 1, initials: "JDU", firstName: "Jean", lastName: "Dupont" },
-            { id: 2, initials: "ALM", firstName: "Alice", lastName: "Martin" },
-            { id: 3, initials: "JQD", firstName: "Jacques", lastName: "Durand" }
-          ].map(cdp => (
-            <option key={cdp.id} value={cdp.initials}>{cdp.firstName} {cdp.lastName} ({cdp.initials})</option>
+          {cdps.map(cdp => (
+            <option key={cdp.id} value={cdp.initials}>{cdp.prenom} {cdp.nom} ({cdp.initials})</option>
           ))}
         </select>
       </div>

@@ -4,12 +4,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { Calendar, User, Briefcase, Plus, Trash2, FileText, Settings, Download, ArrowLeft, ArrowRight, Eye, Users, Calculator, FileSignature, Save } from 'lucide-react';
-import { studyTypes, mockSavedPropales } from '../data/mockDB';
-import personnesDB from '../../local_db/personnes.json';
-import clientsDB from '../../local_db/clients.json';
-import etudesDB from '../../local_db/etudes.json';
-import phasesDB from '../../local_db/phases.json';
+import { studyTypes } from '../data/mockDB';
 import { createClient } from '@/lib/supabase/client';
+import { loadCdps, loadCatalogPhases, loadClients, savePropale, loadPropale, type Cdp, type PhaseType, type Client } from '../data/propaleRepo';
+
+// Initiales d'un CDP (personne) pour la génération de l'ID de proposition
+function cdpInitials(c: { prenom?: string; nom?: string }) {
+  return ((c.prenom?.charAt(0) || '') + (c.nom?.charAt(0) || '')).toUpperCase();
+}
 
 // --- UTILS POUR GÉNÉRER L'ID ---
 function generatePropaleId(initials: string) {
@@ -94,6 +96,7 @@ export default function ProposalForm() {
       propaleId: '',
       cdpSelect: '',
       cdpCustom: '',
+      clientId: '',
       companyName: '',
       isAutoentrepreneur: false,
       clientCivilite: 'M.',
@@ -143,6 +146,35 @@ export default function ProposalForm() {
 
   const supabase = createClient();
 
+  // RÉFÉRENTIELS chargés depuis Supabase (remplacent les anciens JSON locaux)
+  const [cdps, setCdps] = useState<Cdp[]>([]);
+  const [phaseCatalog, setPhaseCatalog] = useState<PhaseType[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+
+  useEffect(() => {
+    Promise.all([loadCdps(supabase), loadCatalogPhases(supabase), loadClients(supabase)]).then(([cdpData, phaseData, clientData]) => {
+      setCdps(cdpData);
+      setPhaseCatalog(phaseData);
+      setClients(clientData);
+    });
+  }, []);
+
+  // Rattachement client : si le nom saisi correspond à un client connu, on le lie et pré-remplit le contact.
+  const handleCompanyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nom = e.target.value;
+    setValue('companyName', nom);
+    const match = clients.find(c => c.nom.toLowerCase() === nom.trim().toLowerCase());
+    setValue('clientId', match ? match.id : '');
+    if (match) {
+      setValue('isAutoentrepreneur', !!match.is_autoentrepreneur);
+      if (match.contact_civilite) setValue('clientCivilite', match.contact_civilite);
+      if (match.contact_prenom) setValue('clientFirstName', match.contact_prenom);
+      if (match.contact_nom) setValue('clientLastName', match.contact_nom);
+      if (match.contact_email) setValue('clientEmail', match.contact_email);
+      if (match.contact_phone) setValue('clientPhone', match.contact_phone);
+    }
+  };
+
   // LOAD FROM URL
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -151,67 +183,13 @@ export default function ProposalForm() {
     if (!id) return;
 
     const fetchPropale = async () => {
-      let propale: any = null;
-
-      // Fallback local: chercher dans localStorage
-      if (typeof window !== 'undefined') {
-        const savedRaw = localStorage.getItem('befast_saved_proposals');
-        if (savedRaw) {
-          const list = JSON.parse(savedRaw);
-          propale = list.find((p: any) => p.id === id);
-        }
-      }
-
-      // Si non trouvé en local, chercher dans le mock en mémoire
-      if (!propale) {
-        propale = mockSavedPropales.find(p => p.id === id);
-      }
-
-      // Tentative de lecture depuis Supabase
-      try {
-        const { data } = await supabase.from('proposals').select('*, proposal_phases(*)').eq('id', id).single();
-        if (data) {
-          propale = {
-            id: data.id,
-            clientName: data.client_company,
-            isAutoentrepreneur: data.is_autoentrepreneur,
-            clientCivilite: data.client_civilite,
-            clientFirstName: data.client_first_name,
-            clientLastName: data.client_last_name,
-            clientEmail: data.client_email,
-            clientPhone: data.client_phone,
-            studyType: data.study_type,
-            cdpId: data.cdp_id,
-            contextSituation: data.context_situation,
-            contextIntervention: data.context_intervention,
-            contextEnjeu: data.context_enjeu,
-            cdcObjectifs: data.cdc_objectifs,
-            cdcContraintes: data.cdc_contraintes,
-            cdcLivrables: data.cdc_livrables,
-            suiviJehCount: data.suivi_jeh_count,
-            suiviJehPrice: data.suivi_jeh_price,
-            globalFraisAnnexes: data.global_frais_annexes,
-            phases: data.proposal_phases ? data.proposal_phases.map((ph: any) => ({
-              ...ph,
-              name: ph.name,
-              dureeSemaines: ph.duree_semaines,
-              jehCount: ph.jeh_count,
-              jehPrice: ph.jeh_price,
-              intervenantsCount: ph.intervenants_count,
-              intervenantsNiveau: ph.intervenants_niveau,
-              startAfterPhaseId: ph.order_index === 0 ? 'project_start' : (data.proposal_phases[ph.order_index - 1]?.id || 'project_start')
-            })) : []
-          };
-        }
-      } catch (e) {
-        console.warn("Supabase injoignable, utilisation des données locales persistées.");
-      }
-
+      const propale = await loadPropale(supabase, id);
       if (!propale) return;
 
       setIsIdEdited(true);
       isIdEditedRef.current = true;
       setValue('propaleId', propale.id);
+      setValue('clientId', propale.clientId || '');
       setValue('companyName', propale.clientName || '');
       setValue('isAutoentrepreneur', !!propale.isAutoentrepreneur);
       setValue('cdpSelect', propale.cdpId ? String(propale.cdpId) : '');
@@ -232,6 +210,8 @@ export default function ProposalForm() {
       setValue('cdcLivrables', propale.cdcLivrables || '');
       setValue('suiviJehCount', propale.suiviJehCount !== undefined ? propale.suiviJehCount : 1);
       setValue('suiviJehPrice', propale.suiviJehPrice !== undefined ? propale.suiviJehPrice : 200);
+      setValue('globalFraisAnnexes', propale.globalFraisAnnexes !== undefined ? propale.globalFraisAnnexes : 0);
+      if (propale.date) setValue('projectStartDate', propale.date);
 
       if (propale.phases && propale.phases.length > 0) {
         removePhase();
@@ -264,13 +244,13 @@ export default function ProposalForm() {
     if (watchCdpSelect === 'autre' && watchCdpCustom) {
       initials = watchCdpCustom.substring(0, 3).toUpperCase();
     } else if (watchCdpSelect && watchCdpSelect !== 'autre') {
-      const selectedCdp = personnesDB.find(c => c.id.toString() === watchCdpSelect);
-      if (selectedCdp && selectedCdp.firstName) {
-        initials = (selectedCdp.firstName.charAt(0) + (selectedCdp.lastName?.charAt(0) || '')).toUpperCase();
+      const selectedCdp = cdps.find(c => c.id === watchCdpSelect);
+      if (selectedCdp) {
+        initials = cdpInitials(selectedCdp) || 'XXX';
       }
     }
     setValue('propaleId', generatePropaleId(initials));
-  }, [watchCdpSelect, watchCdpCustom, isIdEdited, setValue]);
+  }, [watchCdpSelect, watchCdpCustom, isIdEdited, setValue, cdps]);
 
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue('propaleId', e.target.value);
@@ -315,19 +295,19 @@ export default function ProposalForm() {
         ...baseFields
       });
     } else {
-      const phaseData = phasesDB.find(p => p.id === phaseId);
+      const phaseData = phaseCatalog.find(p => p.id === phaseId);
       if (phaseData) {
         append({
           phaseId: phaseData.id + Date.now(),
           name: phaseData.name,
-          objectifs: phaseData.objectifs,
-          methodologie: phaseData.methodologie,
+          objectifs: phaseData.objectifs || "",
+          methodologie: phaseData.methodologie || "",
           contraintes: phaseData.contraintes || "",
-          dureeSemaines: phaseData.dureeSemaines || 2,
-          intervenantsCount: phaseData.intervenantsCount || 3,
+          dureeSemaines: phaseData.duree_semaines || 2,
+          intervenantsCount: phaseData.intervenants_count || 3,
           intervenantsNiveau: 'L3',
-          jehCount: phaseData.intervenantsCount || 3,
-          jehPrice: phaseData.jehPrice || 100,
+          jehCount: phaseData.intervenants_count || 3,
+          jehPrice: phaseData.jeh_price || 100,
           startAfterPhaseId: baseFields.startAfterPhaseId
         });
       }
@@ -335,17 +315,23 @@ export default function ProposalForm() {
   };
 
   const onSubmit = async (data: any, action: 'save' | 'generate') => {
-    // 1. Calcul du budget en direct pour la sauvegarde
+    // 1. Sauvegarde unifiée : etude (statut prospect) + etude_propale + echeancier_blocs
+    const etudeId = await savePropale(supabase, data);
+    if (!etudeId) {
+      alert("❌ La sauvegarde a échoué. Vérifiez votre connexion à la base.");
+      return;
+    }
+
+    // 2. Construction du payload pour la génération PowerPoint
     let totalHT = 0;
     data.phases.forEach((p: any) => { totalHT += (Number(p.jehCount || 0) * Number(p.jehPrice || 0)); });
     totalHT += (Number(data.suiviJehCount || 0) * Number(data.suiviJehPrice || 0));
     totalHT += Number(data.globalFraisAnnexes || 0);
     const totalTTC = totalHT * 1.20;
 
-    // 2. Préparation des données pour Supabase
     const propaleToSave = {
       id: data.propaleId,
-      cdp_id: data.cdpSelect !== 'autre' ? Number(data.cdpSelect) : null,
+      cdp_id: data.cdpSelect && data.cdpSelect !== 'autre' ? data.cdpSelect : null,
       client_company: data.companyName,
       is_autoentrepreneur: data.isAutoentrepreneur,
       client_civilite: data.clientCivilite,
@@ -366,78 +352,7 @@ export default function ProposalForm() {
       start_date: data.projectStartDate,
       total_ht: totalHT,
       total_ttc: totalTTC,
-      status: 'envoyée'
     };
-
-    // 3. Upsert Supabase (Proposals)
-    const { error: propError } = await supabase.from('proposals').upsert(propaleToSave);
-    if (propError) {
-       console.warn("Erreur Supabase (Proposals), enregistrement local :", propError.message);
-    } else {
-       // Si OK, on gère les phases
-       await supabase.from('proposal_phases').delete().eq('proposal_id', data.propaleId);
-       if (data.phases && data.phases.length > 0) {
-         const phasesToSave = data.phases.map((p: any, index: number) => ({
-           proposal_id: data.propaleId,
-           order_index: index,
-           name: p.name,
-           objectifs: p.objectifs,
-           methodologie: p.methodologie,
-           contraintes: p.contraintes,
-           duree_semaines: Number(p.dureeSemaines || 1),
-           intervenants_count: Number(p.intervenantsCount || 1),
-           intervenants_niveau: p.intervenantsNiveau,
-           jeh_count: Number(p.intervenantsCount || p.jehCount || 1),
-           jeh_price: Number(p.jehPrice || 100)
-         }));
-         await supabase.from('proposal_phases').insert(phasesToSave);
-       }
-    }
-
-    // 4. Mettre à jour la base mock en fallback & localStorage
-    const mockPropale = {
-      id: data.propaleId,
-      clientName: data.companyName,
-      isAutoentrepreneur: !!data.isAutoentrepreneur,
-      clientCivilite: data.clientCivilite,
-      clientFirstName: data.clientFirstName,
-      clientLastName: data.clientLastName,
-      clientEmail: data.clientEmail,
-      clientPhone: data.clientPhone,
-      studyType: data.studyTypeSelect !== 'autre' ? data.studyTypeSelect : data.studyTypeCustom,
-      cdpId: data.cdpSelect !== 'autre' ? Number(data.cdpSelect) : null,
-      cdpCustom: data.cdpCustom,
-      contextSituation: data.contextSituation,
-      contextIntervention: data.contextIntervention,
-      contextEnjeu: data.contextEnjeu,
-      cdcObjectifs: data.cdcObjectifs,
-      cdcContraintes: data.cdcContraintes,
-      cdcLivrables: data.cdcLivrables,
-      suiviJehCount: Number(data.suiviJehCount || 0),
-      suiviJehPrice: Number(data.suiviJehPrice || 0),
-      globalFraisAnnexes: Number(data.globalFraisAnnexes || 0),
-      date: data.projectStartDate,
-      totalHT,
-      totalTTC,
-      phases: data.phases,
-      status: 'envoyée'
-    };
-
-    const index = mockSavedPropales.findIndex(p => p.id === data.propaleId);
-    if (index !== -1) mockSavedPropales[index] = mockPropale;
-    else mockSavedPropales.push(mockPropale);
-
-    if (typeof window !== 'undefined') {
-      const savedRaw = localStorage.getItem('befast_saved_proposals');
-      let localSavedList = savedRaw ? JSON.parse(savedRaw) : [];
-      const existingIndex = localSavedList.findIndex((p: any) => p.id === data.propaleId);
-      if (existingIndex !== -1) {
-        localSavedList[existingIndex] = mockPropale;
-      } else {
-        localSavedList.push(mockPropale);
-      }
-      localStorage.setItem('befast_saved_proposals', JSON.stringify(localSavedList));
-    }
 
     if (action === 'save') {
       alert("L'étude a bien été sauvegardée sur le Dashboard !");
@@ -455,14 +370,14 @@ export default function ProposalForm() {
           cdpInfo.cdp_email = `${cdpInfo.cdp_first_name.toLowerCase()}.${cdpInfo.cdp_last_name.toLowerCase()}@ajc-mail.com`;
           cdpInfo.cdp_phone = '+33 6 00 00 00 00';
         } else if (data.cdpSelect) {
-          const selectedCdp = personnesDB.find(c => c.id.toString() === data.cdpSelect);
+          const selectedCdp = cdps.find(c => c.id === data.cdpSelect);
           if (selectedCdp) {
-            cdpInfo.cdp_civilite = selectedCdp.civilite || 'M.';
-            cdpInfo.cdp_first_name = selectedCdp.firstName;
-            cdpInfo.cdp_last_name = selectedCdp.lastName;
-            cdpInfo.cdp_initials = (selectedCdp.firstName.charAt(0) + (selectedCdp.lastName?.charAt(0) || '')).toUpperCase();
+            cdpInfo.cdp_civilite = 'M.'; // personnes ne stocke pas la civilité
+            cdpInfo.cdp_first_name = selectedCdp.prenom;
+            cdpInfo.cdp_last_name = selectedCdp.nom;
+            cdpInfo.cdp_initials = cdpInitials(selectedCdp);
             cdpInfo.cdp_email = selectedCdp.email;
-            cdpInfo.cdp_phone = '+33 6 12 34 56 78'; // Numéro fictif
+            cdpInfo.cdp_phone = selectedCdp.portable || '+33 6 12 34 56 78';
           }
         }
 
@@ -587,7 +502,15 @@ export default function ProposalForm() {
                     Auto-entrepreneur
                   </label>
                 </div>
-                <input type="text" {...register('companyName')} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nom de l'entreprise (ou de la personne)" />
+                <input type="text" list="clients-list" value={watch('companyName')} onChange={handleCompanyChange} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nom de l'entreprise (ou de la personne)" />
+                <datalist id="clients-list">
+                  {clients.map(c => <option key={c.id} value={c.nom} />)}
+                </datalist>
+                {watch('clientId')
+                  ? <span className="mt-1 inline-block text-xs text-emerald-700">✓ Client existant rattaché</span>
+                  : (watch('companyName')?.trim()
+                      ? <span className="mt-1 inline-block text-xs text-amber-600">Nouveau client — sera créé en prospection</span>
+                      : null)}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Contact Principal</label>
@@ -608,8 +531,8 @@ export default function ProposalForm() {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Chef de Projet (CDP)</label>
                 <select {...register('cdpSelect')} className="w-full rounded-md border border-slate-300 px-3 py-2 mb-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
                   <option value="">Sélectionner un CDP...</option>
-                  {personnesDB.filter(p => p.role === 'CDP').map(cdp => (
-                    <option key={cdp.id} value={cdp.id}>{cdp.firstName} {cdp.lastName}</option>
+                  {cdps.map(cdp => (
+                    <option key={cdp.id} value={cdp.id}>{cdp.prenom} {cdp.nom}</option>
                   ))}
                   <option value="autre">Autre (Saisir manuellement)...</option>
                 </select>
@@ -669,8 +592,8 @@ export default function ProposalForm() {
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6">
             <span className="text-sm font-medium text-blue-900 block mb-3">Ajouter des phases à la proposition :</span>
             <div className="flex flex-wrap gap-2">
-              {phasesDB.map(phase => (
-                <button type="button" key={phase.id} onClick={() => handleAddPhase(phase.id)} 
+              {phaseCatalog.map(phase => (
+                <button type="button" key={phase.id} onClick={() => handleAddPhase(phase.id)}
                   className="bg-white border border-blue-200 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium hover:bg-blue-600 hover:text-white transition-colors flex items-center gap-1">
                   <Plus size={14} /> {phase.name}
                 </button>
