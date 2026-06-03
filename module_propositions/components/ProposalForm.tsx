@@ -514,9 +514,17 @@ export default function ProposalForm() {
   };
 
   const buildPayload = (data: any) => {
-    let totalHT = 0;
-    data.phases.forEach((p: any) => { totalHT += (Number(p.jehCount || 0) * Number(p.jehPrice || 0)); });
+    let totalPhasesJeh = 0;
+    data.phases.forEach((p: any) => { totalPhasesJeh += (Number(p.jehCount || 0) * Number(p.jehPrice || 0)); });
+    // Marge JE = grossissement du SDP (mêmes règles que calculateBudget)
+    const margePct = Number((data as any).margeJe || 0);
+    const margeJe = margePct > 0
+      ? Math.ceil(totalPhasesJeh / (1 - margePct / 100)) - totalPhasesJeh
+      : 0;
+    let totalHT = totalPhasesJeh;
     totalHT += (Number(data.suiviJehCount || 0) * Number(data.suiviJehPrice || 0));
+    totalHT += margeJe;
+    totalHT += Number((data as any).fraisDossier || 0);
     totalHT += Number(data.globalFraisAnnexes || 0);
     const totalTTC = totalHT * (1 + tvaRate / 100);
 
@@ -645,7 +653,13 @@ export default function ProposalForm() {
       totalPhasesJeh += (Number(p.jehCount || 0) * Number(p.jehPrice || 100));
     });
     const suiviTotal = (Number(watch('suiviJehCount') || 0) * Number(watch('suiviJehPrice') || 0));
-    const margeJe = totalPhasesJeh * (Number(watchMargeJe || 0) / 100);
+    // Marge JE = grossissement du SDP (prix de vente), pas une simple majoration :
+    //   prix_avec_marge = ROUNDUP(SDP / (1 - marge%/100))  →  margeJe = prix_avec_marge - SDP
+    //   ex. SDP=100, marge=38% → ceil(100/0.62)=162 → margeJe=62
+    const margePct = Number(watchMargeJe || 0);
+    const margeJe = margePct > 0
+      ? Math.ceil(totalPhasesJeh / (1 - margePct / 100)) - totalPhasesJeh
+      : 0;
     const fraisDossier = Number(watchFraisDossier || 0);
     const fraisAnnexes = Number(watchGlobalFraisAnnexes || 0);
     const totalHT = totalPhasesJeh + suiviTotal + margeJe + fraisDossier + fraisAnnexes;
@@ -1058,7 +1072,7 @@ export default function ProposalForm() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-amber-50 rounded border border-amber-200 text-sm">
               <div className="flex-1">
                 <span className="font-bold text-amber-900">Marge JE (%)</span>
-                <p className="text-xs text-amber-600 mt-0.5">Appliquée sur les JEH des phases</p>
+                <p className="text-xs text-amber-600 mt-0.5">Grossit le SDP des phases : ⌈SDP / (1 − marge%)⌉</p>
               </div>
               <div className="flex items-center gap-3">
                 <Controller
