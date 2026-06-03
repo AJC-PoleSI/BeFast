@@ -15,8 +15,8 @@ import {
   type MissionPayRow,
   type CaParEtude,
 } from "@/lib/actions/tresorerie"
-import { getBudgetValidations, decideBudget, getProposalBudget, type BudgetValidationRow, type ProposalBudgetDetail } from "@/lib/actions/propositions"
-import { computeBudget } from "@/lib/budget/compute"
+import { getBudgetValidations, decideBudget, getProposalBudget, updateProposalModalites, type BudgetValidationRow, type ProposalBudgetDetail } from "@/lib/actions/propositions"
+import { computeBudget, type PaiementModalites } from "@/lib/budget/compute"
 import { BudgetSheet } from "@/components/budget/BudgetSheet"
 
 import PilotagePrix from "./PilotagePrix"
@@ -1190,20 +1190,68 @@ function BudgetDetailModal({
 }) {
   const [detail, setDetail] = useState<ProposalBudgetDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [modalites, setModalites] = useState<PaiementModalites | null>(null)
+  const [savingMod, setSavingMod] = useState(false)
 
   useEffect(() => {
     let active = true
     getProposalBudget(proposalId).then((res) => {
       if (!active) return
-      if ((res as any).error) setError((res as any).error)
-      else setDetail((res as any).data)
+      if ((res as any).error) {
+        setError((res as any).error)
+        return
+      }
+      const d = (res as any).data as ProposalBudgetDetail
+      setDetail(d)
+      // Initialise l'éditeur de modalités : valeurs stockées sinon valeurs par défaut.
+      if (d.modalites) {
+        setModalites(d.modalites)
+      } else {
+        const b = computeBudget(d.budget)
+        setModalites({
+          type: b.paiementType,
+          versements: b.versements.map((v) => ({ label: v.label, pct: v.pct })),
+        })
+      }
     })
     return () => {
       active = false
     }
   }, [proposalId])
 
-  const breakdown = detail ? computeBudget(detail.budget) : null
+  const breakdown = detail
+    ? computeBudget({ ...detail.budget, paiementModalites: modalites })
+    : null
+
+  const pctSum = (modalites?.versements || []).reduce((s, v) => s + Number(v.pct || 0), 0)
+
+  const setVersement = (i: number, patch: Partial<{ label: string; pct: number }>) => {
+    setModalites((prev) => {
+      if (!prev) return prev
+      const versements = prev.versements.map((v, idx) => (idx === i ? { ...v, ...patch } : v))
+      return { ...prev, versements }
+    })
+  }
+  const addVersement = () =>
+    setModalites((prev) =>
+      prev ? { ...prev, versements: [...prev.versements, { label: "Versement", pct: 0 }] } : prev
+    )
+  const removeVersementAt = (i: number) =>
+    setModalites((prev) =>
+      prev && prev.versements.length > 1
+        ? { ...prev, versements: prev.versements.filter((_, idx) => idx !== i) }
+        : prev
+    )
+
+  // Persiste les modalités puis lance l'action passée par le parent (valider).
+  const saveThen = async (next: () => void) => {
+    if (modalites) {
+      setSavingMod(true)
+      await updateProposalModalites(proposalId, modalites)
+      setSavingMod(false)
+    }
+    next()
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -1226,15 +1274,72 @@ function BudgetDetailModal({
               <Loader2 className="w-6 h-6 animate-spin" />
             </div>
           ) : (
-            <BudgetSheet
-              breakdown={breakdown}
-              meta={{
-                id: detail.id,
-                client_company: detail.client_company,
-                study_type: detail.study_type,
-                cdp_name: detail.cdp_name,
-              }}
-            />
+            <>
+              <BudgetSheet
+                breakdown={breakdown}
+                meta={{
+                  id: detail.id,
+                  client_company: detail.client_company,
+                  study_type: detail.study_type,
+                  cdp_name: detail.cdp_name,
+                }}
+              />
+
+              {/* Éditeur des modalités de règlement (trésorerie) */}
+              {modalites && (
+                <div className="mt-6 border border-emerald-200 bg-emerald-50/40 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-bold text-emerald-900">
+                      Modifier les modalités de règlement
+                    </p>
+                    <span
+                      className={`text-xs font-bold ${
+                        pctSum === 100 ? "text-emerald-700" : "text-red-600"
+                      }`}
+                    >
+                      Total : {pctSum} %{pctSum !== 100 && " (doit faire 100 %)"}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {modalites.versements.map((v, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input
+                          value={v.label}
+                          onChange={(e) => setVersement(i, { label: e.target.value })}
+                          className="flex-1 px-3 py-1.5 rounded border border-emerald-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={v.pct}
+                          onChange={(e) => setVersement(i, { pct: Number(e.target.value) })}
+                          className="w-[72px] px-2 py-1.5 rounded border border-emerald-200 text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        />
+                        <span className="text-xs text-emerald-700 w-4">%</span>
+                        <span className="w-[110px] text-right text-sm font-bold text-emerald-900 tabular-nums">
+                          {(breakdown.versements[i]?.montant ?? 0).toLocaleString("fr-FR")} €
+                        </span>
+                        <button
+                          onClick={() => removeVersementAt(i)}
+                          disabled={modalites.versements.length <= 1}
+                          className="p-1 text-red-500 hover:text-red-700 disabled:opacity-30"
+                          title="Supprimer"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={addVersement}
+                    className="mt-2 text-xs font-bold text-emerald-700 hover:text-emerald-900"
+                  >
+                    + Ajouter un versement
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -1247,6 +1352,17 @@ function BudgetDetailModal({
             Télécharger Excel
           </a>
           <div className="flex items-center gap-3">
+            {detail && modalites && (
+              <button
+                onClick={() => saveThen(() => {})}
+                disabled={busy || savingMod || pctSum !== 100}
+                title={pctSum !== 100 ? "La somme des versements doit faire 100 %" : undefined}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-700 bg-zinc-100 border border-zinc-200 rounded-lg hover:bg-zinc-200 disabled:opacity-50"
+              >
+                {savingMod && <Loader2 className="h-4 w-4 animate-spin" />}
+                Enregistrer les modalités
+              </button>
+            )}
             {detail && detail.budget_status !== "rejete" && (
               <button
                 onClick={onReject}
@@ -1258,11 +1374,12 @@ function BudgetDetailModal({
             )}
             {detail && detail.budget_status !== "valide" && (
               <button
-                onClick={onValidate}
-                disabled={busy}
+                onClick={() => saveThen(onValidate)}
+                disabled={busy || savingMod || pctSum !== 100}
+                title={pctSum !== 100 ? "La somme des versements doit faire 100 %" : undefined}
                 className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
               >
-                {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+                {(busy || savingMod) && <Loader2 className="h-4 w-4 animate-spin" />}
                 Valider le budget
               </button>
             )}

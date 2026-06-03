@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next/cache"
 import { ETUDES_TAG, MEMBERS_TAG, CLIENTS_TAG, PROPOSALS_TAG } from "@/lib/cache-tags"
-import type { BudgetInput } from "@/lib/budget/compute"
+import type { BudgetInput, PaiementModalites } from "@/lib/budget/compute"
+import { computeBudget } from "@/lib/budget/compute"
 
 // Couleurs de Gantt — identiques à la page étude pour une cohérence visuelle
 const GANTT_COLORS = [
@@ -165,6 +166,7 @@ export type ProposalInput = {
   cdc_objectifs?: string
   cdc_contraintes?: string
   cdc_livrables?: string
+  paiement_modalites?: { type: string; versements: { label: string; pct: number }[] } | null
   phases?: ProposalPhaseInput[]
 }
 
@@ -180,7 +182,10 @@ export async function saveProposal(input: ProposalInput) {
   // applicatifs (authentification, validation budget) restent appliqués ici.
   const sb = createAdminClient()
 
-  const { phases, ...proposal } = input
+  // `paiement_modalites` est écrit séparément (best-effort) car la colonne peut
+  // ne pas encore exister en base (migration 035). On l'isole du payload principal
+  // pour ne pas faire échouer tout l'upsert si la colonne est absente.
+  const { phases, paiement_modalites, ...proposal } = input
 
   // On ne touche pas au statut existant si la propale existe déjà (sauf 1ère création)
   const { data: existing } = await supabase
@@ -214,6 +219,19 @@ export async function saveProposal(input: ProposalInput) {
 
   const { error: upErr } = await sb.from("proposals").upsert(payload)
   if (upErr) return { error: upErr.message }
+
+  // Modalités de règlement : best-effort (ignore l'erreur si la colonne n'existe
+  // pas encore, code Postgres 42703 « undefined_column »).
+  if (paiement_modalites !== undefined) {
+    const { error: modErr } = await sb
+      .from("proposals")
+      .update({ paiement_modalites })
+      .eq("id", input.id)
+    if (modErr && modErr.code !== "42703") {
+      // Une autre erreur (RLS, contrainte…) est remontée pour ne pas masquer un vrai bug.
+      return { error: modErr.message }
+    }
+  }
 
   // Remplace les phases
   await sb.from("proposal_phases").delete().eq("proposal_id", input.id)
@@ -438,6 +456,74 @@ export async function signProposal(id: string) {
     await sb.from("budget_etude").insert(budgetRows)
   }
 
+  // 3ter. Générer les factures à partir des modalités de règlement du budget.
+  // Une facture par versement (montant HT = % du Total HT). Best-effort : on
+  // n'échoue jamais la signature si l'insertion des factures pose problème.
+  try {
+    let tvaPct = 20
+    const { data: tvaParam } = await sb
+      .from("parametres")
+      .select("value")
+      .eq("key", "tva_rate")
+      .maybeSingle()
+    if (tvaParam?.value != null) {
+      const parsed = Number(tvaParam.value)
+      if (!Number.isNaN(parsed) && parsed > 0) tvaPct = parsed
+    }
+
+    const rawModalites = (prop as any).paiement_modalites
+    const modalites: PaiementModalites | null =
+      rawModalites && Array.isArray(rawModalites.versements)
+        ? {
+            type: rawModalites.type === "pvri" ? "pvri" : "standard",
+            versements: rawModalites.versements.map((v: any) => ({
+              label: String(v.label ?? "Versement"),
+              pct: Number(v.pct ?? 0),
+            })),
+          }
+        : null
+
+    const breakdown = computeBudget({
+      phases: phases.map((ph: any) => ({
+        name: ph.name,
+        jehCount: Number(ph.jeh_count || 0),
+        jehPrice: Number(ph.jeh_price || 0),
+      })),
+      suiviJehCount: Number((prop as any).suivi_jeh_count || 0),
+      suiviJehPrice: Number((prop as any).suivi_jeh_price || 0),
+      margeJePct: Number((prop as any).marge_je || 0),
+      fraisDossier: Number((prop as any).frais_dossier || 0),
+      globalFraisAnnexes: Number((prop as any).global_frais_annexes || 0),
+      tvaPct,
+      paiementModalites: modalites,
+    })
+
+    // Montants HT par versement (le dernier absorbe l'arrondi).
+    const totalHt = breakdown.totalHt
+    let cumulHt = 0
+    const factureRows = breakdown.versements.map((v, i) => {
+      const isLast = i === breakdown.versements.length - 1
+      const montantHt = isLast
+        ? Math.round((totalHt - cumulHt) * 100) / 100
+        : Math.round(totalHt * (v.pct / 100) * 100) / 100
+      cumulHt = Math.round((cumulHt + montantHt) * 100) / 100
+      return {
+        numero: `${prop.id}-F${i + 1}`,
+        nom: v.label,
+        etude_id: etudeId,
+        montant_ht: montantHt,
+        notes: `Généré automatiquement depuis le budget (versement ${v.pct} %).`,
+        created_by: user.id,
+      }
+    })
+
+    if (factureRows.length > 0) {
+      await sb.from("factures").insert(factureRows)
+    }
+  } catch {
+    // best-effort : la table factures peut être absente, on ignore.
+  }
+
   // 4. Marquer la propale comme signée + lier l'étude
   const { error: updErr } = await sb
     .from("proposals")
@@ -541,6 +627,7 @@ export type ProposalBudgetDetail = {
   budget_status: string
   budget_comment: string | null
   budget: BudgetInput
+  modalites: PaiementModalites | null
 }
 
 export async function getProposalBudget(id: string) {
@@ -590,6 +677,26 @@ export async function getProposalBudget(id: string) {
       jehPrice: Number(p.jeh_price || 0),
     }))
 
+  // Modalités de règlement (best-effort : colonne ajoutée par la migration 035).
+  let modalites: PaiementModalites | null = null
+  const { data: modRow, error: modErr } = await sb
+    .from("proposals")
+    .select("paiement_modalites")
+    .eq("id", id)
+    .maybeSingle()
+  if (!modErr && (modRow as any)?.paiement_modalites) {
+    const m = (modRow as any).paiement_modalites
+    if (m && Array.isArray(m.versements)) {
+      modalites = {
+        type: m.type === "pvri" ? "pvri" : "standard",
+        versements: m.versements.map((v: any) => ({
+          label: String(v.label ?? "Versement"),
+          pct: Number(v.pct ?? 0),
+        })),
+      }
+    }
+  }
+
   const detail: ProposalBudgetDetail = {
     id: prop.id as string,
     client_company: (prop as any).client_company ?? null,
@@ -605,7 +712,34 @@ export async function getProposalBudget(id: string) {
       fraisDossier: Number((prop as any).frais_dossier || 0),
       globalFraisAnnexes: Number((prop as any).global_frais_annexes || 0),
       tvaPct,
+      paiementModalites: modalites,
     },
+    modalites,
   }
   return { data: detail }
+}
+
+// Met à jour les modalités de règlement d'une propale (trésorerie, admin).
+// Best-effort : ignore l'absence de colonne (migration 035 non encore appliquée).
+export async function updateProposalModalites(
+  id: string,
+  modalites: PaiementModalites
+) {
+  if (!(await isCallerAdmin())) return { error: "Non autorisé" }
+  const sb = createAdminClient()
+  const clean: PaiementModalites = {
+    type: modalites?.type === "pvri" ? "pvri" : "standard",
+    versements: (modalites?.versements || []).map((v) => ({
+      label: String(v.label ?? "Versement"),
+      pct: Number(v.pct ?? 0),
+    })),
+  }
+  const { error } = await sb
+    .from("proposals")
+    .update({ paiement_modalites: clean })
+    .eq("id", id)
+  if (error && error.code !== "42703") return { error: error.message }
+  revalidateTag(PROPOSALS_TAG)
+  revalidatePath("/tresorerie")
+  return { success: true }
 }

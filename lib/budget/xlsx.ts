@@ -126,11 +126,13 @@ export async function buildBudgetWorkbook(
   // Modalités de règlement (colonnes A/B, en face de la synthèse)
   ws.getCell(synthStart, 1).value = "Modalités de règlement :"
   ws.getCell(synthStart, 1).font = { bold: true }
-  ws.getCell(synthStart + 1, 1).value = `– Acompte de 60 % à la signature : ${fmt(b.acompte60)}`
-  ws.getCell(synthStart + 2, 1).value = `– Solde (40 %) au PV de recette : ${fmt(b.solde40)}`
-  ws.getCell(synthStart + 4, 1).value =
+  b.versements.forEach((v, i) => {
+    ws.getCell(synthStart + 1 + i, 1).value = `– ${v.label} (${v.pct} %) : ${fmt(v.montant)}`
+  })
+  const fraisRow = synthStart + 2 + b.versements.length
+  ws.getCell(fraisRow, 1).value =
     "*Frais de structure : administratifs, postaux, logiciels, impression, transport."
-  ws.getCell(synthStart + 4, 1).font = { italic: true, size: 9, color: { argb: "FF71717A" } }
+  ws.getCell(fraisRow, 1).font = { italic: true, size: 9, color: { argb: "FF71717A" } }
 
   const out = await wb.xlsx.writeBuffer()
   return Buffer.from(out)

@@ -17,6 +17,19 @@ export interface BudgetPhaseInput {
   jehPrice: number
 }
 
+// Un versement des modalités de règlement (ex. « Acompte 40 % à la signature »).
+export interface PaiementVersementInput {
+  label: string
+  pct: number
+}
+
+export type PaiementType = "standard" | "pvri"
+
+export interface PaiementModalites {
+  type: PaiementType
+  versements: PaiementVersementInput[]
+}
+
 export interface BudgetInput {
   phases: BudgetPhaseInput[]
   suiviJehCount: number
@@ -25,6 +38,14 @@ export interface BudgetInput {
   fraisDossier: number
   globalFraisAnnexes: number
   tvaPct?: number // défaut 20
+  // Schéma de versements optionnel. Si absent → standard 60 % / 40 %.
+  paiementModalites?: PaiementModalites | null
+}
+
+export interface PaiementVersementLine {
+  label: string
+  pct: number
+  montant: number // part du net à payer (TTC)
 }
 
 export interface BudgetPhaseLine {
@@ -48,8 +69,47 @@ export interface BudgetBreakdown {
   tvaPct: number
   tva: number
   netAPayer: number // TTC
-  acompte60: number // 60 % à la signature
-  solde40: number // 40 % au PV de recette
+  acompte60: number // 60 % à la signature (compat. schéma standard par défaut)
+  solde40: number // 40 % au PV de recette (compat. schéma standard par défaut)
+  paiementType: PaiementType
+  versements: PaiementVersementLine[] // modalités de règlement résolues en €
+}
+
+// Schémas de versements par défaut (les % restent modifiables côté CDP/trésorier).
+export const DEFAULT_MODALITES: Record<PaiementType, PaiementVersementInput[]> = {
+  standard: [
+    { label: "Acompte à la signature de la convention d'étude", pct: 60 },
+    { label: "Solde au procès-verbal de recette final", pct: 40 },
+  ],
+  pvri: [
+    { label: "Acompte à la signature de la convention d'étude", pct: 40 },
+    { label: "Procès-verbal de règlement intermédiaire", pct: 30 },
+    { label: "Solde au procès-verbal de recette final", pct: 30 },
+  ],
+}
+
+// Répartit `netAPayer` sur les versements selon leurs %. Le dernier versement
+// absorbe l'écart d'arrondi pour que la somme égale exactement le net à payer.
+function resolveVersements(
+  netAPayer: number,
+  modalites: PaiementModalites | null | undefined
+): { type: PaiementType; lines: PaiementVersementLine[] } {
+  const type: PaiementType = modalites?.type ?? "standard"
+  const source =
+    modalites?.versements && modalites.versements.length > 0
+      ? modalites.versements
+      : DEFAULT_MODALITES[type] ?? DEFAULT_MODALITES.standard
+
+  const lines: PaiementVersementLine[] = []
+  let cumul = 0
+  source.forEach((v, i) => {
+    const pct = Number(v.pct || 0)
+    const isLast = i === source.length - 1
+    const montant = isLast ? r2(netAPayer - cumul) : r2(netAPayer * (pct / 100))
+    cumul = r2(cumul + montant)
+    lines.push({ label: v.label || `Versement ${i + 1}`, pct, montant })
+  })
+  return { type, lines }
 }
 
 const r2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100
@@ -85,6 +145,11 @@ export function computeBudget(input: BudgetInput): BudgetBreakdown {
   const acompte60 = r2(netAPayer * 0.6)
   const solde40 = r2(netAPayer - acompte60)
 
+  const { type: paiementType, lines: versements } = resolveVersements(
+    netAPayer,
+    input.paiementModalites
+  )
+
   return {
     phases,
     suiviJeh,
@@ -101,6 +166,8 @@ export function computeBudget(input: BudgetInput): BudgetBreakdown {
     netAPayer,
     acompte60,
     solde40,
+    paiementType,
+    versements,
   }
 }
 

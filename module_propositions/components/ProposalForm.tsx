@@ -34,7 +34,7 @@ const phasesFallback: PhaseCatalogue[] = (phasesJson as any[]).map((p) => ({
   jehPrice: p.jehPrice ?? 100,
 }));
 import { TAILLES_ENTREPRISE, type MargesMap } from '@/lib/proposals-constants';
-import { computeBudget } from '@/lib/budget/compute';
+import { computeBudget, DEFAULT_MODALITES } from '@/lib/budget/compute';
 import { BudgetSheet } from '@/components/budget/BudgetSheet';
 
 // --- COULEURS GANTT (identiques à la page Étude) ---
@@ -260,6 +260,11 @@ export default function ProposalForm() {
       globalFraisAnnexes: 0,
       fraisDossier: 0,
       margeJe: 0,
+      paiementType: 'standard' as 'standard' | 'pvri',
+      paiementVersements: [
+        { label: "Acompte à la signature de la convention d'étude", pct: 60 },
+        { label: "Solde au procès-verbal de recette final", pct: 40 },
+      ] as { label: string; pct: number }[],
       suiviJehCount: 1,
       suiviJehPrice: 100,
       projectStartDate: getNextMonday(new Date()).toISOString().slice(0, 10),
@@ -284,6 +289,13 @@ export default function ProposalForm() {
     name: "phases"
   });
 
+  const {
+    fields: versementFields,
+    append: appendVersement,
+    remove: removeVersement,
+    replace: replaceVersements,
+  } = useFieldArray({ control, name: "paiementVersements" as any });
+
   const watchCdpSelect = watch('cdpSelect');
   const watchCdpCustom = watch('cdpCustom');
   const watchStudyType = watch('studyTypeSelect');
@@ -292,6 +304,8 @@ export default function ProposalForm() {
   const watchGlobalFraisAnnexes = watch('globalFraisAnnexes');
   const watchMargeJe = watch('margeJe' as any);
   const watchFraisDossier = watch('fraisDossier' as any);
+  const watchPaiementType = watch('paiementType' as any);
+  const watchVersements = watch('paiementVersements' as any) as { label: string; pct: number }[];
   const watchTaille = watch('tailleEntreprise' as any);
   const tailleTouchedRef = useRef(false);
 
@@ -411,6 +425,15 @@ export default function ProposalForm() {
       setValue('margeJe', (data as any).marge_je ?? 0);
       if (data.start_date) setValue('projectStartDate', getNextMonday(data.start_date).toISOString().slice(0, 10));
 
+      // Modalités de règlement (si déjà enregistrées sur la propale)
+      const modalites = (data as any).paiement_modalites;
+      if (modalites && Array.isArray(modalites.versements) && modalites.versements.length > 0) {
+        setValue('paiementType' as any, modalites.type === 'pvri' ? 'pvri' : 'standard');
+        replaceVersements(
+          modalites.versements.map((v: any) => ({ label: v.label || 'Versement', pct: Number(v.pct || 0) }))
+        );
+      }
+
       const phases = (data.proposal_phases || []).slice().sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
       if (phases.length > 0) {
         removePhase();
@@ -435,7 +458,7 @@ export default function ProposalForm() {
         });
       }
     });
-  }, [setValue, append, removePhase]);
+  }, [setValue, append, removePhase, replaceVersements]);
 
   // AUTO GÉNÉRATION DE L'ID À PARTIR DU MEMBRE CHOISI
   useEffect(() => {
@@ -560,6 +583,13 @@ export default function ProposalForm() {
       start_date: data.projectStartDate,
       total_ht: totalHT,
       total_ttc: totalTTC,
+      paiement_modalites: {
+        type: (data.paiementType || 'standard') as 'standard' | 'pvri',
+        versements: (data.paiementVersements || []).map((v: any) => ({
+          label: v.label,
+          pct: Number(v.pct || 0),
+        })),
+      },
       phases: data.phases.map((p: any) => ({
         name: p.name,
         objectifs: p.objectifs,
@@ -689,7 +719,20 @@ export default function ProposalForm() {
     fraisDossier: Number(watchFraisDossier || 0),
     globalFraisAnnexes: Number(watchGlobalFraisAnnexes || 0),
     tvaPct: tvaRate,
+    paiementModalites: {
+      type: (watchPaiementType || 'standard') as 'standard' | 'pvri',
+      versements: (watchVersements || []).map((v) => ({ label: v.label, pct: Number(v.pct || 0) })),
+    },
   });
+
+  // Somme des % des versements (doit faire 100 %).
+  const versementsPctSum = (watchVersements || []).reduce((s, v) => s + Number(v.pct || 0), 0);
+
+  // Applique un préréglage de modalités (remplace la liste des versements).
+  const applyModalitesPreset = (type: 'standard' | 'pvri') => {
+    setValue('paiementType' as any, type);
+    replaceVersements(DEFAULT_MODALITES[type].map((v) => ({ label: v.label, pct: v.pct })));
+  };
 
   // Bornes du Gantt : on grossit automatiquement si une phase déborde
   const projectMonday = getNextMonday(watchStartDate);
@@ -1134,6 +1177,96 @@ export default function ProposalForm() {
                 control={control}
                 render={({ field }) => <FastNumberInput value={field.value} onChange={field.onChange} min={0} className="w-[120px]" />}
               />
+            </div>
+          </div>
+
+          {/* Modalités de règlement */}
+          <div className="border border-emerald-200 bg-emerald-50/40 rounded-lg p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="font-bold text-emerald-900">Modalités de règlement</p>
+                <p className="text-xs text-emerald-700/70 mt-0.5">
+                  Choisis l&apos;échéancier de paiement. Les % sont modifiables.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyModalitesPreset('standard')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                    watchPaiementType !== 'pvri'
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                  }`}
+                >
+                  Standard (2 versements)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyModalitesPreset('pvri')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                    watchPaiementType === 'pvri'
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                  }`}
+                >
+                  PVRI (3 versements)
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {versementFields.map((field, index) => (
+                <div key={field.id} className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wide text-emerald-700/70 mb-0.5">
+                      Libellé du versement
+                    </label>
+                    <input
+                      {...register(`paiementVersements.${index}.label` as any)}
+                      className="w-full px-3 py-1.5 rounded border border-emerald-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wide text-emerald-700/70 mb-0.5">%</label>
+                    <Controller
+                      name={`paiementVersements.${index}.pct` as any}
+                      control={control}
+                      render={({ field: f }) => <FastNumberInput value={f.value} onChange={f.onChange} min={0} max={100} className="w-[80px]" />}
+                    />
+                  </div>
+                  <span className="font-bold text-emerald-900 w-[120px] text-right mb-1.5 tabular-nums">
+                    {(budgetBreakdown.versements[index]?.montant ?? 0).toLocaleString('fr-FR')} €
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeVersement(index)}
+                    disabled={versementFields.length <= 1}
+                    className="mb-1 p-1.5 text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Supprimer ce versement"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => appendVersement({ label: 'Versement', pct: 0 })}
+                className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-900"
+              >
+                <Plus size={14} /> Ajouter un versement
+              </button>
+              <span
+                className={`text-xs font-bold ${
+                  versementsPctSum === 100 ? 'text-emerald-700' : 'text-red-600'
+                }`}
+              >
+                Total : {versementsPctSum} %
+                {versementsPctSum !== 100 && ' (doit faire 100 %)'}
+              </span>
             </div>
           </div>
 

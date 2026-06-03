@@ -83,20 +83,15 @@ export function BudgetSheet({
         <div className="text-sm">
           <p className="font-bold mb-2">Modalités de règlement :</p>
           <ul className="space-y-1.5 text-zinc-700">
-            <li className="flex gap-2">
-              <span>–</span>
-              <span>
-                Acompte de 60 % à la signature de la convention d&apos;étude :{" "}
-                <span className="font-bold">{fmtEURBudget(b.acompte60)}</span>
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span>–</span>
-              <span>
-                Solde (40 % restants) à la signature du procès-verbal de recette final :{" "}
-                <span className="font-bold">{fmtEURBudget(b.solde40)}</span>
-              </span>
-            </li>
+            {b.versements.map((v, i) => (
+              <li key={i} className="flex gap-2">
+                <span>–</span>
+                <span>
+                  {v.label} ({v.pct} %) :{" "}
+                  <span className="font-bold">{fmtEURBudget(v.montant)}</span>
+                </span>
+              </li>
+            ))}
           </ul>
           <p className="mt-3 text-xs italic text-zinc-500">
             *Frais de structure : administratifs, postaux, de logiciels, d&apos;impression et de transport.
