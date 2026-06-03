@@ -90,18 +90,6 @@ export function Header({ userName, onMenuToggle }: HeaderProps) {
 
             <div className="border-t border-zinc-100" />
 
-            {/* Switch profile */}
-            <Link
-              href="/inscription"
-              onClick={() => setDropdownOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 transition-colors"
-            >
-              <span className="material-symbols-outlined text-zinc-500 text-lg">switch_account</span>
-              <span className="text-sm font-medium text-zinc-700">Changer de profil</span>
-            </Link>
-
-            <div className="border-t border-zinc-100" />
-
             {/* Logout */}
             <button
               onClick={handleSignOut}
