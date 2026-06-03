@@ -119,7 +119,7 @@ const FastNumberInput = ({ value, onChange, min = 0, className = "" }: any) => {
 // === GANTT ÉDITABLE (calqué sur la page Étude) ===
 // Les barres sont positionnées sur semaineDebut/dureeSemaines et déplaçables /
 // redimensionnables à la souris ; toute modification remonte dans le formulaire.
-const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate }: any) => {
+const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate, showPvri }: any) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<any>(null);
 
@@ -181,6 +181,16 @@ const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate }: an
             ))}
           </div>
         </div>
+
+        {/* Bulle PVRI */}
+        {showPvri && (
+          <div className="flex items-center gap-2 mb-3">
+            <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-white/70 inline-block" />
+              PVRI — 3 versements (début · milieu · fin)
+            </span>
+          </div>
+        )}
 
         {/* Lignes de phases */}
         <div className="space-y-2">
@@ -1058,6 +1068,7 @@ export default function ProposalForm() {
                 nbWeeks={ganttWeeks}
                 onChange={handleGanttChange}
                 formatDate={formatDate}
+                showPvri={watchPaiementType === 'pvri'}
               />
             </>
           )}
@@ -1180,95 +1191,19 @@ export default function ProposalForm() {
             </div>
           </div>
 
-          {/* Modalités de règlement */}
-          <div className="border border-emerald-200 bg-emerald-50/40 rounded-lg p-4 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <p className="font-bold text-emerald-900">Modalités de règlement</p>
-                <p className="text-xs text-emerald-700/70 mt-0.5">
-                  Choisis l&apos;échéancier de paiement. Les % sont modifiables.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => applyModalitesPreset('standard')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                    watchPaiementType !== 'pvri'
-                      ? 'bg-emerald-600 text-white border-emerald-600'
-                      : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
-                  }`}
-                >
-                  Standard (2 versements)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyModalitesPreset('pvri')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                    watchPaiementType === 'pvri'
-                      ? 'bg-emerald-600 text-white border-emerald-600'
-                      : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
-                  }`}
-                >
-                  PVRI (3 versements)
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {versementFields.map((field, index) => (
-                <div key={field.id} className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <label className="block text-[10px] font-bold uppercase tracking-wide text-emerald-700/70 mb-0.5">
-                      Libellé du versement
-                    </label>
-                    <input
-                      {...register(`paiementVersements.${index}.label` as any)}
-                      className="w-full px-3 py-1.5 rounded border border-emerald-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wide text-emerald-700/70 mb-0.5">%</label>
-                    <Controller
-                      name={`paiementVersements.${index}.pct` as any}
-                      control={control}
-                      render={({ field: f }) => <FastNumberInput value={f.value} onChange={f.onChange} min={0} max={100} className="w-[80px]" />}
-                    />
-                  </div>
-                  <span className="font-bold text-emerald-900 w-[120px] text-right mb-1.5 tabular-nums">
-                    {(budgetBreakdown.versements[index]?.montant ?? 0).toLocaleString('fr-FR')} €
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeVersement(index)}
-                    disabled={versementFields.length <= 1}
-                    className="mb-1 p-1.5 text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Supprimer ce versement"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => appendVersement({ label: 'Versement', pct: 0 })}
-                className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-900"
-              >
-                <Plus size={14} /> Ajouter un versement
-              </button>
-              <span
-                className={`text-xs font-bold ${
-                  versementsPctSum === 100 ? 'text-emerald-700' : 'text-red-600'
-                }`}
-              >
-                Total : {versementsPctSum} %
-                {versementsPctSum !== 100 && ' (doit faire 100 %)'}
-              </span>
-            </div>
-          </div>
+          {/* Modalités de règlement — case PVRI */}
+          <label className="flex items-center gap-3 cursor-pointer select-none p-3 bg-emerald-50 border border-emerald-200 rounded-lg w-fit">
+            <input
+              type="checkbox"
+              checked={watchPaiementType === 'pvri'}
+              onChange={(e) => applyModalitesPreset(e.target.checked ? 'pvri' : 'standard')}
+              className="w-4 h-4 accent-emerald-600 cursor-pointer"
+            />
+            <span className="text-sm font-bold text-emerald-900">PVRI</span>
+            <span className="text-xs text-emerald-700/80">
+              Procès-verbal de règlement intermédiaire (3 versements : début · milieu · fin)
+            </span>
+          </label>
 
           <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 space-y-2">
             <div className="flex justify-between items-center text-slate-400 text-sm">
