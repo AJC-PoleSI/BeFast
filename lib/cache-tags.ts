@@ -19,3 +19,5 @@ export const FACTURES_TAG = "factures"
 export const TRESORERIE_TAG = "tresorerie"
 
 export const PROPOSALS_TAG = "proposals"
+export const MARGES_TAG = "marges-recommandees"
+export const PHASES_TAG = "phases-defaut"
