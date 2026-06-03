@@ -86,7 +86,8 @@ export default function InscriptionPage() {
       </form>
 
       <p className="mt-4 text-sm text-muted-foreground text-center">
-        Votre compte sera activ&eacute; apr&egrave;s validation par un administrateur.
+        Un email de v&eacute;rification vous sera envoy&eacute;. Apr&egrave;s confirmation, votre
+        compte sera activ&eacute; par un administrateur.
       </p>
 
       <div className="mt-4 text-center">

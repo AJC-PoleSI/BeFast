@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useTransition } from "react"
 import Link from "next/link"
 import { signIn } from "@/lib/actions/auth"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,18 @@ import { toast } from "sonner"
 
 export default function LoginPage() {
   const [isPending, startTransition] = useTransition()
+
+  // Success banner after clicking the email-verification link.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("verified") === "1") {
+      toast.success("Adresse email vérifiée. Vous pouvez vous connecter.", {
+        duration: 6000,
+        position: "top-right",
+      })
+      window.history.replaceState(null, "", window.location.pathname)
+    }
+  }, [])
 
   async function handleSubmit(formData: FormData) {
     startTransition(async () => {
