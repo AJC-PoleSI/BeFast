@@ -516,13 +516,16 @@ export default function ProposalForm() {
   const buildPayload = (data: any) => {
     let totalPhasesJeh = 0;
     data.phases.forEach((p: any) => { totalPhasesJeh += (Number(p.jehCount || 0) * Number(p.jehPrice || 0)); });
-    // Marge JE = grossissement du SDP (mêmes règles que calculateBudget)
+    const suiviTotal = Number(data.suiviJehCount || 0) * Number(data.suiviJehPrice || 0);
+    // Marge JE = grossissement du SDP (mêmes règles que calculateBudget) :
+    // appliquée au SDP des phases ET au suivi de projet.
     const margePct = Number((data as any).margeJe || 0);
+    const margeBase = totalPhasesJeh + suiviTotal;
     const margeJe = margePct > 0
-      ? Math.ceil(totalPhasesJeh / (1 - margePct / 100)) - totalPhasesJeh
+      ? Math.ceil(margeBase / (1 - margePct / 100)) - margeBase
       : 0;
     let totalHT = totalPhasesJeh;
-    totalHT += (Number(data.suiviJehCount || 0) * Number(data.suiviJehPrice || 0));
+    totalHT += suiviTotal;
     totalHT += margeJe;
     totalHT += Number((data as any).fraisDossier || 0);
     totalHT += Number(data.globalFraisAnnexes || 0);
@@ -656,9 +659,11 @@ export default function ProposalForm() {
     // Marge JE = grossissement du SDP (prix de vente), pas une simple majoration :
     //   prix_avec_marge = ROUNDUP(SDP / (1 - marge%/100))  →  margeJe = prix_avec_marge - SDP
     //   ex. SDP=100, marge=38% → ceil(100/0.62)=162 → margeJe=62
+    // La marge s'applique au SDP des phases ET au suivi de projet.
     const margePct = Number(watchMargeJe || 0);
+    const margeBase = totalPhasesJeh + suiviTotal;
     const margeJe = margePct > 0
-      ? Math.ceil(totalPhasesJeh / (1 - margePct / 100)) - totalPhasesJeh
+      ? Math.ceil(margeBase / (1 - margePct / 100)) - margeBase
       : 0;
     const fraisDossier = Number(watchFraisDossier || 0);
     const fraisAnnexes = Number(watchGlobalFraisAnnexes || 0);
