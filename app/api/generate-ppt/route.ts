@@ -71,7 +71,7 @@ function setShapeText(xmlStr: string, shapeName: string, text: string): string {
   return xmlStr.replace(match[0], match[1] + newParagraphs);
 }
 
-function generateBudgetTableXml(phases: any[], suiviJeh: number, suiviHt: number, suiviTtc: number, totalHt: number, totalTtc: number, x: number, y: number, cx: number, cy: number): string {
+function generateBudgetTableXml(phases: any[], suiviJeh: number, suiviHt: number, suiviTtc: number, totalHt: number, totalTtc: number, x: number, y: number, cx: number, cy: number, tvaMult: number = 1.2): string {
   // Proportions aérées et centrées : largeur totale = 16 000 000 EMUs
   const tblGrid = `
     <a:tblGrid>
@@ -94,7 +94,7 @@ function generateBudgetTableXml(phases: any[], suiviJeh: number, suiviHt: number
   for (let i = 0; i < phases.length; i++) {
     const p = phases[i];
     const htVal = (p.jehCount || p.jeh_count || 0) * (p.jehPrice || p.jeh_price || 0);
-    const ttcVal = htVal * 1.2;
+    const ttcVal = htVal * tvaMult;
     rowsXml += `
       <a:tr h="457200">
         <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="333333"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${escapeXml(p.name || `Phase ${i + 1}`)}</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>
@@ -311,6 +311,10 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: 'Corps de requête invalide.' }, { status: 400 });
   }
+
+  // Multiplicateur TVA : piloté par parametres.tva_rate (transmis dans le payload),
+  // défaut 20 %. Remplace les anciens "* 1.2" codés en dur.
+  const TVA_MULT = 1 + (Number(data.tva_rate ?? 20) / 100);
 
   // 1. Résolution globale du CDP depuis la vraie table personnes (par UUID)
   if (data.cdp_id && (!data.cdp_first_name || !data.cdp_last_name)) {
@@ -557,16 +561,16 @@ export async function POST(req: Request) {
       const suiviJeh = data.suivi_jeh_count !== undefined ? data.suivi_jeh_count : 1;
       const suiviPrice = data.suivi_jeh_price !== undefined ? data.suivi_jeh_price : 200;
       const suiviHt = suiviJeh * suiviPrice;
-      const suiviTtc = suiviHt * 1.2;
+      const suiviTtc = suiviHt * TVA_MULT;
 
       const totalHt = data.total_ht !== undefined ? Number(data.total_ht) : (totalPhasesHt + suiviHt);
-      const totalTtc = data.total_ttc !== undefined ? Number(data.total_ttc) : (totalHt * 1.2);
+      const totalTtc = data.total_ttc !== undefined ? Number(data.total_ttc) : (totalHt * TVA_MULT);
 
       if (budgetXml.includes('{TABLE_BUDGET}')) {
         budgetXml = replacePlaceholderShapeWithTable(
           budgetXml,
           '{TABLE_BUDGET}',
-          (x, y, cx, cy) => generateBudgetTableXml(phases, suiviJeh, suiviHt, suiviTtc, totalHt, totalTtc, x, y, cx, cy),
+          (x, y, cx, cy) => generateBudgetTableXml(phases, suiviJeh, suiviHt, suiviTtc, totalHt, totalTtc, x, y, cx, cy, TVA_MULT),
           { x: 1144000, y: 2000000, cx: 16000000, cy: 4800000 }
         );
       } else if (budgetXml.includes('PHASE_NOM_PLACEHOLDER')) {
@@ -581,7 +585,7 @@ export async function POST(req: Request) {
           for (let i = 0; i < phases.length; i++) {
             const p = phases[i];
             const htVal = (p.jehCount || p.jeh_count || 0) * (p.jehPrice || p.jeh_price || 0);
-            const ttcVal = htVal * 1.2;
+            const ttcVal = htVal * TVA_MULT;
 
             let rowXml = rowTemplate
               .replace('PHASE_NOM_PLACEHOLDER', escapeXml(p.name || `Phase ${i + 1}`))
@@ -918,10 +922,10 @@ export async function POST(req: Request) {
     const suiviJeh = data.suivi_jeh_count !== undefined ? data.suivi_jeh_count : 1;
     const suiviPrice = data.suivi_jeh_price !== undefined ? data.suivi_jeh_price : 200;
     const suiviHt = suiviJeh * suiviPrice;
-    const suiviTtc = suiviHt * 1.2;
+    const suiviTtc = suiviHt * TVA_MULT;
 
     const totalHt = data.total_ht !== undefined ? Number(data.total_ht) : (totalPhasesHt + suiviHt);
-    const totalTtc = data.total_ttc !== undefined ? Number(data.total_ttc) : (totalHt * 1.2);
+    const totalTtc = data.total_ttc !== undefined ? Number(data.total_ttc) : (totalHt * TVA_MULT);
 
     // Durée totale = somme des durées de phase
     const dureeTotale = phases.reduce((acc: number, p: any) => acc + (p.dureeSemaines || p.duree_semaines || 0), 0);

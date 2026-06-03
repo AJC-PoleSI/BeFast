@@ -3,6 +3,16 @@
 > État au 2026-06-03. 25 tables Supabase. Ce document inventorie les tables,
 > pointe les redondances, et propose des données/tables à intégrer.
 
+> **Convention JEH (officielle)** : le JEH est l'unité de facturation.
+> `nb_jeh` = nombre de JEH (quantité) · `prix_jeh` = prix unitaire d'un JEH (€) ·
+> `montant_ht = nb_jeh × prix_jeh`. (« JEH » seul = la quantité, pas le prix.)
+
+> **Avancement** : ✅ R4 (TVA centralisée via `parametres.tva_rate`, lue dans la
+> propale et le PPT) · ✅ R9 (paramètres structure persistés — réalisé par Félix
+> dans `parametres` + page admin à onglets, plus intégré qu'une table dédiée) ·
+> ✅ R1/R2 mitigés par la vue `v_budget_unifie` (migration 031, vocabulaire
+> canonique sans casser les tables) · R7 : JSON conservé comme fallback de secours.
+
 ---
 
 ## 1. Inventaire par domaine

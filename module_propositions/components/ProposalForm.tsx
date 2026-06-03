@@ -232,6 +232,7 @@ export default function ProposalForm() {
   const [defaultJehPrice, setDefaultJehPrice] = useState(100);
   const [marges, setMarges] = useState<MargesMap>({});
   const [phasesDB, setPhasesDB] = useState<PhaseCatalogue[]>(phasesFallback);
+  const [tvaRate, setTvaRate] = useState(20); // % — piloté depuis parametres.tva_rate
 
   const { register, control, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
@@ -309,6 +310,8 @@ export default function ProposalForm() {
       const num = (v?: string) => (v !== undefined && v !== '' ? Number(v) : undefined);
       const jeh = num(p['prix_jeh_moyen']);
       if (jeh !== undefined) setDefaultJehPrice(jeh);
+      const tva = num(p['tva_rate']);
+      if (tva !== undefined) setTvaRate(tva);
       const suivi = num(p['prix_suivi_jeh_moyen']);
       const frais = num(p['frais_dossier_moyen']);
       if (suivi !== undefined) setValue('suiviJehPrice', suivi);
@@ -515,7 +518,7 @@ export default function ProposalForm() {
     data.phases.forEach((p: any) => { totalHT += (Number(p.jehCount || 0) * Number(p.jehPrice || 0)); });
     totalHT += (Number(data.suiviJehCount || 0) * Number(data.suiviJehPrice || 0));
     totalHT += Number(data.globalFraisAnnexes || 0);
-    const totalTTC = totalHT * 1.20;
+    const totalTTC = totalHT * (1 + tvaRate / 100);
 
     return {
       id: data.propaleId,
@@ -601,6 +604,7 @@ export default function ProposalForm() {
       const payloadForPpt = {
         ...payload,
         ...cdpInfo,
+        tva_rate: tvaRate,
         phases: payload.phases,
       };
 
@@ -645,7 +649,7 @@ export default function ProposalForm() {
     const fraisDossier = Number(watchFraisDossier || 0);
     const fraisAnnexes = Number(watchGlobalFraisAnnexes || 0);
     const totalHT = totalPhasesJeh + suiviTotal + margeJe + fraisDossier + fraisAnnexes;
-    const tva = totalHT * 0.20;
+    const tva = totalHT * (tvaRate / 100);
     const totalTTC = totalHT + tva;
     return { totalHT, tva, totalTTC, totalPhasesJeh, suiviTotal, margeJe, fraisDossier, fraisAnnexes };
   };
@@ -1129,7 +1133,7 @@ export default function ProposalForm() {
               <span>{budget.totalHT.toLocaleString('fr-FR')} €</span>
             </div>
             <div className="flex justify-between items-center text-slate-300 font-medium">
-              <span>TVA (20%)</span>
+              <span>TVA ({tvaRate}%)</span>
               <span>{budget.tva.toLocaleString('fr-FR')} €</span>
             </div>
             <div className="border-t border-slate-700 pt-2 flex justify-between items-center font-black text-xl text-green-400">
