@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next/cache"
 import { ETUDES_TAG, MEMBERS_TAG, CLIENTS_TAG, PROPOSALS_TAG } from "@/lib/cache-tags"
+import type { BudgetInput } from "@/lib/budget/compute"
 
 // Couleurs de Gantt — identiques à la page étude pour une cohérence visuelle
 const GANTT_COLORS = [
@@ -528,4 +529,83 @@ export async function decideBudget(id: string, decision: "valide" | "rejete", co
   revalidatePath("/tresorerie")
   revalidatePath("/prospection")
   return { success: true }
+}
+
+// Détail complet du budget d'une propale (phases + paramètres) pour la modale
+// de validation trésorerie et l'export Excel. Admin uniquement.
+export type ProposalBudgetDetail = {
+  id: string
+  client_company: string | null
+  study_type: string | null
+  cdp_name: string | null
+  budget_status: string
+  budget_comment: string | null
+  budget: BudgetInput
+}
+
+export async function getProposalBudget(id: string) {
+  noStore()
+  if (!(await isCallerAdmin())) return { error: "Non autorisé" }
+
+  const sb = createAdminClient()
+  const { data: prop, error } = await sb
+    .from("proposals")
+    .select(
+      "id, client_company, study_type, cdp_id, cdp_custom, budget_status, budget_comment, suivi_jeh_count, suivi_jeh_price, global_frais_annexes, frais_dossier, marge_je, proposal_phases(name, jeh_count, jeh_price, order_index)"
+    )
+    .eq("id", id)
+    .single()
+  if (error) return { error: error.message }
+  if (!prop) return { error: "Proposition introuvable" }
+
+  // Nom du CDP : membre AJC lié, sinon nom libre.
+  let cdpName: string | null = (prop as any).cdp_custom ?? null
+  if ((prop as any).cdp_id) {
+    const { data: cdp } = await sb
+      .from("personnes")
+      .select("prenom, nom")
+      .eq("id", (prop as any).cdp_id)
+      .single()
+    if (cdp) cdpName = `${cdp.prenom ?? ""} ${cdp.nom ?? ""}`.trim() || cdpName
+  }
+
+  // Taux de TVA depuis les paramètres (clé/valeur), défaut 20 %.
+  let tvaPct = 20
+  const { data: tvaParam } = await sb
+    .from("parametres")
+    .select("value")
+    .eq("key", "tva_rate")
+    .maybeSingle()
+  if (tvaParam?.value != null) {
+    const parsed = Number(tvaParam.value)
+    if (!Number.isNaN(parsed) && parsed > 0) tvaPct = parsed
+  }
+
+  const phases = (((prop as any).proposal_phases as any[]) || [])
+    .slice()
+    .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+    .map((p) => ({
+      name: p.name as string,
+      jehCount: Number(p.jeh_count || 0),
+      jehPrice: Number(p.jeh_price || 0),
+    }))
+
+  const detail: ProposalBudgetDetail = {
+    id: prop.id as string,
+    client_company: (prop as any).client_company ?? null,
+    study_type: (prop as any).study_type ?? null,
+    cdp_name: cdpName,
+    budget_status: (prop as any).budget_status as string,
+    budget_comment: (prop as any).budget_comment ?? null,
+    budget: {
+      phases,
+      suiviJehCount: Number((prop as any).suivi_jeh_count || 0),
+      suiviJehPrice: Number((prop as any).suivi_jeh_price || 0),
+      margeJePct: Number((prop as any).marge_je || 0),
+      fraisDossier: Number((prop as any).frais_dossier || 0),
+      globalFraisAnnexes: Number((prop as any).global_frais_annexes || 0),
+      tvaPct,
+    },
+  }
+  return { data: detail }
 }

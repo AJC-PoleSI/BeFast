@@ -15,7 +15,9 @@ import {
   type MissionPayRow,
   type CaParEtude,
 } from "@/lib/actions/tresorerie"
-import { getBudgetValidations, decideBudget, type BudgetValidationRow } from "@/lib/actions/propositions"
+import { getBudgetValidations, decideBudget, getProposalBudget, type BudgetValidationRow, type ProposalBudgetDetail } from "@/lib/actions/propositions"
+import { computeBudget } from "@/lib/budget/compute"
+import { BudgetSheet } from "@/components/budget/BudgetSheet"
 
 import PilotagePrix from "./PilotagePrix"
 
@@ -67,6 +69,7 @@ export default function TresoreriePage() {
   const [budgetRows, setBudgetRows] = useState<BudgetValidationRow[] | null>(null)
   const [rejectBudget, setRejectBudget] = useState<BudgetValidationRow | null>(null)
   const [budgetBusy, setBudgetBusy] = useState<string | null>(null)
+  const [detailBudgetId, setDetailBudgetId] = useState<string | null>(null)
 
   const loadBudgets = async () => {
     const res = await getBudgetValidations()
@@ -179,6 +182,9 @@ export default function TresoreriePage() {
   }
 
   const kpis = data.kpis
+  const nbBudgetsAValider = budgetRows
+    ? budgetRows.filter((b) => b.budget_status === "en_attente_validation").length
+    : 0
   const kpiList = [
     { icon: Wallet, title: "CA Facturé", value: fmtEUR(kpis.totalFacture), cls: "bg-blue-50 text-blue-600 border-blue-200" },
     { icon: CircleCheck, title: "Encaissé", value: fmtEUR(kpis.totalEncaisse), cls: "bg-emerald-50 text-emerald-600 border-emerald-200" },
@@ -200,6 +206,20 @@ export default function TresoreriePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {budgetRows && (
+            <button
+              onClick={() => setActiveTab("validation")}
+              className="relative flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-xl text-emerald-700 hover:bg-emerald-100 transition-colors"
+            >
+              <Euro className="w-5 h-5" />
+              <span className="text-sm font-semibold">Budget</span>
+              {nbBudgetsAValider > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm">
+                  {nbBudgetsAValider}
+                </span>
+              )}
+            </button>
+          )}
           <button
             onClick={() => setActiveTab("notes")}
             className="relative flex items-center gap-2 bg-indigo-50 border border-indigo-100 px-3 py-2 rounded-xl text-indigo-700 hover:bg-indigo-100 transition-colors"
@@ -736,7 +756,14 @@ export default function TresoreriePage() {
                     const chip = BUDGET_STATUS_CHIP[b.budget_status] ?? BUDGET_STATUS_CHIP.brouillon
                     return (
                       <tr key={b.id} className="hover:bg-zinc-50 transition-colors align-top">
-                        <td className="px-4 py-3 font-mono text-[#00236f] font-medium">{b.id}</td>
+                        <td className="px-4 py-3 font-mono font-medium">
+                          <button
+                            onClick={() => setDetailBudgetId(b.id)}
+                            className="text-[#00236f] hover:underline"
+                          >
+                            {b.id}
+                          </button>
+                        </td>
                         <td className="px-4 py-3 text-zinc-700">{b.client_company ?? "—"}</td>
                         <td className="px-4 py-3 text-zinc-600">{b.study_type ?? "—"}</td>
                         <td className="px-4 py-3">
@@ -748,6 +775,12 @@ export default function TresoreriePage() {
                         <td className="px-4 py-3 text-right font-semibold text-[#00236f] tabular-nums">{fmtEUR(b.total_ht)}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => setDetailBudgetId(b.id)}
+                              className="px-2.5 py-1 rounded-md text-xs font-semibold text-[#00236f] bg-[#00236f]/5 border border-[#00236f]/20 hover:bg-[#00236f]/10 transition-colors"
+                            >
+                              Voir le budget
+                            </button>
                             {b.budget_status !== "valide" && (
                               <button
                                 onClick={() => handleDecideBudget(b.id, "valide")}
@@ -780,6 +813,24 @@ export default function TresoreriePage() {
 
       {/* ─── Pilotage des prix (déplacé depuis Administration) ─── */}
       {activeTab === "pilotage" && <PilotagePrix />}
+
+      {/* ── Modale détail budget ── */}
+      {detailBudgetId && (
+        <BudgetDetailModal
+          proposalId={detailBudgetId}
+          busy={budgetBusy === detailBudgetId}
+          onClose={() => setDetailBudgetId(null)}
+          onValidate={async () => {
+            await handleDecideBudget(detailBudgetId, "valide")
+            setDetailBudgetId(null)
+          }}
+          onReject={() => {
+            const row = budgetRows?.find((b) => b.id === detailBudgetId) ?? null
+            setDetailBudgetId(null)
+            if (row) setRejectBudget(row)
+          }}
+        />
+      )}
 
       {/* ── Modale rejet de budget ── */}
       {rejectBudget && (
@@ -1116,6 +1167,107 @@ function PayMissionModal({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────── */
+/*  Budget detail modal (Excel-style)                          */
+/* ────────────────────────────────────────────────────────── */
+function BudgetDetailModal({
+  proposalId,
+  busy,
+  onClose,
+  onValidate,
+  onReject,
+}: {
+  proposalId: string
+  busy: boolean
+  onClose: () => void
+  onValidate: () => void
+  onReject: () => void
+}) {
+  const [detail, setDetail] = useState<ProposalBudgetDetail | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    getProposalBudget(proposalId).then((res) => {
+      if (!active) return
+      if ((res as any).error) setError((res as any).error)
+      else setDetail((res as any).data)
+    })
+    return () => {
+      active = false
+    }
+  }, [proposalId])
+
+  const breakdown = detail ? computeBudget(detail.budget) : null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100 shrink-0">
+          <div>
+            <h2 className="font-manrope font-bold text-[#00236f] text-lg">Budget de la proposition</h2>
+            <p className="text-xs text-zinc-500 mt-0.5 font-mono">{proposalId}</p>
+          </div>
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="p-6 overflow-y-auto">
+          {error ? (
+            <p className="text-sm text-red-500 font-medium">{error}</p>
+          ) : !breakdown || !detail ? (
+            <div className="flex items-center justify-center py-12 text-zinc-400">
+              <Loader2 className="w-6 h-6 animate-spin" />
+            </div>
+          ) : (
+            <BudgetSheet
+              breakdown={breakdown}
+              meta={{
+                id: detail.id,
+                client_company: detail.client_company,
+                study_type: detail.study_type,
+                cdp_name: detail.cdp_name,
+              }}
+            />
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-zinc-100 shrink-0">
+          <a
+            href={`/api/proposals/${encodeURIComponent(proposalId)}/budget-xlsx`}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Télécharger Excel
+          </a>
+          <div className="flex items-center gap-3">
+            {detail && detail.budget_status !== "rejete" && (
+              <button
+                onClick={onReject}
+                disabled={busy}
+                className="px-4 py-2 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50"
+              >
+                Rejeter
+              </button>
+            )}
+            {detail && detail.budget_status !== "valide" && (
+              <button
+                onClick={onValidate}
+                disabled={busy}
+                className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+                Valider le budget
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
