@@ -17,7 +17,9 @@ import {
 } from "@/lib/actions/tresorerie"
 import { getBudgetValidations, decideBudget, type BudgetValidationRow } from "@/lib/actions/propositions"
 
-type Tab = "factures" | "ca" | "missions" | "notes" | "validation"
+import PilotagePrix from "./PilotagePrix"
+
+type Tab = "factures" | "ca" | "missions" | "notes" | "validation" | "pilotage"
 
 const BUDGET_STATUS_CHIP: Record<string, { label: string; cls: string }> = {
   brouillon: { label: "Brouillon", cls: "bg-zinc-100 text-zinc-600" },
@@ -301,6 +303,7 @@ export default function TresoreriePage() {
                 }`,
               }]
             : []),
+          { key: "pilotage" as Tab, label: "Pilotage des prix" },
         ].map((t) => (
           <button
             key={t.key}
@@ -774,6 +777,9 @@ export default function TresoreriePage() {
           </div>
         </div>
       )}
+
+      {/* ─── Pilotage des prix (déplacé depuis Administration) ─── */}
+      {activeTab === "pilotage" && <PilotagePrix />}
 
       {/* ── Modale rejet de budget ── */}
       {rejectBudget && (
