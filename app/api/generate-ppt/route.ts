@@ -4,6 +4,7 @@ import Docxtemplater from 'docxtemplater';
 import fs from 'fs';
 import path from 'path';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { computeBudget } from '@/lib/budget/compute';
 
 /**
  * PowerPoint stocke parfois les balises {TAG} en plusieurs fragments XML séparés.
@@ -556,15 +557,30 @@ export async function POST(req: Request) {
       let budgetXml = zip.file(budgetSlideFile)!.asText();
       budgetXml = fixBrokenTags(budgetXml);
 
-      // Calculs financiers globaux
-      const totalPhasesHt = phases.reduce((acc: number, p: any) => acc + (p.jehCount || p.jeh_count || 0) * (p.jehPrice || p.jeh_price || 0), 0);
+      // Calculs financiers globaux — source unique : lib/budget/compute.
+      // La marge est « fondue » dans le JEH (grossissement du SDP) et les frais
+      // de structure sont inclus dans le Total HT, exactement comme la synthèse
+      // affichée côté CDP et la validation trésorerie.
       const suiviJeh = data.suivi_jeh_count !== undefined ? data.suivi_jeh_count : 1;
       const suiviPrice = data.suivi_jeh_price !== undefined ? data.suivi_jeh_price : 200;
       const suiviHt = suiviJeh * suiviPrice;
       const suiviTtc = suiviHt * TVA_MULT;
 
-      const totalHt = data.total_ht !== undefined ? Number(data.total_ht) : (totalPhasesHt + suiviHt);
-      const totalTtc = data.total_ttc !== undefined ? Number(data.total_ttc) : (totalHt * TVA_MULT);
+      const budgetBreakdown = computeBudget({
+        phases: phases.map((p: any) => ({
+          name: p.name || '',
+          jehCount: Number(p.jehCount || p.jeh_count || 0),
+          jehPrice: Number(p.jehPrice || p.jeh_price || 0),
+        })),
+        suiviJehCount: Number(suiviJeh || 0),
+        suiviJehPrice: Number(suiviPrice || 0),
+        margeJePct: Number(data.marge_je || 0),
+        fraisDossier: Number(data.frais_dossier || 0),
+        globalFraisAnnexes: Number(data.global_frais_annexes || 0),
+        tvaPct: Number(data.tva_rate ?? 20),
+      });
+      const totalHt = budgetBreakdown.totalHt;
+      const totalTtc = budgetBreakdown.netAPayer;
 
       if (budgetXml.includes('{TABLE_BUDGET}')) {
         budgetXml = replacePlaceholderShapeWithTable(
@@ -917,15 +933,27 @@ export async function POST(req: Request) {
       nullGetter: () => '', // Supprimer la balise si non fournie
     });
 
-    // Calculs financiers globaux
-    const totalPhasesHt = phases.reduce((acc: number, p: any) => acc + (p.jehCount || p.jeh_count || 0) * (p.jehPrice || p.jeh_price || 0), 0);
+    // Calculs financiers globaux — source unique : lib/budget/compute.
     const suiviJeh = data.suivi_jeh_count !== undefined ? data.suivi_jeh_count : 1;
     const suiviPrice = data.suivi_jeh_price !== undefined ? data.suivi_jeh_price : 200;
     const suiviHt = suiviJeh * suiviPrice;
     const suiviTtc = suiviHt * TVA_MULT;
 
-    const totalHt = data.total_ht !== undefined ? Number(data.total_ht) : (totalPhasesHt + suiviHt);
-    const totalTtc = data.total_ttc !== undefined ? Number(data.total_ttc) : (totalHt * TVA_MULT);
+    const globalBudget = computeBudget({
+      phases: phases.map((p: any) => ({
+        name: p.name || '',
+        jehCount: Number(p.jehCount || p.jeh_count || 0),
+        jehPrice: Number(p.jehPrice || p.jeh_price || 0),
+      })),
+      suiviJehCount: Number(suiviJeh || 0),
+      suiviJehPrice: Number(suiviPrice || 0),
+      margeJePct: Number(data.marge_je || 0),
+      fraisDossier: Number(data.frais_dossier || 0),
+      globalFraisAnnexes: Number(data.global_frais_annexes || 0),
+      tvaPct: Number(data.tva_rate ?? 20),
+    });
+    const totalHt = globalBudget.totalHt;
+    const totalTtc = globalBudget.netAPayer;
 
     // Durée totale = somme des durées de phase
     const dureeTotale = phases.reduce((acc: number, p: any) => acc + (p.dureeSemaines || p.duree_semaines || 0), 0);

@@ -34,6 +34,8 @@ const phasesFallback: PhaseCatalogue[] = (phasesJson as any[]).map((p) => ({
   jehPrice: p.jehPrice ?? 100,
 }));
 import { TAILLES_ENTREPRISE, type MargesMap } from '@/lib/proposals-constants';
+import { computeBudget } from '@/lib/budget/compute';
+import { BudgetSheet } from '@/components/budget/BudgetSheet';
 
 // --- COULEURS GANTT (identiques à la page Étude) ---
 const GANTT_COLORS = [
@@ -674,6 +676,21 @@ export default function ProposalForm() {
   };
   const budget = calculateBudget();
 
+  // Récap « façon Excel » (même calcul que la modale trésorerie et l'export .xlsx)
+  const budgetBreakdown = computeBudget({
+    phases: watchPhases.map((p) => ({
+      name: p.name,
+      jehCount: Number(p.jehCount || 0),
+      jehPrice: Number(p.jehPrice || 0),
+    })),
+    suiviJehCount: Number(watch('suiviJehCount') || 0),
+    suiviJehPrice: Number(watch('suiviJehPrice') || 0),
+    margeJePct: Number(watchMargeJe || 0),
+    fraisDossier: Number(watchFraisDossier || 0),
+    globalFraisAnnexes: Number(watchGlobalFraisAnnexes || 0),
+    tvaPct: tvaRate,
+  });
+
   // Bornes du Gantt : on grossit automatiquement si une phase déborde
   const projectMonday = getNextMonday(watchStartDate);
   const maxWeek = watchPhases.length > 0
@@ -1158,6 +1175,19 @@ export default function ProposalForm() {
             <div className="border-t border-slate-700 pt-2 flex justify-between items-center font-black text-xl text-green-400">
               <span>Total TTC</span>
               <span>{budget.totalTTC.toLocaleString('fr-FR')} €</span>
+            </div>
+          </div>
+
+          {/* Récap façon Excel — tel qu'il apparaîtra dans la propale et la validation trésorerie */}
+          <div className="border-t border-slate-200 pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <FileText size={16} className="text-slate-400" />
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                Aperçu budget (propale & trésorerie)
+              </h3>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-white p-5 overflow-x-auto">
+              <BudgetSheet breakdown={budgetBreakdown} />
             </div>
           </div>
         </div>
