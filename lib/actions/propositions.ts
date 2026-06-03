@@ -174,6 +174,11 @@ export async function saveProposal(input: ProposalInput) {
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
+  // Écritures via service_role : la RLS interdit désormais l'écriture directe
+  // de proposals/proposal_phases aux membres (cf. migration 034). Les garde-fous
+  // applicatifs (authentification, validation budget) restent appliqués ici.
+  const sb = createAdminClient()
+
   const { phases, ...proposal } = input
 
   // On ne touche pas au statut existant si la propale existe déjà (sauf 1ère création)
@@ -206,11 +211,11 @@ export async function saveProposal(input: ProposalInput) {
     payload.budget_comment = null
   }
 
-  const { error: upErr } = await supabase.from("proposals").upsert(payload)
+  const { error: upErr } = await sb.from("proposals").upsert(payload)
   if (upErr) return { error: upErr.message }
 
   // Remplace les phases
-  await supabase.from("proposal_phases").delete().eq("proposal_id", input.id)
+  await sb.from("proposal_phases").delete().eq("proposal_id", input.id)
   if (phases && phases.length > 0) {
     const rows = phases.map((p, i) => ({
       proposal_id: input.id,
@@ -226,7 +231,7 @@ export async function saveProposal(input: ProposalInput) {
       jeh_count: Number(p.jeh_count ?? 1),
       jeh_price: Number(p.jeh_price ?? 100),
     }))
-    const { error: phErr } = await supabase.from("proposal_phases").insert(rows)
+    const { error: phErr } = await sb.from("proposal_phases").insert(rows)
     if (phErr) return { error: phErr.message }
   }
 
@@ -255,7 +260,8 @@ export async function updateProposalStatus(id: string, status: string) {
     }
   }
 
-  const { error } = await supabase
+  const sb = createAdminClient()
+  const { error } = await sb
     .from("proposals")
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", id)
@@ -266,13 +272,13 @@ export async function updateProposalStatus(id: string, status: string) {
 }
 
 export async function deleteProposal(id: string) {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
+  // Suppression réservée aux administrateurs (auparavant garantie par la policy
+  // RLS "proposals delete"). On revérifie côté serveur car l'écriture passe
+  // désormais par le service_role qui ignore la RLS.
+  if (!(await isCallerAdmin())) return { error: "Non autorisé" }
 
-  const { error } = await supabase.from("proposals").delete().eq("id", id)
+  const sb = createAdminClient()
+  const { error } = await sb.from("proposals").delete().eq("id", id)
   if (error) return { error: error.message }
   revalidateTag(PROPOSALS_TAG)
   revalidatePath("/prospection")
