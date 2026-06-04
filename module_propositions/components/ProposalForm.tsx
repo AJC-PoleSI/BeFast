@@ -119,17 +119,31 @@ const FastNumberInput = ({ value, onChange, min = 0, className = "" }: any) => {
 // === GANTT ÉDITABLE (calqué sur la page Étude) ===
 // Les barres sont positionnées sur semaineDebut/dureeSemaines et déplaçables /
 // redimensionnables à la souris ; toute modification remonte dans le formulaire.
-const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate, showPvri }: any) => {
+const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate, showPvri, pvriWeek, onPvriWeekChange }: any) => {
   const trackRef = useRef<HTMLDivElement>(null);
+  const pvriTrackRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<any>(null);
 
-  // Semaine médiane de l'étude = point de versement PVRI intermédiaire
-  const pvriMidWeek: number | null = showPvri && phases.length > 0
-    ? (() => {
-        const maxEnd = Math.max(...phases.map((p: any) => (p.semaineDebut || 1) + (p.dureeSemaines || 1) - 1));
-        return Math.round((1 + maxEnd) / 2);
-      })()
-    : null;
+  const beginPvriDrag = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const track = pvriTrackRef.current;
+    if (!track) return;
+    const pxPerWeek = track.getBoundingClientRect().width / nbWeeks;
+    const startX = e.clientX;
+    const startWeek = pvriWeek || 1;
+    const onMove = (ev: MouseEvent) => {
+      const delta = Math.round((ev.clientX - startX) / pxPerWeek);
+      const next = Math.max(1, Math.min(nbWeeks, startWeek + delta));
+      onPvriWeekChange(next);
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
 
   const weekStartDate = (semaine: number) => {
     const d = new Date(projectMonday);
@@ -190,28 +204,28 @@ const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate, show
           </div>
         </div>
 
-        {/* Marqueur PVRI — goutte d'eau positionnée à mi-étude */}
-        {showPvri && pvriMidWeek && (
+        {/* Marqueur PVRI — goutte d'eau draggable */}
+        {showPvri && pvriWeek && (
           <div className="flex items-end mb-1">
             <div className="w-44 shrink-0" />
-            <div className="flex-1 relative h-11">
+            <div ref={pvriTrackRef} className="flex-1 relative h-8">
               <div
-                className="absolute bottom-0 flex flex-col items-center z-10"
+                className="absolute bottom-0 flex flex-col items-center z-10 cursor-ew-resize select-none"
                 style={{
-                  left: `${((pvriMidWeek - 0.5) / nbWeeks) * 100}%`,
+                  left: `${((pvriWeek - 0.5) / nbWeeks) * 100}%`,
                   transform: 'translateX(-50%)',
                 }}
-                title="Procès-verbal de règlement intermédiaire"
+                onMouseDown={beginPvriDrag}
+                title="Glisser pour repositionner · PVRI (versement intermédiaire)"
               >
-                <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center shadow-md border-2 border-white">
-                  <span className="text-white font-bold leading-none text-center" style={{ fontSize: 7 }}>PVRI</span>
+                <div className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center shadow border-2 border-white">
+                  <span className="text-white font-bold leading-none" style={{ fontSize: 6 }}>PVRI</span>
                 </div>
-                {/* Pointe de la goutte d'eau */}
                 <div style={{
                   width: 0, height: 0, marginTop: -1,
-                  borderLeft: '5px solid transparent',
-                  borderRight: '5px solid transparent',
-                  borderTop: '8px solid #059669',
+                  borderLeft: '3px solid transparent',
+                  borderRight: '3px solid transparent',
+                  borderTop: '5px solid #059669',
                 }} />
               </div>
             </div>
@@ -267,6 +281,7 @@ export default function ProposalForm() {
   const [members, setMembers] = useState<{ id: string; prenom: string; nom: string; email: string }[]>([]);
   const [nbWeeks, setNbWeeks] = useState(12);
   const [isSaving, setIsSaving] = useState(false);
+  const [pvriWeek, setPvriWeek] = useState<number>(1);
   const [defaultJehPrice, setDefaultJehPrice] = useState(100);
   const [marges, setMarges] = useState<MargesMap>({});
   const [phasesDB, setPhasesDB] = useState<PhaseCatalogue[]>(phasesFallback);
@@ -768,6 +783,14 @@ export default function ProposalForm() {
   const applyModalitesPreset = (type: 'standard' | 'pvri') => {
     setValue('paiementType' as any, type);
     replaceVersements(DEFAULT_MODALITES[type].map((v) => ({ label: v.label, pct: v.pct })));
+    if (type === 'pvri') {
+      // Initialise le marqueur PVRI à la semaine médiane de l'étude
+      const phases = watchPhases;
+      if (phases && phases.length > 0) {
+        const maxEnd = Math.max(...phases.map((p) => (p.semaineDebut || 1) + (p.dureeSemaines || 1) - 1));
+        setPvriWeek(Math.round((1 + maxEnd) / 2));
+      }
+    }
   };
 
   // Bornes du Gantt : on grossit automatiquement si une phase déborde
@@ -1095,6 +1118,8 @@ export default function ProposalForm() {
                 onChange={handleGanttChange}
                 formatDate={formatDate}
                 showPvri={watchPaiementType === 'pvri'}
+                pvriWeek={pvriWeek}
+                onPvriWeekChange={setPvriWeek}
               />
             </>
           )}
