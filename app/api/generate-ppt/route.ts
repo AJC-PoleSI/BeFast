@@ -4,7 +4,7 @@ import Docxtemplater from 'docxtemplater';
 import fs from 'fs';
 import path from 'path';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { computeBudget } from '@/lib/budget/compute';
+import { computeBudget, type BudgetBreakdown } from '@/lib/budget/compute';
 
 /**
  * PowerPoint stocke parfois les balises {TAG} en plusieurs fragments XML séparés.
@@ -72,8 +72,7 @@ function setShapeText(xmlStr: string, shapeName: string, text: string): string {
   return xmlStr.replace(match[0], match[1] + newParagraphs);
 }
 
-function generateBudgetTableXml(phases: any[], suiviJeh: number, suiviHt: number, suiviTtc: number, totalHt: number, totalTtc: number, x: number, y: number, cx: number, cy: number, tvaMult: number = 1.2): string {
-  // Proportions aérées et centrées : largeur totale = 16 000 000 EMUs
+function generateBudgetTableXml(b: BudgetBreakdown, x: number, y: number, cx: number, cy: number): string {
   const tblGrid = `
     <a:tblGrid>
       <a:gridCol w="6500000"/>
@@ -83,48 +82,71 @@ function generateBudgetTableXml(phases: any[], suiviJeh: number, suiviHt: number
     </a:tblGrid>
   `;
 
-  let rowsXml = `
-    <a:tr h="685800">
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1300" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>PHASE</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1300" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>JEH</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1300" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>PRIX HT</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1300" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>PRIX TTC</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>
-    </a:tr>
-  `;
+  const fmt = (n: number) =>
+    n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 
-  for (let i = 0; i < phases.length; i++) {
-    const p = phases[i];
-    const htVal = (p.jehCount || p.jeh_count || 0) * (p.jehPrice || p.jeh_price || 0);
-    const ttcVal = htVal * tvaMult;
-    rowsXml += `
-      <a:tr h="457200">
-        <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="333333"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${escapeXml(p.name || `Phase ${i + 1}`)}</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>
-        <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="333333"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${p.jehCount || p.jeh_count || 0}</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>
-        <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="333333"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${htVal.toLocaleString('fr-FR')} €</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>
-        <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="333333"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${ttcVal.toLocaleString('fr-FR')} €</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>
-      </a:tr>
-    `;
-  }
+  const tcText = (
+    text: string,
+    opts: { bold?: boolean; italic?: boolean; align?: 'l' | 'ctr' | 'r'; fill?: string; color?: string; sz?: number } = {}
+  ) => {
+    const { bold = false, italic = false, align = 'l', fill = 'FFFFFF', color = '333333', sz = 1200 } = opts;
+    const b = bold ? ' b="1"' : '';
+    const i = italic ? ' i="1"' : '';
+    const algn = align !== 'l' ? `<a:pPr algn="${align}"/>` : '';
+    const fillXml = `<a:solidFill><a:srgbClr val="${fill}"/></a:solidFill>`;
+    return `<a:tc><a:txBody><a:bodyPr lIns="100000" rIns="100000" tIns="50000" bIns="50000"/><a:lstStyle/><a:p>${algn}<a:r><a:rPr lang="fr-FR" sz="${sz}"${b}${i}><a:solidFill><a:srgbClr val="${color}"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${escapeXml(text)}</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr">${fillXml}</a:tcPr></a:tc>`;
+  };
+  const tcEmpty = (fill = 'FFFFFF') =>
+    `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="${fill}"/></a:solidFill></a:tcPr></a:tc>`;
 
-  // Ligne Suivi Chef de Projet (police normale sans italique)
-  rowsXml += `
-    <a:tr h="457200">
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="555555"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>Suivi Chef de Projet</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="EEF2FA"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="555555"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${suiviJeh}</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="EEF2FA"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="555555"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${suiviHt.toLocaleString('fr-FR')} €</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="EEF2FA"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1200"><a:solidFill><a:srgbClr val="555555"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${suiviTtc.toLocaleString('fr-FR')} €</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="EEF2FA"/></a:solidFill></a:tcPr></a:tc>
-    </a:tr>
-  `;
+  // ── En-tête ──────────────────────────────────────────────────────────────
+  let rowsXml = `<a:tr h="685800">
+    ${tcText('Phases',   { bold: true, fill: '3F3F46', color: 'FFFFFF', sz: 1300 })}
+    ${tcText('J.E.H.',   { bold: true, fill: '3F3F46', color: 'FFFFFF', sz: 1300, align: 'r' })}
+    ${tcText('Montant',  { bold: true, fill: '3F3F46', color: 'FFFFFF', sz: 1300, align: 'r' })}
+    ${tcText('TOTAL',    { bold: true, fill: '3F3F46', color: 'FFFFFF', sz: 1300, align: 'r' })}
+  </a:tr>`;
 
-  // Unique ligne de TOTAL fusionnant HT et TTC en rouge premium (E34670)
-  rowsXml += `
-    <a:tr h="609600">
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1600" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>TOTAL</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E34670"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E34670"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1600" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${totalHt.toLocaleString('fr-FR')} € HT</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E34670"/></a:solidFill></a:tcPr></a:tc>
-      <a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="r"/><a:r><a:rPr lang="fr-FR" sz="1600" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${totalTtc.toLocaleString('fr-FR')} € TTC</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="E34670"/></a:solidFill></a:tcPr></a:tc>
-    </a:tr>
-  `;
+  // ── Lignes de phases ──────────────────────────────────────────────────────
+  const phaseRows = [
+    ...b.phases.map(p => ({ name: p.name || 'Phase', jeh: p.jeh, prixJeh: p.prixJeh, montant: p.montant })),
+    ...(b.suiviJeh > 0 || b.suiviTotal > 0
+      ? [{ name: "Suivi de l'étude", jeh: b.suiviJeh, prixJeh: b.suiviPrixJeh, montant: b.suiviTotal }]
+      : []),
+  ];
+  phaseRows.forEach((p, i) => {
+    const fill = i % 2 === 0 ? 'FFFFFF' : 'F4F4F5';
+    rowsXml += `<a:tr h="457200">
+      ${tcText(p.name, { fill, color: '3F3F46' })}
+      ${tcText(String(p.jeh), { fill, align: 'r', color: '3F3F46' })}
+      ${tcText(fmt(p.prixJeh), { fill, align: 'r', color: '3F3F46' })}
+      ${tcText(fmt(p.montant), { fill, align: 'r', color: '3F3F46' })}
+    </a:tr>`;
+  });
+
+  // ── Séparateur ────────────────────────────────────────────────────────────
+  rowsXml += `<a:tr h="200000">
+    ${tcEmpty('E4E4E7')}${tcEmpty('E4E4E7')}${tcEmpty('E4E4E7')}${tcEmpty('E4E4E7')}
+  </a:tr>`;
+
+  // ── Synthèse (cols 3-4) + Modalités (cols 1-2) ───────────────────────────
+  const synthRows: Array<{ left: string; label: string; val: string; bold?: boolean; italic?: boolean; valFill?: string; labelFill?: string }> = [
+    { left: 'Modalités de règlement :', label: 'Total J.E.H. HT',       val: fmt(b.totalJehHt),   labelFill: 'F4F4F5', valFill: 'FFFFFF' },
+    { left: b.versements[0] ? `– ${b.versements[0].label} (${b.versements[0].pct} %) : ${fmt(b.versements[0].montant)}` : '', label: 'Frais de structure*', val: fmt(b.fraisStructure), labelFill: 'F4F4F5', valFill: 'FFFFFF' },
+    { left: b.versements[1] ? `– ${b.versements[1].label} (${b.versements[1].pct} %) : ${fmt(b.versements[1].montant)}` : '', label: 'Total HT',             val: fmt(b.totalHt),       bold: true, labelFill: 'F4F4F5', valFill: 'FFFFFF' },
+    { left: b.versements[2] ? `– ${b.versements[2].label} (${b.versements[2].pct} %) : ${fmt(b.versements[2].montant)}` : '', label: `TVA applicable (${b.tvaPct} %)`, val: fmt(b.tva), italic: true, labelFill: 'F4F4F5', valFill: 'FFFFFF' },
+    { left: '*Frais de structure : administratifs, postaux, logiciels, impression, transport.', label: 'NET À PAYER', val: fmt(b.netAPayer), bold: true, labelFill: 'E4E4E7', valFill: 'E4E4E7' },
+  ];
+
+  synthRows.forEach(({ left, label, val, bold = false, italic = false, labelFill = 'F4F4F5', valFill = 'FFFFFF' }) => {
+    const isNote = left.startsWith('*');
+    rowsXml += `<a:tr h="457200">
+      ${tcText(left, { fill: 'FFFFFF', color: isNote ? '71717A' : '3F3F46', sz: isNote ? 900 : 1100, italic: isNote })}
+      ${tcEmpty('FFFFFF')}
+      ${tcText(label, { fill: labelFill, color: bold ? '3F3F46' : '71717A', bold, italic, align: 'l', sz: 1100 })}
+      ${tcText(val,   { fill: valFill,   color: '3F3F46', bold, italic, align: 'r', sz: 1100 })}
+    </a:tr>`;
+  });
 
   return `
     <p:graphicFrame>
@@ -566,6 +588,7 @@ export async function POST(req: Request) {
       const suiviHt = suiviJeh * suiviPrice;
       const suiviTtc = suiviHt * TVA_MULT;
 
+      const paiementModalites = data.paiement_modalites ?? null;
       const budgetBreakdown = computeBudget({
         phases: phases.map((p: any) => ({
           name: p.name || '',
@@ -578,6 +601,7 @@ export async function POST(req: Request) {
         fraisDossier: Number(data.frais_dossier || 0),
         globalFraisAnnexes: Number(data.global_frais_annexes || 0),
         tvaPct: Number(data.tva_rate ?? 20),
+        paiementModalites,
       });
       const totalHt = budgetBreakdown.totalHt;
       const totalTtc = budgetBreakdown.netAPayer;
@@ -586,7 +610,7 @@ export async function POST(req: Request) {
         budgetXml = replacePlaceholderShapeWithTable(
           budgetXml,
           '{TABLE_BUDGET}',
-          (x, y, cx, cy) => generateBudgetTableXml(phases, suiviJeh, suiviHt, suiviTtc, totalHt, totalTtc, x, y, cx, cy, TVA_MULT),
+          (x, y, cx, cy) => generateBudgetTableXml(budgetBreakdown, x, y, cx, cy),
           { x: 1144000, y: 2000000, cx: 16000000, cy: 4800000 }
         );
       } else if (budgetXml.includes('PHASE_NOM_PLACEHOLDER')) {
