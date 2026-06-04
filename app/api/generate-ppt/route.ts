@@ -174,113 +174,97 @@ function generateBudgetTableXml(b: BudgetBreakdown, x: number, y: number, cx: nu
   `;
 }
 
-function generateGanttTableXml(phases: any[], phaseWeeks: any[], numWeeks: number, weekColWidth: number, x: number, y: number, cx: number, cy: number): string {
-  // Le planning complet intègre systématiquement : 1 sem Préparation + numWeeks d'études + 1 sem Finalisation
-  const totalWeeks = numWeeks + 2;
-  
-  let tblGrid = '<a:tblGrid><a:gridCol w="4000000"/><a:gridCol w="1200000"/>';
-  for (let w = 1; w <= totalWeeks; w++) {
-    tblGrid += `<a:gridCol w="${weekColWidth}"/>`;
-  }
-  tblGrid += '</a:tblGrid>';
+function generateGanttTableXml(phases: any[], phaseWeeks: any[], numWeeks: number, _weekColWidth: number, x: number, y: number, cx: number, cy: number): string {
+  const NAVY = '002C5A';
+  const LIGHT_BG = 'D8E4F0';
+  const WHITE = 'FFFFFF';
+  const PILL_BG = '1A4F8A';
+  const PHASE_COLORS = ['00236f', '2563eb', '0891b2', '059669', '65a30d', 'd97706', 'dc2626', 'db2777', '7c3aed', '475569'];
 
-  let trHeader = `<a:tr h="600000">`;
-  trHeader += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1300" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>PHASES DE L&apos;ÉTUDE</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>`;
-  trHeader += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1300" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>DURÉE</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>`;
-  
-  // En-tête des semaines
-  trHeader += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1000" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>PRÉPA</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>`;
-  for (let w = 1; w <= numWeeks; w++) {
-    trHeader += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1100" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>S${w}</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>`;
-  }
-  trHeader += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1000" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>BILAN</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill></a:tcPr></a:tc>`;
-  trHeader += `</a:tr>`;
+  const PHASE_COL_W = 3600000;
+  const BOOKEND_W = 1700000;
+  const studyW = numWeeks > 0 ? Math.floor((cx - PHASE_COL_W - 2 * BOOKEND_W) / numWeeks) : 1200000;
 
-  let rowsXml = trHeader;
+  let tblGrid = `<a:tblGrid><a:gridCol w="${PHASE_COL_W}"/><a:gridCol w="${BOOKEND_W}"/>`;
+  for (let w = 0; w < numWeeks; w++) tblGrid += `<a:gridCol w="${studyW}"/>`;
+  tblGrid += `<a:gridCol w="${BOOKEND_W}"/></a:tblGrid>`;
 
-  // 1. Ligne de Préparation (Semaine 1) - Coloriée en Or soft
-  let prepRow = `<a:tr h="550000">`;
-  prepRow += `<a:tc><a:txBody><a:bodyPr lIns="100000" rIns="100000" tIns="50000" bIns="50000"/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1100" b="1"><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>Préparation &amp; Recrutement</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>`;
-  prepRow += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1100"><a:solidFill><a:srgbClr val="333333"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>1 sem.</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>`;
-  
-  // Semaine de prépa coloriée en Or soft (D4AF37)
-  prepRow += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="D4AF37"/></a:solidFill></a:tcPr></a:tc>`;
-  
-  // Les autres semaines restent blanches
-  for (let w = 1; w <= numWeeks + 1; w++) {
-    prepRow += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:tcPr></a:tc>`;
-  }
-  prepRow += `</a:tr>`;
-  rowsXml += prepRow;
+  const emptyCell = (fill = LIGHT_BG) =>
+    `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="${fill}"/></a:solidFill></a:tcPr></a:tc>`;
 
-  // 2. Lignes des phases normales (décalées de +1 pour laisser la place à la prépa)
+  const hdrCell = (text: string, align = 'l') =>
+    `<a:tc><a:txBody><a:bodyPr lIns="100000" rIns="60000"/><a:lstStyle/><a:p><a:pPr algn="${align}"/><a:r><a:rPr lang="fr-FR" sz="1100" b="1"><a:solidFill><a:srgbClr val="${WHITE}"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${escapeXml(text)}</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="${NAVY}"/></a:solidFill></a:tcPr></a:tc>`;
+
+  const pillCell = (items: string[]) => {
+    const paras = items.map(item =>
+      `<a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="880" b="1"><a:solidFill><a:srgbClr val="${WHITE}"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${escapeXml(item)}</a:t></a:r></a:p>`
+    ).join('');
+    return `<a:tc><a:txBody><a:bodyPr lIns="80000" rIns="80000" tIns="80000" bIns="80000"/><a:lstStyle/>${paras}</a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="${PILL_BG}"/></a:solidFill></a:tcPr></a:tc>`;
+  };
+
+  // ── En-tête ───────────────────────────────────────────────────────────────
+  let rowsXml = `<a:tr h="600000">`;
+  rowsXml += hdrCell("PHASES DE L'ÉTUDE");
+  rowsXml += hdrCell('1-2', 'ctr');
+  for (let w = 1; w <= numWeeks; w++) rowsXml += hdrCell(String(w + 2), 'ctr');
+  rowsXml += hdrCell('CLÔTURE', 'ctr');
+  rowsXml += `</a:tr>`;
+
+  // ── Ligne d'initialisation (bookend haut) ─────────────────────────────────
+  rowsXml += `<a:tr h="700000">`;
+  rowsXml += `<a:tc><a:txBody><a:bodyPr lIns="100000"/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="950" i="1"><a:solidFill><a:srgbClr val="${NAVY}"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>Préparation</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="${LIGHT_BG}"/></a:solidFill></a:tcPr></a:tc>`;
+  rowsXml += pillCell(['Initialisation', "Réception de l'acompte", 'Choix des intervenants']);
+  for (let w = 1; w <= numWeeks; w++) rowsXml += emptyCell(WHITE);
+  rowsXml += emptyCell(LIGHT_BG);
+  rowsXml += `</a:tr>`;
+
+  // ── Lignes de phases ───────────────────────────────────────────────────────
   for (let i = 0; i < phases.length; i++) {
     const p = phases[i];
-    const pDuree = Number(p.dureeSemaines || p.duree_semaines || 1);
-    const activeRange = phaseWeeks[i];
-    const phaseColor = '105BA6'; // Bleu AJC
+    const phaseColor = PHASE_COLORS[i % PHASE_COLORS.length];
+    const pStart = Number(p.semaine_debut || p.semaineDebut || phaseWeeks[i]?.start || 1);
+    const pDuree = Number(p.duree_semaines || p.dureeSemaines || 1);
+    const pEnd = pStart + pDuree - 1;
 
-    let rowXml = `<a:tr h="550000">`;
-    rowXml += `<a:tc><a:txBody><a:bodyPr lIns="100000" rIns="100000" tIns="50000" bIns="50000"/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1100" b="1"><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${escapeXml(p.name)}</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>`;
-    rowXml += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1100"><a:solidFill><a:srgbClr val="333333"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${pDuree} sem.</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>`;
-    
-    // Semaine de prépa blanche
-    rowXml += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:tcPr></a:tc>`;
-    
-    // Semaines d'étude
+    rowsXml += `<a:tr h="460000">`;
+    rowsXml += `<a:tc><a:txBody><a:bodyPr lIns="100000" rIns="60000" tIns="50000" bIns="50000"/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="990" b="1"><a:solidFill><a:srgbClr val="${NAVY}"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>${escapeXml(`${i + 1}. ${p.name || `Phase ${i + 1}`}`)}</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="${LIGHT_BG}"/></a:solidFill></a:tcPr></a:tc>`;
+    rowsXml += emptyCell(LIGHT_BG);
     for (let w = 1; w <= numWeeks; w++) {
-      const isActive = w >= activeRange.start && w <= activeRange.end;
-      if (isActive) {
-        rowXml += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="${phaseColor}"/></a:solidFill></a:tcPr></a:tc>`;
-      } else {
-        rowXml += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:tcPr></a:tc>`;
-      }
+      rowsXml += (w >= pStart && w <= pEnd)
+        ? `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="${phaseColor}"/></a:solidFill></a:tcPr></a:tc>`
+        : emptyCell(WHITE);
     }
-    
-    // Semaine de bilan/finalisation blanche
-    rowXml += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:tcPr></a:tc>`;
-    rowXml += `</a:tr>`;
-    rowsXml += rowXml;
+    rowsXml += emptyCell(LIGHT_BG);
+    rowsXml += `</a:tr>`;
   }
 
-  // 3. Ligne de Finalisation (Clôture en Bronze/Orange à la dernière semaine)
-  let finalRow = `<a:tr h="550000">`;
-  finalRow += `<a:tc><a:txBody><a:bodyPr lIns="100000" rIns="100000" tIns="50000" bIns="50000"/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1100" b="1"><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>Finalisation &amp; Clôture administrative</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>`;
-  finalRow += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="1100"><a:solidFill><a:srgbClr val="333333"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>1 sem.</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="F5F8FF"/></a:solidFill></a:tcPr></a:tc>`;
-  
-  // Semaines d'étude et de prépa restent blanches
-  for (let w = 1; w <= numWeeks + 1; w++) {
-    finalRow += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:tcPr></a:tc>`;
-  }
-  // Dernière semaine de finalisation coloriée en Or (D4AF37)
-  finalRow += `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="fr-FR"/></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="D4AF37"/></a:solidFill></a:tcPr></a:tc>`;
-  finalRow += `</a:tr>`;
-  rowsXml += finalRow;
+  // ── Ligne de clôture (bookend bas) ────────────────────────────────────────
+  rowsXml += `<a:tr h="700000">`;
+  rowsXml += `<a:tc><a:txBody><a:bodyPr lIns="100000"/><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="950" i="1"><a:solidFill><a:srgbClr val="${NAVY}"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>Clôture</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="${LIGHT_BG}"/></a:solidFill></a:tcPr></a:tc>`;
+  rowsXml += emptyCell(LIGHT_BG);
+  for (let w = 1; w <= numWeeks; w++) rowsXml += emptyCell(WHITE);
+  rowsXml += pillCell(['Bilan', 'Réception du solde', 'Remise des livrables']);
+  rowsXml += `</a:tr>`;
 
-  return `
-    <p:graphicFrame>
-      <p:nvGraphicFramePr>
-        <p:cNvPr id="200" name="TableGantt"/>
-        <p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr>
-        <p:nvPr/>
-      </p:nvGraphicFramePr>
-      <p:xfrm>
-        <a:off x="${x}" y="${y}"/>
-        <a:ext cx="${cx}" cy="${cy}"/>
-      </p:xfrm>
-      <a:graphic>
-        <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">
-          <a:tbl>
-            <a:tblPr firstRow="1" bandRow="1">
-              <a:tableStyleId>{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}</a:tableStyleId>
-            </a:tblPr>
-            ${tblGrid}
-            ${rowsXml}
-          </a:tbl>
-        </a:graphicData>
-      </a:graphic>
-    </p:graphicFrame>
-  `;
+  return `<p:graphicFrame>
+    <p:nvGraphicFramePr>
+      <p:cNvPr id="200" name="TableGantt"/>
+      <p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr>
+      <p:nvPr/>
+    </p:nvGraphicFramePr>
+    <p:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></p:xfrm>
+    <a:graphic>
+      <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">
+        <a:tbl>
+          <a:tblPr firstRow="1" bandRow="1">
+            <a:tableStyleId>{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}</a:tableStyleId>
+          </a:tblPr>
+          ${tblGrid}
+          ${rowsXml}
+        </a:tbl>
+      </a:graphicData>
+    </a:graphic>
+  </p:graphicFrame>`;
 }
 
 function replacePlaceholderShapeWithTable(
@@ -895,8 +879,14 @@ export async function POST(req: Request) {
           totalWeeks = endWeek;
         }
       }
-      const numWeeks = totalWeeks > 0 ? totalWeeks : 6;
-      // Augmenter la taille du planning pour qu'il prenne plus de place
+      // Recalculer numWeeks depuis semaine_debut du formulaire (source de vérité)
+      let trueMaxWeek = 0;
+      for (const p of phases) {
+        const ps = Number(p.semaine_debut || p.semaineDebut || 1);
+        const pd = Number(p.duree_semaines || p.dureeSemaines || 1);
+        if (ps + pd - 1 > trueMaxWeek) trueMaxWeek = ps + pd - 1;
+      }
+      const numWeeks = (trueMaxWeek > 0 ? trueMaxWeek : totalWeeks > 0 ? totalWeeks : 6);
       const weekColWidth = Math.floor(11800000 / (numWeeks + 2));
 
       if (ganttXml.includes('{TABLE_GANTT}')) {
