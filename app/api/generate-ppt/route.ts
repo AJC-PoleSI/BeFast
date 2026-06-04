@@ -174,7 +174,7 @@ function generateBudgetTableXml(b: BudgetBreakdown, x: number, y: number, cx: nu
   `;
 }
 
-function generateGanttTableXml(phases: any[], phaseWeeks: any[], numWeeks: number, _weekColWidth: number, x: number, y: number, cx: number, cy: number): string {
+function generateGanttTableXml(phases: any[], phaseWeeks: any[], numWeeks: number, _weekColWidth: number, x: number, y: number, cx: number, cy: number, pvriWeek?: number): string {
   const NAVY = '002C5A';
   const LIGHT_BG = 'D8E4F0';
   const WHITE = 'FFFFFF';
@@ -202,11 +202,13 @@ function generateGanttTableXml(phases: any[], phaseWeeks: any[], numWeeks: numbe
     return `<a:tc><a:txBody><a:bodyPr lIns="80000" rIns="80000" tIns="80000" bIns="80000"/><a:lstStyle/>${paras}</a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="${PILL_BG}"/></a:solidFill></a:tcPr></a:tc>`;
   };
 
+  const PVRI_GREEN = '059669';
+
   // ── En-tête ───────────────────────────────────────────────────────────────
   let rowsXml = `<a:tr h="600000">`;
   rowsXml += hdrCell("PHASES DE L'ÉTUDE");
   rowsXml += hdrCell('1-2', 'ctr');
-  for (let w = 1; w <= numWeeks; w++) rowsXml += hdrCell(String(w + 2), 'ctr');
+  for (let w = 1; w <= numWeeks; w++) rowsXml += hdrCell(`S${w}`, 'ctr');
   rowsXml += hdrCell('CLÔTURE', 'ctr');
   rowsXml += `</a:tr>`;
 
@@ -217,6 +219,22 @@ function generateGanttTableXml(phases: any[], phaseWeeks: any[], numWeeks: numbe
   for (let w = 1; w <= numWeeks; w++) rowsXml += emptyCell(WHITE);
   rowsXml += emptyCell(LIGHT_BG);
   rowsXml += `</a:tr>`;
+
+  // ── Marqueur PVRI (goutte) ─────────────────────────────────────────────────
+  if (pvriWeek && pvriWeek >= 1 && pvriWeek <= numWeeks) {
+    rowsXml += `<a:tr h="380000">`;
+    rowsXml += emptyCell(LIGHT_BG);
+    rowsXml += emptyCell(LIGHT_BG);
+    for (let w = 1; w <= numWeeks; w++) {
+      if (w === pvriWeek) {
+        rowsXml += `<a:tc><a:txBody><a:bodyPr lIns="40000" rIns="40000" tIns="40000" bIns="40000"/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="fr-FR" sz="750" b="1"><a:solidFill><a:srgbClr val="${WHITE}"/></a:solidFill><a:latin typeface="Montserrat"/></a:rPr><a:t>&#x25CF; PVRI</a:t></a:r></a:p></a:txBody><a:tcPr anchor="ctr"><a:solidFill><a:srgbClr val="${PVRI_GREEN}"/></a:solidFill></a:tcPr></a:tc>`;
+      } else {
+        rowsXml += emptyCell(LIGHT_BG);
+      }
+    }
+    rowsXml += emptyCell(LIGHT_BG);
+    rowsXml += `</a:tr>`;
+  }
 
   // ── Lignes de phases ───────────────────────────────────────────────────────
   for (let i = 0; i < phases.length; i++) {
@@ -889,17 +907,25 @@ export async function POST(req: Request) {
       const numWeeks = (trueMaxWeek > 0 ? trueMaxWeek : totalWeeks > 0 ? totalWeeks : 6);
       const weekColWidth = Math.floor(11800000 / (numWeeks + 2));
 
+      // Marqueur PVRI : semaine médiane de l'étude (seulement si PVRI activé)
+      const pvriEnabled = data.paiement_modalites?.type === 'pvri';
+      const pvriWeek = pvriEnabled && phases.length > 0
+        ? Math.round((1 + Math.max(...phases.map((p: any) =>
+            Number(p.semaine_debut || p.semaineDebut || 1) + Number(p.duree_semaines || p.dureeSemaines || 1) - 1
+          ))) / 2)
+        : undefined;
+
       if (ganttXml.includes('{TABLE_GANTT}')) {
         ganttXml = replacePlaceholderShapeWithTable(
           ganttXml,
           '{TABLE_GANTT}',
-          (x, y, cx, cy) => generateGanttTableXml(phases, phaseWeeks, numWeeks, weekColWidth, x, y, cx, cy),
+          (x, y, cx, cy) => generateGanttTableXml(phases, phaseWeeks, numWeeks, weekColWidth, x, y, cx, cy, pvriWeek),
           { x: 744000, y: 2200000, cx: 16800000, cy: 5800000 }
         );
         zip.file(ganttSlideFile, ganttXml);
       } else {
         const footerNoteXml = `<p:sp><p:nvSpPr><p:cNvPr id="57" name="ZoneTexte 22"><a:extLst><a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}"><a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{D1DCB3D2-8430-857D-E7B5-EFC76A56D1B8}"/></a:ext></a:extLst></p:cNvPr><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="9296400" y="10052471"/><a:ext cx="9139040" cy="253916"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr wrap="square" rtlCol="0"><a:spAutoFit/></a:bodyPr><a:lstStyle/><a:p><a:r><a:rPr lang="fr-FR" sz="1050" noProof="0"><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill><a:effectLst/><a:latin typeface="Montserrat" panose="00000500000000000000" pitchFamily="2" charset="0"/></a:rPr><a:t>Cette proposition commerciale n'a aucune valeur contractuelle, l'acceptation de celle-ci se fera par le biais de la Convention d'Etude </a:t></a:r><a:endParaRPr lang="fr-FR" sz="1050" noProof="0"><a:solidFill><a:srgbClr val="002C5A"/></a:solidFill><a:effectLst/></a:endParaRPr></a:p></p:txBody></p:sp>`;
-        const ganttTableXml = generateGanttTableXml(phases, phaseWeeks, numWeeks, weekColWidth, 744000, 2200000, 16800000, 5800000);
+        const ganttTableXml = generateGanttTableXml(phases, phaseWeeks, numWeeks, weekColWidth, 744000, 2200000, 16800000, 5800000, pvriWeek);
         
         const newGanttSlideXml = [
           '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',

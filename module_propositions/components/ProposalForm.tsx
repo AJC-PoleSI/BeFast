@@ -123,6 +123,14 @@ const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate, show
   const trackRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<any>(null);
 
+  // Semaine médiane de l'étude = point de versement PVRI intermédiaire
+  const pvriMidWeek: number | null = showPvri && phases.length > 0
+    ? (() => {
+        const maxEnd = Math.max(...phases.map((p: any) => (p.semaineDebut || 1) + (p.dureeSemaines || 1) - 1));
+        return Math.round((1 + maxEnd) / 2);
+      })()
+    : null;
+
   const weekStartDate = (semaine: number) => {
     const d = new Date(projectMonday);
     d.setDate(d.getDate() + (semaine - 1) * 7);
@@ -182,13 +190,31 @@ const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate, show
           </div>
         </div>
 
-        {/* Bulle PVRI */}
-        {showPvri && (
-          <div className="flex items-center gap-2 mb-3">
-            <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-white/70 inline-block" />
-              PVRI — 3 versements (début · milieu · fin)
-            </span>
+        {/* Marqueur PVRI — goutte d'eau positionnée à mi-étude */}
+        {showPvri && pvriMidWeek && (
+          <div className="flex items-end mb-1">
+            <div className="w-44 shrink-0" />
+            <div className="flex-1 relative h-11">
+              <div
+                className="absolute bottom-0 flex flex-col items-center z-10"
+                style={{
+                  left: `${((pvriMidWeek - 0.5) / nbWeeks) * 100}%`,
+                  transform: 'translateX(-50%)',
+                }}
+                title="Procès-verbal de règlement intermédiaire"
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center shadow-md border-2 border-white">
+                  <span className="text-white font-bold leading-none text-center" style={{ fontSize: 7 }}>PVRI</span>
+                </div>
+                {/* Pointe de la goutte d'eau */}
+                <div style={{
+                  width: 0, height: 0, marginTop: -1,
+                  borderLeft: '5px solid transparent',
+                  borderRight: '5px solid transparent',
+                  borderTop: '8px solid #059669',
+                }} />
+              </div>
+            </div>
           </div>
         )}
 
