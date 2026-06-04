@@ -234,18 +234,18 @@ const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate, show
           {phases.length > 0 && (
             <div className="flex items-center opacity-80">
               <div className="w-44 shrink-0 pr-3">
-                <div className="text-xs font-semibold text-slate-500 truncate">Initialisation</div>
-                <div className="text-[10px] text-slate-400 font-mono">S1 → S2</div>
-              </div>
-              <div className="flex-1 relative h-8 bg-slate-50 rounded border border-slate-100">
-                <div
-                  className="absolute top-1 bottom-1 rounded-md shadow-sm flex items-center px-2"
-                  style={{ left: 0, width: `${(2 / nbWeeks) * 100}%`, minWidth: 40, backgroundColor: '#1e3a5f' }}
-                >
-                  <span className="text-[9px] font-bold text-white truncate select-none">
-                    Réception acompte · Choix intervenants
-                  </span>
+                <div className="text-[10px] font-semibold text-[#1e3a5f]">S1 → S2</div>
+                <div className="mt-0.5 space-y-0.5">
+                  <div className="text-[10px] text-slate-600">– Initialisation</div>
+                  <div className="text-[10px] text-slate-600">– Réception de l&apos;acompte</div>
+                  <div className="text-[10px] text-slate-600">– Choix des intervenants</div>
                 </div>
+              </div>
+              <div className="flex-1 relative bg-slate-50 rounded border border-slate-100" style={{ minHeight: 58 }}>
+                <div
+                  className="absolute top-2 bottom-2 rounded-md shadow-sm"
+                  style={{ left: 0, width: `${(2 / nbWeeks) * 100}%`, minWidth: 12, backgroundColor: '#1e3a5f' }}
+                />
               </div>
             </div>
           )}
@@ -292,14 +292,14 @@ const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate, show
                       onMouseDown={beginPvriDrag}
                       title="Glisser pour repositionner · PVRI (versement intermédiaire)"
                     >
-                      <div className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center shadow-md border-2 border-white">
-                        <span className="text-white font-bold leading-none" style={{ fontSize: 6 }}>PVRI</span>
+                      <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center shadow-md border-2 border-white">
+                        <span className="text-white font-bold leading-none" style={{ fontSize: 7 }}>PVRI</span>
                       </div>
                       <div style={{
                         width: 0, height: 0, marginTop: -1,
-                        borderLeft: '3px solid transparent',
-                        borderRight: '3px solid transparent',
-                        borderTop: '5px solid #059669',
+                        borderLeft: '4px solid transparent',
+                        borderRight: '4px solid transparent',
+                        borderTop: '6px solid #059669',
                       }} />
                     </div>
                   )}
@@ -312,23 +312,23 @@ const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate, show
           {phases.length > 0 && maxEnd > 0 && (
             <div className="flex items-center opacity-80">
               <div className="w-44 shrink-0 pr-3">
-                <div className="text-xs font-semibold text-slate-500 truncate">Clôture</div>
-                <div className="text-[10px] text-slate-400 font-mono">S{maxEnd}</div>
+                <div className="text-[10px] font-semibold text-[#1e3a5f]">S{maxEnd}</div>
+                <div className="mt-0.5 space-y-0.5">
+                  <div className="text-[10px] text-slate-600">– Bilan</div>
+                  <div className="text-[10px] text-slate-600">– Réception du solde</div>
+                  <div className="text-[10px] text-slate-600">– Remise des livrables</div>
+                </div>
               </div>
-              <div className="flex-1 relative h-8 bg-slate-50 rounded border border-slate-100">
+              <div className="flex-1 relative bg-slate-50 rounded border border-slate-100" style={{ minHeight: 58 }}>
                 <div
-                  className="absolute top-1 bottom-1 rounded-md shadow-sm flex items-center px-2"
+                  className="absolute top-2 bottom-2 rounded-md shadow-sm"
                   style={{
                     left: `${((maxEnd - 1) / nbWeeks) * 100}%`,
                     width: `${(1 / nbWeeks) * 100}%`,
-                    minWidth: 40,
+                    minWidth: 12,
                     backgroundColor: '#1e3a5f',
                   }}
-                >
-                  <span className="text-[9px] font-bold text-white truncate select-none">
-                    Bilan · Réception solde · Remise livrables
-                  </span>
-                </div>
+                />
               </div>
             </div>
           )}
