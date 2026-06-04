@@ -121,13 +121,36 @@ const FastNumberInput = ({ value, onChange, min = 0, className = "" }: any) => {
 // redimensionnables à la souris ; toute modification remonte dans le formulaire.
 const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate, showPvri, pvriWeek, onPvriWeekChange }: any) => {
   const trackRef = useRef<HTMLDivElement>(null);
-  const pvriTrackRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<any>(null);
+
+  // Semaine max sur laquelle se termine la dernière phase
+  const maxEnd: number = phases.length > 0
+    ? Math.max(...phases.map((p: any) => (p.semaineDebut || 1) + (p.dureeSemaines || 1) - 1))
+    : 0;
+
+  // Quelle ligne de phase héberge le marqueur PVRI (overlay dans le track)
+  const pvriTargetRow: number | null = showPvri && pvriWeek && phases.length > 0
+    ? (() => {
+        // 1. Cherche une phase qui contient pvriWeek
+        const inside = phases.findIndex((p: any) => {
+          const s = p.semaineDebut || 1;
+          return pvriWeek >= s && pvriWeek <= s + (p.dureeSemaines || 1) - 1;
+        });
+        if (inside !== -1) return inside;
+        // 2. Dernière phase qui se termine avant pvriWeek
+        let best = -1;
+        for (let i = 0; i < phases.length; i++) {
+          const e = (phases[i].semaineDebut || 1) + (phases[i].dureeSemaines || 1) - 1;
+          if (e < pvriWeek) best = i;
+        }
+        return best !== -1 ? best : 0;
+      })()
+    : null;
 
   const beginPvriDrag = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const track = pvriTrackRef.current;
+    const track = trackRef.current; // même largeur que tous les tracks
     if (!track) return;
     const pxPerWeek = track.getBoundingClientRect().width / nbWeeks;
     const startX = e.clientX;
@@ -204,36 +227,30 @@ const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate, show
           </div>
         </div>
 
-        {/* Marqueur PVRI — goutte d'eau draggable */}
-        {showPvri && pvriWeek && (
-          <div className="flex items-end mb-1">
-            <div className="w-44 shrink-0" />
-            <div ref={pvriTrackRef} className="flex-1 relative h-8">
-              <div
-                className="absolute bottom-0 flex flex-col items-center z-10 cursor-ew-resize select-none"
-                style={{
-                  left: `${((pvriWeek - 0.5) / nbWeeks) * 100}%`,
-                  transform: 'translateX(-50%)',
-                }}
-                onMouseDown={beginPvriDrag}
-                title="Glisser pour repositionner · PVRI (versement intermédiaire)"
-              >
-                <div className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center shadow border-2 border-white">
-                  <span className="text-white font-bold leading-none" style={{ fontSize: 6 }}>PVRI</span>
+        {/* Lignes de phases + bookends fixes */}
+        <div className="space-y-2">
+
+          {/* ── Bookend haut : Réception acompte + Choix intervenants (S1-S2) ── */}
+          {phases.length > 0 && (
+            <div className="flex items-center opacity-80">
+              <div className="w-44 shrink-0 pr-3">
+                <div className="text-xs font-semibold text-slate-500 truncate">Initialisation</div>
+                <div className="text-[10px] text-slate-400 font-mono">S1 → S2</div>
+              </div>
+              <div className="flex-1 relative h-8 bg-slate-50 rounded border border-slate-100">
+                <div
+                  className="absolute top-1 bottom-1 rounded-md shadow-sm flex items-center px-2"
+                  style={{ left: 0, width: `${(2 / nbWeeks) * 100}%`, minWidth: 40, backgroundColor: '#1e3a5f' }}
+                >
+                  <span className="text-[9px] font-bold text-white truncate select-none">
+                    Réception acompte · Choix intervenants
+                  </span>
                 </div>
-                <div style={{
-                  width: 0, height: 0, marginTop: -1,
-                  borderLeft: '3px solid transparent',
-                  borderRight: '3px solid transparent',
-                  borderTop: '5px solid #059669',
-                }} />
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Lignes de phases */}
-        <div className="space-y-2">
+          {/* ── Phases du CDP (draggables) ── */}
           {phases.map((phase: any, index: number) => {
             const debut = phase.semaineDebut || 1;
             const duree = phase.dureeSemaines || 1;
@@ -258,16 +275,63 @@ const GanttChart = ({ phases, projectMonday, nbWeeks, onChange, formatDate, show
                     title={`${phase.name} — S${debut} → S${debut + duree - 1}`}
                   >
                     <span className="text-[10px] font-bold text-white truncate select-none">{duree} sem.</span>
-                    {/* Poignée de redimensionnement */}
                     <div
                       onMouseDown={(e) => beginDrag(e, index, 'resize')}
                       className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-r-md bg-black/10 group-hover:bg-black/25"
                     />
                   </div>
+                  {/* Marqueur PVRI — goutte d'eau dans la ligne de la phase cible */}
+                  {pvriTargetRow === index && (
+                    <div
+                      className="absolute z-20 flex flex-col items-center cursor-ew-resize select-none"
+                      style={{
+                        left: `${((pvriWeek - 0.5) / nbWeeks) * 100}%`,
+                        top: -2,
+                        transform: 'translateX(-50%)',
+                      }}
+                      onMouseDown={beginPvriDrag}
+                      title="Glisser pour repositionner · PVRI (versement intermédiaire)"
+                    >
+                      <div className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center shadow-md border-2 border-white">
+                        <span className="text-white font-bold leading-none" style={{ fontSize: 6 }}>PVRI</span>
+                      </div>
+                      <div style={{
+                        width: 0, height: 0, marginTop: -1,
+                        borderLeft: '3px solid transparent',
+                        borderRight: '3px solid transparent',
+                        borderTop: '5px solid #059669',
+                      }} />
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })}
+
+          {/* ── Bookend bas : Bilan + Réception solde + Remise (dernière semaine) ── */}
+          {phases.length > 0 && maxEnd > 0 && (
+            <div className="flex items-center opacity-80">
+              <div className="w-44 shrink-0 pr-3">
+                <div className="text-xs font-semibold text-slate-500 truncate">Clôture</div>
+                <div className="text-[10px] text-slate-400 font-mono">S{maxEnd}</div>
+              </div>
+              <div className="flex-1 relative h-8 bg-slate-50 rounded border border-slate-100">
+                <div
+                  className="absolute top-1 bottom-1 rounded-md shadow-sm flex items-center px-2"
+                  style={{
+                    left: `${((maxEnd - 1) / nbWeeks) * 100}%`,
+                    width: `${(1 / nbWeeks) * 100}%`,
+                    minWidth: 40,
+                    backgroundColor: '#1e3a5f',
+                  }}
+                >
+                  <span className="text-[9px] font-bold text-white truncate select-none">
+                    Bilan · Réception solde · Remise livrables
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
