@@ -270,9 +270,31 @@ footer { background: #111D35; padding: 72px 48px 40px; color: rgba(255,255,255,0
   header { padding: 0 24px; }
   nav { display: none; }
   .hamburger { display: flex; }
-  .mobile-drawer { display: flex; }
+  .mobile-drawer { display: flex; overflow-y: auto; }
   .page-hero { padding: 60px 24px; }
   .page-hero-title { font-size: 36px; }
   .footer-grid { grid-template-columns: 1fr; gap: 40px; }
   footer { padding: 48px 24px 32px; }
+}
+
+/* Petits écrans (smartphones) */
+@media (max-width: 520px) {
+  header { padding: 0 16px; }
+  .logo-text { font-size: 11px; letter-spacing: 1px; }
+  .logo-text small { font-size: 9px; letter-spacing: 1.5px; }
+  #desktop-cta { padding: 7px 12px; font-size: 10px; letter-spacing: 0.5px; }
+  .page-hero { padding: 48px 20px; }
+  .page-hero-title { font-size: 30px; }
+  .page-hero-sub { font-size: 14px; }
+  .page-hero::before { font-size: 160px; right: -20px; }
+  .section-title { font-size: 25px; letter-spacing: 2px; }
+  .section-desc { font-size: 13px; }
+  .mobile-drawer { padding: 90px 24px 32px; }
+  .mobile-drawer a { font-size: 17px; padding: 12px 0; }
+  .logos-grid { gap: 10px; }
+  .logo-chip { padding: 10px 16px; font-size: 12px; }
+  footer { padding: 40px 20px 28px; }
+  .footer-grid { gap: 32px; }
+  .footer-bottom { flex-direction: column; gap: 10px; text-align: center; }
+  .back-to-top { right: 16px; bottom: 16px; width: 40px; height: 40px; }
 }
