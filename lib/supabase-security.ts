@@ -85,7 +85,7 @@ export async function requireOwnership(
     throw new Error(`Record not found: ${table}/${recordId}`);
   }
 
-  if (data[ownerField] !== user.id) {
+  if ((data as Record<string, any>)[ownerField] !== user.id) {
     throw new Error(`Unauthorized: you do not own this ${table} record`);
   }
 
