@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { randomUUID } from "crypto"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUserProfile, logAudit } from "@/lib/supabase-security"
 import { PutObjectCommand } from "@aws-sdk/client-s3"
@@ -37,31 +38,29 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const fileUrls: string[] = []
+    // Upload des justificatifs en parallèle (au lieu d'un await séquentiel par
+    // fichier). Le nom utilise un UUID cryptographique : avec un bucket en
+    // public-read, un suffixe court (~5 caractères) serait énumérable.
+    const region = process.env.NEXT_PUBLIC_SCALEWAY_REGION ?? "fr-par"
+    const fileUrls = await Promise.all(
+      files.map(async (file) => {
+        const safeName = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, "_")
+        const fileName = `notes_de_frais/${missionId}/${user.id}/${randomUUID()}_${safeName}`
+        const buffer = Buffer.from(await file.arrayBuffer())
 
-    for (const file of files) {
-      const fileExt = file.name.split('.').pop()
-      const safeName = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, "_")
-      const fileName = `notes_de_frais/${missionId}/${user.id}/${Math.random().toString(36).substring(7)}_${safeName}`
+        await scalewayS3.send(
+          new PutObjectCommand({
+            Bucket: SCALEWAY_BUCKET,
+            Key: fileName,
+            Body: buffer,
+            ContentType: file.type,
+            ACL: 'public-read',
+          })
+        )
 
-      const buffer = Buffer.from(await file.arrayBuffer())
-
-      const command = new PutObjectCommand({
-        Bucket: SCALEWAY_BUCKET,
-        Key: fileName,
-        Body: buffer,
-        ContentType: file.type,
-        // Make sure it's public readable if needed, or rely on signed URLs later
-        ACL: 'public-read'
+        return `https://${SCALEWAY_BUCKET}.s3.${region}.scw.cloud/${fileName}`
       })
-
-      await scalewayS3.send(command)
-
-      // The URL for Scaleway S3 bucket object (public)
-      const region = process.env.NEXT_PUBLIC_SCALEWAY_REGION ?? "fr-par"
-      const publicUrl = `https://${SCALEWAY_BUCKET}.s3.${region}.scw.cloud/${fileName}`
-      fileUrls.push(publicUrl)
-    }
+    )
 
     // Check existing note de frais
     const { data: existing } = await supabase.from("notes_de_frais")
@@ -78,8 +77,15 @@ export async function POST(req: NextRequest) {
         statut: 'soumis',
         submitted_at: new Date().toISOString()
       }).eq("id", existing.id)
+
+      await logAudit(supabase, 'notes_de_frais', 'UPDATE', existing.id, {
+        montant,
+        description,
+        file_count: files.length
+      })
     } else {
-      await supabase.from("notes_de_frais").insert({
+      // INSERT ... RETURNING id en un seul appel (évite un SELECT de relecture).
+      const { data: newNote } = await supabase.from("notes_de_frais").insert({
         intervenant_id: user.id,
         mission_id: missionId,
         montant_total: montant,
@@ -87,24 +93,7 @@ export async function POST(req: NextRequest) {
         fichiers_justificatifs: fileUrls,
         statut: 'soumis',
         submitted_at: new Date().toISOString()
-      })
-    }
-
-    // Log expense submission
-    if (existing) {
-      await logAudit(supabase, 'notes_de_frais', 'UPDATE', existing.id, {
-        montant,
-        description,
-        file_count: files.length
-      })
-    } else {
-      // Get the newly created ID for logging
-      const { data: newNote } = await supabase
-        .from("notes_de_frais")
-        .select("id")
-        .eq("intervenant_id", user.id)
-        .eq("mission_id", missionId)
-        .single()
+      }).select("id").single()
 
       if (newNote) {
         await logAudit(supabase, 'notes_de_frais', 'INSERT', newNote.id, {

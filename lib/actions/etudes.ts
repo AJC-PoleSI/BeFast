@@ -79,7 +79,6 @@ export async function getEtudesRaw(filters?: { statut?: string }) {
     console.error("[getEtudesRaw] Query error:", error)
     return { error: error.message }
   }
-  console.log("[getEtudesRaw] Raw data:", data?.length ?? 0, "études")
   return { data }
 }
 
@@ -105,17 +104,6 @@ export async function getEtudes(filters?: { statut?: string }) {
   if (error) {
     console.error("[getEtudes] Query error:", error)
     return { error: error.message }
-  }
-  console.log("[getEtudes] Returned", data?.length ?? 0, "études. Filters:", filters)
-  if (data && data.length > 0) {
-    console.log("[getEtudes] First étude:", {
-      id: data[0].id,
-      nom: data[0].nom,
-      numero: data[0].numero,
-      created_at: data[0].created_at,
-      client_id: data[0].client_id,
-      suiveur_id: data[0].suiveur_id,
-    })
   }
   return { data }
 }

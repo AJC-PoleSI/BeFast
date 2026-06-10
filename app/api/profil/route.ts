@@ -4,13 +4,13 @@ import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { encryptData, decryptData, generateEncryptionSalt } from "@/lib/crypto"
 import { getMasterKey } from "@/lib/crypto-key"
-import { getCurrentUserProfile, requireRole, logAudit } from "@/lib/supabase-security"
+import { getCurrentUserProfile, logAudit } from "@/lib/supabase-security"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(req: NextRequest) {
   try {
     const sb = createClient()
-    const { user, profile } = await getCurrentUserProfile(sb)
+    const { user } = await getCurrentUserProfile(sb)
 
     const MASTER_KEY = getMasterKey()
     const admin = createAdminClient()
@@ -33,9 +33,6 @@ export async function GET(req: NextRequest) {
       ville: fullProfile.ville_encrypted ? decryptData(fullProfile.ville_encrypted, fullProfile.ville_iv, fullProfile.ville_auth_tag, MASTER_KEY, salt) : fullProfile.ville,
       code_postal: fullProfile.code_postal_encrypted ? decryptData(fullProfile.code_postal_encrypted, fullProfile.code_postal_iv, fullProfile.code_postal_auth_tag, MASTER_KEY, salt) : fullProfile.code_postal,
     }
-
-    // Log access to sensitive profile data
-    await logAudit(sb, 'personnes', 'SELECT', user.id)
 
     return NextResponse.json({ data: decrypted })
   } catch (error: any) {

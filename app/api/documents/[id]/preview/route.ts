@@ -6,6 +6,9 @@ import { createClient } from "@/lib/supabase/server"
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const sb = createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+
   const { data: doc, error } = await sb
     .from("generated_documents")
     .select("file_path, file_name")
@@ -22,7 +25,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "Content-Disposition": `inline; filename="${doc.file_name}"`,
-      "Cache-Control": "public, max-age=3600",
+      // Document sensible : cache privé uniquement (jamais sur un CDN/proxy partagé).
+      "Cache-Control": "private, max-age=3600",
     },
   })
 }

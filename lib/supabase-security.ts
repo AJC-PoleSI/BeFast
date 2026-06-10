@@ -234,7 +234,12 @@ export function sanitizeResponse(
 }
 
 /**
- * Audit log helper
+ * Audit log helper — best-effort, must never break the caller.
+ *
+ * Uses the lightweight auth.getUser() (session already refreshed by middleware)
+ * instead of getCurrentUserProfile() to avoid a redundant `personnes` query on
+ * hot paths. Any failure (missing table, RLS, network) is swallowed so that an
+ * audit write can never turn a successful operation into a 500.
  */
 export async function logAudit(
   supabase: SupabaseClient,
@@ -243,14 +248,18 @@ export async function logAudit(
   recordId: string,
   details?: Record<string, any>
 ) {
-  const { user } = await getCurrentUserProfile(supabase);
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-  await supabase.from('audit_logs').insert({
-    table_name: table,
-    operation,
-    record_id: recordId,
-    user_id: user.id,
-    details,
-    created_at: new Date().toISOString(),
-  });
+    await supabase.from('audit_logs').insert({
+      table_name: table,
+      operation,
+      record_id: recordId,
+      user_id: user.id,
+      details,
+    });
+  } catch {
+    // Audit logging is best-effort and must not affect the request outcome.
+  }
 }

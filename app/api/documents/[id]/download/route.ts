@@ -6,6 +6,9 @@ import { createClient } from "@/lib/supabase/server"
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const sb = createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+
   const { data: doc, error } = await sb
     .from("generated_documents")
     .select("file_path, file_name")

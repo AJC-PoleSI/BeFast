@@ -4,6 +4,7 @@ import Docxtemplater from 'docxtemplater';
 import fs from 'fs';
 import path from 'path';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { computeBudget, type BudgetBreakdown } from '@/lib/budget/compute';
 
 /**
@@ -322,6 +323,16 @@ function replacePlaceholderShapeWithTable(
 }
 
 export async function POST(req: Request) {
+  // Garde d'authentification : cette route lit des données personnes via le
+  // client service-role (bypass RLS) et génère des propositions commerciales.
+  // Sans ce check, un appelant anonyme pourrait exfiltrer prénom/nom/email/
+  // téléphone en énumérant les UUID via cdp_id.
+  const authClient = createClient();
+  const { data: { user: authUser } } = await authClient.auth.getUser();
+  if (!authUser) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+  }
+
   // Utiliser le template unique directement modifiable par l'utilisateur
   const templatePath = path.resolve(process.cwd(), 'public', 'template.pptx');
   if (!fs.existsSync(templatePath)) {
