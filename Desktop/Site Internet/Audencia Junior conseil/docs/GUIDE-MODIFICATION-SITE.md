@@ -170,6 +170,31 @@ Pour **changer la photo** : remplace simplement le fichier `photos/photo-equipe.
 
 ---
 
+## 🏷️ Logo du site (header + favicon)
+
+Le logo affiché en haut de toutes les pages (et dans l'onglet du navigateur) est :
+**`photos/logo.png`**
+
+### Changer l'image du logo
+1. Prépare un **PNG à fond transparent** (sinon un vilain pavé blanc apparaîtra
+   sur les fonds foncés)
+2. Remplace le fichier `photos/logo.png` — même nom, même dossier
+3. C'est tout, il s'applique partout automatiquement
+
+> 💾 L'ancien logo (fond blanc + traits de coupe) est conservé dans
+> `photos/logo-original.png` au cas où.
+
+### Changer la taille du logo
+Ouvre **`logo-config.css`** (à la racine du site) et modifie une seule valeur :
+
+```css
+:root {
+  --logo-height: 40px;   /* 32px = discret · 40px = normal · 48px = grand */
+}
+```
+
+---
+
 ## ⚙️ Infos générales — Téléphone, email, réseaux sociaux
 
 Dans **`contenu/config.json`** :

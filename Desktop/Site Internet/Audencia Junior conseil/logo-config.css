@@ -1,27 +1,23 @@
 /* ========================================
    CONFIGURATION DU LOGO
-   ======================================== */
+   ========================================
 
-/* Change le "150px" pour agrandir ou réduire le logo */
-.logo-mark img {
-  max-width: 120px !important;
-  height: auto !important;
-  display: block !important;
+   ➜ POUR CHANGER LA TAILLE DU LOGO :
+     modifie la valeur "40px" ci-dessous, enregistre, c'est tout.
+
+   Tailles conseillées :
+     - Discret   : 32px
+     - Normal    : 40px   (par défaut)
+     - Grand     : 48px
+     - Très grand: 56px
+   (le header fait 68px de haut — au-delà de 56px le logo sera serré)
+
+   ➜ POUR CHANGER L'IMAGE DU LOGO :
+     remplace le fichier  photos/logo.png  par ton image
+     (PNG à fond transparent recommandé — l'original est
+     conservé dans photos/logo-original.png).
+*/
+
+:root {
+  --logo-height: 40px;
 }
-
-/* Exemple de tailles pré-configurées (change 150px par une de ces valeurs): */
-
-/* Petit (80px) */
-/* max-width: 80px; */
-
-/* Moyen (120px) */
-/* max-width: 120px; */
-
-/* Grand (150px) - ACTIF PAR DÉFAUT */
-/* max-width: 150px; */
-
-/* Très grand (200px) */
-/* max-width: 200px; */
-
-/* Énorme (250px) */
-/* max-width: 250px; */
