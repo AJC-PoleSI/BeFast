@@ -21,13 +21,13 @@
   "reseaux_sociaux": [
     {
       "nom": "LinkedIn",
-      "lien": "#",
+      "lien": "https://www.linkedin.com/company/audencia-junior-conseil/posts/?feedView=all",
       "logo": "photos/reseaux-sociaux/linkedin.png",
       "initiale": "in"
     },
     {
       "nom": "Instagram",
-      "lien": "#",
+      "lien": "https://www.instagram.com/AUDENCIA_JUNIOR_CONSEIL_/",
       "logo": "photos/reseaux-sociaux/instagram.png",
       "initiale": "ig"
     }
