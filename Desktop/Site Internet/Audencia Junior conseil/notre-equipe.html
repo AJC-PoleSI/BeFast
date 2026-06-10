@@ -76,7 +76,7 @@
     .linkedin-btn svg { width: 13px; height: 13px; fill: white; }
 
     .ph { width: 100%; background: repeating-linear-gradient(45deg,#f0f1f4,#f0f1f4 6px,#e8eaef 6px,#e8eaef 12px); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-    .ph span { font-family: 'Courier New', monospace; font-size: 12px; color: #888; background: rgba(255,255,255,0.85); padding: 8px 14px; border-radius: 3px; }
+    .ph span { font-family: 'Courier New', monospace; font-size: 12px; color: #888; background: rgba(255,255,255,0.85); padding: 8px 14px; border-radius: 3px; max-width: 90%; text-align: center; word-wrap: break-word; }
 
     /* Chefs de projets */
     .cdp-header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 36px; }
@@ -369,7 +369,8 @@
           <div class="cdp-card">
             <div class="cdp-photo">
               <img src="${p.photo}" alt="${p.nom}" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block;"
-                   onerror="this.style.display='none'">
+                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <div class="ph" style="display:none;"><span>${p.nom}</span></div>
             </div>
             <div class="cdp-info">
               <div class="cdp-name">${p.nom}</div>
@@ -386,7 +387,8 @@
           <div class="cdp-card">
             <div class="cdp-photo">
               <img src="${p.photo}" alt="${p.nom}" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block;"
-                   onerror="this.style.display='none'">
+                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <div class="ph" style="display:none;"><span>${p.nom}</span></div>
             </div>
             <div class="cdp-info">
               <div class="cdp-name">${p.nom}</div>

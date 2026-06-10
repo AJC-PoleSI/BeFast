@@ -5,104 +5,154 @@
       "role": "Présidente",
       "description": "Émilie élabore la stratégie et s'assure de sa bonne mise en œuvre avec le soutien du bureau. En tant que représentante pénale de la Junior, elle coordonne l'ensemble des 24 chefs de projets tout en étant gardienne de la cohésion du mandat.",
       "photo": "photos/equipe/bureau/president.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/emilie-munsch/"
     },
     {
-      "nom": "Pierre ou rick Rimaudière",
+      "nom": "Pierrick Rimaudière",
       "role": "Vice-Président",
-      "description": "Pierre ou rick s'occupe de développer les partenariats avec les différentes parties-prenantes de Audencia Junior Conseil. En tant que membre du bureau, il se charge également de piloter l'efficacité des processus de la Junior et contribuer à leur amélioration continue en suivant les indicateurs de risques et de performances.",
+      "description": "Pierrick s'occupe de développer les partenariats avec les différentes parties-prenantes de Audencia Junior Conseil. En tant que membre du bureau, il se charge également de piloter l'efficacité des processus de la Junior et contribuer à leur amélioration continue en suivant les indicateurs de risques et de performances.",
       "photo": "photos/equipe/bureau/vice-president.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/pierrick-rimaudiere-b158822a3/"
     },
     {
       "nom": "Clara Chiche",
       "role": "Secrétaire Générale",
       "description": "Premier point de contact entre vous et Audencia Junior Conseil, Clara relaie vos besoins à nos chefs de projet afin d'établir la rédaction d'un devis. Elle veille aussi au bon fonctionnement administratif de la structure.",
       "photo": "photos/equipe/bureau/secretaire.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/clara-chiche-07243b306/"
     },
     {
       "nom": "Arthur Robin",
       "role": "Trésorier",
       "description": "Arthur est au cœur du fonctionnement interne de la structure. Il est en charge de la partie financière des études et de la structure, effectue l'ensemble des paiements et s'assure du contrôle interne du pôle Trésorerie.",
       "photo": "photos/equipe/bureau/tresorier.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/arthur-robin49300/"
     }
   ],
   "poles": [
     {
-      "nom": "Victoire Gorrioux",
+      "nom": "Victoire Gorioux",
       "role": "Responsable Développement Commercial",
       "photo": "photos/equipe/bureau/resp-dev-commercial.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/victoire-gorioux-6a04b0252/"
     },
     {
       "nom": "Anna Von Borowski",
       "role": "Responsable Ressources Humaines",
       "photo": "photos/equipe/bureau/resp-rh.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/anna-von-borowski-617484286/"
     },
     {
       "nom": "Clémence Defosseux",
       "role": "Responsable Audit-Qualité",
       "photo": "photos/equipe/bureau/resp-audit.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/cl%C3%A9mence-defosseux-74a99a343/"
     },
     {
       "nom": "Esther Gesny",
       "role": "Responsable Marketing",
       "photo": "photos/equipe/bureau/resp-marketing.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/esthergesny/"
+    },
+    {
+      "nom": "Félix Pitz",
+      "role": "Responsable Systèmes d'Informations",
+      "photo": "photos/equipe/bureau/resp-si.jpg",
+      "linkedin": "https://www.linkedin.com/in/felix-pitz-a30b56232/"
     }
   ],
   "chefs_projet": [
     {
-      "nom": "Chef de Projet 1",
+      "nom": "Maéva Poli",
+      "role": "Vice-Trésoriere",
+      "description": "Maéva assiste le trésorier dans la gestion financière de la Junior et contribue au contrôle interne du pôle Trésorerie.",
+      "photo": "photos/equipe/bureau/vice-tresorier.jpg",
+      "linkedin": "https://www.linkedin.com/in/maevapoli/"
+    },
+    {
+      "nom": "Romain Messein",
+      "role": "Coordinateur Trésorerie",
+      "description": "Romain coordonne les opérations de trésorerie et assure la fluidité des processus financiers de la structure.",
+      "photo": "photos/equipe/bureau/coordinateur-tresorerie.jpg",
+      "linkedin": "https://www.linkedin.com/in/romain-messein-doideau-82425738a/"
+    },
+    {
+      "nom": "Envel Bonno",
       "role": "Marketing",
       "photo": "photos/equipe/chefs-projet/cdp-01.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/envel-bonno-738881294/"
     },
     {
-      "nom": "Chef de Projet 2",
-      "role": "Communication",
+      "nom": "Laure Belliard",
+      "role": "Marketing",
       "photo": "photos/equipe/chefs-projet/cdp-02.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/laure-belliard-a3a6b9368/"
     },
     {
-      "nom": "Chef de Projet 3",
-      "role": "Finance",
+      "nom": "Julien Suplisson",
+      "role": "Développement Commercial",
       "photo": "photos/equipe/chefs-projet/cdp-03.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/julien-suplisson-2b6a42262/"
     },
     {
-      "nom": "Chef de Projet 4",
-      "role": "RSE",
+      "nom": "Léo Dakouri",
+      "role": "Développement Commercial",
       "photo": "photos/equipe/chefs-projet/cdp-04.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/l%C3%A9o-dakouri/"
     },
     {
-      "nom": "Chef de Projet 5",
-      "role": "Big Data",
+      "nom": "Arthur Sagot",
+      "role": "Audit-Qualité",
       "photo": "photos/equipe/chefs-projet/cdp-05.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/arthur-sagot-audencia/"
     },
     {
-      "nom": "Chef de Projet 6",
-      "role": "Études",
+      "nom": "Baptiste Le Bec",
+      "role": "Audit-Qualité",
       "photo": "photos/equipe/chefs-projet/cdp-06.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/baptistelebec/"
     },
     {
-      "nom": "Chef de Projet 7",
-      "role": "Digital",
-      "photo": "photos/equipe/chefs-projet/cdp-07.jpg",
-      "linkedin": "#"
+      "nom": "Amandine Barros",
+      "role": "Développement Commercial",
+      "photo": "photos/equipe/chefs-projet/cdp-13.jpg",
+      "linkedin": "https://www.linkedin.com/in/amandine-barros/"
     },
     {
-      "nom": "Chef de Projet 8",
-      "role": "Stratégie",
+      "nom": "Lucas Grancher",
+      "role": "Audit-Qualité",
       "photo": "photos/equipe/chefs-projet/cdp-08.jpg",
-      "linkedin": "#"
+      "linkedin": "https://www.linkedin.com/in/lucasgrancher/"
+    },
+    {
+      "nom": "Mylène Andela Ebela",
+      "role": "Audit-Qualité",
+      "photo": "photos/equipe/chefs-projet/cdp-09.jpg",
+      "linkedin": "https://www.linkedin.com/in/myl%C3%A8ne-andela-ebela-93ab94375/"
+    },
+    {
+      "nom": "Raphaël Yana",
+      "role": "Audit-Qualité",
+      "photo": "photos/equipe/chefs-projet/cdp-10.jpg",
+      "linkedin": "https://www.linkedin.com/in/raphaelyana/"
+    },
+    {
+      "nom": "Alexandre Chauchard",
+      "role": "Ressources Humaines",
+      "photo": "photos/equipe/chefs-projet/cdp-11.jpg",
+      "linkedin": "https://www.linkedin.com/in/alexandre-chauchard/"
+    },
+    {
+      "nom": "Samy Kirat",
+      "role": "Ressources Humaines",
+      "photo": "photos/equipe/chefs-projet/cdp-12.jpg",
+      "linkedin": "https://www.linkedin.com/in/samy-k-26a021235/"
+    },
+    {
+      "nom": "Téo Fayon",
+      "role": "Systèmes d'Informations",
+      "photo": "photos/equipe/chefs-projet/cdp-07.jpg",
+      "linkedin": "https://www.linkedin.com/in/t%C3%A9o-fayon-491b5b354/"
     }
   ]
 }
