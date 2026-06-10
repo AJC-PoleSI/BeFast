@@ -2,6 +2,13 @@
 
 ## Modifier une photo = remplacer le fichier, même nom, même dossier.
 
+### Logo du site
+- `logo.png` → logo affiché dans le header de toutes les pages + favicon
+  (PNG à fond **transparent** obligatoire pour un rendu propre)
+- `logo-original.png` → sauvegarde du logo d'origine (fond blanc + traits de coupe)
+- Pour changer la **taille** du logo dans le header : ouvre `logo-config.css`
+  à la racine du site et modifie la valeur de `--logo-height`
+
 ### Accueil
 - `accueil/hero.jpg` → Grande photo hero de la page d'accueil (ratio 5:4, min 1200px large)
 
