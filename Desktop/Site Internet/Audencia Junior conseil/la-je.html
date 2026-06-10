@@ -128,6 +128,15 @@
       section { padding: 64px 24px; }
       .sub-nav { padding-left: 24px; padding-right: 24px; }
     }
+    @media (max-width: 600px) {
+      section { padding: 56px 20px; }
+      .je-intro-grid > *, .mouvement-grid > * { min-width: 0; }
+      .je-cards { grid-template-columns: 1fr; }
+      .mouvement-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .stat-card { padding: 18px 12px; }
+      .sub-nav-inner { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .sub-nav-link { white-space: nowrap; flex-shrink: 0; }
+    }
   </style>
   <meta name="description" content="Audencia Junior Conseil : 45 ans d'engagement, une certification ISO 9001 et les valeurs d'excellence du mouvement des Junior-Entreprises.">
   <meta name="theme-color" content="#1A2744">
@@ -158,6 +167,9 @@
         <div class="dropdown">
           <a href="la-je.html#qu-est-ce" class="dropdown-item">
             <span><span class="di-title">Qu'est-ce qu'une JE ?</span><span class="di-sub">Le mouvement Junior-Entreprises</span></span>
+          </a>
+          <a href="notre-junior.html" class="dropdown-item">
+            <span><span class="di-title">Notre Junior</span><span class="di-sub">45 ans d'histoire et d'excellence</span></span>
           </a>
           <a href="la-je.html#equipe" class="dropdown-item">
             <span><span class="di-title">Notre Équipe</span><span class="di-sub">Bureau et chefs de projets</span></span>
@@ -199,6 +211,7 @@
 <div class="mobile-drawer" id="mobile-drawer">
   <a href="index.html">Accueil</a>
   <a href="la-je.html">La Junior-Entreprise</a>
+  <a href="notre-junior.html">Notre Junior</a>
   <a href="prestations.html">Nos Prestations</a>
   <a href="realisations.html">Nos Réalisations</a>
   <a href="contact.html" class="drawer-cta">Nous Contacter →</a>
@@ -470,6 +483,7 @@
           <div class="footer-col-title">La JE</div>
           <div class="footer-mentions">
             <a href="la-je.html">Qui sommes-nous ?</a>
+            <a href="notre-junior.html">Notre Junior</a>
             <a href="la-je.html#equipe">Notre équipe</a>
             <a href="contact.html">Nous contacter</a>
           </div>

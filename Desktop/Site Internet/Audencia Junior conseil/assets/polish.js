@@ -14,7 +14,7 @@
     const SELECTORS = [
       '.expertise-card', '.pourquoi-item', '.step-item', '.va-item', '.chiffre-item',
       '.bureau-card', '.cdp-card', '.je-card', '.stat-card', '.cnje-item',
-      '.example-card', '.info-item',
+      '.example-card', '.info-item', '.tl-item', '.ecole-card', '.ecos-item',
     ].join(', ');
 
     const els = document.querySelectorAll(SELECTORS);

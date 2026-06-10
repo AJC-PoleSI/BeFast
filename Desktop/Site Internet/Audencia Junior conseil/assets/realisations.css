@@ -491,6 +491,8 @@
 @media (max-width: 640px) {
   .real-page { --gutter-r: 20px; }
   .real-page .case-grid, .real-page .similar .case-grid { grid-template-columns: 1fr; }
+  .real-page .method-grid { grid-template-columns: 1fr; }
+  .real-page .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .real-page .filter-bar .inner { padding: 14px var(--gutter-r); }
   .real-page .filter-pills { overflow-x: auto; flex-wrap: nowrap; width: 100%; padding-bottom: 4px; }
   .real-page .filter-right { width: 100%; flex-wrap: wrap; }
