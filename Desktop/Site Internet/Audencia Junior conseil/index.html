@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Audencia Junior Conseil — La Junior-Entreprise d'Audencia</title>
+  <meta name="description" content="Audencia Junior Conseil, la Junior-Entreprise d'Audencia Business School. Études de marché, marketing, finance, RSE et data au service de votre croissance depuis 45 ans.">
+  <meta name="theme-color" content="#1A2744">
+  <link rel="icon" type="image/png" href="photos/logo.png">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="fr_FR">
+  <meta property="og:site_name" content="Audencia Junior Conseil">
+  <meta property="og:title" content="Audencia Junior Conseil — La Junior-Entreprise d'Audencia">
+  <meta property="og:description" content="Audencia Junior Conseil, la Junior-Entreprise d'Audencia Business School. Études de marché, marketing, finance, RSE et data au service de votre croissance depuis 45 ans.">
+  <meta property="og:image" content="https://project-y2gxy.vercel.app/photos/logo.png">
+  <script src="assets/polish.js" defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -31,7 +41,22 @@
     }
     .hero-overlay {
       position: absolute; inset: 0; z-index: 2;
-      background: linear-gradient(105deg, rgba(26,39,68,0.97) 50%, rgba(26,39,68,0.7) 100%);
+      background: radial-gradient(900px 600px at 85% 12%, rgba(190,49,91,0.14), transparent 60%),
+                  linear-gradient(105deg, rgba(26,39,68,0.97) 50%, rgba(26,39,68,0.7) 100%);
+    }
+    /* Entrée animée du hero */
+    @media (prefers-reduced-motion: no-preference) {
+      .hero-eyebrow, .hero-title, .hero-sub, .hero-ctas, .hero-right {
+        opacity: 0; animation: hero-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .hero-title  { animation-delay: 0.12s; }
+      .hero-sub    { animation-delay: 0.24s; }
+      .hero-ctas   { animation-delay: 0.36s; }
+      .hero-right  { animation-delay: 0.30s; animation-duration: 0.9s; }
+    }
+    @keyframes hero-rise {
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: none; }
     }
     .hero-inner {
       position: relative; z-index: 3;
@@ -1182,27 +1207,7 @@
     } catch(e) { console.warn('config.json not found'); }
   }
 
-  // Fade in on scroll
-  const fadeEls = document.querySelectorAll('.expertise-card, .pourquoi-item, .step-item');
-  fadeEls.forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(20px)';
-    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-  });
-  const fadeObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const siblings = [...entry.target.parentElement.children];
-        const delay = siblings.indexOf(entry.target) * 80;
-        setTimeout(() => {
-          entry.target.style.opacity = '1';
-          entry.target.style.transform = 'translateY(0)';
-        }, delay);
-        fadeObserver.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.15 });
-  fadeEls.forEach(el => fadeObserver.observe(el));
+  // Fade in on scroll : géré par assets/polish.js (partagé sur tout le site)
 
   // Init
   loadTemoignages();

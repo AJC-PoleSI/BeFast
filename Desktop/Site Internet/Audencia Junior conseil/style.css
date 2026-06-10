@@ -11,12 +11,20 @@
 }
 
 html { scroll-behavior: smooth; }
-body { font-family: 'Montserrat', sans-serif; color: var(--marine); background: var(--white); overflow-x: hidden; }
+body {
+  font-family: 'Montserrat', sans-serif; color: var(--marine); background: var(--white); overflow-x: hidden;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--rose); color: var(--white); }
+
+:focus-visible { outline: 2px solid var(--rose); outline-offset: 3px; border-radius: 2px; }
 
 /* ── HEADER ────────────────────────────────────────────────────── */
 header {
   position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  background: var(--white); border-bottom: 1px solid transparent;
+  background: rgba(255,255,255,0.92); border-bottom: 1px solid transparent;
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   padding: 0 48px; height: 68px; display: flex; align-items: center;
   transition: border-color 0.3s, box-shadow 0.3s;
 }
@@ -36,6 +44,15 @@ nav { display: flex; align-items: center; gap: 36px; position: absolute; left: 5
 nav a { text-decoration: none; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; color: var(--marine); opacity: 0.8; transition: opacity 0.2s; white-space: nowrap; }
 nav a:hover, nav a.active { opacity: 1; }
 nav a.active { border-bottom: 2px solid var(--rose); padding-bottom: 2px; }
+/* Soulignement animé des liens de premier niveau */
+nav > a, .nav-item > a { position: relative; }
+nav > a::after, .nav-item > a::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: var(--rose); transform: scaleX(0); transform-origin: left;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+nav > a:hover::after, .nav-item > a:hover::after { transform: scaleX(1); }
+nav > a.active::after, .nav-item > a.active::after { display: none; }
 .arr { font-size: 10px; margin-left: 3px; opacity: 0.5; }
 
 /* Dropdown */
@@ -194,6 +211,59 @@ footer { background: #111D35; padding: 72px 48px 40px; color: rgba(255,255,255,0
 .footer-bottom { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 28px; display: flex; align-items: center; justify-content: space-between; }
 .footer-logo-ghost { font-size: 28px; font-weight: 800; letter-spacing: 4px; color: rgba(255,255,255,0.06); text-transform: uppercase; }
 .footer-copyright { font-size: 11px; color: rgba(255,255,255,0.2); }
+
+/* ── POLISH PRO ─────────────────────────────────────────────────── */
+/* Micro-interactions boutons : légère élévation + ombre au survol */
+.btn-outline-marine, .btn-solid-marine, .btn-rose, .btn-rose-sm,
+.btn-hero-primary, .btn-hero-secondary, .btn-solid-white {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+.btn-solid-marine:hover, .btn-outline-marine:hover, .btn-solid-white:hover {
+  transform: translateY(-2px); box-shadow: 0 10px 24px rgba(26,39,68,0.18);
+}
+.btn-rose:hover, .btn-rose-sm:hover {
+  transform: translateY(-2px); box-shadow: 0 10px 24px rgba(190,49,91,0.30);
+}
+.btn-hero-primary:hover, .btn-hero-secondary:hover {
+  transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+}
+
+/* Révélation au scroll (ajoutée par assets/polish.js) */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+}
+
+/* Entrée animée des bannières de pages internes */
+@media (prefers-reduced-motion: no-preference) {
+  .page-hero-eyebrow, .page-hero-title, .page-hero-sub {
+    opacity: 0; animation: ajc-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .page-hero-title { animation-delay: 0.1s; }
+  .page-hero-sub { animation-delay: 0.2s; }
+}
+@keyframes ajc-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Bouton retour en haut (injecté par assets/polish.js) */
+.back-to-top {
+  position: fixed; right: 24px; bottom: 24px; z-index: 150;
+  width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
+  background: var(--marine); color: white;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 20px rgba(26,39,68,0.25);
+  opacity: 0; visibility: hidden; transform: translateY(12px);
+  transition: opacity 0.3s, transform 0.3s, visibility 0.3s, background 0.2s;
+}
+.back-to-top.show { opacity: 1; visibility: visible; transform: none; }
+.back-to-top:hover { background: var(--rose); }
+.back-to-top svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.5; }
 
 /* ── RESPONSIVE ─────────────────────────────────────────────────── */
 @media (max-width: 900px) {

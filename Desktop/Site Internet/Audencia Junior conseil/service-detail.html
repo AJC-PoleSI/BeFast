@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service — Audencia Junior Conseil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="logo-config.css">
+  <style>
+    .service-hero {
+      background: var(--marine);
+      padding: 120px 48px 64px;
+    }
+    .service-hero-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .service-breadcrumb {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .service-breadcrumb a {
+      color: rgba(255,255,255,0.5);
+      text-decoration: none;
+    }
+    .service-breadcrumb a:hover { color: white; }
+    .service-breadcrumb span { color: rgba(255,255,255,0.25); }
+    .service-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 16px;
+    }
+    .service-title {
+      font-size: 48px;
+      font-weight: 800;
+      color: white;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+    .service-accroche {
+      font-size: 18px;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.6;
+      max-width: 600px;
+    }
+
+    .service-body {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 64px 48px 96px;
+    }
+    .service-desc {
+      font-size: 17px;
+      color: var(--gray-text);
+      line-height: 1.9;
+      max-width: 760px;
+      margin-bottom: 64px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 32px;
+    }
+
+    /* Approche */
+    .approche-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+      margin-bottom: 64px;
+    }
+    .approche-step {
+      background: var(--gray-bg);
+      border-radius: 10px;
+      padding: 28px;
+      border: 1.5px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .approche-step:hover { border-color: var(--marine); }
+    .approche-num {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--rose);
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+    .approche-titre {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--marine);
+      margin-bottom: 8px;
+    }
+    .approche-texte {
+      font-size: 13px;
+      color: var(--gray-text);
+      line-height: 1.6;
+    }
+
+    /* Livrables */
+    .livrables-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 64px;
+    }
+    .livrable-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      background: white;
+      border: 1.5px solid var(--gray-border);
+      border-radius: 8px;
+      padding: 24px 28px;
+    }
+    .livrable-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--marine);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .livrable-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: white;
+      fill: none;
+      stroke-width: 2;
+    }
+    .livrable-titre {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--marine);
+      margin-bottom: 4px;
+    }
+    .livrable-texte {
+      font-size: 13px;
+      color: var(--gray-text);
+      line-height: 1.5;
+    }
+
+    /* CTA */
+    .service-cta {
+      background: var(--marine);
+      border-radius: 12px;
+      padding: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .service-cta h3 {
+      font-size: 24px;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 8px;
+    }
+    .service-cta p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    /* Not found */
+    .not-found {
+      text-align: center;
+      padding: 120px 48px;
+    }
+    .not-found h2 {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--marine);
+      margin-bottom: 16px;
+    }
+    .not-found p {
+      font-size: 16px;
+      color: var(--gray-text);
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 900px) {
+      .service-hero { padding: 100px 24px 48px; }
+      .service-title { font-size: 32px; }
+      .service-body { padding: 48px 24px 64px; }
+      .approche-steps { grid-template-columns: 1fr; }
+      .service-cta { flex-direction: column; }
+    }
+  </style>
+  <meta name="description" content="Détail de nos prestations de conseil : méthodologie, livrables et exemples de missions.">
+  <meta name="theme-color" content="#1A2744">
+  <link rel="icon" type="image/png" href="photos/logo.png">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="fr_FR">
+  <meta property="og:site_name" content="Audencia Junior Conseil">
+  <meta property="og:title" content="Service — Audencia Junior Conseil">
+  <meta property="og:description" content="Détail de nos prestations de conseil : méthodologie, livrables et exemples de missions.">
+  <meta property="og:image" content="https://project-y2gxy.vercel.app/photos/logo.png">
+  <script src="assets/polish.js" defer></script>
+</head>
+<body>
+
+<header id="main-header">
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-mark">
+        <img src="photos/logo.png" alt="AJC" style="max-width: 180px; height: auto;" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span style="display:none;">AJC</span>
+      </div>
+      <div class="logo-text">Audencia <small>Junior Conseil</small></div>
+    </a>
+    <nav>
+      <div class="nav-item">
+        <a href="qu-est-ce-une-je.html">La Junior-Entreprise <span class="arr">▾</span></a>
+        <div class="dropdown">
+          <a href="qu-est-ce-une-je.html" class="dropdown-item">
+            <span><span class="di-title">Qu'est-ce qu'une JE ?</span><span class="di-sub">Le mouvement Junior-Entreprises</span></span>
+          </a>
+          <a href="notre-equipe.html" class="dropdown-item">
+            <span><span class="di-title">Notre Équipe</span><span class="di-sub">Bureau et chefs de projets</span></span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="contact.html" class="dropdown-item">
+            <span><span class="di-title">Nous contacter</span><span class="di-sub">Demander un devis</span></span>
+          </a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <a href="prestations.html" class="active">Nos prestations <span class="arr">▾</span></a>
+        <div class="dropdown">
+          <a href="prestations.html#marketing" class="dropdown-item">
+            <span><span class="di-title">Marketing</span><span class="di-sub">Études de marché, stratégie</span></span>
+          </a>
+          <a href="prestations.html#communication" class="dropdown-item">
+            <span><span class="di-title">Communication</span><span class="di-sub">Stratégie éditoriale, digital</span></span>
+          </a>
+          <a href="prestations.html#rse" class="dropdown-item">
+            <span><span class="di-title">RSE</span><span class="di-sub">Diagnostic, bilan carbone</span></span>
+          </a>
+          <a href="prestations.html#bigdata" class="dropdown-item">
+            <span><span class="di-title">Big Data</span><span class="di-sub">Analyse, dataviz</span></span>
+          </a>
+          <a href="prestations.html#finance" class="dropdown-item">
+            <span><span class="di-title">Finance</span><span class="di-sub">Business plan, valorisation</span></span>
+          </a>
+        </div>
+      </div>
+      <a href="realisations.html">Nos réalisations</a>
+    </nav>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    <a href="contact.html" class="btn-outline-marine" id="desktop-cta">Nous contacter</a>
+  </div>
+</header>
+<div class="mobile-drawer" id="mobile-drawer">
+  <a href="index.html">Accueil</a>
+  <a href="qu-est-ce-une-je.html">La Junior-Entreprise</a>
+  <a href="prestations.html">Nos Prestations</a>
+  <a href="realisations.html">Nos Réalisations</a>
+  <a href="contact.html" class="drawer-cta">Nous Contacter →</a>
+</div>
+
+<!-- CONTENT (filled by JS) -->
+<div id="page-content"></div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-col-title">Contact</div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+          <span>+33 7 69 44 78 99</span>
+        </div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7 L12 13 L22 7"/></svg>
+          <span>contact@ajc-mail.com</span>
+        </div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24"><path d="M12 2 C8 2 5 5.5 5 9.5 C5 15.5 12 22 12 22 S19 15.5 19 9.5 C19 5.5 16 2 12 2 Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          <span>8 route de la Jonelière<br>44312 Nantes Cedex 3</span>
+        </div>
+        <div class="footer-socials">
+          <a href="#" class="social-btn" aria-label="LinkedIn" data-social="linkedin" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
+          </a>
+          <a href="#" class="social-btn" aria-label="Instagram" data-social="instagram" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85 0 3.21-.01 3.58-.07 4.85-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07-3.2 0-3.58-.01-4.85-.07-3.26-.15-4.77-1.7-4.92-4.92-.06-1.27-.07-1.64-.07-4.85 0-3.2.01-3.58.07-4.85.15-3.23 1.66-4.77 4.92-4.92 1.27-.06 1.65-.07 4.85-.07zM12 0C8.74 0 8.33.01 7.05.07 2.7.27.27 2.69.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.2 4.36 2.62 6.78 6.98 6.98C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c4.35-.2 6.78-2.62 6.98-6.98.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95C23.73 2.7 21.31.27 16.95.07 15.67.01 15.26 0 12 0zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.41-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/></svg>
+          </a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Localisation</div>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2711.3!2d-1.5897!3d47.2557!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4805ef3e8b35ef6b%3A0xb0d17c2a6c9d6b1!2sAudencia%20Business%20School!5e0!3m2!1sfr!2sfr!4v1"
+          style="width:100%;aspect-ratio:16/9;border-radius:6px;border:1px solid rgba(255,255,255,0.08);display:block;"
+          allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Audencia Nantes"></iframe>
+      </div>
+      <div>
+        <div class="footer-col-title">Mentions légales</div>
+        <div class="footer-mentions">
+          <a href="mentions-legales.html">Mentions légales</a>
+          <a href="politique-confidentialite.html">Politique de confidentialité</a>
+        </div>
+        <div style="margin-top:32px;">
+          <div class="footer-col-title">La JE</div>
+          <div class="footer-mentions">
+            <a href="qu-est-ce-une-je.html">Qui sommes-nous ?</a>
+            <a href="notre-equipe.html">Notre équipe</a>
+            <a href="contact.html">Nous contacter</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-logo-ghost">AJC</div>
+      <div class="footer-copyright">© 2025 Audencia Junior Conseil — Tous droits réservés</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Header
+  window.addEventListener('scroll', () => {
+    document.getElementById('main-header').classList.toggle('scrolled', window.scrollY > 20);
+  });
+  const burger = document.getElementById('hamburger');
+  const drawer = document.getElementById('mobile-drawer');
+  burger.addEventListener('click', () => {
+    burger.classList.toggle('open');
+    drawer.classList.toggle('open');
+    document.body.style.overflow = drawer.classList.contains('open') ? 'hidden' : '';
+  });
+
+  function slugify(str) {
+    return str.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+
+  function getParams() {
+    const hash = window.location.hash.replace('#', '');
+    const params = {};
+    hash.split('&').forEach(p => {
+      const [k, v] = p.split('=');
+      if (k && v) params[k] = decodeURIComponent(v);
+    });
+    return params;
+  }
+
+  async function loadService() {
+    const params = getParams();
+    const serviceId = params.service;
+    const domainId = params.domain;
+
+    const [servicesRes, prestationsRes] = await Promise.all([
+      fetch('contenu/services.json'),
+      fetch('contenu/prestations.json')
+    ]);
+    const { services } = await servicesRes.json();
+    const { domaines } = await prestationsRes.json();
+
+    const service = services.find(s => s.id === serviceId);
+    const domain = domaines.find(d => d.id === domainId);
+
+    if (!service) {
+      document.getElementById('page-content').innerHTML = `
+        <div class="not-found">
+          <h2>Service introuvable</h2>
+          <p>Ce service n'existe pas ou a été déplacé.</p>
+          <a href="prestations.html" class="btn-hero-primary">Voir nos prestations</a>
+        </div>`;
+      return;
+    }
+
+    document.title = `${service.titre} — Audencia Junior Conseil`;
+
+    const livrableIcon = `<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`;
+
+    document.getElementById('page-content').innerHTML = `
+      <section class="service-hero">
+        <div class="service-hero-inner">
+          <div class="service-breadcrumb">
+            <a href="prestations.html">Nos prestations</a>
+            <span>›</span>
+            <a href="prestations.html#${domainId}">${domain ? domain.titre : domainId}</a>
+            <span>›</span>
+            ${service.titre}
+          </div>
+          <div class="service-eyebrow">${domain ? domain.titre : 'Service'}</div>
+          <h1 class="service-title">${service.titre}</h1>
+          <p class="service-accroche">${service.accroche}</p>
+        </div>
+      </section>
+
+      <div class="service-body">
+        <p class="service-desc">${service.description}</p>
+
+        <div class="section-label">Notre approche</div>
+        <div class="approche-steps">
+          ${service.approche.map((s, i) => `
+            <div class="approche-step">
+              <div class="approche-num">0${i + 1}</div>
+              <div class="approche-titre">${s.titre}</div>
+              <div class="approche-texte">${s.texte}</div>
+            </div>`).join('')}
+        </div>
+
+        <div class="section-label">Ce que vous recevez</div>
+        <div class="livrables-list">
+          ${service.livrables.map(l => `
+            <div class="livrable-item">
+              <div class="livrable-icon">${livrableIcon}</div>
+              <div>
+                <div class="livrable-titre">${l.titre}</div>
+                <div class="livrable-texte">${l.texte}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+
+        <div class="service-cta">
+          <div>
+            <h3>Intéressé par ce service ?</h3>
+            <p>Réponse sous 48h. Sans engagement.</p>
+          </div>
+          <a href="contact.html?domaine=${domainId}&service=${serviceId}" class="btn-rose" style="font-size:13px;padding:18px 40px;white-space:nowrap;">DEMANDER UN DEVIS</a>
+        </div>
+      </div>`;
+  }
+
+  loadService();
+</script>
+<script src="assets/socials.js"></script>
+</body>
+</html>
