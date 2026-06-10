@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentUserProfile, logAudit } from "@/lib/supabase-security"
 import { PutObjectCommand } from "@aws-sdk/client-s3"
 import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-    }
+    const { user } = await getCurrentUserProfile(supabase)
 
     const formData = await req.formData()
     const missionId = formData.get("missionId") as string
@@ -19,7 +16,25 @@ export async function POST(req: NextRequest) {
     const files = formData.getAll("files") as File[]
 
     if (!missionId || isNaN(montant) || files.length === 0) {
-      return NextResponse.json({ error: "Données invalides" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Données invalides: missionId, montant, et files requises" },
+        { status: 400 }
+      )
+    }
+
+    // Verify user is actually an intervenant on this mission
+    const { data: missionRole } = await supabase
+      .from("mission_intervenants")
+      .select("mission_id")
+      .eq("mission_id", missionId)
+      .eq("personne_id", user.id)
+      .single()
+
+    if (!missionRole) {
+      return NextResponse.json(
+        { error: "Unauthorized: you are not an intervenant on this mission" },
+        { status: 403 }
+      )
     }
 
     const fileUrls: string[] = []
@@ -75,12 +90,40 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Log expense submission
+    if (existing) {
+      await logAudit(supabase, 'notes_de_frais', 'UPDATE', existing.id, {
+        montant,
+        description,
+        file_count: files.length
+      })
+    } else {
+      // Get the newly created ID for logging
+      const { data: newNote } = await supabase
+        .from("notes_de_frais")
+        .select("id")
+        .eq("intervenant_id", user.id)
+        .eq("mission_id", missionId)
+        .single()
+
+      if (newNote) {
+        await logAudit(supabase, 'notes_de_frais', 'INSERT', newNote.id, {
+          montant,
+          description,
+          file_count: files.length
+        })
+      }
+    }
+
     // TODO: Email notification to treasury (trésorerie)
-    console.log(`[Email Mock] Notification de note de frais soumise pour mission ${missionId} de montant ${montant}€`)
+    console.log(`[Email Mock] Note de frais soumise pour mission ${missionId} de montant ${montant}€`)
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
-    console.error("API Frais Error:", err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    console.error("[POST /api/upload/frais]", err.message)
+    return NextResponse.json(
+      { error: err.message || 'Failed to submit expense' },
+      { status: err.status || 500 }
+    )
   }
 }
