@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { ChevronRight, File, Folder } from "lucide-react"
-import { AnimatePresence, motion } from "framer-motion"
+// LazyMotion + m : sous-ensemble domAnimation de framer-motion uniquement.
+import { AnimatePresence, LazyMotion, domAnimation, m } from "framer-motion"
 
 export type FileNode = {
   name: string
@@ -24,13 +25,13 @@ export function FilesystemItem({ node, animated = false }: FilesystemItemProps) 
 
   const ChevronIcon = () =>
     animated ? (
-      <motion.span
+      <m.span
         animate={{ rotate: isOpen ? 90 : 0 }}
         transition={{ type: "spring", bounce: 0, duration: 0.4 }}
         className="flex"
       >
         <ChevronRight className="size-4 text-muted-foreground" />
-      </motion.span>
+      </m.span>
     ) : (
       <ChevronRight
         className={`size-4 text-muted-foreground transition-transform ${
@@ -48,7 +49,7 @@ export function FilesystemItem({ node, animated = false }: FilesystemItemProps) 
       return (
         <AnimatePresence>
           {isOpen && (
-            <motion.ul
+            <m.ul
               initial={{ height: 0 }}
               animate={{ height: "auto" }}
               exit={{ height: 0 }}
@@ -56,7 +57,7 @@ export function FilesystemItem({ node, animated = false }: FilesystemItemProps) 
               className="flex flex-col justify-end overflow-hidden pl-6"
             >
               {children}
-            </motion.ul>
+            </m.ul>
           )}
         </AnimatePresence>
       )
@@ -66,6 +67,7 @@ export function FilesystemItem({ node, animated = false }: FilesystemItemProps) 
   }
 
   return (
+    <LazyMotion features={domAnimation}>
     <li className="text-sm text-foreground">
       <span className="flex items-center gap-1.5 py-1">
         {node.nodes && node.nodes.length > 0 && (
@@ -94,6 +96,7 @@ export function FilesystemItem({ node, animated = false }: FilesystemItemProps) 
 
       <ChildrenList />
     </li>
+    </LazyMotion>
   )
 }
 

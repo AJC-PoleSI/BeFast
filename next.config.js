@@ -7,7 +7,7 @@ const nextConfig = {
     remotePatterns: [],
   },
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    optimizePackageImports: ["lucide-react", "framer-motion", "react-aria-components"],
   },
 }
 module.exports = nextConfig

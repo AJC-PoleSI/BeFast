@@ -19,10 +19,10 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        heading: ["Manrope", "system-ui", "sans-serif"],
-        manrope: ["Manrope", "system-ui", "sans-serif"],
-        inter: ["Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        heading: ["var(--font-manrope)", "system-ui", "sans-serif"],
+        manrope: ["var(--font-manrope)", "system-ui", "sans-serif"],
+        inter: ["var(--font-inter)", "system-ui", "sans-serif"],
         // keep legacy vars for backward compat
         serif: ["var(--font-playfair)", "Georgia", "serif"],
       },

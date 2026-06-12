@@ -3,7 +3,9 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { AnimatePresence, motion } from "framer-motion"
+// LazyMotion + m : ne charge que le sous-ensemble domAnimation de framer-motion
+// (la sidebar est dans le layout, donc dans le bundle de toutes les pages).
+import { AnimatePresence, LazyMotion, domAnimation, m } from "framer-motion"
 import {
   BarChart3,
   Briefcase,
@@ -143,12 +145,12 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
           >
             <Icon className="h-4 w-4 shrink-0" />
             {!collapsed && (
-              <motion.span
+              <m.span
                 variants={labelVariants}
                 className="ml-2 truncate text-sm"
               >
                 {item.label}
-              </motion.span>
+              </m.span>
             )}
           </Link>
         )
@@ -165,9 +167,9 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
       >
         <Settings className="h-4 w-4 shrink-0" />
         {!collapsed && (
-          <motion.span variants={labelVariants} className="ml-2 text-sm">
+          <m.span variants={labelVariants} className="ml-2 text-sm">
             Paramètres
-          </motion.span>
+          </m.span>
         )}
       </Link>
 
@@ -180,7 +182,7 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
               </AvatarFallback>
             </Avatar>
             {!collapsed && (
-              <motion.div
+              <m.div
                 variants={labelVariants}
                 className="flex w-full items-center gap-2"
               >
@@ -188,7 +190,7 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
                   {userName ?? "Mon compte"}
                 </span>
                 <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground/60" />
-              </motion.div>
+              </m.div>
             )}
           </div>
         </DropdownMenuTrigger>
@@ -233,22 +235,22 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
         <Rocket className="h-4 w-4" />
       </div>
       {!collapsed && (
-        <motion.div variants={labelVariants} className="flex flex-col leading-tight">
+        <m.div variants={labelVariants} className="flex flex-col leading-tight">
           <span className="font-manrope text-sm font-extrabold text-primary">
             BeFast
           </span>
           <span className="text-[10px] font-medium tracking-wide text-muted-foreground">
             Audencia Junior Conseil
           </span>
-        </motion.div>
+        </m.div>
       )}
     </div>
   )
 
   return (
-    <>
+    <LazyMotion features={domAnimation} strict>
       {/* ── Desktop : rail fixe qui s'étend au survol ─────────────────── */}
-      <motion.aside
+      <m.aside
         className="fixed left-0 top-0 z-40 hidden h-full shrink-0 overflow-hidden border-r bg-white lg:block"
         initial="closed"
         animate="closed"
@@ -256,7 +258,7 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
         variants={sidebarVariants}
         transition={transitionProps}
       >
-        <motion.div
+        <m.div
           variants={staggerVariants}
           className="flex h-full flex-col text-muted-foreground"
         >
@@ -267,8 +269,8 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
             <ScrollArea className="grow p-2">{navLinks(false)}</ScrollArea>
           </div>
           {footer(false)}
-        </motion.div>
-      </motion.aside>
+        </m.div>
+      </m.aside>
 
       {/* ── Mobile : barre fine + drawer ──────────────────────────────── */}
       <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-2 border-b bg-white px-3 lg:hidden">
@@ -292,14 +294,14 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
       <AnimatePresence>
         {mobileOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
-            <motion.div
+            <m.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/40"
               onClick={() => setMobileOpen(false)}
             />
-            <motion.aside
+            <m.aside
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
@@ -333,10 +335,10 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
               </div>
               <Separator />
               {footer(false, () => setMobileOpen(false))}
-            </motion.aside>
+            </m.aside>
           </div>
         )}
       </AnimatePresence>
-    </>
+    </LazyMotion>
   )
 }
