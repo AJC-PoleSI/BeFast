@@ -9,7 +9,12 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="logo-config.css">
   <style>
-    /* ── DOMAIN TABS (sticky) ── */
+    /* ── HERO centré (spécifique à cette page) ── */
+    .page-hero-inner { text-align: center; }
+    .page-hero-eyebrow::after { content: ''; }
+    .page-hero-sub { margin: 0 auto; }
+
+    /* ── DOMAIN TABS (sticky, centrés) ── */
     .domain-selector {
       position: sticky; top: 68px; z-index: 100;
       background: var(--white); border-bottom: 1px solid var(--gray-border);
@@ -17,7 +22,8 @@
     }
     .domain-selector-inner {
       max-width: 1200px; margin: 0 auto;
-      display: flex; gap: 0; overflow-x: auto; scrollbar-width: none;
+      display: flex; gap: 0; justify-content: center;
+      overflow-x: auto; scrollbar-width: none;
     }
     .domain-selector-inner::-webkit-scrollbar { display: none; }
     .domain-tab {
@@ -32,48 +38,59 @@
     .domain-tab:hover { color: var(--marine); }
     .domain-tab.active { color: var(--marine); border-bottom-color: var(--rose); }
 
-    /* ── SERVICES SECTION ── */
-    .domains-container { max-width: 1200px; margin: 0 auto; padding: 0 48px 96px; }
+    /* ── SECTION DOMAINE (centrée) ── */
+    .domains-container { max-width: 1100px; margin: 0 auto; padding: 0 48px 96px; }
+    .domain-section { padding-top: 64px; }
 
-    .domain-section { border-bottom: 1px solid var(--gray-border); }
+    .domain-intro { text-align: center; max-width: 760px; margin: 0 auto 40px; }
+    .domain-h-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--rose); margin-bottom: 10px; }
+    .domain-h-title { font-size: 32px; font-weight: 800; color: var(--marine); margin-bottom: 18px; }
+    .domain-desc { font-size: 16px; color: var(--gray-text); line-height: 1.8; }
 
-    .domain-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 48px 0 32px; cursor: pointer;
+    /* ── SÉLECTEUR DE PRESTATIONS (pills centrés, sans quitter la page) ── */
+    .pills-eyebrow { text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--rose); margin-bottom: 18px; }
+    .service-pills { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 36px; }
+    .service-pill {
+      background: white; border: 2px solid var(--gray-border); border-radius: 100px;
+      padding: 11px 22px; font-size: 13px; font-weight: 600; color: var(--marine);
+      cursor: pointer; transition: all 0.2s; font-family: 'Montserrat', sans-serif;
     }
-    .domain-header-left { display: flex; align-items: center; gap: 24px; }
-    .domain-h-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--rose); margin-bottom: 6px; }
-    .domain-h-title { font-size: 26px; font-weight: 800; color: var(--marine); }
+    .service-pill:hover { border-color: var(--marine); }
+    .service-pill.active { background: var(--marine); border-color: var(--marine); color: white; }
 
-    /* Services grid */
-    .domain-body { padding: 0 0 56px; }
-    .domain-desc { font-size: 16px; color: var(--gray-text); line-height: 1.8; max-width: 720px; margin-bottom: 28px; }
-    .domain-tags { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 48px; }
-    .domain-tag {
-      background: white; border: 2px solid var(--marine); border-radius: 6px;
-      padding: 12px 24px; font-size: 13px; font-weight: 600; color: var(--marine);
-      cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-block;
+    /* ── PANNEAU DÉTAIL INLINE ── */
+    .service-panel {
+      background: var(--gray-bg); border: 1px solid var(--gray-border); border-radius: 14px;
+      padding: 44px 48px; margin-bottom: 48px; text-align: center;
+      animation: panel-fade 0.35s ease;
     }
-    .domain-tag:hover { background: var(--marine); color: white; }
+    @keyframes panel-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .service-panel-accroche { font-size: 20px; font-weight: 800; color: var(--marine); margin-bottom: 14px; }
+    .service-panel-desc { font-size: 15px; color: var(--gray-text); line-height: 1.8; max-width: 680px; margin: 0 auto 36px; }
+    .panel-block-label { font-size: 10px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--rose); margin-bottom: 24px; }
+    .panel-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 40px; text-align: left; }
+    .panel-step { background: white; border-radius: 10px; padding: 22px; border: 1px solid var(--gray-border); }
+    .panel-step-num { font-size: 11px; font-weight: 800; color: var(--rose); letter-spacing: 2px; margin-bottom: 10px; }
+    .panel-step-titre { font-size: 14px; font-weight: 700; color: var(--marine); margin-bottom: 6px; }
+    .panel-step-texte { font-size: 12px; color: var(--gray-text); line-height: 1.6; }
+    .panel-livrables { display: flex; flex-direction: column; gap: 12px; max-width: 640px; margin: 0 auto; text-align: left; }
+    .panel-livrable { display: flex; align-items: flex-start; gap: 14px; background: white; border: 1px solid var(--gray-border); border-radius: 8px; padding: 16px 20px; }
+    .panel-livrable-dot { width: 8px; height: 8px; background: var(--rose); border-radius: 50%; margin-top: 7px; flex-shrink: 0; }
+    .panel-livrable-titre { font-size: 14px; font-weight: 700; color: var(--marine); margin-bottom: 3px; }
+    .panel-livrable-texte { font-size: 12px; color: var(--gray-text); line-height: 1.5; }
 
-    /* Content sections */
-    .examples-label { font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--rose); margin-bottom: 20px; margin-top: 48px; }
+    /* ── EXEMPLES (centrés) ── */
+    .examples-label { text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--rose); margin-bottom: 24px; margin-top: 8px; }
     .examples-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-bottom: 48px; }
-    .example-card { background: var(--gray-bg); border-radius: 8px; padding: 24px 28px; border: 1.5px solid transparent; transition: border-color 0.2s; }
+    .example-card { background: white; border: 1px solid var(--gray-border); border-radius: 8px; padding: 24px 28px; transition: border-color 0.2s; text-align: left; }
     .example-card:hover { border-color: var(--marine); }
     .example-client { font-size: 13px; font-weight: 800; color: var(--marine); margin-bottom: 6px; }
     .example-context { font-size: 12px; color: var(--gray-text); line-height: 1.6; margin-bottom: 10px; }
     .example-livrable { font-size: 11px; font-weight: 700; color: var(--rose); }
     .example-livrable::before { content: '→ '; }
 
-    .methodo-grid { display: flex; gap: 0; margin-bottom: 40px; position: relative; }
-    .methodo-grid::before { content: ''; position: absolute; top: 20px; left: 20px; right: 20px; height: 1px; background: var(--gray-border); z-index: 0; }
-    .methodo-step { flex: 1; text-align: center; padding: 0 12px; position: relative; z-index: 1; }
-    .methodo-dot { width: 10px; height: 10px; background: var(--rose); border-radius: 50%; margin: 0 auto 12px; }
-    .methodo-label { font-size: 11px; font-weight: 600; color: var(--marine); line-height: 1.4; }
-
-    .domain-cta { display: flex; align-items: center; justify-content: space-between; background: var(--marine); border-radius: 8px; padding: 28px 36px; flex-wrap: wrap; gap: 16px; margin-top: 48px; }
-    .domain-cta p { font-size: 15px; font-weight: 700; color: white; }
+    .domain-cta { display: flex; align-items: center; justify-content: center; text-align: center; background: var(--marine); border-radius: 12px; padding: 32px 36px; flex-wrap: wrap; gap: 20px; }
+    .domain-cta p { font-size: 16px; font-weight: 700; color: white; }
     .domain-cta span { font-size: 13px; color: rgba(255,255,255,0.5); display: block; margin-top: 4px; }
 
     /* ── CTA FINALE ── */
@@ -84,14 +101,14 @@
 
     @media (max-width: 900px) {
       .domain-selector { padding: 0 16px; }
+      .domain-selector-inner { justify-content: flex-start; }
       .domain-tab { padding: 16px 16px; font-size: 11px; }
       .domains-container { padding: 0 24px 64px; }
-      .domain-header { padding: 32px 0 20px; }
-      .domain-h-title { font-size: 20px; }
+      .domain-section { padding-top: 48px; }
+      .domain-h-title { font-size: 24px; }
+      .service-panel { padding: 32px 24px; }
       .examples-grid { grid-template-columns: 1fr; }
-      .methodo-grid { flex-wrap: wrap; gap: 16px; }
-      .methodo-grid::before { display: none; }
-      .domain-cta { flex-direction: column; text-align: center; }
+      .domain-cta { flex-direction: column; }
       .cta-finale { padding: 60px 24px; }
       .cta-finale-inner { flex-direction: column; text-align: center; }
     }
@@ -170,7 +187,7 @@
   <a href="notre-equipe.html">Notre Équipe</a>
   <a href="prestations.html">Nos Prestations</a>
   <a href="realisations.html">Nos Réalisations</a>
-  <a href="contact.html" class="drawer-cta">Nous Contacter →</a>
+  <a href="contact.html" class="drawer-cta">Nous contacter →</a>
 </div>
 
 <!-- HERO -->
@@ -197,7 +214,7 @@
       <h2>Votre projet ne rentre<br>pas dans une case ?</h2>
       <p>Contactez-nous, nous trouverons une solution adaptée.</p>
     </div>
-    <a href="contact.html" class="btn-rose" style="font-size:13px;padding:18px 40px;white-space:nowrap;">NOUS CONTACTER</a>
+    <a href="contact.html" class="btn-rose" style="font-size:13px;padding:18px 40px;white-space:nowrap;">Nous contacter</a>
   </div>
 </section>
 
@@ -295,9 +312,57 @@
       .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   }
 
+  // Index des services (chargé depuis services.json) pour l'affichage inline
+  let SERVICES = {};
+
+  // Affiche le détail d'une prestation directement dans la page (sans navigation)
+  function selectService(domainId, serviceId) {
+    const section = document.getElementById('section-' + domainId);
+    if (!section) return;
+    section.querySelectorAll('.service-pill').forEach(p =>
+      p.classList.toggle('active', p.dataset.service === serviceId));
+
+    const s = SERVICES[serviceId];
+    const panel = document.getElementById('panel-' + domainId);
+    if (!s || !panel) { if (panel) panel.innerHTML = ''; return; }
+
+    panel.innerHTML = `
+      <div class="service-panel-accroche">${s.accroche || s.titre}</div>
+      <p class="service-panel-desc">${s.description || ''}</p>
+      ${s.approche && s.approche.length ? `
+        <div class="panel-block-label">Notre approche</div>
+        <div class="panel-steps">
+          ${s.approche.map((a, i) => `
+            <div class="panel-step">
+              <div class="panel-step-num">0${i + 1}</div>
+              <div class="panel-step-titre">${a.titre}</div>
+              <div class="panel-step-texte">${a.texte}</div>
+            </div>`).join('')}
+        </div>` : ''}
+      ${s.livrables && s.livrables.length ? `
+        <div class="panel-block-label">Ce que vous recevez</div>
+        <div class="panel-livrables">
+          ${s.livrables.map(l => `
+            <div class="panel-livrable">
+              <div class="panel-livrable-dot"></div>
+              <div>
+                <div class="panel-livrable-titre">${l.titre}</div>
+                <div class="panel-livrable-texte">${l.texte}</div>
+              </div>
+            </div>`).join('')}
+        </div>` : ''}`;
+    // re-déclenche l'animation de fondu à chaque changement
+    panel.style.animation = 'none'; panel.offsetHeight; panel.style.animation = '';
+  }
+
   async function buildPrestations() {
-    const res = await fetch('contenu/prestations.json');
-    const { domaines } = await res.json();
+    const [presRes, servRes] = await Promise.all([
+      fetch('contenu/prestations.json'),
+      fetch('contenu/services.json')
+    ]);
+    const { domaines } = await presRes.json();
+    const { services } = await servRes.json();
+    services.forEach(s => { SERVICES[s.id] = s; });
 
     // Build tabs
     document.getElementById('domain-tabs').innerHTML = domaines.map(d => `
@@ -307,45 +372,40 @@
     // Build services sections (one per domain, all content)
     document.getElementById('domains-container').innerHTML = domaines.map(d => `
       <div class="domain-section" id="section-${d.id}">
-        <div class="domain-header">
-          <div class="domain-header-left">
-            <div>
-              <div class="domain-h-eyebrow">Domaine d'expertise</div>
-              <div class="domain-h-title">${d.titre}</div>
-            </div>
-          </div>
-        </div>
-        <div class="domain-body">
+        <div class="domain-intro">
+          <div class="domain-h-eyebrow">Domaine d'expertise</div>
+          <h2 class="domain-h-title">${d.titre}</h2>
           <p class="domain-desc">${d.description}</p>
-          <div class="domain-tags">
-            ${d.tags.map(t => `<a href="service-detail.html#service=${slugify(t)}&domain=${d.id}" class="domain-tag">${t}</a>`).join('')}
+        </div>
+
+        <div class="pills-eyebrow">Choisissez une prestation</div>
+        <div class="service-pills">
+          ${d.tags.map((t, i) => `<button class="service-pill${i === 0 ? ' active' : ''}" data-service="${slugify(t)}" onclick="selectService('${d.id}','${slugify(t)}')">${t}</button>`).join('')}
+        </div>
+
+        <div class="service-panel" id="panel-${d.id}"></div>
+
+        <div class="examples-label">Exemples de missions réalisées</div>
+        <div class="examples-grid">
+          ${d.exemples.map(e => `
+            <div class="example-card">
+              <div class="example-client">${e.client}</div>
+              <div class="example-context">${e.contexte}</div>
+              <div class="example-livrable">${e.livrable}</div>
+            </div>`).join('')}
+        </div>
+
+        <div class="domain-cta">
+          <div>
+            <p>Vous avez un projet en ${d.titre.toLowerCase()} ?</p>
+            <span>Réponse sous 48h. Sans engagement.</span>
           </div>
-          <div class="examples-label">Exemples de missions réalisées</div>
-          <div class="examples-grid">
-            ${d.exemples.map(e => `
-              <div class="example-card">
-                <div class="example-client">${e.client}</div>
-                <div class="example-context">${e.contexte}</div>
-                <div class="example-livrable">${e.livrable}</div>
-              </div>`).join('')}
-          </div>
-          <div class="examples-label">Notre approche</div>
-          <div class="methodo-grid">
-            ${d.methodologie.map(m => `
-              <div class="methodo-step">
-                <div class="methodo-dot"></div>
-                <div class="methodo-label">${m}</div>
-              </div>`).join('')}
-          </div>
-          <div class="domain-cta">
-            <div>
-              <p>Vous avez un projet en ${d.titre.toLowerCase()} ?</p>
-              <span>Réponse sous 48h. Sans engagement.</span>
-            </div>
-            <a href="contact.html?domaine=${d.id}" class="btn-hero-primary">Demander un devis</a>
-          </div>
+          <a href="contact.html?domaine=${d.id}" class="btn-rose" style="font-size:13px;padding:16px 36px;white-space:nowrap;">Demander un devis</a>
         </div>
       </div>`).join('');
+
+    // Pré-sélectionne la première prestation de chaque domaine
+    domaines.forEach(d => { if (d.tags.length) selectService(d.id, slugify(d.tags[0])); });
 
     // Handle URL hash or param
     const params = new URLSearchParams(window.location.search);
