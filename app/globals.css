@@ -30,6 +30,33 @@
     --gold:           44 54% 54%;             /* #C9A84C */
     --gold-foreground: 222 47% 11%;
   }
+
+  /* ── Palette sombre Be Fast ──────────────────────────────────────────
+     Fond navy profond ; le primary devient un bleu royal clair (le navy
+     #00236f est illisible sur fond sombre) ; l'or s'éclaircit légèrement. */
+  .dark {
+    --background:     222 47% 8%;
+    --foreground:     210 40% 96%;
+    --card:           222 41% 11%;
+    --card-foreground: 210 40% 96%;
+    --popover:        222 41% 11%;
+    --popover-foreground: 210 40% 96%;
+    --primary:        221 75% 64%;
+    --primary-foreground: 222 47% 8%;
+    --secondary:      230 18% 24%;
+    --secondary-foreground: 210 40% 96%;
+    --accent:         222 35% 16%;
+    --accent-foreground: 210 40% 96%;
+    --muted:          222 35% 15%;
+    --muted-foreground: 215 18% 65%;
+    --destructive:    0 62% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border:         222 30% 18%;
+    --input:          222 30% 20%;
+    --ring:           221 75% 64%;
+    --gold:           44 60% 58%;
+    --gold-foreground: 222 47% 8%;
+  }
 }
 
 @layer base {
@@ -37,7 +64,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-[#f7f9fb] text-foreground;
+    @apply bg-background text-foreground;
     font-family: var(--font-inter), system-ui, sans-serif;
   }
 }

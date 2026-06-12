@@ -10,19 +10,23 @@ import {
   BarChart3,
   Briefcase,
   ChevronsUpDown,
+  FileSignature,
   FolderOpen,
   GraduationCap,
   LayoutDashboard,
   LogOut,
   Menu,
+  Moon,
   Rocket,
   Settings,
   Shield,
+  Sun,
   TrendingUp,
   UserCircle,
   Wallet,
   X,
 } from "lucide-react"
+import { useTheme } from "next-themes"
 
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -57,6 +61,7 @@ const NAV: NavEntry[] = [
   { label: "Études", href: "/etudes", icon: GraduationCap, permission: "etudes" },
   { label: "Prospection", href: "/prospection", icon: TrendingUp, permission: "prospection" },
   { label: "Trésorerie", href: "/tresorerie", icon: Wallet, permission: "voir_factures" },
+  { label: "Signatures", href: "/signatures", icon: FileSignature, permission: "etudes" },
   { label: "Statistiques", href: "/statistiques", icon: BarChart3, permission: "statistiques" },
   { label: "Administration", href: "/administration", icon: Shield, permission: "administration", adminOnly: true },
 ]
@@ -99,6 +104,7 @@ interface AppSidebarProps {
 export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) {
   const pathname = usePathname()
   const { profile } = useUser()
+  const { resolvedTheme, setTheme } = useTheme()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const items = NAV.filter((item) => {
@@ -160,6 +166,21 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
 
   const footer = (collapsed: boolean, onNavigate?: () => void) => (
     <div className="flex flex-col gap-1 p-2">
+      {/* Icônes soleil/lune pilotées en CSS (dark:) pour éviter tout
+          mismatch d'hydratation avec next-themes. */}
+      <button
+        onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+        className="flex h-9 w-full flex-row items-center rounded-md px-2.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      >
+        <Sun className="h-4 w-4 shrink-0 dark:hidden" />
+        <Moon className="hidden h-4 w-4 shrink-0 dark:block" />
+        {!collapsed && (
+          <m.span variants={labelVariants} className="ml-2 text-sm">
+            <span className="dark:hidden">Mode sombre</span>
+            <span className="hidden dark:inline">Mode clair</span>
+          </m.span>
+        )}
+      </button>
       <Link
         href="/parametres"
         onClick={onNavigate}
@@ -251,7 +272,7 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
     <LazyMotion features={domAnimation} strict>
       {/* ── Desktop : rail fixe qui s'étend au survol ─────────────────── */}
       <m.aside
-        className="fixed left-0 top-0 z-40 hidden h-full shrink-0 overflow-hidden border-r bg-white lg:block"
+        className="fixed left-0 top-0 z-40 hidden h-full shrink-0 overflow-hidden border-r bg-card lg:block"
         initial="closed"
         animate="closed"
         whileHover="open"
@@ -273,7 +294,7 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
       </m.aside>
 
       {/* ── Mobile : barre fine + drawer ──────────────────────────────── */}
-      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-2 border-b bg-white px-3 lg:hidden">
+      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-2 border-b bg-card px-3 lg:hidden">
         <button
           onClick={() => setMobileOpen(true)}
           aria-label="Ouvrir le menu"
@@ -306,7 +327,7 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "tween", ease: "easeOut", duration: 0.25 }}
-              className="absolute left-0 top-0 flex h-full w-64 flex-col border-r bg-white text-muted-foreground"
+              className="absolute left-0 top-0 flex h-full w-64 flex-col border-r bg-card text-muted-foreground"
             >
               <div className="flex h-[54px] shrink-0 items-center justify-between border-b px-3">
                 <div className="flex items-center gap-2">

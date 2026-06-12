@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Inter, Manrope } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
+import { ThemeProvider } from "@/components/theme-provider"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"
 
@@ -30,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${manrope.variable}`}>
+    <html lang="fr" className={`${inter.variable} ${manrope.variable}`} suppressHydrationWarning>
       <head>
         {/* Preconnect pour les Material Symbols (seule font externe restante,
             à retirer une fois la migration lucide terminée) */}
@@ -41,9 +42,11 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#f7f9fb] font-sans text-foreground antialiased">
-        {children}
-        <Toaster position="top-right" />
+      <body className="bg-background font-sans text-foreground antialiased">
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          {children}
+          <Toaster position="top-right" />
+        </ThemeProvider>
         <SpeedInsights />
         <Analytics />
       </body>

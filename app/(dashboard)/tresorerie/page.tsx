@@ -64,6 +64,8 @@ export default function TresoreriePage() {
   const [searchMission, setSearchMission] = useState("")
   const [activeTab, setActiveTab] = useState<Tab>("factures")
   const [showModal, setShowModal] = useState(false)
+  const [exportFrom, setExportFrom] = useState("")
+  const [exportTo, setExportTo] = useState("")
   const [editingFacture, setEditingFacture] = useState<FactureRow | null>(null)
   const [showPayMission, setShowPayMission] = useState<MissionPayRow | null>(null)
   const [budgetRows, setBudgetRows] = useState<BudgetValidationRow[] | null>(null)
@@ -206,6 +208,36 @@ export default function TresoreriePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Export comptable : factures + BV sur une période */}
+          <div className="flex items-center gap-2 bg-white border border-zinc-200 px-3 py-2 rounded-xl">
+            <input
+              type="date"
+              value={exportFrom}
+              onChange={(e) => setExportFrom(e.target.value)}
+              className="text-xs border border-zinc-200 rounded-md px-2 py-1 text-zinc-600 bg-transparent"
+              title="Début de période"
+            />
+            <span className="text-xs text-zinc-400">→</span>
+            <input
+              type="date"
+              value={exportTo}
+              onChange={(e) => setExportTo(e.target.value)}
+              className="text-xs border border-zinc-200 rounded-md px-2 py-1 text-zinc-600 bg-transparent"
+              title="Fin de période"
+            />
+            <button
+              onClick={() => {
+                const qs = new URLSearchParams({ format: "xlsx" })
+                if (exportFrom) qs.set("from", exportFrom)
+                if (exportTo) qs.set("to", exportTo)
+                window.open(`/api/tresorerie/export?${qs.toString()}`, "_blank")
+              }}
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#00236f] hover:underline"
+              title="Excel : 2 onglets (factures + bulletins de versement)"
+            >
+              <Download className="w-3.5 h-3.5" /> Export Excel
+            </button>
+          </div>
           {budgetRows && (
             <button
               onClick={() => setActiveTab("validation")}

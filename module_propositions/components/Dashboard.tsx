@@ -342,6 +342,12 @@ export default function Dashboard() {
         </div>
 
         <div className="flex gap-3 items-center w-full md:w-auto shrink-0">
+          <a
+            href="/prospection/pipeline"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-xs font-bold text-zinc-600 hover:text-zinc-800 hover:bg-zinc-50 transition-all"
+          >
+            <BarChart3 size={14} /> Vue pipeline
+          </a>
           <div className="bg-zinc-100 p-1 rounded-xl flex text-xs font-bold border border-zinc-200">
             <button
               onClick={() => setDisplayMode('liste')}

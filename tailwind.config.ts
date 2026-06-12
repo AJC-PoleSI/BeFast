@@ -27,9 +27,11 @@ const config: Config = {
         serif: ["var(--font-playfair)", "Georgia", "serif"],
       },
       colors: {
-        // Material 3 tokens
-        primary: "#00236f",
-        "primary-foreground": "hsl(var(--primary-foreground))",
+        // Tokens pilotés par variables CSS (light/dark) — voir globals.css
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
         "primary-container": "#1e3a8a",
         "surface-bg": "#f7f9fb",
         "surface-lowest": "#ffffff",
@@ -38,14 +40,16 @@ const config: Config = {
         "surface-high": "#e6e8ea",
         "secondary-container": "#d0d8ff",
         "outline-variant": "#c5c5d3",
-        secondary: "#555d7e",
-        "secondary-foreground": "hsl(var(--secondary-foreground))",
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
         // legacy / marque
         navy: "#00236f",
         "navy-hover": "#1e3a8a",
         gold: {
-          DEFAULT: "#C9A84C",
-          foreground: "#0f1b3d",
+          DEFAULT: "hsl(var(--gold))",
+          foreground: "hsl(var(--gold-foreground))",
         },
         ivory: "#F5F0E8",
         border: "hsl(var(--border))",

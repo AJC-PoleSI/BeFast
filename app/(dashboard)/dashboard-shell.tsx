@@ -18,7 +18,7 @@ export function DashboardShell({
   children,
 }: DashboardShellProps) {
   return (
-    <div className="relative min-h-screen bg-[#f7f9fb]">
+    <div className="relative min-h-screen bg-background">
       <AppSidebar permissions={permissions} isAdmin={isAdmin} userName={userName} />
 
       {/* Décalage : barre mobile (top) et rail réduit (gauche, desktop) */}

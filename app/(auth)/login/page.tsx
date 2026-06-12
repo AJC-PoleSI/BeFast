@@ -34,7 +34,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-[#ece7dc] bg-white/95 p-8 shadow-[0_8px_30px_rgba(0,35,111,0.08)] backdrop-blur">
+    <div className="w-full max-w-sm rounded-2xl border border-[#ece7dc] bg-card/95 dark:border-border p-8 shadow-[0_8px_30px_rgba(0,35,111,0.08)] backdrop-blur">
       <div className="mb-8 flex flex-col items-center gap-2">
         <div className="flex items-center gap-2">
           <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">

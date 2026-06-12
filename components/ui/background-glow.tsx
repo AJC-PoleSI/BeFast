@@ -22,13 +22,13 @@ export function GlowBackground({
 }: GlowBackgroundProps) {
   const at = position === "top" ? "50% -5%" : "50% 38%"
   return (
-    <div className={cn("relative min-h-screen w-full bg-[#fcfbf8]", className)}>
+    <div className={cn("relative min-h-screen w-full bg-background", className)}>
+      {/* multiply écrase le halo sur fond sombre → screen + opacité réduite en dark */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-0"
+        className="pointer-events-none absolute inset-0 z-0 mix-blend-multiply dark:opacity-30 dark:mix-blend-screen"
         style={{
           backgroundImage: `radial-gradient(circle at ${at}, hsl(var(--gold) / ${intensity}) 0%, transparent 68%)`,
-          mixBlendMode: "multiply",
         }}
       />
       <div className="relative z-10 flex min-h-screen flex-col">{children}</div>
@@ -49,10 +49,12 @@ export function GlowLayer({
   return (
     <div
       aria-hidden
-      className={cn("pointer-events-none absolute inset-0 z-0", className)}
+      className={cn(
+        "pointer-events-none absolute inset-0 z-0 mix-blend-multiply dark:opacity-30 dark:mix-blend-screen",
+        className
+      )}
       style={{
         backgroundImage: `radial-gradient(circle at ${at}, hsl(var(--gold) / ${intensity}) 0%, transparent 60%)`,
-        mixBlendMode: "multiply",
       }}
     />
   )

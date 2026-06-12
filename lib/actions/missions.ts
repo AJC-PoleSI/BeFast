@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noStore } from "next/cache"
 import { MISSIONS_TAG, MISSION_DETAIL_TAG, CANDIDATURES_TAG } from "@/lib/cache-tags"
+import { sendEmail } from "@/lib/email/send"
+import { missionAssignedEmail } from "@/lib/email/templates"
 
 // Liste des missions — PAS de cache. Les utilisateurs créent/modifient
 // fréquemment leurs missions et doivent toujours voir leur travail.
@@ -222,7 +224,7 @@ export async function repondreCandidature(
   // Get candidature owner so we can invalidate their cache
   const { data: cand } = await supabase
     .from("candidatures")
-    .select("personne_id")
+    .select("personne_id, personnes!candidatures_personne_id_fkey(prenom, email)")
     .eq("id", candidatureId)
     .single()
 
@@ -234,5 +236,15 @@ export async function repondreCandidature(
   if (error) return { error: error.message }
   if (cand?.personne_id) revalidateTag(CANDIDATURES_TAG(cand.personne_id))
   revalidatePath("/missions")
+
+  // Notification best-effort au candidat retenu.
+  if (statut === "acceptee") {
+    const personne = cand?.personnes as { prenom?: string | null; email?: string | null } | null
+    if (personne?.email) {
+      const tpl = missionAssignedEmail(personne.prenom ?? null)
+      await sendEmail({ to: personne.email, subject: tpl.subject, html: tpl.html })
+    }
+  }
+
   return { success: true }
 }

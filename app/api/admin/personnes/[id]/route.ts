@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
+import { sendEmail } from "@/lib/email/send"
+import { accountValidatedEmail } from "@/lib/email/templates"
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -51,7 +53,13 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       console.error("Database error:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
-    
+
+    // Notification best-effort : un échec d'email ne doit pas faire échouer la validation.
+    if (account_status === "validated" && data?.email) {
+      const tpl = accountValidatedEmail(data.prenom ?? null)
+      await sendEmail({ to: data.email, subject: tpl.subject, html: tpl.html })
+    }
+
     return NextResponse.json({ success: true, personne: data })
   } catch (e: any) {
     console.error("API error:", e)

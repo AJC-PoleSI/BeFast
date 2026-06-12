@@ -17,7 +17,7 @@ export default function VerifierEmailPage({
         : null
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-[#ece7dc] bg-white/95 p-8 text-center shadow-[0_8px_30px_rgba(0,35,111,0.08)] backdrop-blur">
+    <div className="w-full max-w-sm rounded-2xl border border-[#ece7dc] bg-card/95 dark:border-border p-8 text-center shadow-[0_8px_30px_rgba(0,35,111,0.08)] backdrop-blur">
       <MailCheck className="mx-auto mb-6 text-gold" size={48} />
 
       <h1 className="font-heading text-[22px] font-bold tracking-[-0.01em] mb-4">
