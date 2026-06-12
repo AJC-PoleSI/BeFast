@@ -1,8 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Sidebar } from "@/components/layout/Sidebar"
-import { Header } from "@/components/layout/Header"
+import { AppSidebar } from "@/components/layout/AppSidebar"
+import { GlowLayer } from "@/components/ui/background-glow"
 import type { Permissions } from "@/types/database.types"
 
 interface DashboardShellProps {
@@ -18,24 +17,15 @@ export function DashboardShell({
   userName,
   children,
 }: DashboardShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
   return (
-    <div className="flex h-screen bg-[#f7f9fb]">
-      <Sidebar
-        permissions={permissions}
-        isAdmin={isAdmin}
-        userName={userName}
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header
-          userName={userName}
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
-        />
-        <main className="flex-1 overflow-y-auto bg-[#f7f9fb] pt-16">
-          <div className="max-w-7xl mx-auto px-8 py-8">
+    <div className="relative min-h-screen bg-[#f7f9fb]">
+      <AppSidebar permissions={permissions} isAdmin={isAdmin} userName={userName} />
+
+      {/* Décalage : barre mobile (top) et rail réduit (gauche, desktop) */}
+      <div className="flex min-h-screen flex-col pt-14 lg:pl-[3.05rem] lg:pt-0">
+        <main className="relative flex-1">
+          <GlowLayer />
+          <div className="relative z-10 mx-auto max-w-7xl px-6 py-8">
             {children}
           </div>
         </main>

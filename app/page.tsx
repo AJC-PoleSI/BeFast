@@ -1,38 +1,37 @@
 import Link from "next/link"
+import { Rocket } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { GlowBackground } from "@/components/ui/background-glow"
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#f7f9fb]">
-      <div className="text-center space-y-6">
-        <div>
-          <h1 className="text-4xl font-black text-[#00236f] mb-2">BeFast</h1>
-          <p className="text-zinc-600">Plateforme de gestion interne</p>
-        </div>
-
-        <div className="space-y-3">
-          <Link
-            href="/login"
-            className="inline-block px-6 py-3 bg-[#00236f] hover:bg-[#1e3a8a] text-white rounded-lg font-semibold transition-colors"
-          >
-            Se connecter
-          </Link>
-
-          <div>
-            <Link
-              href="/inscription"
-              className="inline-block px-6 py-3 border border-[#00236f] text-[#00236f] hover:bg-[#00236f] hover:text-white rounded-lg font-semibold transition-colors"
-            >
-              Créer un compte
-            </Link>
+    <GlowBackground position="center">
+      <div className="flex min-h-screen flex-col items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-8 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm shadow-black/10">
+              <Rocket className="h-7 w-7" />
+            </div>
+            <div>
+              <h1 className="font-manrope text-4xl font-extrabold text-primary">
+                BeFast
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Audencia Junior Conseil — Plateforme de gestion interne
+              </p>
+            </div>
           </div>
 
-          <div className="text-sm text-zinc-600">
-            <Link href="/diagnostic" className="text-blue-600 hover:underline">
-              Diagnostic →
-            </Link>
+          <div className="flex flex-col items-center gap-3">
+            <Button asChild size="lg" className="w-56">
+              <Link href="/login">Se connecter</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="w-56">
+              <Link href="/inscription">Créer un compte</Link>
+            </Button>
           </div>
         </div>
       </div>
-    </div>
+    </GlowBackground>
   )
 }

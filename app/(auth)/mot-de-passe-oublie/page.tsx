@@ -2,6 +2,7 @@
 
 import { useTransition } from "react"
 import Link from "next/link"
+import { Rocket } from "lucide-react"
 import { resetPassword } from "@/lib/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,14 +28,20 @@ export default function MotDePasseOubliePage() {
   }
 
   return (
-    <div className="w-full max-w-[400px] bg-[#F5F0E8] border border-[hsl(210,20%,82%)] rounded-lg shadow-md p-12">
-      <div className="text-center mb-8">
-        <h1 className="font-heading text-[28px] font-bold tracking-[-0.01em]">
-          <span className="text-gold">BeFast</span>
-        </h1>
+    <div className="w-full max-w-sm rounded-2xl border border-[#ece7dc] bg-white/95 p-8 shadow-[0_8px_30px_rgba(0,35,111,0.08)] backdrop-blur">
+      <div className="mb-8 flex flex-col items-center gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Rocket className="h-4 w-4" />
+          </div>
+          <span className="font-manrope text-xl font-extrabold text-primary">
+            BeFast
+          </span>
+        </div>
+        <p className="text-sm text-muted-foreground">Audencia Junior Conseil</p>
       </div>
 
-      <h2 className="font-heading text-[20px] font-bold tracking-[-0.01em] text-center mb-8">
+      <h2 className="mb-6 text-center text-lg font-semibold text-foreground">
         Mot de passe oubli&eacute;
       </h2>
 
@@ -50,19 +57,15 @@ export default function MotDePasseOubliePage() {
           />
         </div>
 
-        <Button
-          type="submit"
-          disabled={isPending}
-          className="w-full h-11 bg-gold text-navy font-bold rounded-md hover:bg-gold/90"
-        >
-          {isPending ? "Envoi..." : "Envoyer le lien"}
+        <Button type="submit" disabled={isPending} className="mt-2 w-full">
+          {isPending ? "Envoi…" : "Envoyer le lien"}
         </Button>
       </form>
 
       <div className="mt-6 text-center">
         <Link
           href="/login"
-          className="text-blue text-sm hover:underline"
+          className="text-sm text-muted-foreground hover:text-primary hover:underline"
         >
           Retour &agrave; la connexion
         </Link>

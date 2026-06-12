@@ -2,6 +2,7 @@
 
 import { useEffect, useTransition } from "react"
 import Link from "next/link"
+import { Rocket } from "lucide-react"
 import { signIn } from "@/lib/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,24 +34,31 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-[400px] bg-[#F5F0E8] border border-[hsl(210,20%,82%)] rounded-lg shadow-md p-12">
-      <div className="text-center mb-8">
-        <h1 className="font-heading text-[28px] font-bold tracking-[-0.01em]">
-          <span className="text-gold">BeFast</span>
-        </h1>
+    <div className="w-full max-w-sm rounded-2xl border border-[#ece7dc] bg-white/95 p-8 shadow-[0_8px_30px_rgba(0,35,111,0.08)] backdrop-blur">
+      <div className="mb-8 flex flex-col items-center gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Rocket className="h-4 w-4" />
+          </div>
+          <span className="font-manrope text-xl font-extrabold text-primary">
+            BeFast
+          </span>
+        </div>
+        <p className="text-sm text-muted-foreground">Audencia Junior Conseil</p>
       </div>
 
-      <h2 className="font-heading text-[28px] font-bold tracking-[-0.01em] text-center mb-8">
+      <h2 className="mb-6 text-center text-lg font-semibold text-foreground">
         Connexion
       </h2>
 
-      <form action={handleSubmit} className="space-y-6">
+      <form action={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
             name="email"
             type="email"
+            placeholder="prenom.nom@audencia.com"
             required
             autoComplete="email"
           />
@@ -67,28 +75,27 @@ export default function LoginPage() {
           />
         </div>
 
-        <Button
-          type="submit"
-          disabled={isPending}
-          className="w-full h-11 bg-gold text-navy font-bold rounded-md hover:bg-gold/90"
-        >
-          {isPending ? "Connexion..." : "Se connecter"}
+        <Button type="submit" disabled={isPending} className="mt-2 w-full">
+          {isPending ? "Connexion…" : "Se connecter"}
         </Button>
       </form>
 
-      <div className="mt-6 text-center space-y-2">
+      <div className="mt-6 flex flex-col items-center gap-2 text-sm">
         <Link
           href="/mot-de-passe-oublie"
-          className="block text-blue text-sm hover:underline"
+          className="text-muted-foreground hover:text-primary hover:underline"
         >
-          Mot de passe oubli&eacute; ?
+          Mot de passe oublié ?
         </Link>
-        <Link
-          href="/inscription"
-          className="block text-blue text-sm hover:underline"
-        >
-          Pas encore de compte ? S&apos;inscrire
-        </Link>
+        <p className="text-muted-foreground">
+          Pas encore de compte ?{" "}
+          <Link
+            href="/inscription"
+            className="font-medium text-primary hover:underline"
+          >
+            S&apos;inscrire
+          </Link>
+        </p>
       </div>
     </div>
   )

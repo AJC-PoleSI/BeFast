@@ -4,26 +4,31 @@
 
 @layer base {
   :root {
-    --background:     40 33% 94%;
-    --foreground:     210 52% 11%;
-    --card:           40 33% 96%;
-    --card-foreground: 210 52% 11%;
-    --popover:        40 33% 96%;
-    --popover-foreground: 210 52% 11%;
-    --primary:        40 56% 54%;
-    --primary-foreground: 210 52% 11%;
-    --secondary:      210 52% 11%;
-    --secondary-foreground: 40 33% 94%;
-    --accent:         211 65% 57%;
-    --accent-foreground: 0 0% 100%;
-    --muted:          210 20% 88%;
-    --muted-foreground: 210 20% 40%;
+    /* ── Charte graphique Be Fast — navy + or ────────────────────────────
+       Source unique de vérité. Voir CHARTE_GRAPHIQUE.md. */
+    --background:     210 33% 98%;            /* #f7f9fb — surface app */
+    --foreground:     222 47% 11%;            /* slate-navy — texte */
+    --card:           0 0% 100%;              /* blanc — cartes */
+    --card-foreground: 222 47% 11%;
+    --popover:        0 0% 100%;              /* blanc — menus/dropdowns */
+    --popover-foreground: 222 47% 11%;
+    --primary:        221 100% 22%;           /* navy #00236f */
+    --primary-foreground: 0 0% 100%;          /* blanc sur navy */
+    --secondary:      230 19% 41%;            /* slate #555d7e */
+    --secondary-foreground: 0 0% 100%;
+    --accent:         210 40% 96%;            /* highlight neutre (hover) */
+    --accent-foreground: 221 100% 22%;        /* navy */
+    --muted:          210 40% 94%;            /* fond muet / item actif */
+    --muted-foreground: 215 16% 47%;
     --destructive:    0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border:         210 20% 82%;
-    --input:          210 20% 82%;
-    --ring:           211 65% 57%;
+    --border:         214 20% 90%;
+    --input:          214 20% 88%;
+    --ring:           221 100% 22%;           /* focus navy */
     --radius: 0.5rem;
+    /* Or — accent de marque (réservé, jamais en hover par défaut) */
+    --gold:           44 54% 54%;             /* #C9A84C */
+    --gold-foreground: 222 47% 11%;
   }
 }
 

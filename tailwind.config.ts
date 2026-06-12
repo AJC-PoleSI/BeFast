@@ -29,6 +29,7 @@ const config: Config = {
       colors: {
         // Material 3 tokens
         primary: "#00236f",
+        "primary-foreground": "hsl(var(--primary-foreground))",
         "primary-container": "#1e3a8a",
         "surface-bg": "#f7f9fb",
         "surface-lowest": "#ffffff",
@@ -38,9 +39,14 @@ const config: Config = {
         "secondary-container": "#d0d8ff",
         "outline-variant": "#c5c5d3",
         secondary: "#555d7e",
-        // legacy
+        "secondary-foreground": "hsl(var(--secondary-foreground))",
+        // legacy / marque
         navy: "#00236f",
-        gold: "#C9A84C",
+        "navy-hover": "#1e3a8a",
+        gold: {
+          DEFAULT: "#C9A84C",
+          foreground: "#0f1b3d",
+        },
         ivory: "#F5F0E8",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

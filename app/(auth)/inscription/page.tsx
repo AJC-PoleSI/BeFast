@@ -2,6 +2,7 @@
 
 import { useTransition } from "react"
 import Link from "next/link"
+import { Rocket } from "lucide-react"
 import { signUp } from "@/lib/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,26 +22,33 @@ export default function InscriptionPage() {
   }
 
   return (
-    <div className="w-full max-w-[400px] bg-[#F5F0E8] border border-[hsl(210,20%,82%)] rounded-lg shadow-md p-12">
-      <div className="text-center mb-8">
-        <h1 className="font-heading text-[28px] font-bold tracking-[-0.01em]">
-          <span className="text-gold">BeFast</span>
-        </h1>
+    <div className="w-full max-w-sm rounded-2xl border border-[#ece7dc] bg-white/95 p-8 shadow-[0_8px_30px_rgba(0,35,111,0.08)] backdrop-blur">
+      <div className="mb-8 flex flex-col items-center gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Rocket className="h-4 w-4" />
+          </div>
+          <span className="font-manrope text-xl font-extrabold text-primary">
+            BeFast
+          </span>
+        </div>
+        <p className="text-sm text-muted-foreground">Audencia Junior Conseil</p>
       </div>
 
-      <h2 className="font-heading text-[28px] font-bold tracking-[-0.01em] text-center mb-8">
-        Cr&eacute;er un compte
+      <h2 className="mb-6 text-center text-lg font-semibold text-foreground">
+        Créer un compte
       </h2>
 
-      <form action={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="prenom">Pr&eacute;nom</Label>
-          <Input id="prenom" name="prenom" type="text" required />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="nom">Nom</Label>
-          <Input id="nom" name="nom" type="text" required />
+      <form action={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="prenom">Prénom</Label>
+            <Input id="prenom" name="prenom" type="text" required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="nom">Nom</Label>
+            <Input id="nom" name="nom" type="text" required />
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -49,6 +57,7 @@ export default function InscriptionPage() {
             id="email"
             name="email"
             type="email"
+            placeholder="prenom.nom@audencia.com"
             required
             autoComplete="email"
           />
@@ -76,28 +85,25 @@ export default function InscriptionPage() {
           />
         </div>
 
-        <Button
-          type="submit"
-          disabled={isPending}
-          className="w-full h-11 bg-gold text-navy font-bold rounded-md hover:bg-gold/90"
-        >
-          {isPending ? "Cr\u00e9ation..." : "Cr\u00e9er mon compte"}
+        <Button type="submit" disabled={isPending} className="mt-2 w-full">
+          {isPending ? "Création…" : "Créer mon compte"}
         </Button>
       </form>
 
-      <p className="mt-4 text-sm text-muted-foreground text-center">
-        Un email de v&eacute;rification vous sera envoy&eacute;. Apr&egrave;s confirmation, votre
-        compte sera activ&eacute; par un administrateur.
+      <p className="mt-4 text-center text-xs text-muted-foreground">
+        Un email de vérification vous sera envoyé. Après confirmation, votre
+        compte sera activé par un administrateur.
       </p>
 
-      <div className="mt-4 text-center">
+      <p className="mt-4 text-center text-sm text-muted-foreground">
+        Déjà un compte ?{" "}
         <Link
           href="/login"
-          className="text-blue text-sm hover:underline"
+          className="font-medium text-primary hover:underline"
         >
-          D&eacute;j&agrave; un compte ? Se connecter
+          Se connecter
         </Link>
-      </div>
+      </p>
     </div>
   )
 }
