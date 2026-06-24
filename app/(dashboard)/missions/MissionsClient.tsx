@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useMemo } from "react"
 import Link from "next/link"
 import type { MissionWithEtude } from "@/types/database.types"
+import { useUrlFilters } from "@/hooks/useUrlFilters"
 
 const MISSION_TYPES = [{ value: "intervenant", label: "Intervenant" }]
 const typeLabel = (_t?: string | null) => "Intervenant"
@@ -22,15 +23,11 @@ const TYPE_COLORS: Record<string, string> = {
   intervenant: "bg-purple-100 text-purple-700",
 }
 
-interface FilterState {
-  type?: string
-  voie?: string
-  classe?: string
-  search?: string
-}
+const FILTER_KEYS = ["type", "voie", "classe", "search"] as const
 
 export function MissionsClient({ initialMissions }: { initialMissions: MissionWithEtude[] }) {
-  const [filters, setFilters] = useState<FilterState>({})
+  // Les filtres sont persistés dans l'URL → partageables et conservés au reload.
+  const { filters, setFilter, reset: resetFilters } = useUrlFilters(FILTER_KEYS)
 
   // Tout le filtrage est fait côté client à partir des données déjà fournies.
   // Plus de re-fetch — instantané.
@@ -50,10 +47,9 @@ export function MissionsClient({ initialMissions }: { initialMissions: MissionWi
     })
   }, [initialMissions, filters])
 
-  const handleSearch = (search: string) => setFilters((f) => ({ ...f, search }))
-  const handleFilterChange = (key: string, value: string | undefined) =>
-    setFilters((f) => ({ ...f, [key]: value }))
-  const resetFilters = () => setFilters({})
+  const handleSearch = (search: string) => setFilter("search", search || undefined)
+  const handleFilterChange = (key: (typeof FILTER_KEYS)[number], value: string | undefined) =>
+    setFilter(key, value)
 
   const featured = filteredMissions[0]
   const secondary = filteredMissions[1]

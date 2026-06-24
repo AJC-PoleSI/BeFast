@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import { getMissions } from "@/lib/actions/missions"
 import { redirect } from "next/navigation"
@@ -61,7 +62,9 @@ export default async function MissionsPage() {
         </div>
       </div>
 
-      <MissionsClient initialMissions={missions} />
+      <Suspense fallback={null}>
+        <MissionsClient initialMissions={missions} />
+      </Suspense>
     </div>
   )
 }
