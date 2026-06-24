@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { requireApiAdmin } from "@/lib/auth/api-guards"
 import { NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/send"
 import { accountValidatedEmail } from "@/lib/email/templates"
@@ -15,26 +15,17 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }
 
     // Contrôle d'accès : seul un administrateur peut valider / rejeter un compte.
-    const userClient = createClient()
-    const { data: { user } } = await userClient.auth.getUser()
-    if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+    const guard = await requireApiAdmin()
+    if (!guard.ok) return guard.response
 
     const supabase = createAdminClient()
-    const { data: caller } = await supabase
-      .from("personnes")
-      .select("profils_types(slug)")
-      .eq("id", user.id)
-      .single()
-    if ((caller?.profils_types as any)?.slug !== "administrateur") {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
-    }
 
     // Construit le patch en fonction du statut visé.
     const patch: Record<string, unknown> = { account_status }
     if (account_status === "rejected") {
       patch.rejection_reason = rejection_reason?.trim() || null
       patch.rejected_at = new Date().toISOString()
-      patch.rejected_by = user.id
+      patch.rejected_by = guard.userId
     } else {
       // Validation / repassage en attente : on efface toute trace de rejet.
       patch.rejection_reason = null

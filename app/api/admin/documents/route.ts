@@ -3,30 +3,14 @@ export const dynamic = "force-dynamic"
 import "server-only"
 
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { requireApiAdmin } from "@/lib/auth/api-guards"
 
 
 export async function GET() {
   try {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-    }
-
-    // Verify admin role
-    const { data: adminProfile } = await supabase
-      .from("personnes")
-      .select("profils_types(slug)")
-      .eq("id", user.id)
-      .single()
-
-    const slug = (adminProfile?.profils_types as { slug?: string } | null)?.slug
-    if (slug !== "administrateur") {
-      return NextResponse.json({ error: "Accès non autorisé" }, { status: 403 })
-    }
+    const guard = await requireApiAdmin()
+    if (!guard.ok) return guard.response
 
     const admin = createAdminClient()
     

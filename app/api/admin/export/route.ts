@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic"
 
 import "server-only"
-import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { requireApiAdmin } from "@/lib/auth/api-guards"
 import { NextResponse } from "next/server"
 
 // Datasets exportables. `select` est passé tel quel à Supabase ; on aplatit
@@ -52,20 +52,10 @@ export async function GET(request: Request) {
   if (!ds) return NextResponse.json({ error: "Type d'export inconnu" }, { status: 400 })
 
   // Admin uniquement.
-  const userClient = createClient()
-  const { data: { user } } = await userClient.auth.getUser()
-  if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+  const guard = await requireApiAdmin()
+  if (!guard.ok) return guard.response
 
   const admin = createAdminClient()
-  const { data: caller } = await admin
-    .from("personnes")
-    .select("profils_types(slug)")
-    .eq("id", user.id)
-    .single()
-  if ((caller?.profils_types as any)?.slug !== "administrateur") {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
-  }
-
   let query = admin.from(ds.table).select(ds.select)
   if (ds.order) query = query.order(ds.order, { ascending: false })
   const { data, error } = await query

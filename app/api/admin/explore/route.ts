@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic"
 
 import "server-only"
-import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { requireApiAdmin } from "@/lib/auth/api-guards"
 import { NextResponse } from "next/server"
 
 // Tables consultables en lecture seule via l'explorateur (whitelist).
@@ -24,19 +24,10 @@ export async function GET(request: Request) {
   const table = new URL(request.url).searchParams.get("table") ?? ""
 
   // Admin uniquement.
-  const userClient = createClient()
-  const { data: { user } } = await userClient.auth.getUser()
-  if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+  const guard = await requireApiAdmin()
+  if (!guard.ok) return guard.response
 
   const admin = createAdminClient()
-  const { data: caller } = await admin
-    .from("personnes")
-    .select("profils_types(slug)")
-    .eq("id", user.id)
-    .single()
-  if ((caller?.profils_types as any)?.slug !== "administrateur") {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
-  }
 
   // Sans table : on renvoie juste la liste des tables disponibles.
   if (!table) return NextResponse.json({ tables: Object.keys(TABLES) })

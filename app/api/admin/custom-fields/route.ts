@@ -4,41 +4,17 @@ import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { requireApiAdmin } from "@/lib/auth/api-guards"
 import { customFieldSchema } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 import { NextResponse } from "next/server"
 
 
-async function verifyAdmin(supabase: ReturnType<typeof createClient>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return null
-  }
-
-  const { data: profile } = await supabase
-    .from("personnes")
-    .select("profils_types(slug)")
-    .eq("id", user.id)
-    .single()
-
-  const slug = (profile?.profils_types as { slug?: string } | null)?.slug
-  return slug === "administrateur" ? user.id : null
-}
-
 export async function GET(request: Request) {
   try {
+    const guard = await requireApiAdmin()
+    if (!guard.ok) return guard.response
+
     const supabase = createClient()
-    const adminId = await verifyAdmin(supabase)
-
-    if (!adminId) {
-      return NextResponse.json(
-        { error: "Accès non autorisé" },
-        { status: 403 }
-      )
-    }
-
     const { data: fields, error } = await supabase
       .from("custom_fields")
       .select("*")
@@ -62,15 +38,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = createClient()
-    const adminId = await verifyAdmin(supabase)
-
-    if (!adminId) {
-      return NextResponse.json(
-        { error: "Accès non autorisé" },
-        { status: 403 }
-      )
-    }
+    const guard = await requireApiAdmin()
+    if (!guard.ok) return guard.response
 
     const body = await request.json()
     const parsed = customFieldSchema.safeParse(body)
@@ -121,15 +90,8 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const supabase = createClient()
-    const adminId = await verifyAdmin(supabase)
-
-    if (!adminId) {
-      return NextResponse.json(
-        { error: "Accès non autorisé" },
-        { status: 403 }
-      )
-    }
+    const guard = await requireApiAdmin()
+    if (!guard.ok) return guard.response
 
     const body = await request.json()
     const { id, ...updateData } = body
@@ -184,15 +146,8 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const supabase = createClient()
-    const adminId = await verifyAdmin(supabase)
-
-    if (!adminId) {
-      return NextResponse.json(
-        { error: "Accès non autorisé" },
-        { status: 403 }
-      )
-    }
+    const guard = await requireApiAdmin()
+    if (!guard.ok) return guard.response
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
