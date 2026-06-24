@@ -6,6 +6,7 @@ import path from 'path';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { computeBudget, type BudgetBreakdown } from '@/lib/budget/compute';
+import { escapeXml } from '@/lib/docx/xml';
 
 /**
  * PowerPoint stocke parfois les balises {TAG} en plusieurs fragments XML séparés.
@@ -23,24 +24,6 @@ function fixBrokenTags(content: string): string {
       return match;
     }
   );
-}
-
-/**
- * Échappe les caractères spéciaux XML pour éviter de corrompre le fichier PPTX.
- */
-function escapeXml(unsafe: any): string {
-  if (unsafe === null || unsafe === undefined) return '';
-  const str = String(unsafe);
-  return str.replace(/[<>&'"]/g, (c) => {
-    switch (c) {
-      case '<': return '&lt;';
-      case '>': return '&gt;';
-      case '&': return '&amp;';
-      case '\'': return '&apos;';
-      case '"': return '&quot;';
-      default: return c;
-    }
-  });
 }
 
 /**
