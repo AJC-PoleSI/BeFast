@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 /**
  * Case à cocher Be Fast (react-aria-components).
  * Bordure navy, remplissage navy à la sélection. Utilisée seule ou via
- * `slot="selection"` dans une {@link GridList}.
+ * `slot="selection"` dans une liste de sélection.
  */
 function Checkbox({ className, children, ...props }: AriaCheckboxProps) {
   return (
