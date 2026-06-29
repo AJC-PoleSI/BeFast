@@ -14,10 +14,10 @@ import { sendEmail } from "@/lib/email/send"
 import { documentToSignEmail } from "@/lib/email/templates"
 import {
   sendBA,
-  toMemberData,
-  missingProfileFields,
+  missingProfileFieldsFromRow,
   getBaSettings,
   getBaTemplatePath,
+  bureauRoles,
   BA_REQUIRED_DOC_TYPES,
 } from "@/lib/signature/ba"
 
@@ -89,8 +89,8 @@ export async function getSignaturesAccess(): Promise<{ isAdmin: boolean; isBurea
   const isAdmin = (caller?.profils_types as any)?.slug === "administrateur"
 
   const settings = await getBaSettings(admin)
-  const isBureau =
-    isAdmin || settings.presidentUserId === user.id || settings.tresorierUserId === user.id
+  // Bureau = peut voir au moins un type de document à signer (BA ou autres).
+  const isBureau = bureauRoles(user.id, settings, isAdmin).canBA
 
   return { isAdmin, isBureau }
 }
@@ -265,9 +265,15 @@ export async function listBAMembers(): Promise<{ data: BAMemberRow[] } | { error
   if ("error" in guard) return { error: guard.error }
   const { admin } = guard
 
+  // Sélection ciblée (pas de SELECT *) : juste de quoi calculer la complétude
+  // par présence, sans rapatrier les blobs chiffrés inutiles.
   const { data: people, error } = await admin
     .from("personnes")
-    .select("*")
+    .select(
+      "id, prenom, nom, email, created_at, account_status, portable, etablissement, scolarite, " +
+        "adresse, ville, code_postal, date_naissance, " +
+        "adresse_encrypted, ville_encrypted, code_postal_encrypted, date_naissance_encrypted"
+    )
     .order("created_at", { ascending: false })
     .limit(200)
   if (error) return { error: error.message }
@@ -301,8 +307,7 @@ export async function listBAMembers(): Promise<{ data: BAMemberRow[] } | { error
 
   const now = Date.now()
   const rows: BAMemberRow[] = (people ?? []).map((p: any) => {
-    const m = toMemberData(p)
-    const missingFields = missingProfileFields(m)
+    const missingFields = missingProfileFieldsFromRow(p)
     const uploaded = docsByMember.get(p.id) ?? new Set<string>()
     const missingDocs = BA_REQUIRED_DOC_TYPES.filter((t) => !uploaded.has(t))
     const missing = [...missingFields, ...missingDocs]
@@ -366,6 +371,7 @@ export async function getBaAdminSettings() {
     data: {
       presidentUserId: settings.presidentUserId,
       tresorierUserId: settings.tresorierUserId,
+      rhUserId: settings.rhUserId,
       templateConfigured: Boolean(templatePath),
       reminderDays: settings.reminderDays.join(","),
       autoGlobal: settings.autoGlobal,
@@ -380,6 +386,7 @@ export async function getBaAdminSettings() {
 export async function saveBaAdminSettings(values: {
   presidentUserId?: string | null
   tresorierUserId?: string | null
+  rhUserId?: string | null
   reminderDays?: string
 }) {
   const guard = await requireAdmin()
@@ -387,6 +394,7 @@ export async function saveBaAdminSettings(values: {
   const rows = [
     { key: "president_user_id", value: values.presidentUserId ?? "" },
     { key: "tresorier_user_id", value: values.tresorierUserId ?? "" },
+    { key: "rh_user_id", value: values.rhUserId ?? "" },
     { key: "ba_reminder_days", value: values.reminderDays ?? "7,2" },
   ].map((r) => ({ ...r, updated_at: new Date().toISOString() }))
   const { error } = await guard.admin.from("parametres").upsert(rows)
@@ -429,13 +437,11 @@ export async function listBureauQueue(): Promise<{ data: BureauQueueRow[]; role:
     .eq("id", user.id)
     .single()
   const isAdmin = (caller?.profils_types as any)?.slug === "administrateur"
-  const isPresident = settings.presidentUserId === user.id
-  const isTresorier = settings.tresorierUserId === user.id
-  if (!isAdmin && !isPresident && !isTresorier) {
-    return { error: "Onglet réservé au bureau (présidente / trésorier)." }
+  const roles = bureauRoles(user.id, settings, isAdmin)
+  if (!roles.canBA) {
+    return { error: "Onglet réservé au bureau (présidente / trésorier / RH)." }
   }
 
-  // Demandes BA non archivées + demandes libres avec co-signataire bureau.
   const { data, error } = await admin
     .from("signature_requests")
     .select("id, request_name, document_filename, category, status, created_at, expires_at, signers")
@@ -444,9 +450,20 @@ export async function listBureauQueue(): Promise<{ data: BureauQueueRow[]; role:
     .limit(100)
   if (error) return { error: error.message }
 
-  // En attente : statut non signé.
-  const rows = (data ?? []).filter((r: any) => !SIGNED_STATUSES.includes(String(r.status).toLowerCase()))
-  const role = isPresident ? "president" : isTresorier ? "tresorier" : "admin"
+  // Contrôle d'accès par type de document :
+  //   - BA           → présidente / trésorier / RH
+  //   - autres (libre) → présidente / trésorier uniquement
+  const rows = (data ?? []).filter((r: any) => {
+    if (SIGNED_STATUSES.includes(String(r.status).toLowerCase())) return false
+    return r.category === "ba" ? roles.canBA : roles.canAutres
+  })
+  const role = roles.isPresident
+    ? "president"
+    : roles.isTresorier
+      ? "tresorier"
+      : roles.isRh
+        ? "rh"
+        : "admin"
   return { data: rows as BureauQueueRow[], role }
 }
 

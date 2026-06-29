@@ -12,6 +12,7 @@ import {
 } from "@/lib/signature/liveconsent"
 import { loadBaTemplate, fillBaPdf, pdfBytesToBase64 } from "@/lib/signature/ba-pdf"
 import {
+  BA_REQUIRED_PROFILE_FIELDS,
   BA_REQUIRED_DOC_TYPES,
   missingProfileFields,
   toE164FR,
@@ -84,6 +85,30 @@ export async function getUploadedDocTypes(
   return (data ?? []).map((d: any) => d.type)
 }
 
+/**
+ * Champs profil manquants à partir d'une ligne `personnes` brute, SANS déchiffrer
+ * (on teste juste la présence du champ chiffré OU du champ clair). Utilisé pour la
+ * liste des membres : évite N×4 déchiffrements AES → page bien plus rapide.
+ */
+const ENCRYPTED_COLS: Record<string, string> = {
+  adresse: "adresse_encrypted",
+  ville: "ville_encrypted",
+  code_postal: "code_postal_encrypted",
+  date_naissance: "date_naissance_encrypted",
+}
+
+export function missingProfileFieldsFromRow(p: any): string[] {
+  return BA_REQUIRED_PROFILE_FIELDS.filter((f) => {
+    const plain = p[f]
+    const encCol = ENCRYPTED_COLS[f]
+    const enc = encCol ? p[encCol] : null
+    const present =
+      (plain != null && String(plain).trim() !== "") ||
+      (enc != null && String(enc).trim() !== "")
+    return !present
+  })
+}
+
 export interface CompletenessResult {
   complete: boolean
   missingFields: string[]
@@ -109,6 +134,8 @@ export async function checkMemberComplete(
 export interface BaSettings {
   presidentUserId: string | null
   tresorierUserId: string | null
+  /** RH : signataire autorisé du BA uniquement (pas des autres documents). */
+  rhUserId: string | null
   reminderDays: number[]
   /** Envoi automatique global du BA (un seul réglage pour tous les membres). */
   autoGlobal: boolean
@@ -118,7 +145,13 @@ export async function getBaSettings(admin: SupabaseClient): Promise<BaSettings> 
   const { data } = await admin
     .from("parametres")
     .select("key, value")
-    .in("key", ["president_user_id", "tresorier_user_id", "ba_reminder_days", "ba_auto_global"])
+    .in("key", [
+      "president_user_id",
+      "tresorier_user_id",
+      "rh_user_id",
+      "ba_reminder_days",
+      "ba_auto_global",
+    ])
   const map: Record<string, string> = {}
   for (const row of data ?? []) map[(row as any).key] = (row as any).value
   const reminderDays = (map.ba_reminder_days || "7,2")
@@ -128,9 +161,32 @@ export async function getBaSettings(admin: SupabaseClient): Promise<BaSettings> 
   return {
     presidentUserId: map.president_user_id || null,
     tresorierUserId: map.tresorier_user_id || null,
+    rhUserId: map.rh_user_id || null,
     reminderDays: reminderDays.length ? reminderDays : [7, 2],
     // Défaut activé tant que le réglage n'a jamais été écrit.
     autoGlobal: map.ba_auto_global !== "false",
+  }
+}
+
+/**
+ * Rôles bureau de l'utilisateur courant pour les signatures.
+ * - BA : président, trésorier, RH peuvent signer / voir.
+ * - Autres documents : président, trésorier uniquement.
+ */
+export function bureauRoles(
+  userId: string,
+  settings: BaSettings,
+  isAdmin: boolean
+): { isPresident: boolean; isTresorier: boolean; isRh: boolean; canBA: boolean; canAutres: boolean } {
+  const isPresident = settings.presidentUserId === userId
+  const isTresorier = settings.tresorierUserId === userId
+  const isRh = settings.rhUserId === userId
+  return {
+    isPresident,
+    isTresorier,
+    isRh,
+    canBA: isAdmin || isPresident || isTresorier || isRh,
+    canAutres: isAdmin || isPresident || isTresorier,
   }
 }
 
@@ -223,9 +279,17 @@ export async function sendBA(
     { firstname: member.prenom ?? "", lastname: member.nom ?? "", email: member.email, phone: memberPhone, order: 1, role: "membre" },
   ]
 
-  // Signataire bureau : présidente par défaut, ou override (trésorier en repli).
-  const bureauUserId = opts.bureauUserId ?? settings.presidentUserId
-  const bureauRole = opts.bureauUserId ? "tresorier" : "president"
+  // Signataire bureau du BA — sélection auto : présidente → trésorier → RH
+  // (ou override explicite, ex. délégation).
+  const bureauUserId =
+    opts.bureauUserId ??
+    settings.presidentUserId ??
+    settings.tresorierUserId ??
+    settings.rhUserId
+  let bureauRole = "president"
+  if (opts.bureauUserId) bureauRole = "delegue"
+  else if (bureauUserId === settings.tresorierUserId) bureauRole = "tresorier"
+  else if (bureauUserId === settings.rhUserId) bureauRole = "rh"
   if (bureauUserId) {
     const { data: bureau } = await admin
       .from("personnes")

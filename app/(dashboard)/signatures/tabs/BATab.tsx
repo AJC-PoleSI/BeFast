@@ -32,6 +32,7 @@ import {
 type Settings = {
   presidentUserId: string | null
   tresorierUserId: string | null
+  rhUserId: string | null
   templateConfigured: boolean
   reminderDays: string
   autoGlobal: boolean
@@ -67,6 +68,7 @@ export function BATab({ configured }: { configured: boolean }) {
       const res = await saveBaAdminSettings({
         presidentUserId: settings.presidentUserId,
         tresorierUserId: settings.tresorierUserId,
+        rhUserId: settings.rhUserId,
         reminderDays: settings.reminderDays,
       })
       if ("error" in res) toast.error(res.error)
@@ -111,9 +113,13 @@ export function BATab({ configured }: { configured: boolean }) {
         <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
           <Users className="h-4 w-4 text-gold" /> Réglages des bulletins d&apos;adhésion
         </h2>
+        <p className="-mt-2 mb-4 text-xs text-muted-foreground">
+          Signataires autorisés du <strong>bulletin d&apos;adhésion</strong> : présidente, trésorier
+          et RH. Pour les <strong>autres documents</strong> : présidente et trésorier uniquement.
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Présidente (signataire)</Label>
+            <Label>Présidente (BA + autres documents)</Label>
             <select
               value={settings?.presidentUserId ?? ""}
               onChange={(e) =>
@@ -130,11 +136,28 @@ export function BATab({ configured }: { configured: boolean }) {
             </select>
           </div>
           <div className="space-y-2">
-            <Label>Trésorier (signataire de repli)</Label>
+            <Label>Trésorier (BA + autres, repli)</Label>
             <select
               value={settings?.tresorierUserId ?? ""}
               onChange={(e) =>
                 setSettings((s) => (s ? { ...s, tresorierUserId: e.target.value || null } : s))
+              }
+              className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">— Aucun —</option>
+              {settings?.users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label>RH (bulletin d&apos;adhésion uniquement)</Label>
+            <select
+              value={settings?.rhUserId ?? ""}
+              onChange={(e) =>
+                setSettings((s) => (s ? { ...s, rhUserId: e.target.value || null } : s))
               }
               className="h-9 w-full rounded-md border bg-background px-3 text-sm"
             >

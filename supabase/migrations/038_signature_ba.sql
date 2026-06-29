@@ -54,7 +54,8 @@ CREATE POLICY "notifications_update_own"
 
 -- Réglages bureau / BA stockés dans parametres (key→value) — pas de table
 -- dédiée nécessaire. Clés utilisées par l'app (créées à la première écriture) :
---   president_user_id, tresorier_user_id  — utilisateurs signataires du bureau
+--   president_user_id, tresorier_user_id, rh_user_id — signataires du bureau
+--     (BA : président/trésorier/RH · autres documents : président/trésorier)
 --   ba_reminder_days                       — "7,2" (jours avant expiration)
 --   ba_auto_global                         — "true"/"false" (envoi auto global)
 --
