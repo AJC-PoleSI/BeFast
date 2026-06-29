@@ -47,12 +47,11 @@ export async function GET(request: Request) {
   const templatePath = await getBaTemplatePath(admin)
   const report = { autoSent: 0, reminders: 0, archived: 0, errors: [] as string[] }
 
-  // ── 1. Envoi automatique ───────────────────────────────────────────────────
-  if (templatePath) {
+  // ── 1. Envoi automatique (réglage global unique) ───────────────────────────
+  if (templatePath && settings.autoGlobal) {
     const { data: candidates } = await admin
       .from("personnes")
       .select("*")
-      .eq("ba_auto", true)
       .limit(200)
 
     // Membres ayant déjà une demande BA non archivée → exclus.

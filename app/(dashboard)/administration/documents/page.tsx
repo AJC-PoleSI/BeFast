@@ -23,7 +23,6 @@ import {
 import { listTemplates, deleteTemplate } from "@/lib/actions/documents"
 import { createClient as createBrowserClient } from "@/lib/supabase/client"
 import { extractPlaceholders } from "@/lib/docx/placeholders"
-import { PDFDocument } from "pdf-lib"
 import { TagsDictionary } from "@/components/documents/TagsDictionary"
 /* ─── Nomenclature ──────────────────────────────────────────── */
 
@@ -140,6 +139,8 @@ export default function DocumentTemplatesPage() {
           throw new Error("Le bulletin d'adhésion doit être un PDF à champs de formulaire.")
         }
         try {
+          // pdf-lib chargé à la demande (évite d'alourdir le bundle de la page).
+          const { PDFDocument } = await import("pdf-lib")
           const pdf = await PDFDocument.load(buffer)
           placeholders = pdf.getForm().getFields().map((f) => f.getName())
         } catch {

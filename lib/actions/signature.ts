@@ -251,7 +251,6 @@ export type BAMemberRow = {
   email: string
   created_at: string
   account_status: string
-  ba_auto: boolean
   complete: boolean
   missing: string[]
   ba_status: string | null
@@ -316,7 +315,6 @@ export async function listBAMembers(): Promise<{ data: BAMemberRow[] } | { error
       email: p.email,
       created_at: p.created_at,
       account_status: p.account_status ?? "pending_validation",
-      ba_auto: p.ba_auto ?? true,
       complete: missing.length === 0,
       missing,
       ba_status: ba?.status ?? null,
@@ -338,14 +336,15 @@ export async function sendBAAction(personneId: string) {
   return res
 }
 
-/** Active/désactive l'envoi automatique du BA pour un membre. */
-export async function setBaAuto(personneId: string, value: boolean) {
+/** Active/désactive l'envoi automatique du BA globalement (un seul réglage). */
+export async function setBaAutoGlobal(value: boolean) {
   const guard = await requireAdmin()
   if ("error" in guard) return { error: guard.error }
-  const { error } = await guard.admin
-    .from("personnes")
-    .update({ ba_auto: value })
-    .eq("id", personneId)
+  const { error } = await guard.admin.from("parametres").upsert({
+    key: "ba_auto_global",
+    value: value ? "true" : "false",
+    updated_at: new Date().toISOString(),
+  })
   if (error) return { error: error.message }
   revalidatePath("/signatures")
   return { success: true }
@@ -369,6 +368,7 @@ export async function getBaAdminSettings() {
       tresorierUserId: settings.tresorierUserId,
       templateConfigured: Boolean(templatePath),
       reminderDays: settings.reminderDays.join(","),
+      autoGlobal: settings.autoGlobal,
       users: (users ?? []).map((u: any) => ({
         id: u.id,
         label: `${u.prenom ?? ""} ${u.nom ?? ""}`.trim() || u.email,

@@ -19,12 +19,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import {
   listBAMembers,
   getBaAdminSettings,
   saveBaAdminSettings,
   sendBAAction,
-  setBaAuto,
+  setBaAutoGlobal,
   type BAMemberRow,
 } from "@/lib/actions/signature"
 
@@ -33,6 +34,7 @@ type Settings = {
   tresorierUserId: string | null
   templateConfigured: boolean
   reminderDays: string
+  autoGlobal: boolean
   users: { id: string; label: string }[]
 }
 
@@ -83,12 +85,14 @@ export function BATab({ configured }: { configured: boolean }) {
     }
   }
 
-  async function handleToggle(id: string, value: boolean) {
-    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ba_auto: value } : m)))
-    const res = await setBaAuto(id, value)
+  async function handleToggleAuto(value: boolean) {
+    setSettings((s) => (s ? { ...s, autoGlobal: value } : s))
+    const res = await setBaAutoGlobal(value)
     if ("error" in res) {
       toast.error(res.error)
-      setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ba_auto: !value } : m)))
+      setSettings((s) => (s ? { ...s, autoGlobal: !value } : s))
+    } else {
+      toast.success(value ? "Envoi automatique activé." : "Envoi automatique désactivé.")
     }
   }
 
@@ -196,11 +200,22 @@ export function BATab({ configured }: { configured: boolean }) {
 
       {/* ── Liste des membres ────────────────────────────────────────── */}
       <div className="rounded-2xl border bg-card shadow-sm shadow-black/5">
-        <div className="border-b px-6 py-4">
-          <h2 className="text-sm font-semibold text-foreground">Membres ({members.length})</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Auto : le BA part dès que le profil et les documents sont complets. Sinon, envoi manuel.
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-4">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-foreground">Membres ({members.length})</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Envoi automatique : le BA part dès que le profil et les documents d&apos;un membre
+              sont complets. Désactivé, tout passe en envoi manuel.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2.5">
+            <span className="text-sm font-medium text-foreground">Envoi automatique</span>
+            <Switch
+              checked={settings?.autoGlobal ?? true}
+              onCheckedChange={handleToggleAuto}
+              aria-label="Envoi automatique du bulletin d'adhésion"
+            />
+          </div>
         </div>
         {members.length === 0 ? (
           <p className="px-6 py-8 text-center text-sm text-muted-foreground">Aucun membre.</p>
@@ -243,17 +258,6 @@ export function BATab({ configured }: { configured: boolean }) {
                       Envoyé · {m.days_since_sent}j
                     </Badge>
                   ) : null}
-
-                  {/* Toggle auto */}
-                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={m.ba_auto}
-                      onChange={(e) => handleToggle(m.id, e.target.checked)}
-                      className="h-3.5 w-3.5 accent-[#00236f]"
-                    />
-                    Auto
-                  </label>
 
                   {/* Envoi manuel */}
                   <button

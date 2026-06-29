@@ -33,10 +33,6 @@ CREATE INDEX IF NOT EXISTS idx_signature_requests_expires_at
   ON public.signature_requests (expires_at)
   WHERE archived = false;
 
--- ── personnes : envoi automatique du BA (toggle par membre) ──────────────────
-ALTER TABLE public.personnes
-  ADD COLUMN IF NOT EXISTS ba_auto BOOLEAN NOT NULL DEFAULT true;
-
 -- ── notifications : destinataire (notifications membre in-app) ───────────────
 -- La table existait en admin-only/global (007). On ajoute un destinataire et on
 -- ouvre la lecture/maj de SES propres notifications à chaque utilisateur.
@@ -60,6 +56,7 @@ CREATE POLICY "notifications_update_own"
 -- dédiée nécessaire. Clés utilisées par l'app (créées à la première écriture) :
 --   president_user_id, tresorier_user_id  — utilisateurs signataires du bureau
 --   ba_reminder_days                       — "7,2" (jours avant expiration)
+--   ba_auto_global                         — "true"/"false" (envoi auto global)
 --
 -- Le template PDF du BA est géré comme les autres modèles : ligne dans
 -- document_templates (category = 'bulletin_adhesion') + fichier dans le bucket

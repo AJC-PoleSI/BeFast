@@ -30,7 +30,6 @@ export interface MemberData {
   promo: string | null
   etablissement: string | null
   scolarite: string | null
-  ba_auto: boolean
   account_status: string
   // champs déchiffrés
   adresse: string | null

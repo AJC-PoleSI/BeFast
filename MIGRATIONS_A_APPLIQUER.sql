@@ -184,9 +184,6 @@ CREATE INDEX IF NOT EXISTS idx_signature_requests_personne
 CREATE INDEX IF NOT EXISTS idx_signature_requests_expires_at
   ON public.signature_requests (expires_at) WHERE archived = false;
 
-ALTER TABLE public.personnes
-  ADD COLUMN IF NOT EXISTS ba_auto BOOLEAN NOT NULL DEFAULT true;
-
 ALTER TABLE public.notifications
   ADD COLUMN IF NOT EXISTS recipient_id UUID REFERENCES public.personnes(id) ON DELETE CASCADE;
 

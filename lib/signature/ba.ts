@@ -63,7 +63,6 @@ export function toMemberData(profile: any): MemberData {
     promo: profile.promo ?? null,
     etablissement: profile.etablissement ?? null,
     scolarite: profile.scolarite ?? null,
-    ba_auto: profile.ba_auto ?? true,
     account_status: profile.account_status ?? "pending_validation",
     adresse: salt ? dec(profile.adresse_encrypted, profile.adresse_iv, profile.adresse_auth_tag, profile.adresse, key, salt) : profile.adresse ?? null,
     ville: salt ? dec(profile.ville_encrypted, profile.ville_iv, profile.ville_auth_tag, profile.ville, key, salt) : profile.ville ?? null,
@@ -111,13 +110,15 @@ export interface BaSettings {
   presidentUserId: string | null
   tresorierUserId: string | null
   reminderDays: number[]
+  /** Envoi automatique global du BA (un seul réglage pour tous les membres). */
+  autoGlobal: boolean
 }
 
 export async function getBaSettings(admin: SupabaseClient): Promise<BaSettings> {
   const { data } = await admin
     .from("parametres")
     .select("key, value")
-    .in("key", ["president_user_id", "tresorier_user_id", "ba_reminder_days"])
+    .in("key", ["president_user_id", "tresorier_user_id", "ba_reminder_days", "ba_auto_global"])
   const map: Record<string, string> = {}
   for (const row of data ?? []) map[(row as any).key] = (row as any).value
   const reminderDays = (map.ba_reminder_days || "7,2")
@@ -128,6 +129,8 @@ export async function getBaSettings(admin: SupabaseClient): Promise<BaSettings> 
     presidentUserId: map.president_user_id || null,
     tresorierUserId: map.tresorier_user_id || null,
     reminderDays: reminderDays.length ? reminderDays : [7, 2],
+    // Défaut activé tant que le réglage n'a jamais été écrit.
+    autoGlobal: map.ba_auto_global !== "false",
   }
 }
 

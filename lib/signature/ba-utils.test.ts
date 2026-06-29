@@ -16,7 +16,6 @@ const complete: MemberData = {
   promo: "2026",
   etablissement: "Audencia Nantes",
   scolarite: "Master 1",
-  ba_auto: true,
   account_status: "validated",
   adresse: "1 rue des Lilas",
   ville: "Nantes",
