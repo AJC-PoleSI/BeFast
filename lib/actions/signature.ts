@@ -1,7 +1,6 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { PutObjectCommand } from "@aws-sdk/client-s3"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
@@ -13,12 +12,12 @@ import {
 } from "@/lib/signature/liveconsent"
 import { sendEmail } from "@/lib/email/send"
 import { documentToSignEmail } from "@/lib/email/templates"
-import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
 import {
   sendBA,
   toMemberData,
   missingProfileFields,
   getBaSettings,
+  getBaTemplatePath,
   BA_REQUIRED_DOC_TYPES,
 } from "@/lib/signature/ba"
 
@@ -358,6 +357,7 @@ export async function getBaAdminSettings() {
   const guard = await requireAdmin()
   if ("error" in guard) return { error: guard.error }
   const settings = await getBaSettings(guard.admin)
+  const templatePath = await getBaTemplatePath(guard.admin)
   const { data: users } = await guard.admin
     .from("personnes")
     .select("id, prenom, nom, email")
@@ -367,7 +367,7 @@ export async function getBaAdminSettings() {
     data: {
       presidentUserId: settings.presidentUserId,
       tresorierUserId: settings.tresorierUserId,
-      templateConfigured: Boolean(settings.templatePath),
+      templateConfigured: Boolean(templatePath),
       reminderDays: settings.reminderDays.join(","),
       users: (users ?? []).map((u: any) => ({
         id: u.id,
@@ -390,40 +390,6 @@ export async function saveBaAdminSettings(values: {
     { key: "ba_reminder_days", value: values.reminderDays ?? "7,2" },
   ].map((r) => ({ ...r, updated_at: new Date().toISOString() }))
   const { error } = await guard.admin.from("parametres").upsert(rows)
-  if (error) return { error: error.message }
-  revalidatePath("/signatures")
-  return { success: true }
-}
-
-/** Téléverse le template PDF du bulletin d'adhésion (Scaleway) + enregistre le chemin. */
-export async function uploadBaTemplate(formData: FormData) {
-  const guard = await requireAdmin()
-  if ("error" in guard) return { error: guard.error }
-
-  const file = formData.get("file") as File | null
-  if (!file || file.size === 0) return { error: "Aucun fichier fourni." }
-  if (!file.name.toLowerCase().endsWith(".pdf")) return { error: "Le template doit être un PDF." }
-  if (file.size > 7 * 1024 * 1024) return { error: "PDF trop volumineux (max 7 Mo)." }
-
-  const key = `signatures/ba-template-${Date.now()}.pdf`
-  try {
-    await scalewayS3.send(
-      new PutObjectCommand({
-        Bucket: SCALEWAY_BUCKET,
-        Key: key,
-        Body: Buffer.from(await file.arrayBuffer()),
-        ContentType: "application/pdf",
-      })
-    )
-  } catch (e: any) {
-    return { error: `Échec de l'upload : ${e?.message ?? e}` }
-  }
-
-  const { error } = await guard.admin.from("parametres").upsert({
-    key: "ba_template_path",
-    value: key,
-    updated_at: new Date().toISOString(),
-  })
   if (error) return { error: error.message }
   revalidatePath("/signatures")
   return { success: true }

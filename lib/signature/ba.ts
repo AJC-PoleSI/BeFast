@@ -110,7 +110,6 @@ export async function checkMemberComplete(
 export interface BaSettings {
   presidentUserId: string | null
   tresorierUserId: string | null
-  templatePath: string | null
   reminderDays: number[]
 }
 
@@ -118,7 +117,7 @@ export async function getBaSettings(admin: SupabaseClient): Promise<BaSettings> 
   const { data } = await admin
     .from("parametres")
     .select("key, value")
-    .in("key", ["president_user_id", "tresorier_user_id", "ba_template_path", "ba_reminder_days"])
+    .in("key", ["president_user_id", "tresorier_user_id", "ba_reminder_days"])
   const map: Record<string, string> = {}
   for (const row of data ?? []) map[(row as any).key] = (row as any).value
   const reminderDays = (map.ba_reminder_days || "7,2")
@@ -128,9 +127,23 @@ export async function getBaSettings(admin: SupabaseClient): Promise<BaSettings> 
   return {
     presidentUserId: map.president_user_id || null,
     tresorierUserId: map.tresorier_user_id || null,
-    templatePath: map.ba_template_path || null,
     reminderDays: reminderDays.length ? reminderDays : [7, 2],
   }
+}
+
+/**
+ * Chemin du template BA, géré comme les autres modèles dans `document_templates`
+ * (catégorie `bulletin_adhesion`, bucket Supabase `templates`). On prend le plus
+ * récent. `null` si aucun template BA n'a été importé.
+ */
+export async function getBaTemplatePath(admin: SupabaseClient): Promise<string | null> {
+  const { data } = await admin
+    .from("document_templates")
+    .select("file_path")
+    .eq("category", "bulletin_adhesion")
+    .order("created_at", { ascending: false })
+    .limit(1)
+  return (data?.[0] as any)?.file_path ?? null
 }
 
 /* ── Envoi du BA ──────────────────────────────────────────────────────────── */
@@ -187,13 +200,17 @@ export async function sendBA(
   }
 
   const settings = await getBaSettings(admin)
-  if (!settings.templatePath) {
-    return { error: "Aucun template de bulletin d'adhésion n'est configuré." }
+  const templatePath = await getBaTemplatePath(admin)
+  if (!templatePath) {
+    return {
+      error:
+        "Aucun template de bulletin d'adhésion n'est configuré (Administration → Documents, section Adhésion).",
+    }
   }
 
   // 1) Construire le PDF pré-rempli.
-  const templateBytes = await loadBaTemplate(settings.templatePath)
-  if (!templateBytes) return { error: "Template du bulletin d'adhésion introuvable (Scaleway)." }
+  const templateBytes = await loadBaTemplate(admin, templatePath)
+  if (!templateBytes) return { error: "Template du bulletin d'adhésion introuvable dans le bucket templates." }
   const filled = await fillBaPdf(templateBytes, buildBaFieldValues(member))
   const pdfBase64 = pdfBytesToBase64(filled)
 

@@ -59,5 +59,8 @@ CREATE POLICY "notifications_update_own"
 -- Réglages bureau / BA stockés dans parametres (key→value) — pas de table
 -- dédiée nécessaire. Clés utilisées par l'app (créées à la première écriture) :
 --   president_user_id, tresorier_user_id  — utilisateurs signataires du bureau
---   ba_template_path                       — chemin Scaleway du template PDF du BA
 --   ba_reminder_days                       — "7,2" (jours avant expiration)
+--
+-- Le template PDF du BA est géré comme les autres modèles : ligne dans
+-- document_templates (category = 'bulletin_adhesion') + fichier dans le bucket
+-- Supabase Storage `templates` (déjà créé en migration 017). Aucun ajout requis.

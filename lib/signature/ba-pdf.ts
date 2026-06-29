@@ -1,16 +1,17 @@
 import "server-only"
 
 import { PDFDocument } from "pdf-lib"
-import { GetObjectCommand } from "@aws-sdk/client-s3"
-import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
+import type { SupabaseClient } from "@supabase/supabase-js"
 
 /**
  * Remplissage du Bulletin d'adhésion (BA) à partir d'un template PDF.
  *
  * Le template est un PDF contenant des champs de formulaire (AcroForm) nommés
- * selon les clés de BA_FIELD_NAMES. On charge le template depuis Scaleway,
- * on remplit les champs présents (les champs absents sont ignorés sans erreur),
- * on aplatit le formulaire et on renvoie les octets PDF prêts pour LiveConsent.
+ * selon les clés de BA_FIELD_NAMES. Il est géré comme les autres modèles
+ * (Administration → Documents) : enregistré dans `document_templates` et stocké
+ * dans le bucket Supabase Storage `templates`. On le télécharge, on remplit les
+ * champs présents (les absents sont ignorés sans erreur), on aplatit le
+ * formulaire et on renvoie les octets PDF prêts pour LiveConsent.
  */
 
 /** Noms de champs AcroForm attendus dans le template BA → libellé indicatif. */
@@ -32,16 +33,20 @@ export const BA_FIELD_NAMES: Record<string, string> = {
 
 export type BaFieldValues = Partial<Record<keyof typeof BA_FIELD_NAMES, string>>
 
-/** Récupère le template BA stocké dans Scaleway. `null` si introuvable. */
-export async function loadBaTemplate(path: string): Promise<Uint8Array | null> {
+/** Télécharge le template BA depuis le bucket Supabase `templates`. `null` si introuvable. */
+export async function loadBaTemplate(
+  admin: SupabaseClient,
+  path: string
+): Promise<Uint8Array | null> {
   try {
-    const res = await scalewayS3.send(
-      new GetObjectCommand({ Bucket: SCALEWAY_BUCKET, Key: path })
-    )
-    const bytes = await res.Body?.transformToByteArray()
-    return bytes ?? null
+    const { data, error } = await admin.storage.from("templates").download(path)
+    if (error || !data) {
+      console.error("[ba-pdf] template introuvable:", error?.message ?? "vide")
+      return null
+    }
+    return new Uint8Array(await data.arrayBuffer())
   } catch (e) {
-    console.error("[ba-pdf] template introuvable:", (e as any)?.message ?? e)
+    console.error("[ba-pdf] échec téléchargement template:", (e as any)?.message ?? e)
     return null
   }
 }

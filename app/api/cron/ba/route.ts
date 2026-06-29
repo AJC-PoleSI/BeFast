@@ -9,6 +9,7 @@ import {
   toMemberData,
   checkMemberComplete,
   getBaSettings,
+  getBaTemplatePath,
 } from "@/lib/signature/ba"
 import { sendEmail } from "@/lib/email/send"
 import { signatureReminderEmail } from "@/lib/email/templates"
@@ -43,10 +44,11 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient()
   const settings = await getBaSettings(admin)
+  const templatePath = await getBaTemplatePath(admin)
   const report = { autoSent: 0, reminders: 0, archived: 0, errors: [] as string[] }
 
   // ── 1. Envoi automatique ───────────────────────────────────────────────────
-  if (settings.templatePath) {
+  if (templatePath) {
     const { data: candidates } = await admin
       .from("personnes")
       .select("*")

@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useRef, useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
+import Link from "next/link"
 import {
   Loader2,
   Send,
-  Upload,
+  FileText,
   Users,
   CheckCircle2,
   Clock,
@@ -22,7 +23,6 @@ import {
   listBAMembers,
   getBaAdminSettings,
   saveBaAdminSettings,
-  uploadBaTemplate,
   sendBAAction,
   setBaAuto,
   type BAMemberRow,
@@ -44,7 +44,6 @@ export function BATab({ configured }: { configured: boolean }) {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
   const [savingSettings, startSaving] = useTransition()
-  const templateRef = useRef<HTMLFormElement>(null)
 
   async function reload() {
     const [s, m] = await Promise.all([getBaAdminSettings(), listBAMembers()])
@@ -71,16 +70,6 @@ export function BATab({ configured }: { configured: boolean }) {
       if ("error" in res) toast.error(res.error)
       else toast.success("Réglages enregistrés.")
     })
-  }
-
-  async function handleUpload(formData: FormData) {
-    const res = await uploadBaTemplate(formData)
-    if ("error" in res) toast.error(res.error)
-    else {
-      toast.success("Template du bulletin d'adhésion enregistré.")
-      templateRef.current?.reset()
-      reload()
-    }
   }
 
   async function handleSend(id: string) {
@@ -176,34 +165,33 @@ export function BATab({ configured }: { configured: boolean }) {
           </div>
         </div>
 
-        <form ref={templateRef} action={handleUpload} className="mt-5 border-t pt-5">
-          <Label htmlFor="ba-template">
-            Template PDF du bulletin d&apos;adhésion{" "}
+        <div className="mt-5 border-t pt-5">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium text-foreground">
+              Template du bulletin d&apos;adhésion
+            </span>
             {settings?.templateConfigured ? (
-              <Badge className="ml-2 bg-emerald-100 text-emerald-700">configuré</Badge>
+              <Badge className="bg-emerald-100 text-emerald-700">configuré</Badge>
             ) : (
-              <Badge className="ml-2 bg-amber-100 text-amber-800">manquant</Badge>
+              <Badge className="bg-amber-100 text-amber-800">manquant</Badge>
             )}
-          </Label>
-          <div className="mt-2 flex items-center gap-3">
-            <Input
-              id="ba-template"
-              name="file"
-              type="file"
-              accept="application/pdf"
-              required
-              className="max-w-md"
-            />
-            <Button type="submit" variant="outline">
-              <Upload className="h-4 w-4" /> Téléverser
-            </Button>
+            <Link
+              href="/administration/documents"
+              className="ml-auto inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
+            >
+              <FileText className="h-3.5 w-3.5" /> Gérer dans Administration → Documents
+            </Link>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            PDF avec champs de formulaire nommés (prenom, nom, date_naissance, adresse, ville,
-            code_postal, promo, email, etablissement, scolarite, date_jour). Les champs sont
-            remplis automatiquement puis aplatis.
+            Le bulletin d&apos;adhésion se dépose comme les autres modèles (convention, RDM…),
+            dans <strong>Administration → Documents</strong>, section « Adhésion / Membre ». Format
+            attendu : un <strong>PDF à champs de formulaire (AcroForm)</strong> nommés{" "}
+            <code className="rounded bg-muted px-1 font-mono text-[11px]">prenom, nom,
+            nom_complet, date_naissance, adresse, ville, code_postal, promo, email, etablissement,
+            scolarite, date_jour</code>. Les champs sont remplis automatiquement puis aplatis avant
+            envoi en signature.
           </p>
-        </form>
+        </div>
       </div>
 
       {/* ── Liste des membres ────────────────────────────────────────── */}

@@ -23,16 +23,25 @@ import {
 import { listTemplates, deleteTemplate } from "@/lib/actions/documents"
 import { createClient as createBrowserClient } from "@/lib/supabase/client"
 import { extractPlaceholders } from "@/lib/docx/placeholders"
+import { PDFDocument } from "pdf-lib"
 import { TagsDictionary } from "@/components/documents/TagsDictionary"
 /* ─── Nomenclature ──────────────────────────────────────────── */
 
 const CATEGORY_ETUDE = "etude_mission"
 const CATEGORY_INTERVENANT = "intervenant_rdm"
+const CATEGORY_MEMBRE = "membre_adhesion"
+
+// Champs AcroForm attendus dans le PDF du bulletin d'adhésion (remplis puis aplatis).
+const BA_PDF_FIELDS = [
+  "prenom", "nom", "nom_complet", "date_naissance", "adresse", "ville",
+  "code_postal", "promo", "email", "etablissement", "scolarite", "date_jour",
+]
 
 const DOCUMENT_TYPES: {
   key: string
   label: string
-  category: typeof CATEGORY_ETUDE | typeof CATEGORY_INTERVENANT
+  category: typeof CATEGORY_ETUDE | typeof CATEGORY_INTERVENANT | typeof CATEGORY_MEMBRE
+  format?: "docx" | "pdf"
 }[] = [
   // Cat 1 — Étude / Mission
   { key: "accord_confidentialite", label: "Accord de confidentialité Client", category: CATEGORY_ETUDE },
@@ -52,10 +61,13 @@ const DOCUMENT_TYPES: {
   { key: "bulletin_versement", label: "Bulletin de Versement", category: CATEGORY_INTERVENANT },
   { key: "questionnaire_satisfaction", label: "Questionnaire de satisfaction", category: CATEGORY_INTERVENANT },
   { key: "rapport_pedagogique", label: "Rapport pédagogique", category: CATEGORY_INTERVENANT },
+  // Cat 3 — Adhésion / Membre (PDF à champs, envoyé en signature LiveConsent)
+  { key: "bulletin_adhesion", label: "Bulletin d'adhésion", category: CATEGORY_MEMBRE, format: "pdf" },
 ]
 
 const CAT_ETUDE_DOCS = DOCUMENT_TYPES.filter((d) => d.category === CATEGORY_ETUDE)
 const CAT_INTERVENANT_DOCS = DOCUMENT_TYPES.filter((d) => d.category === CATEGORY_INTERVENANT)
+const CAT_MEMBRE_DOCS = DOCUMENT_TYPES.filter((d) => d.category === CATEGORY_MEMBRE)
 
 /* ─── Component ─────────────────────────────────────────────── */
 
@@ -78,6 +90,7 @@ export default function DocumentTemplatesPage() {
   // Sections collapsed state
   const [collapsedEtude, setCollapsedEtude] = useState(false)
   const [collapsedIntervenant, setCollapsedIntervenant] = useState(false)
+  const [collapsedMembre, setCollapsedMembre] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -110,15 +123,36 @@ export default function DocumentTemplatesPage() {
   }
 
   const handleUpload = async () => {
-    if (!form.file) return toast.error("Fichier DOCX requis")
+    if (!form.file) return toast.error("Fichier requis")
+    const docType = DOCUMENT_TYPES.find((d) => d.key === uploadTarget)
+    const isPdf = docType?.format === "pdf"
     setUploading(true)
 
     try {
       const sb = createBrowserClient()
-      
-      // 1. Extraire les balises localement pour gagner du temps serveur
       const buffer = await form.file.arrayBuffer()
-      const placeholders = extractPlaceholders(buffer)
+
+      // 1. Détecter les "champs" : balises {..} pour les DOCX, champs AcroForm
+      //    nommés pour les PDF (bulletin d'adhésion).
+      let placeholders: string[] = []
+      if (isPdf) {
+        if (!form.file.name.toLowerCase().endsWith(".pdf")) {
+          throw new Error("Le bulletin d'adhésion doit être un PDF à champs de formulaire.")
+        }
+        try {
+          const pdf = await PDFDocument.load(buffer)
+          placeholders = pdf.getForm().getFields().map((f) => f.getName())
+        } catch {
+          throw new Error("PDF illisible. Exportez un PDF non protégé.")
+        }
+        if (placeholders.length === 0) {
+          throw new Error(
+            "Ce PDF ne contient aucun champ de formulaire (AcroForm). Ajoutez des champs nommés avant l'import."
+          )
+        }
+      } else {
+        placeholders = extractPlaceholders(buffer)
+      }
 
       // 2. Si on remplace, supprimer l'ancien (optionnel mais propre)
       if (replaceId) {
@@ -128,12 +162,14 @@ export default function DocumentTemplatesPage() {
       // 3. Upload direct vers Supabase Storage (contourne la limite Vercel de 4.5Mo)
       const safeName = form.file.name.replace(/[^a-zA-Z0-9._-]/g, "_")
       const filePath = `templates/${Date.now()}_${safeName}`
-      
+
       const { error: upErr } = await sb.storage
         .from("templates")
         .upload(filePath, form.file, {
-          contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          upsert: false
+          contentType: isPdf
+            ? "application/pdf"
+            : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          upsert: false,
         })
 
       if (upErr) {
@@ -160,9 +196,15 @@ export default function DocumentTemplatesPage() {
         await sb.storage.from("templates").remove([filePath])
         toast.error(json?.error || "Erreur enregistrement")
       } else {
-        toast.success(
-          `Modèle importé — ${placeholders.length} balise(s) détectée(s)`
-        )
+        if (isPdf) {
+          const missing = BA_PDF_FIELDS.filter((f) => !placeholders.includes(f))
+          toast.success(
+            `PDF importé — ${placeholders.length} champ(s) détecté(s)` +
+              (missing.length ? ` · manquants : ${missing.join(", ")}` : "")
+          )
+        } else {
+          toast.success(`Modèle importé — ${placeholders.length} balise(s) détectée(s)`)
+        }
         setShowUpload(false)
         setForm({ name: "", description: "", file: null })
         setUploadTarget(null)
@@ -202,6 +244,11 @@ export default function DocumentTemplatesPage() {
 
   const filteredEtude = filterTypes(CAT_ETUDE_DOCS)
   const filteredIntervenant = filterTypes(CAT_INTERVENANT_DOCS)
+  const filteredMembre = filterTypes(CAT_MEMBRE_DOCS)
+
+  // Le modèle ciblé par l'upload est-il un PDF à champs (bulletin d'adhésion) ?
+  const uploadIsPdf =
+    DOCUMENT_TYPES.find((d) => d.key === uploadTarget)?.format === "pdf"
 
   /* ─── Render document row ──────── */
 
@@ -579,6 +626,16 @@ export default function DocumentTemplatesPage() {
               setCollapsedIntervenant,
               "bg-emerald-50",
             )}
+
+            {renderCategory(
+              "Adhésion / Membre",
+              "Bulletin d'adhésion envoyé en signature aux nouveaux membres via LiveConsent. Format PDF à champs de formulaire (AcroForm) remplis automatiquement, pas un .docx.",
+              <FileText className="w-5 h-5 text-[#C9A84C]" />,
+              filteredMembre,
+              collapsedMembre,
+              setCollapsedMembre,
+              "bg-[#C9A84C]/10",
+            )}
           </div>
         )}
       </div>
@@ -600,7 +657,9 @@ export default function DocumentTemplatesPage() {
           <DialogClose onClose={() => setShowUpload(false)} />
           <DialogHeader>
             <DialogTitle>
-              {replaceId ? "Remplacer le modèle DOCX" : "Importer un modèle DOCX"}
+              {replaceId
+                ? `Remplacer le modèle ${uploadIsPdf ? "PDF" : "DOCX"}`
+                : `Importer un modèle ${uploadIsPdf ? "PDF" : "DOCX"}`}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 mt-2">
@@ -615,11 +674,15 @@ export default function DocumentTemplatesPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label>Fichier .docx *</Label>
+              <Label>{uploadIsPdf ? "Fichier .pdf (à champs) *" : "Fichier .docx *"}</Label>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                accept={
+                  uploadIsPdf
+                    ? ".pdf,application/pdf"
+                    : ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                }
                 onChange={(e) => setForm({ ...form, file: e.target.files?.[0] || null })}
                 className="block w-full text-sm"
               />
@@ -640,14 +703,33 @@ export default function DocumentTemplatesPage() {
                 placeholder="Notes sur ce modèle…"
               />
             </div>
-            <div className="rounded-lg bg-zinc-50 border border-zinc-200 p-3 text-xs text-zinc-600">
-              <strong>Balises disponibles</strong> :<br />
-              <code>{"{etude.nom}"}</code>, <code>{"{etude.numero}"}</code>, <code>{"{client.nom}"}</code>,{" "}
-              <code>{"{suiveur.prenom}"}</code>, <code>{"{mission.nom}"}</code>,{" "}
-              <code>{"{intervenant.prenom}"}</code>, <code>{"{intervenant.nom}"}</code>,{" "}
-              <code>{"{president.nom_complet}"}</code>, <code>{"{structure.raison_sociale}"}</code>,{" "}
-              <code>{"{date}"}</code>, <code>{"{annee}"}</code>.
-            </div>
+            {uploadIsPdf ? (
+              <div className="rounded-lg bg-[#C9A84C]/10 border border-[#C9A84C]/30 p-3 text-xs text-zinc-700">
+                <strong>Format attendu — PDF à champs de formulaire (AcroForm)</strong>.<br />
+                Crée le bulletin dans Word/LibreOffice/Acrobat, puis ajoute des{" "}
+                <strong>champs de formulaire texte</strong> nommés exactement :<br />
+                <span className="mt-1 inline-block leading-5">
+                  {BA_PDF_FIELDS.map((f) => (
+                    <code key={f} className="mr-1 rounded bg-white/70 px-1 font-mono">
+                      {f}
+                    </code>
+                  ))}
+                </span>
+                <br />
+                Place un champ là où chaque info doit apparaître (et une zone de signature
+                visible). Les champs sont remplis automatiquement avec les infos du membre puis
+                aplatis. Les champs non listés sont ignorés.
+              </div>
+            ) : (
+              <div className="rounded-lg bg-zinc-50 border border-zinc-200 p-3 text-xs text-zinc-600">
+                <strong>Balises disponibles</strong> :<br />
+                <code>{"{etude.nom}"}</code>, <code>{"{etude.numero}"}</code>, <code>{"{client.nom}"}</code>,{" "}
+                <code>{"{suiveur.prenom}"}</code>, <code>{"{mission.nom}"}</code>,{" "}
+                <code>{"{intervenant.prenom}"}</code>, <code>{"{intervenant.nom}"}</code>,{" "}
+                <code>{"{president.nom_complet}"}</code>, <code>{"{structure.raison_sociale}"}</code>,{" "}
+                <code>{"{date}"}</code>, <code>{"{annee}"}</code>.
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setShowUpload(false)}>Annuler</Button>
