@@ -93,3 +93,35 @@ export function documentToSignEmail(opts: {
     }),
   }
 }
+
+export function bulletinAdhesionEmail(prenom: string | null) {
+  return {
+    subject: "Votre bulletin d'adhésion à signer",
+    html: brandedEmail({
+      title: `Bulletin d'adhésion${prenom ? ` — ${prenom}` : ""}`,
+      intro:
+        "Votre profil est complet : votre bulletin d'adhésion à Audencia Junior Conseil vous a été envoyé en signature électronique via LiveConsent. Vous allez recevoir un email de LiveConsent avec le lien de signature sécurisé (un code de sécurité vous sera demandé). La signature ne prend qu'une minute.",
+      details: ["Document : <strong>Bulletin d'adhésion</strong>"],
+      ctaLabel: "Voir dans BeFast",
+      ctaUrl: `${SITE_URL}/dashboard`,
+    }),
+  }
+}
+
+export function signatureReminderEmail(opts: {
+  prenom: string | null
+  requestName: string
+  daysLeft: number
+}) {
+  const j = opts.daysLeft
+  return {
+    subject: `Rappel — il vous reste ${j} jour${j > 1 ? "s" : ""} pour signer`,
+    html: brandedEmail({
+      title: "Signature en attente",
+      intro: `${opts.prenom ? `Bonjour ${opts.prenom}, ` : ""}le document « ${opts.requestName} » attend toujours votre signature. Sans action de votre part, la demande de signature expirera dans <strong>${j} jour${j > 1 ? "s" : ""}</strong>. Merci de signer via le lien LiveConsent reçu par email.`,
+      details: [`Demande : <strong>${opts.requestName}</strong>`, `Expiration dans : <strong>${j} jour${j > 1 ? "s" : ""}</strong>`],
+      ctaLabel: "Voir dans BeFast",
+      ctaUrl: `${SITE_URL}/dashboard`,
+    }),
+  }
+}

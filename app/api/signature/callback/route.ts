@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   const admin = createAdminClient()
   const { data: row } = await admin
     .from("signature_requests")
-    .select("id, events")
+    .select("id, events, category")
     .eq("lc_request_id", requestId)
     .single()
 
@@ -43,10 +43,15 @@ export async function GET(request: Request) {
     status = await getRequestStatus(requestId).catch(() => null)
   }
 
+  // Archivage automatique d'un BA dès qu'il est signé/complété.
+  const SIGNED = ["signed", "completed", "signe", "termine"]
+  const isSigned = status != null && SIGNED.includes(status.toLowerCase())
+
   await admin
     .from("signature_requests")
     .update({
       ...(status ? { status } : {}),
+      ...(isSigned ? { archived: true } : {}),
       last_event_code: event.code,
       last_event_at: event.at,
       events: [...(Array.isArray(row.events) ? row.events : []), event],

@@ -1,15 +1,26 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { PutObjectCommand } from "@aws-sdk/client-s3"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import {
   createSignatureRequest,
   getRequestStatus,
+  abandonRequest,
   isLiveConsentConfigured,
 } from "@/lib/signature/liveconsent"
 import { sendEmail } from "@/lib/email/send"
 import { documentToSignEmail } from "@/lib/email/templates"
+import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
+import {
+  sendBA,
+  toMemberData,
+  missingProfileFields,
+  getBaSettings,
+  BA_REQUIRED_DOC_TYPES,
+} from "@/lib/signature/ba"
 
 const MAX_PDF_BYTES = 7 * 1024 * 1024 // garde sous la limite du body des server actions
 
@@ -28,6 +39,61 @@ export type SignatureRequestRow = {
 
 export async function getSignatureConfig() {
   return { configured: isLiveConsentConfigured() }
+}
+
+/**
+ * Signature en attente pour le membre connecté (sa propre demande BA non
+ * archivée et non signée) — alimente la bannière du dashboard membre.
+ */
+export async function getMyPendingSignature(): Promise<{
+  pending: boolean
+  requestName?: string
+  daysLeft?: number | null
+}> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { pending: false }
+
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from("signature_requests")
+    .select("request_name, status, expires_at")
+    .eq("personne_id", user.id)
+    .eq("archived", false)
+    .order("created_at", { ascending: false })
+    .limit(1)
+  const row = (data ?? [])[0] as any
+  if (!row) return { pending: false }
+  if (SIGNED_STATUSES.includes(String(row.status).toLowerCase())) return { pending: false }
+  const daysLeft = row.expires_at
+    ? Math.ceil((new Date(row.expires_at).getTime() - Date.now()) / 86_400_000)
+    : null
+  return { pending: true, requestName: row.request_name, daysLeft }
+}
+
+/** Droits d'affichage des onglets : admin (BA) et bureau (file de signature). */
+export async function getSignaturesAccess(): Promise<{ isAdmin: boolean; isBureau: boolean }> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { isAdmin: false, isBureau: false }
+
+  const admin = createAdminClient()
+  const { data: caller } = await admin
+    .from("personnes")
+    .select("profils_types(slug)")
+    .eq("id", user.id)
+    .single()
+  const isAdmin = (caller?.profils_types as any)?.slug === "administrateur"
+
+  const settings = await getBaSettings(admin)
+  const isBureau =
+    isAdmin || settings.presidentUserId === user.id || settings.tresorierUserId === user.id
+
+  return { isAdmin, isBureau }
 }
 
 export async function listSignatureRequests(): Promise<
@@ -92,7 +158,7 @@ export async function sendDocumentForSignature(formData: FormData) {
       message: message || undefined,
       pdfBase64,
       filename: file.name,
-      recipient: { firstname, lastname, email, phone },
+      recipients: [{ firstname, lastname, email, phone }],
       callbackUrl,
     })
 
@@ -152,4 +218,314 @@ export async function refreshSignatureStatus(id: string) {
 
   revalidatePath("/signatures")
   return { success: true, status }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * Bulletins d'adhésion (BA) — administration
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/** Garde admin pour les actions BA/bureau. Renvoie l'id appelant ou une erreur. */
+async function requireAdmin(): Promise<{ userId: string; admin: SupabaseClient } | { error: string }> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+  const admin = createAdminClient()
+  const { data: caller } = await admin
+    .from("personnes")
+    .select("profils_types(slug)")
+    .eq("id", user.id)
+    .single()
+  if ((caller?.profils_types as any)?.slug !== "administrateur") {
+    return { error: "Réservé aux administrateurs." }
+  }
+  return { userId: user.id, admin }
+}
+
+const SIGNED_STATUSES = ["signed", "completed", "signe", "termine"]
+
+export type BAMemberRow = {
+  id: string
+  prenom: string | null
+  nom: string | null
+  email: string
+  created_at: string
+  account_status: string
+  ba_auto: boolean
+  complete: boolean
+  missing: string[]
+  ba_status: string | null
+  ba_sent_at: string | null
+  ba_archived: boolean
+  days_since_sent: number | null
+}
+
+/** Liste des membres (récents d'abord) avec leur statut BA + complétude. */
+export async function listBAMembers(): Promise<{ data: BAMemberRow[] } | { error: string }> {
+  const guard = await requireAdmin()
+  if ("error" in guard) return { error: guard.error }
+  const { admin } = guard
+
+  const { data: people, error } = await admin
+    .from("personnes")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(200)
+  if (error) return { error: error.message }
+
+  const ids = (people ?? []).map((p: any) => p.id)
+
+  // Documents téléversés (groupés par membre) en une seule requête.
+  const { data: docs } = await admin
+    .from("documents_personnes")
+    .select("personne_id, type")
+    .in("personne_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
+  const docsByMember = new Map<string, Set<string>>()
+  for (const d of docs ?? []) {
+    const set = docsByMember.get((d as any).personne_id) ?? new Set<string>()
+    set.add((d as any).type)
+    docsByMember.set((d as any).personne_id, set)
+  }
+
+  // Dernière demande BA par membre.
+  const { data: baReqs } = await admin
+    .from("signature_requests")
+    .select("personne_id, status, created_at, archived")
+    .eq("category", "ba")
+    .in("personne_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
+    .order("created_at", { ascending: false })
+  const baByMember = new Map<string, any>()
+  for (const r of baReqs ?? []) {
+    const pid = (r as any).personne_id
+    if (pid && !baByMember.has(pid)) baByMember.set(pid, r)
+  }
+
+  const now = Date.now()
+  const rows: BAMemberRow[] = (people ?? []).map((p: any) => {
+    const m = toMemberData(p)
+    const missingFields = missingProfileFields(m)
+    const uploaded = docsByMember.get(p.id) ?? new Set<string>()
+    const missingDocs = BA_REQUIRED_DOC_TYPES.filter((t) => !uploaded.has(t))
+    const missing = [...missingFields, ...missingDocs]
+    const ba = baByMember.get(p.id)
+    const sentAt = ba?.created_at ?? null
+    return {
+      id: p.id,
+      prenom: p.prenom ?? null,
+      nom: p.nom ?? null,
+      email: p.email,
+      created_at: p.created_at,
+      account_status: p.account_status ?? "pending_validation",
+      ba_auto: p.ba_auto ?? true,
+      complete: missing.length === 0,
+      missing,
+      ba_status: ba?.status ?? null,
+      ba_sent_at: sentAt,
+      ba_archived: ba?.archived ?? false,
+      days_since_sent: sentAt ? Math.floor((now - new Date(sentAt).getTime()) / 86_400_000) : null,
+    }
+  })
+
+  return { data: rows }
+}
+
+/** Envoi manuel du BA à un membre (bouton « Envoyer le BA »). */
+export async function sendBAAction(personneId: string) {
+  const guard = await requireAdmin()
+  if ("error" in guard) return { error: guard.error }
+  const res = await sendBA(personneId, { auto: false, createdBy: guard.userId })
+  revalidatePath("/signatures")
+  return res
+}
+
+/** Active/désactive l'envoi automatique du BA pour un membre. */
+export async function setBaAuto(personneId: string, value: boolean) {
+  const guard = await requireAdmin()
+  if ("error" in guard) return { error: guard.error }
+  const { error } = await guard.admin
+    .from("personnes")
+    .update({ ba_auto: value })
+    .eq("id", personneId)
+  if (error) return { error: error.message }
+  revalidatePath("/signatures")
+  return { success: true }
+}
+
+/* ── Réglages bureau / template BA ────────────────────────────────────────── */
+
+export async function getBaAdminSettings() {
+  const guard = await requireAdmin()
+  if ("error" in guard) return { error: guard.error }
+  const settings = await getBaSettings(guard.admin)
+  const { data: users } = await guard.admin
+    .from("personnes")
+    .select("id, prenom, nom, email")
+    .eq("actif", true)
+    .order("nom", { ascending: true })
+  return {
+    data: {
+      presidentUserId: settings.presidentUserId,
+      tresorierUserId: settings.tresorierUserId,
+      templateConfigured: Boolean(settings.templatePath),
+      reminderDays: settings.reminderDays.join(","),
+      users: (users ?? []).map((u: any) => ({
+        id: u.id,
+        label: `${u.prenom ?? ""} ${u.nom ?? ""}`.trim() || u.email,
+      })),
+    },
+  }
+}
+
+export async function saveBaAdminSettings(values: {
+  presidentUserId?: string | null
+  tresorierUserId?: string | null
+  reminderDays?: string
+}) {
+  const guard = await requireAdmin()
+  if ("error" in guard) return { error: guard.error }
+  const rows = [
+    { key: "president_user_id", value: values.presidentUserId ?? "" },
+    { key: "tresorier_user_id", value: values.tresorierUserId ?? "" },
+    { key: "ba_reminder_days", value: values.reminderDays ?? "7,2" },
+  ].map((r) => ({ ...r, updated_at: new Date().toISOString() }))
+  const { error } = await guard.admin.from("parametres").upsert(rows)
+  if (error) return { error: error.message }
+  revalidatePath("/signatures")
+  return { success: true }
+}
+
+/** Téléverse le template PDF du bulletin d'adhésion (Scaleway) + enregistre le chemin. */
+export async function uploadBaTemplate(formData: FormData) {
+  const guard = await requireAdmin()
+  if ("error" in guard) return { error: guard.error }
+
+  const file = formData.get("file") as File | null
+  if (!file || file.size === 0) return { error: "Aucun fichier fourni." }
+  if (!file.name.toLowerCase().endsWith(".pdf")) return { error: "Le template doit être un PDF." }
+  if (file.size > 7 * 1024 * 1024) return { error: "PDF trop volumineux (max 7 Mo)." }
+
+  const key = `signatures/ba-template-${Date.now()}.pdf`
+  try {
+    await scalewayS3.send(
+      new PutObjectCommand({
+        Bucket: SCALEWAY_BUCKET,
+        Key: key,
+        Body: Buffer.from(await file.arrayBuffer()),
+        ContentType: "application/pdf",
+      })
+    )
+  } catch (e: any) {
+    return { error: `Échec de l'upload : ${e?.message ?? e}` }
+  }
+
+  const { error } = await guard.admin.from("parametres").upsert({
+    key: "ba_template_path",
+    value: key,
+    updated_at: new Date().toISOString(),
+  })
+  if (error) return { error: error.message }
+  revalidatePath("/signatures")
+  return { success: true }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * File du bureau (présidente / trésorier)
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+export type BureauQueueRow = {
+  id: string
+  request_name: string
+  document_filename: string
+  category: string
+  status: string
+  created_at: string
+  expires_at: string | null
+  signers: any[]
+}
+
+/**
+ * Vérifie que l'appelant est un signataire du bureau (présidente/trésorier) ou
+ * admin. Renvoie les demandes en attente de signature du bureau.
+ */
+export async function listBureauQueue(): Promise<{ data: BureauQueueRow[]; role: string } | { error: string }> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
+  const admin = createAdminClient()
+  const settings = await getBaSettings(admin)
+  const { data: caller } = await admin
+    .from("personnes")
+    .select("profils_types(slug)")
+    .eq("id", user.id)
+    .single()
+  const isAdmin = (caller?.profils_types as any)?.slug === "administrateur"
+  const isPresident = settings.presidentUserId === user.id
+  const isTresorier = settings.tresorierUserId === user.id
+  if (!isAdmin && !isPresident && !isTresorier) {
+    return { error: "Onglet réservé au bureau (présidente / trésorier)." }
+  }
+
+  // Demandes BA non archivées + demandes libres avec co-signataire bureau.
+  const { data, error } = await admin
+    .from("signature_requests")
+    .select("id, request_name, document_filename, category, status, created_at, expires_at, signers")
+    .eq("archived", false)
+    .order("created_at", { ascending: false })
+    .limit(100)
+  if (error) return { error: error.message }
+
+  // En attente : statut non signé.
+  const rows = (data ?? []).filter((r: any) => !SIGNED_STATUSES.includes(String(r.status).toLowerCase()))
+  const role = isPresident ? "president" : isTresorier ? "tresorier" : "admin"
+  return { data: rows as BureauQueueRow[], role }
+}
+
+/**
+ * Délègue une signature au trésorier quand la présidente ne peut pas signer.
+ * Abandonne la demande LiveConsent en cours et la marque déléguée. La nouvelle
+ * demande (membre → trésorier) sera recréée par l'admin via « Renvoyer », car
+ * le PDF partiellement signé n'est pas conservé côté Be Fast.
+ *
+ * NB : à affiner selon le support de réassignation de destinataire par l'API
+ * LiveConsent (point ouvert §9 du design).
+ */
+export async function delegateToTresorier(requestId: string) {
+  const guard = await requireAdmin()
+  if ("error" in guard) return { error: guard.error }
+  const { admin } = guard
+
+  const { data: row } = await admin
+    .from("signature_requests")
+    .select("id, lc_request_id, personne_id, category, signers")
+    .eq("id", requestId)
+    .single()
+  if (!row) return { error: "Demande introuvable." }
+
+  await abandonRequest((row as any).lc_request_id).catch(() => false)
+  await admin
+    .from("signature_requests")
+    .update({ status: "delegue_tresorier", archived: true, updated_at: new Date().toISOString() })
+    .eq("id", requestId)
+
+  // Recrée un BA frais avec le trésorier comme signataire bureau, si applicable.
+  if ((row as any).category === "ba" && (row as any).personne_id) {
+    const settings = await getBaSettings(admin)
+    if (settings.tresorierUserId) {
+      // Recrée un BA avec le trésorier comme signataire bureau (repli) : le membre
+      // re-signe puis le trésorier contre-signe. (PDF partiel non conservé.)
+      const res = await sendBA((row as any).personne_id, {
+        auto: false,
+        createdBy: guard.userId,
+        bureauUserId: settings.tresorierUserId,
+      })
+      revalidatePath("/signatures")
+      return res
+    }
+  }
+  revalidatePath("/signatures")
+  return { success: true }
 }

@@ -1,20 +1,30 @@
-import { getSignatureConfig, listSignatureRequests } from "@/lib/actions/signature"
-import { SignaturesClient } from "./SignaturesClient"
+import {
+  getSignatureConfig,
+  getSignaturesAccess,
+  listSignatureRequests,
+} from "@/lib/actions/signature"
+import { SignaturesTabs } from "./SignaturesTabs"
 
 export const metadata = {
   title: "Signatures électroniques",
 }
 
 export default async function SignaturesPage() {
-  const [config, res] = await Promise.all([getSignatureConfig(), listSignatureRequests()])
+  const [config, res, access] = await Promise.all([
+    getSignatureConfig(),
+    listSignatureRequests(),
+    getSignaturesAccess(),
+  ])
   const requests = "data" in res ? res.data : []
   const loadError = "error" in res ? res.error : null
 
   return (
-    <SignaturesClient
+    <SignaturesTabs
       configured={config.configured}
       initialRequests={requests}
       loadError={loadError}
+      isAdmin={access.isAdmin}
+      isBureau={access.isBureau}
     />
   )
 }

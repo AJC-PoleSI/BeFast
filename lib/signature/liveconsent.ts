@@ -63,28 +63,62 @@ async function lcFetch(path: string, init?: RequestInit): Promise<Response> {
   })
 }
 
+export interface SignatureRecipient {
+  firstname: string
+  lastname: string
+  email: string
+  phone: string
+  /** Ordre de signature (1 = premier). Utilisé quand `signInOrder` est vrai. */
+  order?: number
+}
+
+export interface SignaturePlacement {
+  /** Email du destinataire qui appose cette signature. */
+  recipientEmail: string
+  page: number
+  x: number
+  y: number
+}
+
 export interface CreateSignatureOpts {
   requestName: string
   message?: string
   /** PDF encodé en base64 (sans préfixe data:). */
   pdfBase64: string
   filename: string
-  recipient: {
-    firstname: string
-    lastname: string
-    email: string
-    phone: string
-  }
+  /** Un ou plusieurs destinataires (signataires). */
+  recipients: SignatureRecipient[]
+  /**
+   * Positions des cachets de signature. Si omis, on place une signature par
+   * destinataire à une position par défaut (à ajuster selon vos modèles).
+   */
+  signatures?: SignaturePlacement[]
+  /** Signature en ordre (le 2e destinataire ne signe qu'après le 1er). */
+  signInOrder?: boolean
   callbackUrl?: string
   validityDays?: number
-  /** Position du cachet de signature — à ajuster selon vos modèles de CE. */
-  signaturePosition?: { page: number; x: number; y: number }
 }
+
+const DEFAULT_SIGNATURE_POS = { page: 1, x: 120, y: 680 }
 
 export async function createSignatureRequest(
   opts: CreateSignatureOpts
 ): Promise<{ requestId: string }> {
-  const pos = opts.signaturePosition ?? { page: 1, x: 120, y: 680 }
+  if (!opts.recipients.length) {
+    throw new Error("LiveConsent: au moins un destinataire est requis.")
+  }
+
+  // Une signature par destinataire par défaut, légèrement décalée verticalement
+  // pour éviter le chevauchement quand aucune position explicite n'est fournie.
+  const signatures =
+    opts.signatures && opts.signatures.length
+      ? opts.signatures
+      : opts.recipients.map((r, i) => ({
+          recipientEmail: r.email,
+          page: DEFAULT_SIGNATURE_POS.page,
+          x: DEFAULT_SIGNATURE_POS.x + i * 220,
+          y: DEFAULT_SIGNATURE_POS.y,
+        }))
 
   const res = await lcFetch(`/createrequest`, {
     method: "POST",
@@ -95,6 +129,7 @@ export async function createSignatureRequest(
         request_callback_url: opts.callbackUrl,
         request_validity_days: opts.validityDays ?? 30,
         request_notify_signature: true,
+        request_sign_in_order: opts.signInOrder ? true : undefined,
       },
       documents: [
         {
@@ -103,24 +138,21 @@ export async function createSignatureRequest(
           document_filename: opts.filename,
         },
       ],
-      recipients: [
-        {
-          firstname: opts.recipient.firstname,
-          lastname: opts.recipient.lastname,
-          email: opts.recipient.email,
-          phone: opts.recipient.phone,
-          code_delivery: "email",
-        },
-      ],
-      signatures: [
-        {
-          signature_recipient: opts.recipient.email,
-          signature_document: opts.filename,
-          signature_page_number: pos.page,
-          signature_position: `${pos.x},${pos.y}`,
-          coordinates_type: "pdf",
-        },
-      ],
+      recipients: opts.recipients.map((r, i) => ({
+        firstname: r.firstname,
+        lastname: r.lastname,
+        email: r.email,
+        phone: r.phone,
+        code_delivery: "email",
+        recipient_order: opts.signInOrder ? r.order ?? i + 1 : undefined,
+      })),
+      signatures: signatures.map((s) => ({
+        signature_recipient: s.recipientEmail,
+        signature_document: opts.filename,
+        signature_page_number: s.page,
+        signature_position: `${s.x},${s.y}`,
+        coordinates_type: "pdf",
+      })),
     }),
   })
 

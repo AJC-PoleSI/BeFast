@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState, useTransition } from "react"
-import { AlertTriangle, FileSignature, Loader2, RefreshCw, Send } from "lucide-react"
+import { FileSignature, Loader2, RefreshCw, Send } from "lucide-react"
 import { toast } from "sonner"
 
 import { cn } from "@/lib/utils"
@@ -30,7 +30,7 @@ const fmtDateTime = (d: string) =>
     minute: "2-digit",
   })
 
-export function SignaturesClient({
+export function LibreTab({
   configured,
   initialRequests,
   loadError,
@@ -65,37 +65,6 @@ export function SignaturesClient({
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-manrope text-2xl font-extrabold text-primary">
-          Signatures électroniques
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Envoyez un document PDF (convention d&apos;étude, RDM…) en signature via LiveConsent
-          et suivez son avancement.
-        </p>
-      </div>
-
-      {!configured && (
-        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>
-            LiveConsent n&apos;est pas configuré. Renseignez{" "}
-            <code className="rounded bg-amber-100 px-1 font-mono text-xs dark:bg-amber-900/50">
-              LIVECONSENT_USERNAME
-            </code>
-            ,{" "}
-            <code className="rounded bg-amber-100 px-1 font-mono text-xs dark:bg-amber-900/50">
-              LIVECONSENT_DEVELOPER_KEY
-            </code>{" "}
-            et{" "}
-            <code className="rounded bg-amber-100 px-1 font-mono text-xs dark:bg-amber-900/50">
-              LIVECONSENT_SECRET_KEY
-            </code>{" "}
-            dans les variables d&apos;environnement (Vercel) pour activer l&apos;envoi.
-          </p>
-        </div>
-      )}
-
       {/* ── Formulaire d'envoi ──────────────────────────────────────── */}
       <form
         ref={formRef}
@@ -177,20 +146,17 @@ export function SignaturesClient({
             {initialRequests.map((r) => (
               <li key={r.id} className="flex items-center gap-4 px-6 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {r.request_name}
-                  </p>
+                  <p className="truncate text-sm font-medium text-foreground">{r.request_name}</p>
                   <p className="truncate text-xs text-muted-foreground">
                     {r.document_filename} →{" "}
-                    {[r.recipient_firstname, r.recipient_lastname].filter(Boolean).join(" ")}{" "}
-                    ({r.recipient_email})
+                    {[r.recipient_firstname, r.recipient_lastname].filter(Boolean).join(" ")} (
+                    {r.recipient_email})
                   </p>
                 </div>
                 <span
                   className={cn(
                     "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium",
-                    STATUS_STYLES[r.status?.toLowerCase?.()] ??
-                      "bg-muted text-muted-foreground"
+                    STATUS_STYLES[r.status?.toLowerCase?.()] ?? "bg-muted text-muted-foreground"
                   )}
                 >
                   {r.status}
@@ -204,9 +170,7 @@ export function SignaturesClient({
                   title="Actualiser le statut depuis LiveConsent"
                   className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
                 >
-                  <RefreshCw
-                    className={cn("h-4 w-4", refreshing === r.id && "animate-spin")}
-                  />
+                  <RefreshCw className={cn("h-4 w-4", refreshing === r.id && "animate-spin")} />
                 </button>
               </li>
             ))}

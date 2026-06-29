@@ -154,3 +154,51 @@ ALTER TABLE public.signature_requests ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "signature_requests_select_authenticated" ON public.signature_requests;
 CREATE POLICY "signature_requests_select_authenticated"
   ON public.signature_requests FOR SELECT TO authenticated USING (true);
+
+
+-- ╔══════════════════════════════════════════════════════════════╗
+-- ║ 038_signature_ba.sql — Bulletins d'adhésion & file bureau     ║
+-- ║ (LiveConsent) — à exécuter dans le SQL Editor Supabase        ║
+-- ╚══════════════════════════════════════════════════════════════╝
+
+ALTER TABLE public.signature_requests
+  ADD COLUMN IF NOT EXISTS category         TEXT NOT NULL DEFAULT 'libre',
+  ADD COLUMN IF NOT EXISTS personne_id      UUID REFERENCES public.personnes(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS signers          JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS validity_days    INTEGER NOT NULL DEFAULT 30,
+  ADD COLUMN IF NOT EXISTS expires_at       TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS reminder_count   INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_reminder_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS archived         BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE public.signature_requests
+  DROP CONSTRAINT IF EXISTS signature_requests_category_check;
+ALTER TABLE public.signature_requests
+  ADD CONSTRAINT signature_requests_category_check
+  CHECK (category IN ('libre','ba'));
+
+CREATE INDEX IF NOT EXISTS idx_signature_requests_category
+  ON public.signature_requests (category);
+CREATE INDEX IF NOT EXISTS idx_signature_requests_personne
+  ON public.signature_requests (personne_id);
+CREATE INDEX IF NOT EXISTS idx_signature_requests_expires_at
+  ON public.signature_requests (expires_at) WHERE archived = false;
+
+ALTER TABLE public.personnes
+  ADD COLUMN IF NOT EXISTS ba_auto BOOLEAN NOT NULL DEFAULT true;
+
+ALTER TABLE public.notifications
+  ADD COLUMN IF NOT EXISTS recipient_id UUID REFERENCES public.personnes(id) ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient
+  ON public.notifications (recipient_id, read);
+
+DROP POLICY IF EXISTS "notifications_select_own" ON public.notifications;
+CREATE POLICY "notifications_select_own"
+  ON public.notifications FOR SELECT TO authenticated
+  USING (recipient_id = auth.uid());
+
+DROP POLICY IF EXISTS "notifications_update_own" ON public.notifications;
+CREATE POLICY "notifications_update_own"
+  ON public.notifications FOR UPDATE TO authenticated
+  USING (recipient_id = auth.uid());

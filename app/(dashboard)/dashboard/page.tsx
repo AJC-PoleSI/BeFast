@@ -3,6 +3,7 @@ import { getMissions, getMesCandidatures } from "@/lib/actions/missions"
 import { getEtudes } from "@/lib/actions/etudes"
 import Link from "next/link"
 import type { MissionWithEtude, CandidatureWithMission } from "@/types/database.types"
+import { MemberSignatureBanner } from "./_components/MemberSignatureBanner"
 
 const STATUT_BADGE: Record<string, { label: string; className: string }> = {
   ouverte: { label: "Ouverte", className: "bg-blue-100 text-blue-700" },
@@ -48,6 +49,9 @@ export default async function DashboardPage() {
       <div>
         <p className="text-sm text-zinc-500">{greeting}</p>
       </div>
+
+      {/* Bannière : bulletin d'adhésion en attente de signature */}
+      <MemberSignatureBanner />
 
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
