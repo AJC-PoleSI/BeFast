@@ -3,6 +3,7 @@ import ExcelJS from "exceljs"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { hasPermission } from "@/lib/auth/permissions"
 
 export const dynamic = "force-dynamic"
 
@@ -22,8 +23,7 @@ export async function GET(request: Request) {
   }
 
   const profile = await getCachedProfile(user.id)
-  const isAdmin = profile?.profils_types?.slug === "administrateur"
-  const canSee = isAdmin || profile?.profils_types?.permissions?.voir_factures === true
+  const canSee = hasPermission(profile, "voir_factures")
   if (!canSee) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
   }

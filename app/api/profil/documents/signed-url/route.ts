@@ -4,6 +4,8 @@ import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { hasPermission } from "@/lib/auth/permissions"
 import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
 import { GetObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
@@ -49,19 +51,11 @@ export async function POST(request: Request) {
     }
 
     if (doc.personne_id !== user.id) {
-      // Check if admin OR has voir_documents_membres permission
-      // Use admin client to bypass RLS on personnes table
-      const { data: requesterProfile } = await admin
-        .from("personnes")
-        .select("profils_types(slug, permissions)")
-        .eq("id", user.id)
-        .single()
+      // Vérifie admin OU permission voir_documents_membres (rôle de base ∪ postes).
+      const requesterProfile = await getCachedProfile(user.id)
+      const canViewMemberDocs = hasPermission(requesterProfile, "voir_documents_membres")
 
-      const profileType = requesterProfile?.profils_types as { slug?: string; permissions?: Record<string, boolean> } | null
-      const isAdmin = profileType?.slug === "administrateur"
-      const canViewMemberDocs = profileType?.permissions?.["voir_documents_membres"] === true
-
-      if (!isAdmin && !canViewMemberDocs) {
+      if (!canViewMemberDocs) {
         return NextResponse.json(
           { error: "Accès non autorisé" },
           { status: 403 }
