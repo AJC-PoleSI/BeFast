@@ -247,3 +247,21 @@ INSERT INTO public.profils_types (nom, slug, permissions, est_defaut, categorie)
   ('Pôle Systèmes d''Information',  'pole_si',            '{}', false, 'pole'),
   ('Pôle Marketing',                'pole_marketing',     '{}', false, 'pole')
 ON CONFLICT (slug) DO NOTHING;
+
+
+-- ===================================================================
+-- ===== 040_responsable_rh.sql =====
+-- Poste « Responsable RH » (plus de droits que le pôle RH) + ajustements signer_ba.
+-- ===================================================================
+
+INSERT INTO public.profils_types (nom, slug, permissions, est_defaut, categorie) VALUES
+  ('Responsable RH', 'responsable_rh', '{"signer_ba":true,"assigner_intervenants":true}', false, 'pole')
+ON CONFLICT (slug) DO NOTHING;
+
+UPDATE public.profils_types
+  SET permissions = permissions - 'signer_ba'
+  WHERE slug = 'pole_rh';
+
+UPDATE public.profils_types
+  SET permissions = permissions || '{"signer_ba":true}'::jsonb
+  WHERE slug = 'tresorier';
