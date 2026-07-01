@@ -11,6 +11,7 @@ type PermKey =
   | "membres" | "documents" | "nouvelle_mission"
   | "voir_documents_membres" | "assigner_intervenants"
   | "parametres_structure" | "voir_factures"
+  | "signer_documents" | "signer_ba"
 
 const PERM_LABELS: Record<PermKey, { label: string; description: string; icon: string }> = {
   dashboard:               { label: "Tableau de bord",           description: "Accès à la page d'accueil",                         icon: "dashboard" },
@@ -27,6 +28,8 @@ const PERM_LABELS: Record<PermKey, { label: string; description: string; icon: s
   assigner_intervenants:   { label: "Assigner des intervenants",  description: "Peut assigner des intervenants aux missions (RH & SI)", icon: "person_add" },
   parametres_structure:    { label: "Paramètres structure",       description: "Accès aux paramètres globaux (TVA, etc.)",           icon: "settings" },
   voir_factures:           { label: "Trésorerie",                 description: "Consulter et gérer les factures, paiements et rétributions intervenants", icon: "account_balance_wallet" },
+  signer_documents:        { label: "Signer les documents",       description: "Signer les documents classiques (file du bureau)",   icon: "draw" },
+  signer_ba:               { label: "Signer les bulletins d'adhésion", description: "Signer les BA des nouveaux membres",             icon: "how_to_reg" },
 }
 
 const ALL_PERMS = Object.keys(PERM_LABELS) as PermKey[]
@@ -83,13 +86,14 @@ function DeleteModal({ role, onConfirm, onCancel, loading }: {
 
 // ── Create Role Modal ────────────────────────────────────────────────────────
 function CreateModal({ onConfirm, onCancel, loading }: {
-  onConfirm: (nom: string, slug: string) => void
+  onConfirm: (nom: string, slug: string, categorie: "base" | "bureau" | "pole") => void
   onCancel: () => void
   loading: boolean
 }) {
   const [nom, setNom] = useState("")
   const [slug, setSlug] = useState("")
   const [autoSlug, setAutoSlug] = useState(true)
+  const [categorie, setCategorie] = useState<"base" | "bureau" | "pole">("base")
 
   function handleNomChange(v: string) {
     setNom(v)
@@ -134,6 +138,24 @@ function CreateModal({ onConfirm, onCancel, loading }: {
             <p className="text-xs text-zinc-400 mt-1">Minuscules, underscores uniquement. Unique et permanent.</p>
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-zinc-600 mb-1.5 uppercase tracking-wide">
+              Catégorie
+            </label>
+            <select
+              value={categorie}
+              onChange={(e) => setCategorie(e.target.value as "base" | "bureau" | "pole")}
+              className="w-full px-3 py-2.5 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20 focus:border-[#00236f]"
+            >
+              <option value="base">Rôle de base</option>
+              <option value="bureau">Poste — Bureau</option>
+              <option value="pole">Poste — Pôle</option>
+            </select>
+            <p className="text-xs text-zinc-400 mt-1">
+              « Bureau » et « Pôle » sont des postes cumulables assignables aux membres.
+            </p>
+          </div>
+
           <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
             <p className="text-xs text-blue-700">
               💡 Le rôle sera créé sans aucune permission. Vous pourrez les configurer ensuite via l'éditeur de droits.
@@ -150,7 +172,7 @@ function CreateModal({ onConfirm, onCancel, loading }: {
             Annuler
           </button>
           <button
-            onClick={() => onConfirm(nom, slug)}
+            onClick={() => onConfirm(nom, slug, categorie)}
             disabled={loading || !nom.trim() || !slug.trim()}
             className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-[#00236f] rounded-lg hover:bg-[#1e3a8a] disabled:opacity-50 transition-colors"
           >
@@ -246,9 +268,9 @@ export default function DroitsPage() {
     setDeleting(false)
   }
 
-  async function handleCreate(nom: string, slug: string) {
+  async function handleCreate(nom: string, slug: string, categorie: "base" | "bureau" | "pole") {
     setCreating(true)
-    const result = await createRole(nom, slug)
+    const result = await createRole(nom, slug, categorie)
     if (result.success && result.data) {
       const newRole = result.data
       setRoles(prev => [...prev, newRole].sort((a, b) => a.nom.localeCompare(b.nom)))
@@ -261,6 +283,13 @@ export default function DroitsPage() {
   }
 
   const isAdmin = selectedRole?.slug === "administrateur"
+
+  const groups: { key: "base" | "bureau" | "pole"; label: string }[] = [
+    { key: "base", label: "Rôles de base" },
+    { key: "bureau", label: "Bureau" },
+    { key: "pole", label: "Pôles" },
+  ]
+  const rolesByCat = (cat: string) => roles.filter((r) => (r.categorie ?? "base") === cat)
 
   return (
     <div className="p-8 h-full flex flex-col">
@@ -318,33 +347,42 @@ export default function DroitsPage() {
                   {roles.length} rôle{roles.length > 1 ? "s" : ""}
                 </p>
               </div>
-              <div className="p-2">
-                {roles.map(role => (
-                  <div
-                    key={role.id}
-                    className={`flex items-center justify-between px-3 py-2.5 rounded-lg group transition-colors cursor-pointer ${
-                      selectedRole?.id === role.id
-                        ? "bg-[#00236f] text-white"
-                        : "text-zinc-700 hover:bg-zinc-100"
-                    }`}
-                    onClick={() => selectRole(role)}
-                  >
-                    <span className="text-sm font-medium truncate">{role.nom}</span>
-                    {role.slug !== "administrateur" && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(role) }}
-                        className={`shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
-                          selectedRole?.id === role.id
-                            ? "hover:bg-white/20 text-white"
-                            : "hover:bg-red-100 text-red-500"
-                        }`}
-                        title="Supprimer ce rôle"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+              <div className="p-2 space-y-3">
+                {groups.map((g) => {
+                  const list = rolesByCat(g.key)
+                  if (list.length === 0) return null
+                  return (
+                    <div key={g.key}>
+                      <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">{g.label}</p>
+                      {list.map(role => (
+                        <div
+                          key={role.id}
+                          className={`flex items-center justify-between px-3 py-2.5 rounded-lg group transition-colors cursor-pointer ${
+                            selectedRole?.id === role.id
+                              ? "bg-[#00236f] text-white"
+                              : "text-zinc-700 hover:bg-zinc-100"
+                          }`}
+                          onClick={() => selectRole(role)}
+                        >
+                          <span className="text-sm font-medium truncate">{role.nom}</span>
+                          {role.slug !== "administrateur" && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDeleteTarget(role) }}
+                              className={`shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
+                                selectedRole?.id === role.id
+                                  ? "hover:bg-white/20 text-white"
+                                  : "hover:bg-red-100 text-red-500"
+                              }`}
+                              title="Supprimer ce rôle"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
