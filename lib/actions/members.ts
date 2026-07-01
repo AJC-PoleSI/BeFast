@@ -1,5 +1,6 @@
 "use server"
 
+import { revalidateTag } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { PersonneWithRole, ProfilType } from "@/types/database.types"
@@ -110,7 +111,11 @@ export async function updateRolePermissions(roleId: string, permissions: Record<
   }
 }
 
-export async function createRole(nom: string, slug: string) {
+export async function createRole(
+  nom: string,
+  slug: string,
+  categorie: "base" | "bureau" | "pole" = "base"
+) {
   try {
     const role = await getCallerRole()
     if (role !== "administrateur") return { success: false, error: "Non autorisé" }
@@ -141,11 +146,12 @@ export async function createRole(nom: string, slug: string) {
       valider_bv: false, assigner_intervenants: false,
       parametres_structure: false, gerer_parametres: false,
       publier_etudes: false, publier_missions: false,
+      signer_documents: false, signer_ba: false,
     }
 
     const { data, error } = await admin
       .from("profils_types")
-      .insert({ nom, slug: normalizedSlug, permissions: emptyPerms, est_defaut: false })
+      .insert({ nom, slug: normalizedSlug, permissions: emptyPerms, est_defaut: false, categorie })
       .select()
       .single()
 
@@ -198,6 +204,60 @@ export async function deleteRole(roleId: string) {
     return { success: true, affectedUsers: count ?? 0 }
   } catch (err) {
     console.error("[deleteRole] Exception:", err)
+    return { success: false, error: "Erreur serveur" }
+  }
+}
+
+/** Liste des postes assignables (bureau + pôles). */
+export async function getPostesCatalog(): Promise<{ data: ProfilType[] | null; error: string | null }> {
+  try {
+    const admin = createAdminClient()
+    const { data, error } = await admin
+      .from("profils_types")
+      .select("*")
+      .in("categorie", ["bureau", "pole"])
+      .order("categorie")
+      .order("nom")
+    if (error) return { data: null, error: error.message }
+    return { data: data as ProfilType[], error: null }
+  } catch (err) {
+    console.error("[getPostesCatalog] Exception:", err)
+    return { data: null, error: "Erreur serveur" }
+  }
+}
+
+/** Remplace l'ensemble des postes d'une personne (admin uniquement). */
+export async function setPersonnePostes(personneId: string, posteIds: string[]) {
+  try {
+    const role = await getCallerRole()
+    if (role !== "administrateur") return { success: false, error: "Non autorisé" }
+
+    const admin = createAdminClient()
+
+    // Ne garder que des ids réellement bureau/pole (anti-injection).
+    let validIds: string[] = []
+    if (posteIds.length) {
+      const { data: valid } = await admin
+        .from("profils_types")
+        .select("id")
+        .in("id", posteIds)
+        .in("categorie", ["bureau", "pole"])
+      validIds = (valid ?? []).map((r: { id: string }) => r.id)
+    }
+
+    // Remplacement complet des postes de la personne.
+    await admin.from("personne_postes").delete().eq("personne_id", personneId)
+    if (validIds.length) {
+      const rows = validIds.map((poste_id) => ({ personne_id: personneId, poste_id }))
+      const { error } = await admin.from("personne_postes").insert(rows)
+      if (error) return { success: false, error: error.message }
+    }
+
+    // Invalide le profil en cache pour recalculer les permissions effectives.
+    revalidateTag(`user-profile:${personneId}`)
+    return { success: true }
+  } catch (err) {
+    console.error("[setPersonnePostes] Exception:", err)
     return { success: false, error: "Erreur serveur" }
   }
 }
