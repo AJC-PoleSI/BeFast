@@ -70,6 +70,7 @@ function RoleDropdown({ member, roles, onRoleChange, updating }: {
             </p>
             <PostesMultiSelect
               personneId={member.id}
+              postes={roles.filter((r) => r.categorie === "bureau" || r.categorie === "pole")}
               initialPosteIds={(member.personne_postes ?? [])
                 .map((pp) => pp.profils_types?.id)
                 .filter((id): id is string => Boolean(id))}

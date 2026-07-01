@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
 import {
   createSignatureRequest,
   getRequestStatus,
@@ -80,14 +81,11 @@ export async function getSignaturesAccess(): Promise<{ isAdmin: boolean; isBurea
   } = await supabase.auth.getUser()
   if (!user) return { isAdmin: false, isBureau: false }
 
-  const admin = createAdminClient()
-  const { data: caller } = await admin
-    .from("personnes")
-    .select("profils_types(slug)")
-    .eq("id", user.id)
-    .single()
-  const isAdmin = (caller?.profils_types as any)?.slug === "administrateur"
+  // Rôle lu depuis le profil en cache (partagé avec le layout → 0 requête sur cache chaud).
+  const profile = await getCachedProfile(user.id)
+  const isAdmin = profile?.profils_types?.slug === "administrateur"
 
+  const admin = createAdminClient()
   const settings = await getBaSettings(admin)
   // Bureau = peut voir au moins un type de document à signer (BA ou autres).
   const isBureau = bureauRoles(user.id, settings, isAdmin).canBA

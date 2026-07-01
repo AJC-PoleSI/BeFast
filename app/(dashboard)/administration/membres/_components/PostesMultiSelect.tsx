@@ -1,33 +1,29 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Loader, Check } from "lucide-react"
-import { getPostesCatalog, setPersonnePostes } from "@/lib/actions/members"
+import { setPersonnePostes } from "@/lib/actions/members"
 import type { ProfilType } from "@/types/database.types"
 
 /**
  * Multi-sélection des postes (bureau/pôles) d'une personne. Les postes cumulent
  * leurs permissions au rôle de base. Écrit via `setPersonnePostes` (admin only).
+ *
+ * Le catalogue `postes` est fourni par la page (déjà chargé via getAllRoles) —
+ * pas de fetch réseau par ouverture de menu.
  */
 export function PostesMultiSelect({
   personneId,
+  postes,
   initialPosteIds,
 }: {
   personneId: string
+  postes: ProfilType[]
   initialPosteIds: string[]
 }) {
-  const [postes, setPostes] = useState<ProfilType[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set(initialPosteIds))
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-
-  useEffect(() => {
-    getPostesCatalog().then((r) => {
-      if (r.data) setPostes(r.data)
-      setLoading(false)
-    })
-  }, [])
 
   function toggle(id: string) {
     setSaved(false)
@@ -45,8 +41,6 @@ export function PostesMultiSelect({
     setSaving(false)
     if (r.success) setSaved(true)
   }
-
-  if (loading) return <Loader className="w-4 h-4 animate-spin text-zinc-300" />
 
   const bureau = postes.filter((p) => p.categorie === "bureau")
   const pole = postes.filter((p) => p.categorie === "pole")
