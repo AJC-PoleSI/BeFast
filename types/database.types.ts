@@ -19,8 +19,12 @@ export type PermissionKey =
   | "gerer_parametres"
   | "publier_etudes"
   | "publier_missions"
+  | "signer_documents"
+  | "signer_ba"
 
 export type Permissions = Record<PermissionKey, boolean>
+
+export type ProfilCategorie = "base" | "bureau" | "pole"
 
 export interface ProfilType {
   id: string
@@ -28,6 +32,7 @@ export interface ProfilType {
   slug: string
   permissions: Permissions
   est_defaut: boolean
+  categorie: ProfilCategorie
   created_at: string
   updated_at: string
 }
@@ -60,8 +65,13 @@ export interface Personne {
   updated_at: string
 }
 
+export interface PersonnePoste {
+  profils_types: ProfilType | null
+}
+
 export interface PersonneWithRole extends Personne {
   profils_types: ProfilType | null
+  personne_postes?: PersonnePoste[]
 }
 
 export type DocumentType =
