@@ -30,7 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: { type: string
       // (trésorerie/admin/agc). Empêche l'IDOR sur les justificatifs.
       const { data: profile } = await supabase
         .from("personnes")
-        .select("profils_types(slug)")
+        .select("profils_types!profil_type_id(slug)")
         .eq("id", user.id)
         .single()
       const role = (profile as any)?.profils_types?.slug as string | undefined

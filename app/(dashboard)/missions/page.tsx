@@ -20,7 +20,7 @@ export default async function MissionsPage() {
   // Vérifier le statut du compte côté serveur (pas de useUser ici)
   const { data: personne } = await supabase
     .from("personnes")
-    .select("account_status, profil_type_id, profils_types(slug)")
+    .select("account_status, profil_type_id, profils_types!profil_type_id(slug)")
     .eq("id", user.id)
     .single()
 

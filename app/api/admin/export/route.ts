@@ -8,7 +8,7 @@ import { NextResponse } from "next/server"
 // Datasets exportables. `select` est passé tel quel à Supabase ; on aplatit
 // ensuite les éventuelles relations imbriquées pour produire un CSV plat.
 const DATASETS: Record<string, { table: string; select: string; order?: string }> = {
-  membres: { table: "personnes", select: "id, prenom, nom, email, account_status, created_at, profils_types(nom)", order: "created_at" },
+  membres: { table: "personnes", select: "id, prenom, nom, email, account_status, created_at, profils_types!profil_type_id(nom)", order: "created_at" },
   clients: { table: "clients", select: "id, nom, type, contact_nom, contact_email, contact_phone, actif, created_at", order: "created_at" },
   etudes: { table: "etudes", select: "id, numero, nom, statut, type, budget_ht, date_debut, created_at", order: "created_at" },
   missions: { table: "missions", select: "id, nom, statut, type, classe, nb_jeh, taux_jour, etude_id, created_at", order: "created_at" },

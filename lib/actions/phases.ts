@@ -25,7 +25,7 @@ async function getCaller() {
   const admin = createAdminClient()
   const { data } = await admin
     .from("personnes")
-    .select("is_super_admin, profils_types(slug)")
+    .select("is_super_admin, profils_types!profil_type_id(slug)")
     .eq("id", user.id)
     .single()
   const isAdmin = (data?.profils_types as any)?.slug === "administrateur"

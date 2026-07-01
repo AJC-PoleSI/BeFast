@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const admin = createAdminClient()
     const { data: caller } = await admin
       .from("personnes")
-      .select("id, profil_type_id, profils_types(slug)")
+      .select("id, profil_type_id, profils_types!profil_type_id(slug)")
       .eq("id", user.id)
       .single()
 

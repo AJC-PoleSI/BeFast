@@ -14,7 +14,7 @@ async function getCallerRole(): Promise<string | null> {
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("personnes")
-      .select("profils_types(slug)")
+      .select("profils_types!profil_type_id(slug)")
       .eq("id", user.id)
       .single()
 
@@ -34,7 +34,7 @@ export async function getAllMembers(): Promise<{ data: PersonneWithRole[] | null
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("personnes")
-      .select("*, profils_types(*)")
+      .select("*, profils_types!profil_type_id(*)")
       .order("created_at", { ascending: false })
 
     if (error) return { data: null, error: error.message }

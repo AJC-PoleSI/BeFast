@@ -18,7 +18,7 @@ export async function getDecryptedProfile(userId: string) {
     if (user.id !== userId) {
       const { data: caller } = await admin
         .from("personnes")
-        .select("profils_types(slug)")
+        .select("profils_types!profil_type_id(slug)")
         .eq("id", user.id)
         .single()
       if ((caller?.profils_types as any)?.slug !== "administrateur") {

@@ -32,7 +32,10 @@ async function fetchProfile(uid: string): Promise<PersonneWithRole | null> {
   const sb = createAdminClient()
   const { data } = await sb
     .from("personnes")
-    .select("*, profils_types(*)")
+    // Hint !profil_type_id : lève l'ambiguïté d'embed introduite par la table de
+    // jonction personne_postes (Supabase la détecte comme lien many-to-many
+    // personnes↔profils_types). Sans le hint, la requête échoue → profil null.
+    .select("*, profils_types!profil_type_id(*)")
     .eq("id", uid)
     .single()
   if (!data) return null

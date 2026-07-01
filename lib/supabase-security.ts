@@ -22,7 +22,7 @@ export async function getCurrentUserProfile(supabase: SupabaseClient) {
 
   const { data: profile, error: profileError } = await supabase
     .from('personnes')
-    .select('*, profils_types(slug)')
+    .select('*, profils_types!profil_type_id(slug)')
     .eq('id', user.id)
     .single();
 

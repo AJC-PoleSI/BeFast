@@ -557,7 +557,7 @@ async function isCallerAdmin(): Promise<boolean> {
   const sb = createAdminClient()
   const { data } = await sb
     .from("personnes")
-    .select("profils_types(slug)")
+    .select("profils_types!profil_type_id(slug)")
     .eq("id", user.id)
     .single()
   return (data?.profils_types as any)?.slug === "administrateur"

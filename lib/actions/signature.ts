@@ -230,7 +230,7 @@ async function requireAdmin(): Promise<{ userId: string; admin: SupabaseClient }
   const admin = createAdminClient()
   const { data: caller } = await admin
     .from("personnes")
-    .select("profils_types(slug)")
+    .select("profils_types!profil_type_id(slug)")
     .eq("id", user.id)
     .single()
   if ((caller?.profils_types as any)?.slug !== "administrateur") {

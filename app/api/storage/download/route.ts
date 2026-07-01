@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   // Rôle effectif (pour les accès trésorerie/admin).
   const { data: profile } = await supabase
     .from("personnes")
-    .select("profils_types(slug)")
+    .select("profils_types!profil_type_id(slug)")
     .eq("id", user.id)
     .single()
   const role = (profile as any)?.profils_types?.slug as string | undefined

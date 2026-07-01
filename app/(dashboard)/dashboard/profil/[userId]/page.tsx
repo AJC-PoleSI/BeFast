@@ -36,7 +36,7 @@ export default function AdminProfilePage() {
     const supabase = createClient()
     const { data } = await supabase
       .from("personnes")
-      .select("*, profils_types(*)")
+      .select("*, profils_types!profil_type_id(*)")
       .eq("id", userId)
       .single()
 

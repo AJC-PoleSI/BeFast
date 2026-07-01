@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     if (targetUserId && targetUserId !== user.id) {
       const { data: adminProfile } = await supabase
         .from("personnes")
-        .select("profils_types(slug)")
+        .select("profils_types!profil_type_id(slug)")
         .eq("id", user.id)
         .single()
 
