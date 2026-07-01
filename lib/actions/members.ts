@@ -3,7 +3,7 @@
 import { revalidateTag } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import type { PersonneWithRole, ProfilType } from "@/types/database.types"
+import type { PersonneWithRole, ProfilType, PersonnePoste } from "@/types/database.types"
 
 async function getCallerRole(): Promise<string | null> {
   try {
@@ -34,11 +34,32 @@ export async function getAllMembers(): Promise<{ data: PersonneWithRole[] | null
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("personnes")
-      .select("*, profils_types(*), personne_postes(profils_types(id))")
+      .select("*, profils_types(*)")
       .order("created_at", { ascending: false })
 
     if (error) return { data: null, error: error.message }
-    return { data: data as PersonneWithRole[], error: null }
+    const members = (data ?? []) as PersonneWithRole[]
+
+    // Postes par personne — requête séparée et tolérante (si la table
+    // personne_postes n'existe pas encore, on renvoie les membres sans postes).
+    try {
+      const { data: links } = await admin
+        .from("personne_postes")
+        .select("personne_id, profils_types(id)")
+      if (links) {
+        const byPersonne = new Map<string, PersonnePoste[]>()
+        for (const l of links as any[]) {
+          const arr = byPersonne.get(l.personne_id) ?? []
+          arr.push({ profils_types: l.profils_types } as unknown as PersonnePoste)
+          byPersonne.set(l.personne_id, arr)
+        }
+        for (const m of members) m.personne_postes = byPersonne.get(m.id) ?? []
+      }
+    } catch {
+      // Table absente : membres sans postes.
+    }
+
+    return { data: members, error: null }
   } catch (err) {
     console.error("[getAllMembers] Exception:", err)
     return { data: null, error: "Erreur serveur" }
