@@ -23,7 +23,7 @@ export function getCachedProfile(userId: string) {
       const sb = createAdminClient()
       const { data } = await sb
         .from("personnes")
-        .select("*, profils_types(*)")
+        .select("*, profils_types(*), personne_postes(profils_types(*))")
         .eq("id", uid)
         .single()
       return data as PersonneWithRole | null
