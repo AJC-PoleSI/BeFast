@@ -14,21 +14,20 @@ import type { SupabaseClient } from "@supabase/supabase-js"
  * formulaire et on renvoie les octets PDF prêts pour LiveConsent.
  */
 
-/** Noms de champs AcroForm attendus dans le template BA → libellé indicatif. */
+/**
+ * Noms de champs AcroForm attendus dans le template BA → libellé indicatif.
+ * Calés sur le formulaire officiel BA-2025 (encadré page 1) : « Nom Prénom »,
+ * « Téléphone », « E-mail Audencia » (la partie avant @audencia.com, déjà
+ * imprimé sur le PDF), « Promo », « Adresse du foyer fiscal complète ».
+ * Les cases « Numéro étudiant Audencia » et « Majeure (si 3A/4A) » n'ont pas
+ * de source de données → laissées vides (le membre les complète à la main).
+ */
 export const BA_FIELD_NAMES: Record<string, string> = {
-  prenom: "Prénom du membre",
-  nom: "Nom du membre",
-  nom_complet: "Prénom + Nom",
-  email: "Email du membre",
+  nom_complet: "Nom Prénom",
   portable: "Téléphone",
-  promo: "Promotion",
-  etablissement: "Établissement",
-  scolarite: "Scolarité",
-  adresse: "Adresse",
-  ville: "Ville",
-  code_postal: "Code postal",
-  date_naissance: "Date de naissance",
-  date_jour: "Date du jour",
+  email_audencia: "E-mail Audencia (partie avant @audencia.com)",
+  promo: "Promo",
+  adresse_complete: "Adresse du foyer fiscal complète (adresse, CP ville)",
 }
 
 export type BaFieldValues = Partial<Record<keyof typeof BA_FIELD_NAMES, string>>

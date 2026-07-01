@@ -69,20 +69,20 @@ describe("missingProfileFields", () => {
 })
 
 describe("buildBaFieldValues", () => {
-  it("mappe les champs membre vers les champs du template (dates formatées)", () => {
+  it("mappe les champs membre vers les 5 champs du template BA-2025", () => {
     const v = buildBaFieldValues(complete)
-    expect(v.prenom).toBe("Jean")
-    expect(v.nom).toBe("Dupont")
     expect(v.nom_complet).toBe("Jean Dupont")
-    expect(v.date_naissance).toBe("14/05/2003")
-    expect(v.code_postal).toBe("44000")
-    // date_jour est toujours renseignée (date du jour formatée).
-    expect(v.date_jour).toMatch(/^\d{2}\/\d{2}\/\d{4}$/)
+    expect(v.portable).toBe("0612345678")
+    // E-mail : partie locale seule (le PDF imprime déjà @audencia.com).
+    expect(v.email_audencia).toBe("jean")
+    expect(v.promo).toBe("2026")
+    // Adresse foyer fiscal = adresse + « CP Ville » sur une ligne.
+    expect(v.adresse_complete).toBe("1 rue des Lilas, 44000 Nantes")
   })
   it("tolère les valeurs nulles sans planter", () => {
     const v = buildBaFieldValues({ ...complete, prenom: null, adresse: null })
-    expect(v.prenom).toBe("")
     expect(v.nom_complet).toBe("Dupont")
-    expect(v.adresse).toBe("")
+    // adresse nulle → on ne garde que « CP Ville ».
+    expect(v.adresse_complete).toBe("44000 Nantes")
   })
 })

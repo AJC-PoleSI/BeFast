@@ -64,23 +64,29 @@ export function frDate(value: string | null): string {
   return value
 }
 
-/** Construit les valeurs de champs du template BA à partir d'un membre. */
+/** Partie locale d'un email (avant @). Le formulaire imprime déjà « @audencia.com ». */
+export function emailLocalPart(email: string | null): string {
+  return (email ?? "").split("@")[0] ?? ""
+}
+
+/** Concatène adresse + « CP Ville » en une seule ligne (foyer fiscal complet). */
+export function fullAddress(m: MemberData): string {
+  const cpVille = [m.code_postal, m.ville].filter((s) => s && String(s).trim() !== "").join(" ")
+  return [m.adresse, cpVille].filter((s) => s && String(s).trim() !== "").join(", ")
+}
+
+/**
+ * Construit les valeurs des champs du template BA-2025 à partir d'un membre.
+ * Voir BA_FIELD_NAMES (ba-pdf) pour la correspondance avec le formulaire officiel.
+ */
 export function buildBaFieldValues(m: MemberData): BaFieldValues {
   const prenom = m.prenom ?? ""
   const nom = m.nom ?? ""
   return {
-    prenom,
-    nom,
     nom_complet: `${prenom} ${nom}`.trim(),
-    email: m.email ?? "",
     portable: m.portable ?? "",
+    email_audencia: emailLocalPart(m.email),
     promo: m.promo ?? "",
-    etablissement: m.etablissement ?? "",
-    scolarite: m.scolarite ?? "",
-    adresse: m.adresse ?? "",
-    ville: m.ville ?? "",
-    code_postal: m.code_postal ?? "",
-    date_naissance: frDate(m.date_naissance),
-    date_jour: frDate(new Date().toISOString()),
+    adresse_complete: fullAddress(m),
   }
 }

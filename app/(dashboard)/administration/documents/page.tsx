@@ -31,9 +31,9 @@ const CATEGORY_INTERVENANT = "intervenant_rdm"
 const CATEGORY_MEMBRE = "membre_adhesion"
 
 // Champs AcroForm attendus dans le PDF du bulletin d'adhésion (remplis puis aplatis).
+// Calés sur le formulaire officiel BA-2025 (encadré page 1).
 const BA_PDF_FIELDS = [
-  "prenom", "nom", "nom_complet", "date_naissance", "adresse", "ville",
-  "code_postal", "promo", "email", "etablissement", "scolarite", "date_jour",
+  "nom_complet", "portable", "email_audencia", "promo", "adresse_complete",
 ]
 
 const DOCUMENT_TYPES: {
