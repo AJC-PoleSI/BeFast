@@ -21,36 +21,44 @@ import { USER_PROFILE_TAG } from "@/lib/cache-tags"
  * - Profile update
  * - Role change
  * - Account validation
+ *
+ * Un `null` (échec transitoire de la requête `personnes`) n'est JAMAIS mis en
+ * cache : sinon un incident passager (ex. migration pas encore appliquée au
+ * moment de la requête) resterait figé jusqu'à expiration du cache (5 min, et
+ * potentiellement plus si le trafic est faible) au lieu de se rétablir dès la
+ * requête suivante une fois le problème corrigé.
  */
-export function getCachedProfile(userId: string) {
-  const cached = unstable_cache(
-    async (uid: string) => {
-      const sb = createAdminClient()
-      const { data } = await sb
-        .from("personnes")
-        .select("*, profils_types(*)")
-        .eq("id", uid)
-        .single()
-      if (!data) return null
+async function fetchProfile(uid: string): Promise<PersonneWithRole | null> {
+  const sb = createAdminClient()
+  const { data } = await sb
+    .from("personnes")
+    .select("*, profils_types(*)")
+    .eq("id", uid)
+    .single()
+  if (!data) return null
 
-      let personne_postes: PersonnePoste[] = []
-      try {
-        const { data: pp } = await sb
-          .from("personne_postes")
-          .select("profils_types(*)")
-          .eq("personne_id", uid)
-        if (pp) personne_postes = pp as unknown as PersonnePoste[]
-      } catch {
-        // Table absente (migration non appliquée) : profil sans postes.
-      }
+  let personne_postes: PersonnePoste[] = []
+  try {
+    const { data: pp } = await sb
+      .from("personne_postes")
+      .select("profils_types(*)")
+      .eq("personne_id", uid)
+    if (pp) personne_postes = pp as unknown as PersonnePoste[]
+  } catch {
+    // Table absente (migration non appliquée) : profil sans postes.
+  }
 
-      return { ...(data as Record<string, unknown>), personne_postes } as PersonneWithRole
-    },
-    ["user-profile", userId],
-    {
-      tags: [`user-profile:${userId}`],
-      revalidate: 300, // 5 minutes
-    }
-  )
-  return cached(userId)
+  return { ...(data as Record<string, unknown>), personne_postes } as PersonneWithRole
+}
+
+export async function getCachedProfile(userId: string): Promise<PersonneWithRole | null> {
+  const cached = unstable_cache(fetchProfile, ["user-profile", userId], {
+    tags: [`user-profile:${userId}`],
+    revalidate: 300, // 5 minutes
+  })
+  const result = await cached(userId)
+  if (result) return result
+  // Pas de profil trouvé via le cache : on retente en direct (sans mettre en
+  // cache un éventuel échec), pour ne jamais rester bloqué sur un null figé.
+  return fetchProfile(userId)
 }
