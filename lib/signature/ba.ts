@@ -132,9 +132,11 @@ export async function checkMemberComplete(
 /* ── Réglages bureau / BA (stockés dans parametres) ───────────────────────── */
 
 export interface BaSettings {
+  /** Signataire unique du BA (porteur d'un poste avec permission signer_ba). */
+  signataireUserId: string | null
+  /** @deprecated remplacés par signataireUserId + les postes. Conservés pour repli. */
   presidentUserId: string | null
   tresorierUserId: string | null
-  /** RH : signataire autorisé du BA uniquement (pas des autres documents). */
   rhUserId: string | null
   reminderDays: number[]
   /** Envoi automatique global du BA (un seul réglage pour tous les membres). */
@@ -146,6 +148,7 @@ export async function getBaSettings(admin: SupabaseClient): Promise<BaSettings> 
     .from("parametres")
     .select("key, value")
     .in("key", [
+      "ba_signataire_user_id",
       "president_user_id",
       "tresorier_user_id",
       "rh_user_id",
@@ -159,6 +162,7 @@ export async function getBaSettings(admin: SupabaseClient): Promise<BaSettings> 
     .map((s) => parseInt(s.trim(), 10))
     .filter((n) => Number.isFinite(n) && n > 0)
   return {
+    signataireUserId: map.ba_signataire_user_id || null,
     presidentUserId: map.president_user_id || null,
     tresorierUserId: map.tresorier_user_id || null,
     rhUserId: map.rh_user_id || null,
@@ -168,27 +172,11 @@ export async function getBaSettings(admin: SupabaseClient): Promise<BaSettings> 
   }
 }
 
-/**
- * Rôles bureau de l'utilisateur courant pour les signatures.
- * - BA : président, trésorier, RH peuvent signer / voir.
- * - Autres documents : président, trésorier uniquement.
+/*
+ * L'accès aux files de signature est désormais basé sur les permissions de poste
+ * (`signer_ba` / `signer_documents`) via hasPermission — voir lib/actions/signature.ts.
+ * L'ancien helper bureauRoles (basé sur des IDs désignés) a été retiré.
  */
-export function bureauRoles(
-  userId: string,
-  settings: BaSettings,
-  isAdmin: boolean
-): { isPresident: boolean; isTresorier: boolean; isRh: boolean; canBA: boolean; canAutres: boolean } {
-  const isPresident = settings.presidentUserId === userId
-  const isTresorier = settings.tresorierUserId === userId
-  const isRh = settings.rhUserId === userId
-  return {
-    isPresident,
-    isTresorier,
-    isRh,
-    canBA: isAdmin || isPresident || isTresorier || isRh,
-    canAutres: isAdmin || isPresident || isTresorier,
-  }
-}
 
 /**
  * Chemin du template BA, géré comme les autres modèles dans `document_templates`
@@ -283,13 +271,11 @@ export async function sendBA(
   // (ou override explicite, ex. délégation).
   const bureauUserId =
     opts.bureauUserId ??
+    settings.signataireUserId ??
     settings.presidentUserId ??
     settings.tresorierUserId ??
     settings.rhUserId
-  let bureauRole = "president"
-  if (opts.bureauUserId) bureauRole = "delegue"
-  else if (bureauUserId === settings.tresorierUserId) bureauRole = "tresorier"
-  else if (bureauUserId === settings.rhUserId) bureauRole = "rh"
+  const bureauRole = opts.bureauUserId ? "delegue" : "signataire"
   if (bureauUserId) {
     const { data: bureau } = await admin
       .from("personnes")

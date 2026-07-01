@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { hasPermission } from "@/lib/auth/permissions"
 import {
   createSignatureRequest,
   getRequestStatus,
@@ -18,7 +19,6 @@ import {
   missingProfileFieldsFromRow,
   getBaSettings,
   getBaTemplatePath,
-  bureauRoles,
   BA_REQUIRED_DOC_TYPES,
 } from "@/lib/signature/ba"
 
@@ -81,14 +81,12 @@ export async function getSignaturesAccess(): Promise<{ isAdmin: boolean; isBurea
   } = await supabase.auth.getUser()
   if (!user) return { isAdmin: false, isBureau: false }
 
-  // Rôle lu depuis le profil en cache (partagé avec le layout → 0 requête sur cache chaud).
+  // Rôle + permissions effectives lus depuis le profil en cache (0 requête sur cache chaud).
   const profile = await getCachedProfile(user.id)
   const isAdmin = profile?.profils_types?.slug === "administrateur"
-
-  const admin = createAdminClient()
-  const settings = await getBaSettings(admin)
-  // Bureau = peut voir au moins un type de document à signer (BA ou autres).
-  const isBureau = bureauRoles(user.id, settings, isAdmin).canBA
+  // Bureau = peut signer au moins un type de document (BA ou autres) via ses postes.
+  const isBureau =
+    isAdmin || hasPermission(profile, "signer_ba") || hasPermission(profile, "signer_documents")
 
   return { isAdmin, isBureau }
 }
@@ -356,44 +354,90 @@ export async function setBaAutoGlobal(value: boolean) {
 
 /* ── Réglages bureau / template BA ────────────────────────────────────────── */
 
+/**
+ * Signataires BA éligibles = membres portant au moins un poste avec la
+ * permission `signer_ba` (Présidente / Trésorier·ère / Responsable RH par
+ * défaut). Tolérant : si la table personne_postes n'existe pas encore, [].
+ */
+async function getBaEligibleSigners(
+  admin: SupabaseClient
+): Promise<{ id: string; label: string }[]> {
+  try {
+    const { data: postes } = await admin
+      .from("profils_types")
+      .select("id, permissions")
+      .in("categorie", ["bureau", "pole"])
+    const signerPosteIds = (postes ?? [])
+      .filter((p: any) => (p.permissions as any)?.signer_ba === true)
+      .map((p: any) => p.id)
+    if (!signerPosteIds.length) return []
+
+    const { data: links } = await admin
+      .from("personne_postes")
+      .select("personne_id")
+      .in("poste_id", signerPosteIds)
+    const ids = [...new Set((links ?? []).map((l: any) => l.personne_id))]
+    if (!ids.length) return []
+
+    const { data: members } = await admin
+      .from("personnes")
+      .select("id, prenom, nom, email")
+      .in("id", ids)
+      .order("nom", { ascending: true })
+    return (members ?? []).map((u: any) => ({
+      id: u.id,
+      label: `${u.prenom ?? ""} ${u.nom ?? ""}`.trim() || u.email,
+    }))
+  } catch {
+    return []
+  }
+}
+
+/** Premier membre portant le poste de slug donné (ex. "tresorier"). null si aucun/table absente. */
+async function getPosteHolderUserId(admin: SupabaseClient, slug: string): Promise<string | null> {
+  try {
+    const { data: poste } = await admin
+      .from("profils_types")
+      .select("id")
+      .eq("slug", slug)
+      .single()
+    if (!poste) return null
+    const { data: link } = await admin
+      .from("personne_postes")
+      .select("personne_id")
+      .eq("poste_id", (poste as any).id)
+      .limit(1)
+    return (link?.[0] as any)?.personne_id ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function getBaAdminSettings() {
   const guard = await requireAdmin()
   if ("error" in guard) return { error: guard.error }
   const settings = await getBaSettings(guard.admin)
   const templatePath = await getBaTemplatePath(guard.admin)
-  const { data: users } = await guard.admin
-    .from("personnes")
-    .select("id, prenom, nom, email")
-    .eq("actif", true)
-    .order("nom", { ascending: true })
+  const eligibleSigners = await getBaEligibleSigners(guard.admin)
   return {
     data: {
-      presidentUserId: settings.presidentUserId,
-      tresorierUserId: settings.tresorierUserId,
-      rhUserId: settings.rhUserId,
+      signataireUserId: settings.signataireUserId,
       templateConfigured: Boolean(templatePath),
       reminderDays: settings.reminderDays.join(","),
       autoGlobal: settings.autoGlobal,
-      users: (users ?? []).map((u: any) => ({
-        id: u.id,
-        label: `${u.prenom ?? ""} ${u.nom ?? ""}`.trim() || u.email,
-      })),
+      eligibleSigners,
     },
   }
 }
 
 export async function saveBaAdminSettings(values: {
-  presidentUserId?: string | null
-  tresorierUserId?: string | null
-  rhUserId?: string | null
+  signataireUserId?: string | null
   reminderDays?: string
 }) {
   const guard = await requireAdmin()
   if ("error" in guard) return { error: guard.error }
   const rows = [
-    { key: "president_user_id", value: values.presidentUserId ?? "" },
-    { key: "tresorier_user_id", value: values.tresorierUserId ?? "" },
-    { key: "rh_user_id", value: values.rhUserId ?? "" },
+    { key: "ba_signataire_user_id", value: values.signataireUserId ?? "" },
     { key: "ba_reminder_days", value: values.reminderDays ?? "7,2" },
   ].map((r) => ({ ...r, updated_at: new Date().toISOString() }))
   const { error } = await guard.admin.from("parametres").upsert(rows)
@@ -429,16 +473,12 @@ export async function listBureauQueue(): Promise<{ data: BureauQueueRow[]; role:
   if (!user) return { error: "Non authentifié" }
 
   const admin = createAdminClient()
-  const settings = await getBaSettings(admin)
-  const { data: caller } = await admin
-    .from("personnes")
-    .select("profils_types(slug)")
-    .eq("id", user.id)
-    .single()
-  const isAdmin = (caller?.profils_types as any)?.slug === "administrateur"
-  const roles = bureauRoles(user.id, settings, isAdmin)
-  if (!roles.canBA) {
-    return { error: "Onglet réservé au bureau (présidente / trésorier / RH)." }
+  const profile = await getCachedProfile(user.id)
+  const isAdmin = profile?.profils_types?.slug === "administrateur"
+  const canBA = isAdmin || hasPermission(profile, "signer_ba")
+  const canAutres = isAdmin || hasPermission(profile, "signer_documents")
+  if (!canBA && !canAutres) {
+    return { error: "Onglet réservé aux signataires (présidente / trésorier / responsable RH)." }
   }
 
   const { data, error } = await admin
@@ -454,15 +494,9 @@ export async function listBureauQueue(): Promise<{ data: BureauQueueRow[]; role:
   //   - autres (libre) → présidente / trésorier uniquement
   const rows = (data ?? []).filter((r: any) => {
     if (SIGNED_STATUSES.includes(String(r.status).toLowerCase())) return false
-    return r.category === "ba" ? roles.canBA : roles.canAutres
+    return r.category === "ba" ? canBA : canAutres
   })
-  const role = roles.isPresident
-    ? "president"
-    : roles.isTresorier
-      ? "tresorier"
-      : roles.isRh
-        ? "rh"
-        : "admin"
+  const role = isAdmin ? "admin" : canAutres ? "bureau" : "rh"
   return { data: rows as BureauQueueRow[], role }
 }
 
@@ -493,16 +527,15 @@ export async function delegateToTresorier(requestId: string) {
     .update({ status: "delegue_tresorier", archived: true, updated_at: new Date().toISOString() })
     .eq("id", requestId)
 
-  // Recrée un BA frais avec le trésorier comme signataire bureau, si applicable.
+  // Recrée un BA frais avec le trésorier (porteur du poste) comme signataire, si applicable.
   if ((row as any).category === "ba" && (row as any).personne_id) {
-    const settings = await getBaSettings(admin)
-    if (settings.tresorierUserId) {
-      // Recrée un BA avec le trésorier comme signataire bureau (repli) : le membre
-      // re-signe puis le trésorier contre-signe. (PDF partiel non conservé.)
+    const tresorierUserId = await getPosteHolderUserId(admin, "tresorier")
+    if (tresorierUserId) {
+      // Le membre re-signe puis le trésorier contre-signe. (PDF partiel non conservé.)
       const res = await sendBA((row as any).personne_id, {
         auto: false,
         createdBy: guard.userId,
-        bureauUserId: settings.tresorierUserId,
+        bureauUserId: tresorierUserId,
       })
       revalidatePath("/signatures")
       return res

@@ -30,13 +30,11 @@ import {
 } from "@/lib/actions/signature"
 
 type Settings = {
-  presidentUserId: string | null
-  tresorierUserId: string | null
-  rhUserId: string | null
+  signataireUserId: string | null
   templateConfigured: boolean
   reminderDays: string
   autoGlobal: boolean
-  users: { id: string; label: string }[]
+  eligibleSigners: { id: string; label: string }[]
 }
 
 const SIGNED = ["signed", "completed", "signe", "termine"]
@@ -66,9 +64,7 @@ export function BATab({ configured }: { configured: boolean }) {
     if (!settings) return
     startSaving(async () => {
       const res = await saveBaAdminSettings({
-        presidentUserId: settings.presidentUserId,
-        tresorierUserId: settings.tresorierUserId,
-        rhUserId: settings.rhUserId,
+        signataireUserId: settings.signataireUserId,
         reminderDays: settings.reminderDays,
       })
       if ("error" in res) toast.error(res.error)
@@ -114,60 +110,33 @@ export function BATab({ configured }: { configured: boolean }) {
           <Users className="h-4 w-4 text-gold" /> Réglages des bulletins d&apos;adhésion
         </h2>
         <p className="-mt-2 mb-4 text-xs text-muted-foreground">
-          Signataires autorisés du <strong>bulletin d&apos;adhésion</strong> : présidente, trésorier
-          et RH. Pour les <strong>autres documents</strong> : présidente et trésorier uniquement.
+          Le <strong>signataire du bulletin d&apos;adhésion</strong> est choisi parmi les membres
+          portant un poste autorisé à signer les BA (Présidente, Trésorier·ère, Responsable RH).
+          Assigne ces postes dans <strong>Administration → Membres</strong>.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Présidente (BA + autres documents)</Label>
+            <Label>Signataire du bulletin d&apos;adhésion</Label>
             <select
-              value={settings?.presidentUserId ?? ""}
+              value={settings?.signataireUserId ?? ""}
               onChange={(e) =>
-                setSettings((s) => (s ? { ...s, presidentUserId: e.target.value || null } : s))
-              }
-              className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-            >
-              <option value="">— Aucune —</option>
-              {settings?.users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label>Trésorier (BA + autres, repli)</Label>
-            <select
-              value={settings?.tresorierUserId ?? ""}
-              onChange={(e) =>
-                setSettings((s) => (s ? { ...s, tresorierUserId: e.target.value || null } : s))
+                setSettings((s) => (s ? { ...s, signataireUserId: e.target.value || null } : s))
               }
               className="h-9 w-full rounded-md border bg-background px-3 text-sm"
             >
               <option value="">— Aucun —</option>
-              {settings?.users.map((u) => (
+              {settings?.eligibleSigners.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.label}
                 </option>
               ))}
             </select>
-          </div>
-          <div className="space-y-2">
-            <Label>RH (bulletin d&apos;adhésion uniquement)</Label>
-            <select
-              value={settings?.rhUserId ?? ""}
-              onChange={(e) =>
-                setSettings((s) => (s ? { ...s, rhUserId: e.target.value || null } : s))
-              }
-              className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-            >
-              <option value="">— Aucun —</option>
-              {settings?.users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.label}
-                </option>
-              ))}
-            </select>
+            {settings && settings.eligibleSigners.length === 0 && (
+              <p className="text-xs text-amber-600">
+                Aucun signataire éligible : assigne un poste Présidente / Trésorier·ère /
+                Responsable RH à un membre (Administration → Membres).
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="reminderDays">Relances (jours avant expiration)</Label>
