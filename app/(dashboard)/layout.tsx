@@ -4,6 +4,7 @@ import type { PersonneWithRole, Permissions } from "@/types/database.types"
 import { DashboardShell } from "./dashboard-shell"
 import { UserProvider } from "@/hooks/useUser"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { resolveEffectivePermissions } from "@/lib/auth/permissions"
 
 const emptyPermissions: Permissions = {
   dashboard: false,
@@ -26,6 +27,8 @@ const emptyPermissions: Permissions = {
   gerer_parametres: false,
   publier_etudes: false,
   publier_missions: false,
+  signer_documents: false,
+  signer_ba: false,
 }
 
 export default async function DashboardLayout({
@@ -46,11 +49,11 @@ export default async function DashboardLayout({
   // Cached profile query — keyed by user.id. After first visit, this is a
   // ~5ms cache hit (vs ~200ms DB query) for the next 5 minutes.
   const profile = await getCachedProfile(user.id)
-  const rolePerms = profile?.profils_types?.permissions ?? null
   const isAdmin = profile?.profils_types?.slug === "administrateur"
 
-  let permissions = rolePerms
-    ? ({ ...emptyPermissions, ...rolePerms } as Permissions)
+  // Permissions effectives = rôle de base ∪ postes (bureau/pôles) assignés.
+  let permissions: Permissions | null = profile
+    ? resolveEffectivePermissions(profile)
     : null
 
   // Restreindre les accès si le compte n'est pas validé

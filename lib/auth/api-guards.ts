@@ -3,7 +3,8 @@ import "server-only"
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
-import type { PersonneWithRole } from "@/types/database.types"
+import { hasPermission } from "@/lib/auth/permissions"
+import type { PersonneWithRole, PermissionKey } from "@/types/database.types"
 
 /**
  * Shared authorization guards for API route handlers.
@@ -55,6 +56,24 @@ export async function requireApiAdmin(): Promise<ApiGuardResult> {
   if (!guard.ok) return guard
 
   if (guard.profile.profils_types?.slug !== "administrateur") {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Non autorisé" }, { status: 403 }),
+    }
+  }
+
+  return guard
+}
+
+/**
+ * Require an authenticated user holding a specific permission (effective =
+ * rôle de base ∪ postes ; l'administrateur passe toujours). 403 sinon.
+ */
+export async function requireApiPermission(key: PermissionKey): Promise<ApiGuardResult> {
+  const guard = await requireApiUser()
+  if (!guard.ok) return guard
+
+  if (!hasPermission(guard.profile, key)) {
     return {
       ok: false,
       response: NextResponse.json({ error: "Non autorisé" }, { status: 403 }),
