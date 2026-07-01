@@ -717,7 +717,7 @@ export default function TresoreriePage() {
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-1">
                           {note.fichiers_justificatifs?.map((url: string, i: number) => (
-                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="p-1 rounded-md bg-zinc-100 text-zinc-600 hover:text-blue-600" title={`Fichier ${i+1}`}>
+                            <a key={i} href={`/api/storage/download?key=${encodeURIComponent(url)}`} target="_blank" rel="noopener noreferrer" className="p-1 rounded-md bg-zinc-100 text-zinc-600 hover:text-blue-600" title={`Fichier ${i+1}`}>
                               <FileText className="w-4 h-4" />
                             </a>
                           ))}

@@ -21,30 +21,28 @@ export async function POST(req: NextRequest, { params }: { params: { missionId: 
     const fileName = `collaborations/${params.missionId}/${Math.random().toString(36).substring(7)}_${safeName}`
     const buffer = Buffer.from(await file.arrayBuffer())
 
+    // Objet PRIVÉ (pas d'ACL public-read) : l'accès passe par le endpoint
+    // authentifié /api/storage/download qui vérifie l'appartenance à la mission.
     const command = new PutObjectCommand({
       Bucket: SCALEWAY_BUCKET,
       Key: fileName,
       Body: buffer,
       ContentType: file.type,
-      ACL: 'public-read'
     })
 
     await scalewayS3.send(command)
 
-    const region = process.env.NEXT_PUBLIC_SCALEWAY_REGION ?? "fr-par"
-    const publicUrl = `https://${SCALEWAY_BUCKET}.s3.${region}.scw.cloud/${fileName}`
-
-    // Insert to DB
+    // On stocke la CLÉ de l'objet (pas une URL publique).
     const { error: dbError } = await supabase.from("mission_documents").insert({
       mission_collaboration_id: collaborationId,
       nom_fichier: file.name,
-      file_url: publicUrl,
+      file_url: fileName,
       uploaded_by: user.id
     })
 
     if (dbError) throw new Error(dbError.message)
 
-    return NextResponse.json({ success: true, url: publicUrl })
+    return NextResponse.json({ success: true, key: fileName, url: `/api/storage/download?key=${encodeURIComponent(fileName)}` })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

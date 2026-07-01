@@ -35,11 +35,6 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // EXCEPTION TEMPORAIRE POUR LE MODULE PROPOSITIONS (DEV)
-  if (request.nextUrl.pathname.startsWith('/test-propositions') || request.nextUrl.pathname.startsWith('/test-dashboard-propositions')) {
-    return response
-  }
-
   // Token encore valide pour > 60 s : inutile de rafraîchir, on économise un
   // aller-retour Supabase (~100-300 ms) sur la quasi-totalité des navigations.
   const expiresAt = readSessionExpiry(request)

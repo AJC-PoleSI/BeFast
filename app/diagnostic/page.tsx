@@ -1,4 +1,11 @@
+import { notFound } from "next/navigation"
+
 export default function Diagnostic() {
+  // Page de diagnostic : indisponible en production (surface d'info inutile).
+  if (process.env.NODE_ENV === "production") {
+    notFound()
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 

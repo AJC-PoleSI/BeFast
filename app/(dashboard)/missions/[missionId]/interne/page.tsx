@@ -171,7 +171,7 @@ export default function MissionInternePage() {
               {documents.map(doc => (
                 <li key={doc.id} className="flex justify-between items-center bg-muted/50 p-2 rounded-md">
                   <span className="text-sm truncate mr-4">{doc.nom_fichier}</span>
-                  <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                  <a href={`/api/storage/download?key=${encodeURIComponent(doc.file_url)}`} target="_blank" rel="noopener noreferrer">
                     <Button size="sm" variant="outline"><Download className="h-4 w-4" /></Button>
                   </a>
                 </li>

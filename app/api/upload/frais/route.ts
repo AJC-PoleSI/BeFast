@@ -38,11 +38,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Upload des justificatifs en parallèle (au lieu d'un await séquentiel par
-    // fichier). Le nom utilise un UUID cryptographique : avec un bucket en
-    // public-read, un suffixe court (~5 caractères) serait énumérable.
-    const region = process.env.NEXT_PUBLIC_SCALEWAY_REGION ?? "fr-par"
-    const fileUrls = await Promise.all(
+    // Upload des justificatifs en parallèle. Objets PRIVÉS (aucun ACL public-read) :
+    // ces pièces sont des données financières personnelles. L'accès en lecture se
+    // fait via /api/storage/download (authentifié + contrôle d'accès), qui renvoie
+    // une URL présignée à courte durée. On stocke la CLÉ de l'objet, pas une URL.
+    const fileKeys = await Promise.all(
       files.map(async (file) => {
         const safeName = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, "_")
         const fileName = `notes_de_frais/${missionId}/${user.id}/${randomUUID()}_${safeName}`
@@ -54,11 +54,10 @@ export async function POST(req: NextRequest) {
             Key: fileName,
             Body: buffer,
             ContentType: file.type,
-            ACL: 'public-read',
           })
         )
 
-        return `https://${SCALEWAY_BUCKET}.s3.${region}.scw.cloud/${fileName}`
+        return fileName
       })
     )
 
@@ -73,7 +72,7 @@ export async function POST(req: NextRequest) {
       await supabase.from("notes_de_frais").update({
         montant_total: montant,
         description,
-        fichiers_justificatifs: fileUrls,
+        fichiers_justificatifs: fileKeys,
         statut: 'soumis',
         submitted_at: new Date().toISOString()
       }).eq("id", existing.id)
@@ -90,7 +89,7 @@ export async function POST(req: NextRequest) {
         mission_id: missionId,
         montant_total: montant,
         description,
-        fichiers_justificatifs: fileUrls,
+        fichiers_justificatifs: fileKeys,
         statut: 'soumis',
         submitted_at: new Date().toISOString()
       }).select("id").single()

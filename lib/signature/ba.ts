@@ -316,7 +316,10 @@ export async function sendBA(
   const filename = `bulletin-adhesion-${(member.nom ?? "membre").toLowerCase().replace(/\s+/g, "-")}.pdf`
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "")
-  const callbackUrl = siteUrl.startsWith("https://") ? `${siteUrl}/api/signature/callback` : undefined
+  const webhookSecret = process.env.LIVECONSENT_WEBHOOK_SECRET
+  const callbackUrl = siteUrl.startsWith("https://")
+    ? `${siteUrl}/api/signature/callback${webhookSecret ? `?token=${encodeURIComponent(webhookSecret)}` : ""}`
+    : undefined
 
   try {
     const { requestId } = await createSignatureRequest({

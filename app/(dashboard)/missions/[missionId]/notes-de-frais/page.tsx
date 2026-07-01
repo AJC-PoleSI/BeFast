@@ -145,7 +145,7 @@ export default function NotesDeFraisPage() {
                     {noteFrais.fichiers_justificatifs?.map((f: string, i: number) => (
                       <li key={i} className="flex items-center text-sm text-blue-600">
                         <FileText className="h-4 w-4 mr-2" />
-                        <a href={f} target="_blank" rel="noopener noreferrer">Fichier {i + 1}</a>
+                        <a href={`/api/storage/download?key=${encodeURIComponent(f)}`} target="_blank" rel="noopener noreferrer">Fichier {i + 1}</a>
                       </li>
                     ))}
                   </ul>

@@ -145,8 +145,9 @@ export async function sendDocumentForSignature(formData: FormData) {
 
   const pdfBase64 = Buffer.from(await file.arrayBuffer()).toString("base64")
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "")
+  const webhookSecret = process.env.LIVECONSENT_WEBHOOK_SECRET
   const callbackUrl = siteUrl.startsWith("https://")
-    ? `${siteUrl}/api/signature/callback`
+    ? `${siteUrl}/api/signature/callback${webhookSecret ? `?token=${encodeURIComponent(webhookSecret)}` : ""}`
     : undefined // LiveConsent exige une URL HTTPS — pas de callback en localhost
 
   try {
