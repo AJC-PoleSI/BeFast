@@ -34,7 +34,7 @@ export async function getAllMembers(): Promise<{ data: PersonneWithRole[] | null
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("personnes")
-      .select("*, profils_types(*)")
+      .select("*, profils_types(*), personne_postes(profils_types(id))")
       .order("created_at", { ascending: false })
 
     if (error) return { data: null, error: error.message }

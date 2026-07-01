@@ -6,6 +6,7 @@ import Link from "next/link"
 import { getAllMembers, updateMemberRole, getAllRoles } from "@/lib/actions/members"
 import type { PersonneWithRole, ProfilType } from "@/types/database.types"
 import { Badge } from "@/components/ui/badge"
+import { PostesMultiSelect } from "./_components/PostesMultiSelect"
 
 const ROLE_MAP: Record<string, { label: string; color: string }> = {
   administrateur:  { label: "Administrateur",        color: "bg-red-50 text-red-700 border-red-200" },
@@ -43,12 +44,12 @@ function RoleDropdown({ member, roles, onRoleChange, updating }: {
           : <MoreVertical className="w-5 h-5" />}
       </button>
       {open && (
-        <div className="absolute right-0 mt-1 w-52 bg-white border border-zinc-200 rounded-xl shadow-xl z-20">
+        <div className="absolute right-0 mt-1 w-64 bg-white border border-zinc-200 rounded-xl shadow-xl z-20">
           <p className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
             Changer le rôle
           </p>
           <div className="p-1.5">
-            {roles.map((r) => (
+            {roles.filter((r) => (r.categorie ?? "base") === "base").map((r) => (
               <button
                 key={r.slug}
                 onClick={() => { setOpen(false); onRoleChange(member.id, r.slug) }}
@@ -62,6 +63,17 @@ function RoleDropdown({ member, roles, onRoleChange, updating }: {
                 {r.nom}
               </button>
             ))}
+          </div>
+          <div className="border-t border-zinc-100 px-3 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
+              Postes (bureau / pôles)
+            </p>
+            <PostesMultiSelect
+              personneId={member.id}
+              initialPosteIds={(member.personne_postes ?? [])
+                .map((pp) => pp.profils_types?.id)
+                .filter((id): id is string => Boolean(id))}
+            />
           </div>
         </div>
       )}
