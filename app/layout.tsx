@@ -37,8 +37,11 @@ export default function RootLayout({
             à retirer une fois la migration lucide terminée) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* display=block : pour une police d'ICÔNES, évite le FOUT où le nom du
+            ligature (« euro », « assignment »…) s'affiche en texte brut le temps
+            que la police se charge. Le glyphe reste invisible puis apparaît. */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block"
           rel="stylesheet"
         />
       </head>
