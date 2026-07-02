@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest"
 import { resolveEffectivePermissions, hasPermission } from "./permissions"
 import type { PersonneWithRole } from "@/types/database.types"
 
-function make(basePerms: any, postes: any[] = [], slug = "membre_agc"): PersonneWithRole {
+function make(basePerms: any, postes: any[] = [], slug = "membre_ajc"): PersonneWithRole {
   return {
     id: "u1", email: "x@a.com", prenom: null, nom: null, portable: null, promo: null,
     adresse: null, ville: null, code_postal: null, pole: null, etablissement: null,

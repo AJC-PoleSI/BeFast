@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
 
     // Require role: only tresorier, agc member, or admin can validate
     try {
-      await requireRole(supabase, ['tresorerie', 'administrateur', 'membre_agc'] as any)
+      await requireRole(supabase, ['tresorerie', 'administrateur', 'membre_ajc'] as any)
     } catch (error) {
       return NextResponse.json({ error: "Non autorisé: requires tresorerie/admin role" }, { status: 403 })
     }

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: { type: string
         .eq("id", user.id)
         .single()
       const role = (profile as any)?.profils_types?.slug as string | undefined
-      const isPrivileged = role === "administrateur" || role === "tresorerie" || role === "membre_agc"
+      const isPrivileged = role === "administrateur" || role === "tresorerie" || role === "membre_ajc"
 
       if (note.intervenant_id !== user.id && !isPrivileged) {
         return NextResponse.json({ error: "Accès interdit" }, { status: 403 })

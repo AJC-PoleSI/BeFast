@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic"
  *
  * Autorisation par préfixe de clé :
  *  - notes_de_frais/<missionId>/<ownerId>/...  → propriétaire, ou trésorerie/
- *    admin/membre_agc, ou intervenant de la mission.
+ *    admin/membre_ajc, ou intervenant de la mission.
  *  - collaborations/<missionId>/...            → intervenant de la mission, ou admin.
  */
 export async function GET(req: NextRequest) {
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     .eq("id", user.id)
     .single()
   const role = (profile as any)?.profils_types?.slug as string | undefined
-  const isPrivileged = role === "administrateur" || role === "tresorerie" || role === "membre_agc"
+  const isPrivileged = role === "administrateur" || role === "tresorerie" || role === "membre_ajc"
 
   const isIntervenant = async (missionId: string): Promise<boolean> => {
     if (!missionId) return false

@@ -89,13 +89,13 @@ export default function MissionDetailPage() {
 
   const slug = profile?.profils_types?.slug
   const isRH =
-    (slug === "membre_ajc" || slug === "membre_agc") &&
+    slug === "membre_ajc" &&
     (profile?.pole ?? "").toLowerCase() === "rh"
   // isAGC = membres avec accès "staff" (voient toutes les candidatures, peuvent
   // accéder aux missions non publiées/SDP). Les membres AJC de base n'en font
   // PAS partie : ils doivent passer par le filtre (!isSDP && etudePublished).
   const isAGC =
-    slug === "membre_agc" ||
+    slug === "membre_ajc" ||
     slug === "administrateur" ||
     isAdmin ||
     !!permissions?.selectionner_candidats
