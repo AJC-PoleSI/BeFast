@@ -42,7 +42,7 @@ export const sensitiveFieldSchema = z
 export const nssSchema = z
   .string()
   .regex(
-    /^[12]\s?\d{2}\s?(0[1-9]|1[0-2])\s?\d{2}\s?\d{3}\s?\d{3}\s?\d{2}$/,
+    /^\s*[12]\s*\d{2}\s*(0[1-9]|1[0-2])\s*\d{2}\s*\d{3}\s*\d{3}\s*\d{2}\s*$/,
     "Le numéro de sécurité sociale n'est pas valide."
   )
 
