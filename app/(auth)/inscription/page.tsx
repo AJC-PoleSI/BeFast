@@ -61,6 +61,9 @@ export default function InscriptionPage() {
             required
             autoComplete="email"
           />
+          <p className="text-xs text-muted-foreground">
+            Seules les adresses @audencia.com sont autorisées.
+          </p>
         </div>
 
         <div className="space-y-2">

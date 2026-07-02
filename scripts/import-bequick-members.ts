@@ -1,10 +1,15 @@
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs"
-import { randomBytes } from "node:crypto"
+import { randomBytes, createCipheriv } from "node:crypto"
 import { parse } from "csv-parse/sync"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
-import { encryptData, generateEncryptionSalt } from "../lib/crypto"
 import { loadEnv } from "./lib/load-env"
-import { mapRow, dedupeByEmail, type RawRow, type MappedMember } from "./lib/bequick-mapping"
+import {
+  mapRow,
+  dedupeByEmail,
+  buildPersonnePatch,
+  type RawRow,
+  type MappedMember,
+} from "./lib/bequick-mapping"
 
 loadEnv(".env.local")
 
@@ -12,9 +17,13 @@ const CSV_PATH = process.argv[2]
 const COMMIT = process.argv.includes("--commit")
 const SKIP_EXISTING = process.argv.includes("--skip-existing")
 const CHECK_EXISTING = process.argv.includes("--check-existing")
+const LIMIT_ARG = process.argv.find((a) => a.startsWith("--limit="))?.slice("--limit=".length)
+const LIMIT = LIMIT_ARG ? Math.max(1, parseInt(LIMIT_ARG, 10) || 0) : Infinity
 
 if (!CSV_PATH || CSV_PATH.startsWith("--")) {
-  console.error('Usage: npx tsx scripts/import-bequick-members.ts "<csv>" [--check-existing] [--commit] [--skip-existing]')
+  console.error(
+    'Usage: npx tsx scripts/import-bequick-members.ts "<csv>" [--check-existing] [--limit=N] [--commit] [--skip-existing]'
+  )
   process.exit(1)
 }
 
@@ -23,16 +32,20 @@ function randomPassword(): string {
   return randomBytes(24).toString("base64") + "aA1!"
 }
 
-// Salt courant (positionné par membre juste avant le chiffrement) + master key,
-// initialisés seulement en mode --commit.
-let _salt = ""
-let _masterKey = ""
-
-function encField(plain: string): { encrypted: string; iv: string; authTag: string } {
-  return encryptData(plain, _masterKey, _salt)
+// Réplique EXACTE de lib/encryption.ts::encryptToString (celui-ci importe
+// "server-only" et ne peut pas être chargé sous tsx). Format « iv:tag:ciphertext »
+// (aes-256-gcm, IV 12o, tag 16o, clé = ENCRYPTION_KEY) → decryptFromString le lit.
+function encryptToString(plaintext: string): string {
+  const hex = process.env.ENCRYPTION_KEY
+  if (!hex || hex.length !== 64) throw new Error("ENCRYPTION_KEY doit être 64 hex (32 octets)")
+  const key = Buffer.from(hex, "hex")
+  const iv = randomBytes(12)
+  const cipher = createCipheriv("aes-256-gcm", key, iv, { authTagLength: 16 })
+  const ct = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()])
+  const tag = cipher.getAuthTag()
+  return `${iv.toString("hex")}:${tag.toString("hex")}:${ct.toString("hex")}`
 }
 
-/** Construit un client service-role (secrets requis). Utilisé par --check-existing et --commit. */
 function makeAdmin(): SupabaseClient {
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -61,7 +74,8 @@ async function upsertMember(
   admin: SupabaseClient,
   m: MappedMember,
   roleIds: Map<string, string>,
-  existingId: string | null
+  existingId: string | null,
+  encryptNss: (plain: string) => string
 ): Promise<void> {
   let userId = existingId
 
@@ -73,7 +87,6 @@ async function upsertMember(
       user_metadata: { prenom: m.prenom, nom: m.nom },
     })
     if (error || !data.user) {
-      // Cas limite : utilisateur auth déjà présent → on le retrouve via personnes.
       const again = await findExisting(admin, m)
       if (!again) throw new Error(`createUser échoué pour ${m.email}: ${error?.message}`)
       userId = again
@@ -82,29 +95,8 @@ async function upsertMember(
     }
   }
 
-  // Salt existant ou nouveau (réutilise pour rester déchiffrable après re-run).
-  const { data: existing } = await admin.from("personnes").select("encryption_salt").eq("id", userId).maybeSingle()
-  _salt = existing?.encryption_salt || generateEncryptionSalt()
-
-  const patch: Record<string, unknown> = {
-    email: m.email,
-    prenom: m.prenom || null,
-    nom: m.nom || null,
-    civilite: m.civilite,
-    portable: m.portable,
-    promo: m.promo,
-    competences: m.competences,
-    legacy_bequick_id: m.legacyId,
-    account_status: m.accountStatus,
-    actif: m.actif,
-    profil_type_id: roleIds.get(m.roleSlug) ?? null,
-    encryption_salt: _salt,
-  }
-  if (m.nss) { const e = encField(m.nss); patch.nss_encrypted = e.encrypted; patch.nss_iv = e.iv; patch.nss_auth_tag = e.authTag }
-  if (m.adresse) { const e = encField(m.adresse); patch.adresse_encrypted = e.encrypted; patch.adresse_iv = e.iv; patch.adresse_auth_tag = e.authTag }
-  if (m.ville) { const e = encField(m.ville); patch.ville_encrypted = e.encrypted; patch.ville_iv = e.iv; patch.ville_auth_tag = e.authTag }
-  if (m.codePostal) { const e = encField(m.codePostal); patch.code_postal_encrypted = e.encrypted; patch.code_postal_iv = e.iv; patch.code_postal_auth_tag = e.authTag }
-
+  // Patch = uniquement des colonnes réellement présentes (plaintext + nss_encrypted).
+  const patch = buildPersonnePatch(m, roleIds.get(m.roleSlug) ?? null, encryptNss)
   const { error: upErr } = await admin.from("personnes").update(patch).eq("id", userId)
   if (upErr) throw new Error(`update personnes ${m.email}: ${upErr.message}`)
 
@@ -118,7 +110,7 @@ async function upsertMember(
   }
 }
 
-/** Emails déjà présents sur Be Fast (lecture seule, ne dépend pas de la migration 042). */
+/** Emails déjà présents sur Be Fast (lecture seule). */
 async function fetchExistingEmails(admin: SupabaseClient): Promise<Set<string>> {
   const { data, error } = await admin.from("personnes").select("email")
   if (error) throw error
@@ -144,7 +136,6 @@ async function main() {
     if (m.posteUnknown) unknownPostes.push({ legacyId: m.legacyId })
   }
 
-  // Chevauchement avec les comptes existants sur Be Fast (lecture seule).
   let existingEmails: Set<string> | null = null
   let overlap: MappedMember[] = []
   if (CHECK_EXISTING || COMMIT) {
@@ -156,6 +147,7 @@ async function main() {
   const report = {
     timestamp: new Date().toISOString(),
     mode: COMMIT ? (SKIP_EXISTING ? "COMMIT (skip-existing)" : "COMMIT") : "DRY-RUN",
+    limit: LIMIT === Infinity ? "aucune" : LIMIT,
     totalRows: rows.length,
     toImport: unique.length,
     duplicatesInCsv: duplicates.map((d) => ({ legacyId: d.legacyId, email: d.email })),
@@ -166,7 +158,7 @@ async function main() {
     existingOnBeFast:
       existingEmails === null
         ? "(non vérifié — passer --check-existing)"
-        : { count: overlap.length, emails: overlap.map((m) => m.email) },
+        : { count: overlap.length, emails: overlap.slice(0, 20).map((m) => m.email) },
   }
 
   mkdirSync("scripts/out", { recursive: true })
@@ -182,34 +174,32 @@ async function main() {
     return
   }
 
-  // --- Chemin d'écriture : master key requise ici. ---
-  const MASTER_KEY = process.env.ENCRYPTION_MASTER_KEY
-  if (!MASTER_KEY || MASTER_KEY.length < 16) throw new Error("ENCRYPTION_MASTER_KEY manquant (min 16)")
-  _masterKey = MASTER_KEY
-
+  // --- Chemin d'écriture. NSS via le schéma actif (encryptToString / ENCRYPTION_KEY). ---
   const admin = makeAdmin()
-  console.log(`\nCOMMIT${SKIP_EXISTING ? " (skip-existing)" : ""} : traitement de ${unique.length} membres…`)
+  const batch = unique.slice(0, LIMIT === Infinity ? unique.length : LIMIT)
+  console.log(`\nCOMMIT${SKIP_EXISTING ? " (skip-existing)" : ""} : traitement de ${batch.length} membres…`)
+
   const roleIds = await resolveRoleIds(admin)
   let created = 0
   let updated = 0
   let skipped = 0
   const failures: { email: string; error: string }[] = []
-  for (const m of unique) {
+  for (const m of batch) {
     try {
       const existingId = await findExisting(admin, m)
       if (existingId && SKIP_EXISTING) {
         skipped++
         continue
       }
-      await upsertMember(admin, m, roleIds, existingId)
+      await upsertMember(admin, m, roleIds, existingId, encryptToString)
       if (existingId) updated++
       else created++
-      if ((created + updated) % 50 === 0) console.log(`  ${created + updated}/${unique.length}`)
+      if ((created + updated) % 50 === 0) console.log(`  ${created + updated}/${batch.length}`)
     } catch (e: any) {
       failures.push({ email: m.email, error: e?.message ?? String(e) })
     }
   }
-  console.log(`\nTerminé : ${created} créés, ${updated} mis à jour, ${skipped} ignorés (existants), ${failures.length} échecs.`)
+  console.log(`\nTerminé : ${created} créés, ${updated} mis à jour, ${skipped} ignorés, ${failures.length} échecs.`)
   if (failures.length) {
     const failPath = `scripts/out/import-failures-${Date.now()}.json`
     writeFileSync(failPath, JSON.stringify(failures, null, 2))

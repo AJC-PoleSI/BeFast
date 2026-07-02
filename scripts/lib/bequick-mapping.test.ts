@@ -5,6 +5,7 @@ import {
   mapStatus,
   mapRow,
   dedupeByEmail,
+  buildPersonnePatch,
   type RawRow,
 } from "./bequick-mapping"
 
@@ -88,6 +89,55 @@ describe("mapRow", () => {
     const r = mapRow(raw({ email: "x@audencialcom" }))
     expect(r.ok).toBe(false)
     if (!r.ok) expect(r.reason).toBe("email_malformed")
+  })
+})
+
+describe("buildPersonnePatch", () => {
+  it("écrit les colonnes plaintext existantes + nss chiffré, PAS les colonnes migration 022", () => {
+    const r = mapRow(
+      raw({
+        id: "5",
+        adresse: "1 rue X",
+        ville: "Nantes",
+        code_postal: "44000",
+        portable: "0600",
+        promo: "2029",
+        num_secu: "199",
+        poste_intitule: "Chef de Projet",
+        admin_validated: "1",
+      })
+    )
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const patch = buildPersonnePatch(r.member, "role-123", (s) => `ENC(${s})`)
+
+    // Colonnes plaintext réellement présentes en base + affichées par l'app.
+    expect(patch.adresse).toBe("1 rue X")
+    expect(patch.ville).toBe("Nantes")
+    expect(patch.code_postal).toBe("44000")
+    expect(patch.portable).toBe("0600")
+    expect(patch.promo).toBe("2029")
+    expect(patch.profil_type_id).toBe("role-123")
+    expect(patch.account_status).toBe("validated")
+    expect(patch.legacy_bequick_id).toBe(5)
+    // NSS via le schéma actif (encryptToString) → colonne nss_encrypted.
+    expect(patch.nss_encrypted).toBe("ENC(199)")
+
+    // AUCUNE colonne de la migration 022 (absente de cette base).
+    for (const bad of [
+      "adresse_encrypted", "adresse_iv", "adresse_auth_tag",
+      "ville_encrypted", "code_postal_encrypted",
+      "nss_iv", "nss_auth_tag", "encryption_salt",
+    ]) {
+      expect(bad in patch).toBe(false)
+    }
+  })
+
+  it("n'inclut pas nss_encrypted quand le NSS est absent", () => {
+    const r = mapRow(raw({ num_secu: "" }))
+    if (!r.ok) throw new Error("mapRow should succeed")
+    const patch = buildPersonnePatch(r.member, null, (s) => `ENC(${s})`)
+    expect("nss_encrypted" in patch).toBe(false)
   })
 })
 

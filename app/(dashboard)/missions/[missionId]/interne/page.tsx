@@ -48,11 +48,18 @@ export default function MissionInternePage() {
 
     // Create collaboration space if it doesn't exist and we have an intervenant
     if (!collab && m?.intervenant_id) {
-      const { data: newCollab } = await supabase.from("mission_collaborations").insert({
-        mission_id: missionId,
-        intervenant_id: m.intervenant_id,
-        chef_projet_id: m.created_by
-      }).select().single()
+      const { data: newCollab, error: collabError } = await supabase
+        .from("mission_collaborations")
+        .insert({
+          mission_id: missionId,
+          intervenant_id: m.intervenant_id,
+          chef_projet_id: m.created_by
+        })
+        .select()
+        .single()
+      if (collabError) {
+        console.error("[interne] création mission_collaborations échouée:", collabError.message)
+      }
       collab = newCollab
     }
 

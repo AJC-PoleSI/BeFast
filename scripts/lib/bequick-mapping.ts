@@ -120,6 +120,39 @@ export function mapRow(row: RawRow): MapResult {
   }
 }
 
+/**
+ * Construit le patch UPDATE pour `personnes` en n'utilisant QUE des colonnes
+ * réellement présentes dans cette base (migration 022 / chiffrement AES par
+ * colonnes NON appliquée) et que l'app affiche :
+ *   - PII en clair : adresse, ville, code_postal, portable, promo, civilite, competences
+ *   - NSS via le schéma actif encryptToString(...) -> colonne nss_encrypted
+ * `encryptNss` est injecté (lib/encryption.encryptToString) pour rester testable.
+ */
+export function buildPersonnePatch(
+  m: MappedMember,
+  roleId: string | null,
+  encryptNss: (plain: string) => string
+): Record<string, unknown> {
+  const patch: Record<string, unknown> = {
+    email: m.email,
+    prenom: m.prenom || null,
+    nom: m.nom || null,
+    civilite: m.civilite,
+    portable: m.portable,
+    promo: m.promo,
+    competences: m.competences,
+    adresse: m.adresse,
+    ville: m.ville,
+    code_postal: m.codePostal,
+    legacy_bequick_id: m.legacyId,
+    account_status: m.accountStatus,
+    actif: m.actif,
+    profil_type_id: roleId,
+  }
+  if (m.nss) patch.nss_encrypted = encryptNss(m.nss)
+  return patch
+}
+
 /** Dédoublonne par email (garde la 1ʳᵉ occurrence). */
 export function dedupeByEmail(members: MappedMember[]): {
   unique: MappedMember[]
