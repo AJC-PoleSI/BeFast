@@ -40,3 +40,7 @@ graphify-out/.graphify_*
 
 # Sorties locales des scripts d'import (peuvent contenir des emails — jamais commité)
 scripts/out/
+
+# Exports Be Quick avec PII étudiants (NSS, adresses) — ne JAMAIS committer
+export_etudiants*.csv
+"export_etudiants *.csv"
