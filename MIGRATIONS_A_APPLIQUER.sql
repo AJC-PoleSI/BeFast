@@ -384,3 +384,14 @@ UPDATE public.profils_types
   WHERE slug = 'membre_agc';
 
 NOTIFY pgrst, 'reload schema';
+
+-- ===================================================================
+-- ===== 043_password_campaign.sql =====
+-- Suivi de la campagne « définir mon mot de passe » (comptes migrés).
+-- ===================================================================
+
+ALTER TABLE public.personnes
+  ADD COLUMN IF NOT EXISTS password_setup_sent_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS password_set_at TIMESTAMPTZ;
+
+NOTIFY pgrst, 'reload schema';
