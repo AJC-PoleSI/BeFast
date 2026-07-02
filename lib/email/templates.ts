@@ -8,6 +8,15 @@ import "server-only"
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "")
 
+/** Échappe les valeurs contrôlées par l'utilisateur (nom, email) injectées en HTML. */
+function esc(v: string | null | undefined): string {
+  return (v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+}
+
 function brandedEmail(opts: {
   title: string
   intro: string
@@ -62,6 +71,52 @@ export function accountValidatedEmail(prenom: string | null) {
         "Un administrateur vient de valider votre compte. Vous avez désormais accès à l'ensemble des fonctionnalités correspondant à votre rôle : missions, documents, études…",
       ctaLabel: "Accéder à BeFast",
       ctaUrl: `${SITE_URL}/dashboard`,
+    }),
+  }
+}
+
+export function accountCreatedUserEmail(prenom: string | null) {
+  return {
+    subject: "Votre compte BeFast a bien été créé",
+    html: brandedEmail({
+      title: `Bienvenue${prenom ? ` ${esc(prenom)}` : ""} !`,
+      intro:
+        "Votre compte vient d'être créé sur BeFast. Après vérification de votre adresse email, il devra être validé par un administrateur avant que vous puissiez accéder à la plateforme. Vous recevrez un email dès son activation.",
+    }),
+  }
+}
+
+export function newAccountStaffNotificationEmail(opts: {
+  prenom: string | null
+  nom: string | null
+  email: string
+}) {
+  const fullName = `${esc(opts.prenom)} ${esc(opts.nom)}`.trim() || esc(opts.email)
+  return {
+    subject: "Nouveau compte créé — validation requise",
+    html: brandedEmail({
+      title: "Nouveau compte en attente de validation",
+      intro:
+        "Un nouveau compte vient d'être créé sur BeFast. Il est en attente de validation par un administrateur.",
+      details: [
+        `Nom : <strong>${fullName}</strong>`,
+        `Email : <strong>${esc(opts.email)}</strong>`,
+      ],
+      ctaLabel: "Gérer les membres",
+      ctaUrl: `${SITE_URL}/administration/membres`,
+    }),
+  }
+}
+
+export function passwordSetupEmail(opts: { prenom: string | null; link: string }) {
+  return {
+    subject: "Activez votre accès BeFast — définissez votre mot de passe",
+    html: brandedEmail({
+      title: `Bienvenue sur BeFast${opts.prenom ? ` ${esc(opts.prenom)}` : ""} !`,
+      intro:
+        "Votre compte a été migré depuis l'ancienne plateforme. Pour y accéder, définissez votre mot de passe en cliquant sur le bouton ci-dessous. Ce lien est personnel et temporaire.",
+      ctaLabel: "Définir mon mot de passe",
+      ctaUrl: opts.link,
     }),
   }
 }
