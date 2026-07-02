@@ -8,11 +8,14 @@ import type { PersonneWithRole, ProfilType } from "@/types/database.types"
 import { Badge } from "@/components/ui/badge"
 import { PostesMultiSelect } from "./_components/PostesMultiSelect"
 
+// Couleurs des badges par slug de rôle de base (le libellé affiché vient de la
+// DB via profils_types.nom ; ici on ne pilote que la couleur).
 const ROLE_MAP: Record<string, { label: string; color: string }> = {
-  administrateur:  { label: "Administrateur",        color: "bg-red-50 text-red-700 border-red-200" },
-  chef_projet_ajc: { label: "Chef.fe de projet AJC", color: "bg-blue-50 text-blue-700 border-blue-200" },
-  membre_en_attente: { label: "En attente",          color: "bg-amber-50 text-amber-700 border-amber-200" },
-  intervenant:     { label: "Intervenant",            color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  administrateur:    { label: "Administrateur",    color: "bg-red-50 text-red-700 border-red-200" },
+  chef_de_projet:    { label: "Chef.fe de projet", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  membre_ajc:        { label: "Membre AJC",        color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  intervenant:       { label: "Intervenant",       color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  ancien_membre_agc: { label: "Ancien membre",     color: "bg-zinc-100 text-zinc-600 border-zinc-200" },
 }
 
 function RoleDropdown({ member, roles, onRoleChange, updating }: {

@@ -127,7 +127,7 @@ export default function AdminProfilePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Back button */}
-      <Link href="/membres">
+      <Link href="/administration/membres">
         <Button variant="ghost" size="sm" className="text-muted-foreground">
           <ArrowLeft className="h-4 w-4 mr-1.5" />
           Retour aux membres
