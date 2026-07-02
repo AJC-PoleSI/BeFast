@@ -1,10 +1,20 @@
 import { createClient } from "@supabase/supabase-js"
 import { loadEnv } from "./lib/load-env"
 
-// NOTE : ce script n'envoie RIEN sans --commit. En dry-run il ne fait que compter.
+// NOTE : ce script n'envoie RIEN sans --commit. En dry-run il ne fait que lister.
+//
+// Usage :
+//   Tous les comptes migrés (dry-run)  : npx tsx scripts/send-password-setup.ts
+//   Comptes précis (test, dry-run)     : npx tsx scripts/send-password-setup.ts a@x.com b@x.com
+//   Envoi réel sur ces comptes précis  : npx tsx scripts/send-password-setup.ts a@x.com b@x.com --commit
+//   Envoi réel à TOUS les migrés       : npx tsx scripts/send-password-setup.ts --commit
 loadEnv(".env.local")
 
 const COMMIT = process.argv.includes("--commit")
+const EMAIL_ARGS = process.argv
+  .slice(2)
+  .filter((a) => !a.startsWith("--"))
+  .map((a) => a.trim().toLowerCase())
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "")
 
 async function main() {
@@ -16,17 +26,24 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  // Cible : uniquement les comptes migrés (legacy_bequick_id non nul).
-  const { data, error } = await admin
-    .from("personnes")
-    .select("email, prenom")
-    .not("legacy_bequick_id", "is", null)
+  // Cible : soit les emails fournis en arguments (test ciblé), soit tous les
+  // comptes migrés (legacy_bequick_id non nul).
+  let query = admin.from("personnes").select("email, prenom")
+  if (EMAIL_ARGS.length) query = query.in("email", EMAIL_ARGS)
+  else query = query.not("legacy_bequick_id", "is", null)
+
+  const { data, error } = await query
   if (error) throw error
   const targets = data ?? []
 
-  console.log(`Cibles (migrés) : ${targets.length}`)
+  console.log(
+    `Cibles : ${targets.length}` +
+      (EMAIL_ARGS.length ? ` (emails fournis : ${EMAIL_ARGS.join(", ")})` : " (tous les comptes migrés)")
+  )
+  for (const t of targets) console.log(`  - ${t.email}`)
+
   if (!COMMIT) {
-    console.log("DRY-RUN : aucun email envoyé. Relancer avec --commit pour envoyer.")
+    console.log("\nDRY-RUN : aucun email envoyé. Ajouter --commit pour envoyer.")
     return
   }
 
@@ -50,7 +67,7 @@ async function main() {
     sent++
     if (sent % 50 === 0) console.log(`  ${sent}/${targets.length}`)
   }
-  console.log(`Terminé : ${sent} emails envoyés.`)
+  console.log(`\nTerminé : ${sent} emails envoyés.`)
 }
 
 main().catch((e) => {

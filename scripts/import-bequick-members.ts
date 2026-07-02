@@ -10,9 +10,11 @@ loadEnv(".env.local")
 
 const CSV_PATH = process.argv[2]
 const COMMIT = process.argv.includes("--commit")
+const SKIP_EXISTING = process.argv.includes("--skip-existing")
+const CHECK_EXISTING = process.argv.includes("--check-existing")
 
-if (!CSV_PATH) {
-  console.error('Usage: npx tsx scripts/import-bequick-members.ts "<csv>" [--commit]')
+if (!CSV_PATH || CSV_PATH.startsWith("--")) {
+  console.error('Usage: npx tsx scripts/import-bequick-members.ts "<csv>" [--check-existing] [--commit] [--skip-existing]')
   process.exit(1)
 }
 
@@ -30,6 +32,16 @@ function encField(plain: string): { encrypted: string; iv: string; authTag: stri
   return encryptData(plain, _masterKey, _salt)
 }
 
+/** Construit un client service-role (secrets requis). Utilisé par --check-existing et --commit. */
+function makeAdmin(): SupabaseClient {
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!SUPABASE_URL || !SERVICE_KEY) throw new Error("Supabase URL / service role key manquants")
+  return createClient(SUPABASE_URL, SERVICE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+}
+
 async function resolveRoleIds(admin: SupabaseClient): Promise<Map<string, string>> {
   const { data, error } = await admin.from("profils_types").select("id, slug")
   if (error) throw error
@@ -45,8 +57,13 @@ async function findExisting(admin: SupabaseClient, m: MappedMember): Promise<str
   return data?.id ?? null
 }
 
-async function upsertMember(admin: SupabaseClient, m: MappedMember, roleIds: Map<string, string>): Promise<void> {
-  let userId = await findExisting(admin, m)
+async function upsertMember(
+  admin: SupabaseClient,
+  m: MappedMember,
+  roleIds: Map<string, string>,
+  existingId: string | null
+): Promise<void> {
+  let userId = existingId
 
   if (!userId) {
     const { data, error } = await admin.auth.admin.createUser({
@@ -101,6 +118,13 @@ async function upsertMember(admin: SupabaseClient, m: MappedMember, roleIds: Map
   }
 }
 
+/** Emails déjà présents sur Be Fast (lecture seule, ne dépend pas de la migration 042). */
+async function fetchExistingEmails(admin: SupabaseClient): Promise<Set<string>> {
+  const { data, error } = await admin.from("personnes").select("email")
+  if (error) throw error
+  return new Set((data ?? []).map((r: any) => (r.email ?? "").toLowerCase()).filter(Boolean))
+}
+
 async function main() {
   const csv = readFileSync(CSV_PATH, "utf8")
   const rows = parse(csv, { columns: true, delimiter: ";", skip_empty_lines: true, relax_quotes: true }) as RawRow[]
@@ -112,24 +136,37 @@ async function main() {
 
   const byRole: Record<string, number> = {}
   const byStatus: Record<string, number> = {}
-  const unknownPostes: { legacyId: number | null; poste: string }[] = []
+  const unknownPostes: { legacyId: number | null }[] = []
   for (const m of unique) {
     byRole[m.roleSlug] = (byRole[m.roleSlug] ?? 0) + 1
     const statusKey = m.accountStatus + (m.actif ? "" : " (inactif)")
     byStatus[statusKey] = (byStatus[statusKey] ?? 0) + 1
-    if (m.posteUnknown) unknownPostes.push({ legacyId: m.legacyId, poste: "(voir CSV)" })
+    if (m.posteUnknown) unknownPostes.push({ legacyId: m.legacyId })
+  }
+
+  // Chevauchement avec les comptes existants sur Be Fast (lecture seule).
+  let existingEmails: Set<string> | null = null
+  let overlap: MappedMember[] = []
+  if (CHECK_EXISTING || COMMIT) {
+    const admin = makeAdmin()
+    existingEmails = await fetchExistingEmails(admin)
+    overlap = unique.filter((m) => existingEmails!.has(m.email))
   }
 
   const report = {
     timestamp: new Date().toISOString(),
-    mode: COMMIT ? "COMMIT" : "DRY-RUN",
+    mode: COMMIT ? (SKIP_EXISTING ? "COMMIT (skip-existing)" : "COMMIT") : "DRY-RUN",
     totalRows: rows.length,
     toImport: unique.length,
-    duplicates: duplicates.map((d) => ({ legacyId: d.legacyId, email: d.email })),
+    duplicatesInCsv: duplicates.map((d) => ({ legacyId: d.legacyId, email: d.email })),
     anomalies: anomalies.map((a) => ({ legacyId: a.legacyId, email: a.email, reason: a.reason })),
     unknownPostes,
     byRole,
     byStatus,
+    existingOnBeFast:
+      existingEmails === null
+        ? "(non vérifié — passer --check-existing)"
+        : { count: overlap.length, emails: overlap.map((m) => m.email) },
   }
 
   mkdirSync("scripts/out", { recursive: true })
@@ -141,36 +178,38 @@ async function main() {
   console.log(`\nRapport écrit : ${outPath}`)
 
   if (!COMMIT) {
-    console.log("\nDRY-RUN : aucune écriture, aucun secret requis. Relancer avec --commit pour importer.")
+    console.log("\nDRY-RUN : aucune écriture. Relancer avec --commit pour importer.")
     return
   }
 
-  // --- Chemin d'écriture : secrets requis uniquement ici. ---
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+  // --- Chemin d'écriture : master key requise ici. ---
   const MASTER_KEY = process.env.ENCRYPTION_MASTER_KEY
-  if (!SUPABASE_URL || !SERVICE_KEY) throw new Error("Supabase URL / service role key manquants")
   if (!MASTER_KEY || MASTER_KEY.length < 16) throw new Error("ENCRYPTION_MASTER_KEY manquant (min 16)")
   _masterKey = MASTER_KEY
 
-  const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-
-  console.log(`\nCOMMIT : import de ${unique.length} membres…`)
+  const admin = makeAdmin()
+  console.log(`\nCOMMIT${SKIP_EXISTING ? " (skip-existing)" : ""} : traitement de ${unique.length} membres…`)
   const roleIds = await resolveRoleIds(admin)
-  let done = 0
+  let created = 0
+  let updated = 0
+  let skipped = 0
   const failures: { email: string; error: string }[] = []
   for (const m of unique) {
     try {
-      await upsertMember(admin, m, roleIds)
-      done++
-      if (done % 50 === 0) console.log(`  ${done}/${unique.length}`)
+      const existingId = await findExisting(admin, m)
+      if (existingId && SKIP_EXISTING) {
+        skipped++
+        continue
+      }
+      await upsertMember(admin, m, roleIds, existingId)
+      if (existingId) updated++
+      else created++
+      if ((created + updated) % 50 === 0) console.log(`  ${created + updated}/${unique.length}`)
     } catch (e: any) {
       failures.push({ email: m.email, error: e?.message ?? String(e) })
     }
   }
-  console.log(`\nTerminé : ${done} importés, ${failures.length} échecs.`)
+  console.log(`\nTerminé : ${created} créés, ${updated} mis à jour, ${skipped} ignorés (existants), ${failures.length} échecs.`)
   if (failures.length) {
     const failPath = `scripts/out/import-failures-${Date.now()}.json`
     writeFileSync(failPath, JSON.stringify(failures, null, 2))
