@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getSignedDownloadUrl, objectKeyFromValue } from "@/lib/scaleway/client"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { hasPermission } from "@/lib/auth/permissions"
 
 export const dynamic = "force-dynamic"
 
@@ -11,7 +13,7 @@ export const dynamic = "force-dynamic"
  *
  * Autorisation par préfixe de clé :
  *  - notes_de_frais/<missionId>/<ownerId>/...  → propriétaire, ou trésorerie/
- *    admin/membre_ajc, ou intervenant de la mission.
+ *    admin (permission voir_factures), ou intervenant de la mission.
  *  - collaborations/<missionId>/...            → intervenant de la mission, ou admin.
  */
 export async function GET(req: NextRequest) {
@@ -27,14 +29,11 @@ export async function GET(req: NextRequest) {
   const key = objectKeyFromValue(raw)
   const parts = key.split("/")
 
-  // Rôle effectif (pour les accès trésorerie/admin).
-  const { data: profile } = await supabase
-    .from("personnes")
-    .select("profils_types!profil_type_id(slug)")
-    .eq("id", user.id)
-    .single()
-  const role = (profile as any)?.profils_types?.slug as string | undefined
-  const isPrivileged = role === "administrateur" || role === "tresorerie" || role === "membre_ajc"
+  // Accès privilégié = permission `voir_factures` (admin + poste trésorier·ère /
+  // présidente), poste-aware — le propriétaire garde toujours accès à ses docs.
+  const profile = await getCachedProfile(user.id)
+  const isPrivileged = hasPermission(profile, "voir_factures")
+  const isAdmin = profile?.profils_types?.slug === "administrateur"
 
   const isIntervenant = async (missionId: string): Promise<boolean> => {
     if (!missionId) return false
@@ -54,7 +53,7 @@ export async function GET(req: NextRequest) {
     allowed = ownerId === user.id || isPrivileged || (await isIntervenant(missionId))
   } else if (parts[0] === "collaborations") {
     const missionId = parts[1]
-    allowed = role === "administrateur" || (await isIntervenant(missionId))
+    allowed = isAdmin || (await isIntervenant(missionId))
   }
 
   if (!allowed) {

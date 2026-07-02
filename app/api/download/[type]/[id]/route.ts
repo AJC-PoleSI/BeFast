@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getSignedDownloadUrl } from "@/lib/scaleway/client"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { hasPermission } from "@/lib/auth/permissions"
 
 export async function GET(req: NextRequest, { params }: { params: { type: string, id: string } }) {
   try {
@@ -26,15 +28,10 @@ export async function GET(req: NextRequest, { params }: { params: { type: string
         return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
       }
 
-      // Contrôle d'accès : propriétaire de la note, ou rôle privilégié
-      // (trésorerie/admin/agc). Empêche l'IDOR sur les justificatifs.
-      const { data: profile } = await supabase
-        .from("personnes")
-        .select("profils_types!profil_type_id(slug)")
-        .eq("id", user.id)
-        .single()
-      const role = (profile as any)?.profils_types?.slug as string | undefined
-      const isPrivileged = role === "administrateur" || role === "tresorerie" || role === "membre_ajc"
+      // Contrôle d'accès : propriétaire de la note, ou permission `voir_factures`
+      // (admin + trésorerie, poste-aware). Empêche l'IDOR sur les justificatifs.
+      const profile = await getCachedProfile(user.id)
+      const isPrivileged = hasPermission(profile, "voir_factures")
 
       if (note.intervenant_id !== user.id && !isPrivileged) {
         return NextResponse.json({ error: "Accès interdit" }, { status: 403 })

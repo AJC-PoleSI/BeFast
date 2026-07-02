@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { requireRole, logAudit } from "@/lib/supabase-security"
+import { logAudit } from "@/lib/supabase-security"
+import { requireApiPermission } from "@/lib/auth/api-guards"
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = createClient()
 
-    // Require role: only tresorier, agc member, or admin can validate
-    try {
-      await requireRole(supabase, ['tresorerie', 'administrateur', 'membre_ajc'] as any)
-    } catch (error) {
-      return NextResponse.json({ error: "Non autorisé: requires tresorerie/admin role" }, { status: 403 })
-    }
+    // Accès trésorerie : permission `voir_factures` (admin + poste trésorier·ère /
+    // présidente), poste-aware — pas un rôle de base codé en dur.
+    const guard = await requireApiPermission("voir_factures")
+    if (!guard.ok) return guard.response
 
     const { id, action } = await req.json()
 
