@@ -37,3 +37,6 @@ next-env.d.ts
 # graphify — caches transients
 graphify-out/cache/
 graphify-out/.graphify_*
+
+# Sorties locales des scripts d'import (peuvent contenir des emails — jamais commité)
+scripts/out/
