@@ -2,12 +2,14 @@ import { createClient } from "@supabase/supabase-js"
 import { loadEnv } from "./lib/load-env"
 
 // NOTE : ce script n'envoie RIEN sans --commit. En dry-run il ne fait que lister.
+// Campagne par lots : par défaut on n'envoie qu'aux comptes migrés PAS ENCORE
+// contactés (password_setup_sent_at IS NULL), 100 max par exécution.
 //
 // Usage :
-//   Tous les comptes migrés (dry-run)  : npx tsx scripts/send-password-setup.ts
-//   Comptes précis (test, dry-run)     : npx tsx scripts/send-password-setup.ts a@x.com b@x.com
-//   Envoi réel sur ces comptes précis  : npx tsx scripts/send-password-setup.ts a@x.com b@x.com --commit
-//   Envoi réel à TOUS les migrés       : npx tsx scripts/send-password-setup.ts --commit
+//   Voir le prochain lot (dry-run)     : npx tsx scripts/send-password-setup.ts --site-url=https://dom
+//   Test sur des comptes précis        : npx tsx scripts/send-password-setup.ts a@x.com --site-url=https://dom --commit
+//   Lot du jour (100 non contactés)    : npx tsx scripts/send-password-setup.ts --site-url=https://dom --commit
+//   Lot personnalisé                   : npx tsx scripts/send-password-setup.ts --limit=50 --site-url=https://dom --commit
 loadEnv(".env.local")
 
 const COMMIT = process.argv.includes("--commit")
@@ -18,6 +20,9 @@ const EMAIL_ARGS = process.argv
 // URL de base des liens : --site-url=... prioritaire, sinon NEXT_PUBLIC_SITE_URL.
 const SITE_URL_ARG = process.argv.find((a) => a.startsWith("--site-url="))?.slice("--site-url=".length)
 const SITE_URL = (SITE_URL_ARG || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/+$/, "")
+// Taille du lot (défaut 100/jour). Ignoré quand des emails précis sont fournis.
+const LIMIT_ARG = process.argv.find((a) => a.startsWith("--limit="))?.slice("--limit=".length)
+const LIMIT = LIMIT_ARG ? Math.max(1, parseInt(LIMIT_ARG, 10) || 100) : 100
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -30,11 +35,18 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  // Cible : soit les emails fournis en arguments (test ciblé), soit tous les
-  // comptes migrés (legacy_bequick_id non nul).
-  let query = admin.from("personnes").select("email, prenom")
-  if (EMAIL_ARGS.length) query = query.in("email", EMAIL_ARGS)
-  else query = query.not("legacy_bequick_id", "is", null)
+  // Cible : soit les emails fournis en arguments (test ciblé, sans filtre), soit
+  // le prochain lot de comptes migrés PAS ENCORE contactés.
+  let query = admin.from("personnes").select("id, email, prenom")
+  if (EMAIL_ARGS.length) {
+    query = query.in("email", EMAIL_ARGS)
+  } else {
+    query = query
+      .not("legacy_bequick_id", "is", null)
+      .is("password_setup_sent_at", null)
+      .order("nom", { ascending: true })
+      .limit(LIMIT)
+  }
 
   const { data, error } = await query
   if (error) throw error
@@ -42,7 +54,9 @@ async function main() {
 
   console.log(
     `Cibles : ${targets.length}` +
-      (EMAIL_ARGS.length ? ` (emails fournis : ${EMAIL_ARGS.join(", ")})` : " (tous les comptes migrés)")
+      (EMAIL_ARGS.length
+        ? ` (emails fournis : ${EMAIL_ARGS.join(", ")})`
+        : ` (prochain lot de migrés non contactés, limite ${LIMIT})`)
   )
   console.log(`URL des liens : ${SITE_URL}/reset-password`)
   for (const t of targets) console.log(`  - ${t.email}`)
@@ -76,7 +90,13 @@ async function main() {
       continue
     }
     const tpl = passwordSetupEmail({ prenom: (t.prenom as string) ?? null, link: link.properties.action_link })
-    await sendEmail({ to: t.email as string, subject: tpl.subject, html: tpl.html })
+    const res = await sendEmail({ to: t.email as string, subject: tpl.subject, html: tpl.html })
+    if (!res.ok) {
+      console.error(`envoi échoué ${t.email}: ${res.error}`)
+      continue
+    }
+    // Marque comme contacté (suivi de campagne / évite le renvoi au prochain lot).
+    await admin.from("personnes").update({ password_setup_sent_at: new Date().toISOString() }).eq("id", (t as any).id)
     sent++
     if (sent % 50 === 0) console.log(`  ${sent}/${targets.length}`)
     await sleep(250) // throttle : ménage les limites de débit Resend
