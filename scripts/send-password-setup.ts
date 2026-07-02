@@ -56,7 +56,7 @@ async function main() {
     const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
       type: "recovery",
       email: t.email as string,
-      options: { redirectTo: `${SITE_URL}/auth/callback?next=/reset-password` },
+      options: { redirectTo: `${SITE_URL}/reset-password` },
     })
     if (linkErr || !link?.properties?.action_link) {
       console.error(`lien échoué ${t.email}: ${linkErr?.message}`)
