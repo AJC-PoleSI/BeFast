@@ -15,7 +15,11 @@ const EMAIL_ARGS = process.argv
   .slice(2)
   .filter((a) => !a.startsWith("--"))
   .map((a) => a.trim().toLowerCase())
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "")
+// URL de base des liens : --site-url=... prioritaire, sinon NEXT_PUBLIC_SITE_URL.
+const SITE_URL_ARG = process.argv.find((a) => a.startsWith("--site-url="))?.slice("--site-url=".length)
+const SITE_URL = (SITE_URL_ARG || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/+$/, "")
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 async function main() {
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -40,11 +44,20 @@ async function main() {
     `Cibles : ${targets.length}` +
       (EMAIL_ARGS.length ? ` (emails fournis : ${EMAIL_ARGS.join(", ")})` : " (tous les comptes migrés)")
   )
+  console.log(`URL des liens : ${SITE_URL}/reset-password`)
   for (const t of targets) console.log(`  - ${t.email}`)
 
   if (!COMMIT) {
     console.log("\nDRY-RUN : aucun email envoyé. Ajouter --commit pour envoyer.")
     return
+  }
+
+  // Garde-fou : ne jamais envoyer de liens localhost à de vrais destinataires.
+  if (/localhost|127\.0\.0\.1/.test(SITE_URL)) {
+    throw new Error(
+      `URL du site = ${SITE_URL} : refus d'envoyer des liens localhost. ` +
+        `Passe --site-url=https://ton-domaine ou définis NEXT_PUBLIC_SITE_URL dans .env.local.`
+    )
   }
 
   // Import dynamique : les templates/sender vivent côté app.
@@ -66,6 +79,7 @@ async function main() {
     await sendEmail({ to: t.email as string, subject: tpl.subject, html: tpl.html })
     sent++
     if (sent % 50 === 0) console.log(`  ${sent}/${targets.length}`)
+    await sleep(250) // throttle : ménage les limites de débit Resend
   }
   console.log(`\nTerminé : ${sent} emails envoyés.`)
 }
