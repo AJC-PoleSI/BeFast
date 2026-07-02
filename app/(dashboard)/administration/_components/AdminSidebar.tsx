@@ -10,12 +10,14 @@ import {
   ArrowDownUp,
   Users,
   Briefcase,
-  Database
+  Database,
+  KeyRound
 } from "lucide-react"
 
 const ADMIN_NAV_LINKS = [
   { href: "/administration", label: "Paramètres", icon: Settings },
   { href: "/administration/membres", label: "Membres & Validation", icon: Users },
+  { href: "/administration/campagne-mdp", label: "Campagne mot de passe", icon: KeyRound },
   { href: "/administration/droits", label: "Droits & Profils", icon: ShieldCheck },
   { href: "/administration/documents", label: "Modèles de Documents", icon: FileText },
   { href: "/administration/clients", label: "Gestion Clients", icon: Briefcase },

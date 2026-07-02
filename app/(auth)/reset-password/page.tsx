@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Rocket } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { confirmPasswordSetup } from "@/lib/actions/password-campaign"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -70,6 +71,13 @@ export default function ResetPasswordPage() {
         position: "top-right",
       })
       return
+    }
+
+    // Marque le suivi de campagne (best-effort, ne bloque pas la connexion).
+    try {
+      await confirmPasswordSetup()
+    } catch {
+      /* ignore */
     }
 
     toast.success("Mot de passe défini. Vous pouvez vous connecter.", { position: "top-right" })
