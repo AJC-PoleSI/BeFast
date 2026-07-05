@@ -5,6 +5,14 @@ import { randomBytes, createHash } from "crypto"
 export const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000
 
 /**
+ * Password-reset token lifetime: 72 hours.
+ * Supabase caps recovery/OTP links at 24h, so the emailed link uses this
+ * custom high-entropy token instead; a short-lived Supabase recovery session
+ * is minted on the fly only once the token is validated.
+ */
+export const PASSWORD_RESET_TTL_MS = 72 * 60 * 60 * 1000
+
+/**
  * Generate a one-time email-verification token.
  * The raw token (64 hex chars) is sent in the email link; only its SHA-256
  * hash is ever persisted, so a database leak cannot be used to verify accounts.
@@ -13,6 +21,18 @@ export function generateVerificationToken() {
   const token = randomBytes(32).toString("hex") // 64 hex chars
   const tokenHash = hashToken(token)
   const expiresAt = new Date(Date.now() + VERIFICATION_TTL_MS).toISOString()
+  return { token, tokenHash, expiresAt }
+}
+
+/**
+ * Generate a one-time password-reset token valid for 72h.
+ * Same hardening as the verification token (only the SHA-256 hash is stored),
+ * but with the 72h lifetime the campaign link must honour.
+ */
+export function generatePasswordResetToken() {
+  const token = randomBytes(32).toString("hex") // 64 hex chars
+  const tokenHash = hashToken(token)
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS).toISOString()
   return { token, tokenHash, expiresAt }
 }
 

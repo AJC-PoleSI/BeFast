@@ -395,3 +395,19 @@ ALTER TABLE public.personnes
   ADD COLUMN IF NOT EXISTS password_set_at TIMESTAMPTZ;
 
 NOTIFY pgrst, 'reload schema';
+
+-- ===================================================================
+-- ===== 045_password_reset_token.sql =====
+-- Pont « lien valable 72h » (Supabase plafonne recovery/OTP à 24h).
+-- Token custom haute entropie : seul le hash SHA-256 est stocké.
+-- ===================================================================
+
+ALTER TABLE public.personnes
+  ADD COLUMN IF NOT EXISTS reset_token_hash TEXT,
+  ADD COLUMN IF NOT EXISTS reset_token_expires_at TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS personnes_reset_token_hash_idx
+  ON public.personnes (reset_token_hash)
+  WHERE reset_token_hash IS NOT NULL;
+
+NOTIFY pgrst, 'reload schema';

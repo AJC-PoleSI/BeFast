@@ -114,7 +114,7 @@ export function passwordSetupEmail(opts: { prenom: string | null; link: string }
     html: brandedEmail({
       title: `Bienvenue sur BeFast${opts.prenom ? ` ${esc(opts.prenom)}` : ""} !`,
       intro:
-        "Votre compte a été migré depuis l'ancienne plateforme. Pour y accéder, réinitialisez votre mot de passe en cliquant sur le bouton ci-dessous. Ce lien est personnel et temporaire.",
+        "Votre compte a été migré depuis l'ancienne plateforme. Pour y accéder, réinitialisez votre mot de passe en cliquant sur le bouton ci-dessous. Ce lien est personnel et valable 72 heures.",
       ctaLabel: "Réinitialiser mon mot de passe",
       ctaUrl: opts.link,
     }),

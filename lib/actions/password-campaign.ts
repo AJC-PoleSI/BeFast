@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { siteUrl } from "@/lib/auth/verification"
+import { siteUrl, generatePasswordResetToken } from "@/lib/auth/verification"
 import { sendEmail } from "@/lib/email/send"
 import { passwordSetupEmail } from "@/lib/email/templates"
 
@@ -96,11 +96,16 @@ export async function confirmPasswordSetup(): Promise<{ success: boolean }> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false }
     const admin = createAdminClient()
+    // Stamp la date (premier passage uniquement) et invalide le token custom.
     await admin
       .from("personnes")
       .update({ password_set_at: new Date().toISOString() })
       .eq("id", user.id)
       .is("password_set_at", null)
+    await admin
+      .from("personnes")
+      .update({ reset_token_hash: null, reset_token_expires_at: null })
+      .eq("id", user.id)
     return { success: true }
   } catch (e) {
     console.error("[confirmPasswordSetup]", e)
@@ -149,18 +154,19 @@ export async function sendPasswordSetupBatch(
     let sent = 0
     let failed = 0
     for (const t of targets as any[]) {
-      const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
-        type: "recovery",
-        email: t.email as string,
-        options: { redirectTo: `${site}/reset-password` },
-      })
-      if (linkErr || !link?.properties?.action_link) {
+      // Token custom valable 72h (Supabase plafonne recovery/OTP à 24h). Seul
+      // le hash est stocké ; le lien pointe vers la route de vérification qui
+      // échangera ce token contre une session recovery Supabase à la volée.
+      const { token, tokenHash, expiresAt } = generatePasswordResetToken()
+      const { error: tokErr } = await admin
+        .from("personnes")
+        .update({ reset_token_hash: tokenHash, reset_token_expires_at: expiresAt })
+        .eq("id", t.id)
+      if (tokErr) {
         failed++
         continue
       }
-      const url = new URL(link.properties.action_link)
-      const token = url.searchParams.get("token")
-      const customLink = token ? `${site}/reset-password?token_hash=${token}` : link.properties.action_link
+      const customLink = `${site}/api/password-reset/verify?rt=${token}`
 
       const tpl = passwordSetupEmail({
         prenom: (t.prenom as string) ?? null,
@@ -213,17 +219,16 @@ export async function sendPasswordSetupSingle(
 
     if (fetchErr || !person) return { ok: false, error: "Compte introuvable." }
 
-    const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
-      type: "recovery",
-      email: person.email as string,
-      options: { redirectTo: `${site}/reset-password` },
-    })
-    if (linkErr || !link?.properties?.action_link) {
+    // Token custom valable 72h (Supabase plafonne recovery/OTP à 24h).
+    const { token, tokenHash, expiresAt } = generatePasswordResetToken()
+    const { error: tokErr } = await admin
+      .from("personnes")
+      .update({ reset_token_hash: tokenHash, reset_token_expires_at: expiresAt })
+      .eq("id", person.id)
+    if (tokErr) {
       return { ok: false, error: "Impossible de générer le lien de réinitialisation." }
     }
-    const url = new URL(link.properties.action_link)
-    const token = url.searchParams.get("token")
-    const customLink = token ? `${site}/reset-password?token_hash=${token}` : link.properties.action_link
+    const customLink = `${site}/api/password-reset/verify?rt=${token}`
 
     const tpl = passwordSetupEmail({
       prenom: (person.prenom as string) ?? null,

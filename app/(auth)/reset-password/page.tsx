@@ -15,11 +15,21 @@ export default function ResetPasswordPage() {
   const router = useRouter()
   // "loading" tant qu'on n'a pas déterminé si une session de récupération existe.
   const [state, setState] = useState<"loading" | "ready" | "invalid">("loading")
+  const [expired, setExpired] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
     let active = true
+
+    // Lien 72h rejeté côté serveur (route /api/password-reset/verify) : pas de
+    // token à échanger, on affiche directement l'état invalide/expiré.
+    const errCode = new URL(window.location.href).searchParams.get("e")
+    if (errCode) {
+      setExpired(errCode === "expired")
+      setState("invalid")
+      return
+    }
 
     // PASSWORD_RECOVERY / SIGNED_IN : la session est établie (hash implicite ou
     // échange PKCE déjà fait via /auth/callback).
@@ -116,7 +126,9 @@ export default function ResetPasswordPage() {
       {state === "invalid" && (
         <div className="space-y-4 text-center">
           <p className="text-sm text-muted-foreground">
-            Ce lien est invalide ou a expiré. Demandez-en un nouveau.
+            {expired
+              ? "Ce lien a expiré (valable 72 heures). Demandez-en un nouveau."
+              : "Ce lien est invalide ou a expiré. Demandez-en un nouveau."}
           </p>
           <Link
             href="/mot-de-passe-oublie"
