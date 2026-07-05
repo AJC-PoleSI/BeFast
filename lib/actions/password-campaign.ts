@@ -183,3 +183,58 @@ export async function sendPasswordSetupBatch(
     return { sent: 0, failed: 0, error: "Erreur serveur" }
   }
 }
+
+/**
+ * Envoie le mail « définis ton mot de passe » à UN seul compte migré.
+ * Admin uniquement. Idempotent (ne renvoie pas si déjà contacté).
+ */
+export async function sendPasswordSetupSingle(
+  userId: string
+): Promise<{ ok: boolean; error: string | null }> {
+  try {
+    if (!(await callerIsAdmin())) return { ok: false, error: "Non autorisé" }
+
+    const site = siteUrl()
+    if (/localhost|127\.0\.0\.1/.test(site)) {
+      return { ok: false, error: "NEXT_PUBLIC_SITE_URL pointe vers localhost." }
+    }
+
+    const admin = createAdminClient()
+    const { data: person, error: fetchErr } = await admin
+      .from("personnes")
+      .select("id, email, prenom")
+      .eq("id", userId)
+      .not("legacy_bequick_id", "is", null)
+      .is("password_setup_sent_at", null)
+      .single()
+
+    if (fetchErr || !person) return { ok: false, error: "Compte introuvable ou déjà contacté." }
+
+    const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email: person.email as string,
+      options: { redirectTo: `${site}/reset-password` },
+    })
+    if (linkErr || !link?.properties?.action_link) {
+      return { ok: false, error: "Impossible de générer le lien de réinitialisation." }
+    }
+
+    const tpl = passwordSetupEmail({
+      prenom: (person.prenom as string) ?? null,
+      link: link.properties.action_link,
+    })
+    const res = await sendEmail({ to: person.email as string, subject: tpl.subject, html: tpl.html })
+    if (!res.ok) return { ok: false, error: "Échec d'envoi de l'email." }
+
+    await admin
+      .from("personnes")
+      .update({ password_setup_sent_at: new Date().toISOString() })
+      .eq("id", person.id)
+      .is("password_setup_sent_at", null)
+
+    return { ok: true, error: null }
+  } catch (e) {
+    console.error("[sendPasswordSetupSingle]", e)
+    return { ok: false, error: "Erreur serveur" }
+  }
+}

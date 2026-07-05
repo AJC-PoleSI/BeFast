@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import {
   getCampaignStatus,
   sendPasswordSetupBatch,
+  sendPasswordSetupSingle,
   type CampaignStatus,
   type CampaignMember,
 } from "@/lib/actions/password-campaign"
@@ -43,6 +44,7 @@ export default function CampagneMdpPage() {
   const [filter, setFilter] = useState<"all" | "pending" | "sent" | "set">("all")
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [sending, setSending] = useState(false)
+  const [sendingId, setSendingId] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -79,6 +81,20 @@ export default function CampagneMdpPage() {
       `${res.sent} email(s) envoyé(s)${res.failed ? ` · ${res.failed} échec(s)` : ""}.`,
       { position: "top-right", duration: 6000 }
     )
+    load()
+  }
+
+  // Envoi individuel pour un membre précis (bouton par ligne).
+  async function handleSendOne(member: CampaignMember) {
+    if (sendingId) return
+    setSendingId(member.id)
+    const res = await sendPasswordSetupSingle(member.id)
+    setSendingId(null)
+    if (res.error) {
+      toast.error(`${member.prenom ?? member.email} : ${res.error}`, { position: "top-right", duration: 6000 })
+      return
+    }
+    toast.success(`Email envoyé à ${member.prenom ?? member.email}.`, { position: "top-right", duration: 4000 })
     load()
   }
 
@@ -214,6 +230,7 @@ export default function CampagneMdpPage() {
                   <th className="px-4 py-3 font-medium">Statut</th>
                   <th className="px-4 py-3 font-medium">Contacté le</th>
                   <th className="px-4 py-3 font-medium">Réinitialisé le</th>
+                  <th className="px-4 py-3 font-medium text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -233,12 +250,30 @@ export default function CampagneMdpPage() {
                       </td>
                       <td className="px-4 py-2.5 text-zinc-500">{fmt(m.sentAt)}</td>
                       <td className="px-4 py-2.5 text-zinc-500">{fmt(m.setAt)}</td>
+                      <td className="px-4 py-2.5 text-center">
+                        {!m.sentAt ? (
+                          <button
+                            onClick={() => handleSendOne(m)}
+                            disabled={sendingId !== null}
+                            title={`Envoyer le mail à ${m.email}`}
+                            className="inline-flex items-center justify-center rounded-lg border border-zinc-200 p-1.5 text-zinc-500 hover:bg-[#00236f] hover:text-white hover:border-[#00236f] disabled:opacity-40 transition-colors"
+                          >
+                            {sendingId === m.id ? (
+                              <Loader className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Send className="h-4 w-4" />
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-zinc-300">—</span>
+                        )}
+                      </td>
                     </tr>
                   )
                 })}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-sm text-zinc-400">
+                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-zinc-400">
                       Aucun membre à afficher.
                     </td>
                   </tr>
