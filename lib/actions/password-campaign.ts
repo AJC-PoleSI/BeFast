@@ -224,7 +224,7 @@ export async function sendPasswordSetupSingle(
       link: link.properties.action_link,
     })
     const res = await sendEmail({ to: person.email as string, subject: tpl.subject, html: tpl.html })
-    if (!res.ok) return { ok: false, error: "Échec d'envoi de l'email." }
+    if (!res.ok) return { ok: false, error: `Échec d'envoi de l'email (${res.error ?? "inconnu"}).` }
 
     await admin
       .from("personnes")
