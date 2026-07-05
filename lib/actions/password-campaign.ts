@@ -2,12 +2,19 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { siteUrl } from "@/lib/auth/verification"
+import { sendEmail } from "@/lib/email/send"
+import { passwordSetupEmail } from "@/lib/email/templates"
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 export interface CampaignMember {
   id: string
   email: string
   prenom: string | null
   nom: string | null
+  roleSlug: string | null
+  roleName: string | null
   sentAt: string | null
   setAt: string | null
 }
@@ -44,7 +51,9 @@ export async function getCampaignStatus(): Promise<{ data: CampaignStatus | null
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("personnes")
-      .select("id, email, prenom, nom, password_setup_sent_at, password_set_at")
+      .select(
+        "id, email, prenom, nom, password_setup_sent_at, password_set_at, profils_types!profil_type_id(slug, nom)"
+      )
       .not("legacy_bequick_id", "is", null)
       .order("nom", { ascending: true })
 
@@ -58,6 +67,8 @@ export async function getCampaignStatus(): Promise<{ data: CampaignStatus | null
       email: r.email,
       prenom: r.prenom,
       nom: r.nom,
+      roleSlug: r.profils_types?.slug ?? null,
+      roleName: r.profils_types?.nom ?? null,
       sentAt: r.password_setup_sent_at,
       setAt: r.password_set_at,
     }))
@@ -94,5 +105,81 @@ export async function confirmPasswordSetup(): Promise<{ success: boolean }> {
   } catch (e) {
     console.error("[confirmPasswordSetup]", e)
     return { success: false }
+  }
+}
+
+/**
+ * Envoie le prochain LOT de mails « définis ton mot de passe » aux comptes
+ * migrés (legacy_bequick_id non nul) PAS ENCORE contactés. Admin uniquement.
+ * Même logique que scripts/send-password-setup.ts, mais déclenchable depuis
+ * l'UI. Plafonné (≤ 200) pour rester sous le timeout d'une fonction Vercel.
+ * Chaque envoi réussi stamp `password_setup_sent_at` → jamais de doublon.
+ */
+export async function sendPasswordSetupBatch(
+  limit = 100
+): Promise<{ sent: number; failed: number; error: string | null }> {
+  try {
+    if (!(await callerIsAdmin())) return { sent: 0, failed: 0, error: "Non autorisé" }
+
+    // Garde-fou : ne jamais envoyer de liens localhost à de vrais destinataires.
+    const site = siteUrl()
+    if (/localhost|127\.0\.0\.1/.test(site)) {
+      return {
+        sent: 0,
+        failed: 0,
+        error:
+          "NEXT_PUBLIC_SITE_URL pointe vers localhost — configure le domaine avant d'envoyer.",
+      }
+    }
+
+    const batch = Math.max(1, Math.min(Math.floor(limit) || 100, 200))
+    const admin = createAdminClient()
+
+    const { data, error } = await admin
+      .from("personnes")
+      .select("id, email, prenom")
+      .not("legacy_bequick_id", "is", null)
+      .is("password_setup_sent_at", null)
+      .order("nom", { ascending: true })
+      .limit(batch)
+
+    if (error) return { sent: 0, failed: 0, error: "Lecture des cibles échouée." }
+    const targets = data ?? []
+
+    let sent = 0
+    let failed = 0
+    for (const t of targets as any[]) {
+      const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
+        type: "recovery",
+        email: t.email as string,
+        options: { redirectTo: `${site}/reset-password` },
+      })
+      if (linkErr || !link?.properties?.action_link) {
+        failed++
+        continue
+      }
+      const tpl = passwordSetupEmail({
+        prenom: (t.prenom as string) ?? null,
+        link: link.properties.action_link,
+      })
+      const res = await sendEmail({ to: t.email as string, subject: tpl.subject, html: tpl.html })
+      if (!res.ok) {
+        failed++
+        continue
+      }
+      // Marque comme contacté (évite le renvoi au prochain lot). Idempotent.
+      await admin
+        .from("personnes")
+        .update({ password_setup_sent_at: new Date().toISOString() })
+        .eq("id", t.id)
+        .is("password_setup_sent_at", null)
+      sent++
+      await sleep(200) // throttle : ménage les limites Resend
+    }
+
+    return { sent, failed, error: null }
+  } catch (e) {
+    console.error("[sendPasswordSetupBatch]", e)
+    return { sent: 0, failed: 0, error: "Erreur serveur" }
   }
 }

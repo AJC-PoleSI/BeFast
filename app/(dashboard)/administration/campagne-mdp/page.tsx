@@ -1,8 +1,14 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Loader, RefreshCw, Search, MailCheck, KeyRound, Clock, Users } from "lucide-react"
-import { getCampaignStatus, type CampaignStatus, type CampaignMember } from "@/lib/actions/password-campaign"
+import { Loader, RefreshCw, Search, MailCheck, KeyRound, Clock, Users, Send } from "lucide-react"
+import { toast } from "sonner"
+import {
+  getCampaignStatus,
+  sendPasswordSetupBatch,
+  type CampaignStatus,
+  type CampaignMember,
+} from "@/lib/actions/password-campaign"
 
 function fmt(d: string | null): string {
   if (!d) return "—"
@@ -35,6 +41,8 @@ export default function CampagneMdpPage() {
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState("")
   const [filter, setFilter] = useState<"all" | "pending" | "sent" | "set">("all")
+  const [roleFilter, setRoleFilter] = useState<string>("all")
+  const [sending, setSending] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -48,6 +56,40 @@ export default function CampagneMdpPage() {
     load()
   }, [])
 
+  // Envoi manuel du prochain lot (100) de mails « définis ton mot de passe »
+  // aux comptes migrés en attente. Le filtre d'affichage n'affecte PAS la cible.
+  async function handleSend() {
+    if (!status || status.pending === 0 || sending) return
+    const n = Math.min(status.pending, 100)
+    if (
+      !window.confirm(
+        `Envoyer le mail « définis ton mot de passe » à ${n} compte(s) migré(s) en attente ?\n\n` +
+          `(Le filtre d'affichage ci-dessous ne change pas la cible : l'envoi vise toujours les comptes migrés pas encore contactés.)`
+      )
+    )
+      return
+    setSending(true)
+    const res = await sendPasswordSetupBatch(100)
+    setSending(false)
+    if (res.error) {
+      toast.error(res.error, { position: "top-right", duration: 6000 })
+      return
+    }
+    toast.success(
+      `${res.sent} email(s) envoyé(s)${res.failed ? ` · ${res.failed} échec(s)` : ""}.`,
+      { position: "top-right", duration: 6000 }
+    )
+    load()
+  }
+
+  // Rôles présents parmi les comptes migrés (pour le filtre d'affichage).
+  const roles = useMemo(() => {
+    if (!status) return [] as string[]
+    return Array.from(
+      new Set(status.members.map((m) => m.roleName).filter((r): r is string => !!r))
+    ).sort((a, b) => a.localeCompare(b, "fr"))
+  }, [status])
+
   const rows = useMemo(() => {
     if (!status) return []
     const q = query.trim().toLowerCase()
@@ -55,13 +97,14 @@ export default function CampagneMdpPage() {
       if (filter === "pending" && m.sentAt) return false
       if (filter === "sent" && !(m.sentAt && !m.setAt)) return false
       if (filter === "set" && !m.setAt) return false
+      if (roleFilter !== "all" && m.roleName !== roleFilter) return false
       if (!q) return true
       return (
         m.email.toLowerCase().includes(q) ||
         `${m.prenom ?? ""} ${m.nom ?? ""}`.toLowerCase().includes(q)
       )
     })
-  }, [status, query, filter])
+  }, [status, query, filter, roleFilter])
 
   return (
     <div className="p-6">
@@ -72,14 +115,32 @@ export default function CampagneMdpPage() {
             Suivi des emails « définir mon mot de passe » envoyés aux comptes migrés.
           </p>
         </div>
-        <button
-          onClick={load}
-          disabled={loading}
-          className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Rafraîchir
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSend}
+            disabled={sending || loading || !status || status.pending === 0}
+            className="flex items-center gap-2 rounded-lg bg-[#00236f] px-3 py-2 text-sm font-medium text-white hover:bg-[#001a54] disabled:opacity-50"
+          >
+            {sending ? (
+              <Loader className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+            {sending
+              ? "Envoi…"
+              : `Envoyer le prochain lot${
+                  status && status.pending ? ` (${Math.min(status.pending, 100)})` : ""
+                }`}
+          </button>
+          <button
+            onClick={load}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Rafraîchir
+          </button>
+        </div>
       </div>
 
       {loading && (
@@ -129,6 +190,18 @@ export default function CampagneMdpPage() {
                 </button>
               ))}
             </div>
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="rounded-lg border border-zinc-200 py-2 px-3 text-sm text-zinc-600 focus:border-[#00236f] focus:outline-none"
+            >
+              <option value="all">Tous les rôles</option>
+              {roles.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="overflow-hidden rounded-xl border border-zinc-200">
@@ -136,6 +209,7 @@ export default function CampagneMdpPage() {
               <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wider text-zinc-500">
                 <tr>
                   <th className="px-4 py-3 font-medium">Membre</th>
+                  <th className="px-4 py-3 font-medium">Rôle</th>
                   <th className="px-4 py-3 font-medium">Email</th>
                   <th className="px-4 py-3 font-medium">Statut</th>
                   <th className="px-4 py-3 font-medium">Contacté le</th>
@@ -150,6 +224,7 @@ export default function CampagneMdpPage() {
                       <td className="px-4 py-2.5 font-medium text-zinc-800">
                         {`${m.prenom ?? ""} ${m.nom ?? ""}`.trim() || "—"}
                       </td>
+                      <td className="px-4 py-2.5 text-zinc-600">{m.roleName ?? "—"}</td>
                       <td className="px-4 py-2.5 text-zinc-600">{m.email}</td>
                       <td className="px-4 py-2.5">
                         <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${s.className}`}>
@@ -163,7 +238,7 @@ export default function CampagneMdpPage() {
                 })}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-sm text-zinc-400">
+                    <td colSpan={6} className="px-4 py-10 text-center text-sm text-zinc-400">
                       Aucun membre à afficher.
                     </td>
                   </tr>
