@@ -31,7 +31,15 @@ export default function ResetPasswordPage() {
       // Flux PKCE arrivé directement ici (?code=) : on échange explicitement.
       const url = new URL(window.location.href)
       const code = url.searchParams.get("code")
-      if (code) {
+      const tokenHash = url.searchParams.get("token_hash")
+
+      if (tokenHash) {
+        try {
+          await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" })
+        } catch {
+          /* géré via getSession ci-dessous */
+        }
+      } else if (code) {
         try {
           await supabase.auth.exchangeCodeForSession(code)
         } catch {
@@ -98,7 +106,7 @@ export default function ResetPasswordPage() {
       </div>
 
       <h2 className="mb-6 text-center text-lg font-semibold text-foreground">
-        Définir mon mot de passe
+        Réinitialiser mon mot de passe
       </h2>
 
       {state === "loading" && (
@@ -142,7 +150,7 @@ export default function ResetPasswordPage() {
             />
           </div>
           <Button type="submit" disabled={submitting} className="mt-2 w-full">
-            {submitting ? "Enregistrement…" : "Définir mon mot de passe"}
+            {submitting ? "Enregistrement…" : "Réinitialiser mon mot de passe"}
           </Button>
         </form>
       )}

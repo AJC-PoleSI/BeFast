@@ -110,12 +110,12 @@ export function newAccountStaffNotificationEmail(opts: {
 
 export function passwordSetupEmail(opts: { prenom: string | null; link: string }) {
   return {
-    subject: "Activez votre accès BeFast — définissez votre mot de passe",
+    subject: "Activez votre accès BeFast — réinitialisez votre mot de passe",
     html: brandedEmail({
       title: `Bienvenue sur BeFast${opts.prenom ? ` ${esc(opts.prenom)}` : ""} !`,
       intro:
-        "Votre compte a été migré depuis l'ancienne plateforme. Pour y accéder, définissez votre mot de passe en cliquant sur le bouton ci-dessous. Ce lien est personnel et temporaire.",
-      ctaLabel: "Définir mon mot de passe",
+        "Votre compte a été migré depuis l'ancienne plateforme. Pour y accéder, réinitialisez votre mot de passe en cliquant sur le bouton ci-dessous. Ce lien est personnel et temporaire.",
+      ctaLabel: "Réinitialiser mon mot de passe",
       ctaUrl: opts.link,
     }),
   }

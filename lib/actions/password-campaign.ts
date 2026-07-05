@@ -158,9 +158,13 @@ export async function sendPasswordSetupBatch(
         failed++
         continue
       }
+      const url = new URL(link.properties.action_link)
+      const token = url.searchParams.get("token")
+      const customLink = token ? `${site}/reset-password?token_hash=${token}` : link.properties.action_link
+
       const tpl = passwordSetupEmail({
         prenom: (t.prenom as string) ?? null,
-        link: link.properties.action_link,
+        link: customLink,
       })
       const res = await sendEmail({ to: t.email as string, subject: tpl.subject, html: tpl.html })
       if (!res.ok) {
@@ -217,10 +221,13 @@ export async function sendPasswordSetupSingle(
     if (linkErr || !link?.properties?.action_link) {
       return { ok: false, error: "Impossible de générer le lien de réinitialisation." }
     }
+    const url = new URL(link.properties.action_link)
+    const token = url.searchParams.get("token")
+    const customLink = token ? `${site}/reset-password?token_hash=${token}` : link.properties.action_link
 
     const tpl = passwordSetupEmail({
       prenom: (person.prenom as string) ?? null,
-      link: link.properties.action_link,
+      link: customLink,
     })
     const res = await sendEmail({ to: person.email as string, subject: tpl.subject, html: tpl.html })
     if (!res.ok) return { ok: false, error: `Échec d'envoi de l'email (${res.error ?? "inconnu"}).` }
