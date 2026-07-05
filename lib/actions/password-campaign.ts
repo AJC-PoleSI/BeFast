@@ -205,10 +205,9 @@ export async function sendPasswordSetupSingle(
       .select("id, email, prenom")
       .eq("id", userId)
       .not("legacy_bequick_id", "is", null)
-      .is("password_setup_sent_at", null)
       .single()
 
-    if (fetchErr || !person) return { ok: false, error: "Compte introuvable ou déjà contacté." }
+    if (fetchErr || !person) return { ok: false, error: "Compte introuvable." }
 
     const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
       type: "recovery",
@@ -230,7 +229,6 @@ export async function sendPasswordSetupSingle(
       .from("personnes")
       .update({ password_setup_sent_at: new Date().toISOString() })
       .eq("id", person.id)
-      .is("password_setup_sent_at", null)
 
     return { ok: true, error: null }
   } catch (e) {

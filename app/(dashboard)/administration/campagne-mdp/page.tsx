@@ -251,11 +251,11 @@ export default function CampagneMdpPage() {
                       <td className="px-4 py-2.5 text-zinc-500">{fmt(m.sentAt)}</td>
                       <td className="px-4 py-2.5 text-zinc-500">{fmt(m.setAt)}</td>
                       <td className="px-4 py-2.5 text-center">
-                        {!m.sentAt ? (
+                        {!m.setAt ? (
                           <button
                             onClick={() => handleSendOne(m)}
                             disabled={sendingId !== null}
-                            title={`Envoyer le mail à ${m.email}`}
+                            title={m.sentAt ? `Renvoyer le mail à ${m.email}` : `Envoyer le mail à ${m.email}`}
                             className="inline-flex items-center justify-center rounded-lg border border-zinc-200 p-1.5 text-zinc-500 hover:bg-[#00236f] hover:text-white hover:border-[#00236f] disabled:opacity-40 transition-colors"
                           >
                             {sendingId === m.id ? (
