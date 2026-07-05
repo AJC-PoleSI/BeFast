@@ -220,7 +220,7 @@ export default function CampagneMdpPage() {
             </select>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-zinc-200">
+          <div className="overflow-x-auto rounded-xl border border-zinc-200">
             <table className="w-full text-sm">
               <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wider text-zinc-500">
                 <tr>
