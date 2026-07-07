@@ -18,7 +18,6 @@ import {
   Menu,
   Moon,
   Rocket,
-  Settings,
   Shield,
   Sun,
   TrendingUp,
@@ -181,21 +180,6 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
           </m.span>
         )}
       </button>
-      {isAdmin && (
-        <Link
-          href="/administration"
-          onClick={onNavigate}
-          className="flex h-9 w-full flex-row items-center rounded-md px-2.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          <Settings className="h-4 w-4 shrink-0" />
-          {!collapsed && (
-            <m.span variants={labelVariants} className="ml-2 text-sm">
-              Paramètres
-            </m.span>
-          )}
-        </Link>
-      )}
-
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger className="w-full outline-none">
           <div className="flex h-9 w-full flex-row items-center gap-2 rounded-md px-2.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">

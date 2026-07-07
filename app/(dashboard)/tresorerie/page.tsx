@@ -18,6 +18,8 @@ import {
 import { getBudgetValidations, decideBudget, getProposalBudget, updateProposalModalites, type BudgetValidationRow, type ProposalBudgetDetail } from "@/lib/actions/propositions"
 import { computeBudget, type PaiementModalites } from "@/lib/budget/compute"
 import { BudgetSheet } from "@/components/budget/BudgetSheet"
+import { listTemplates } from "@/lib/actions/documents"
+import { useDocumentDownload } from "@/hooks/useDocumentDownload"
 
 import PilotagePrix from "./PilotagePrix"
 
@@ -72,6 +74,8 @@ export default function TresoreriePage() {
   const [rejectBudget, setRejectBudget] = useState<BudgetValidationRow | null>(null)
   const [budgetBusy, setBudgetBusy] = useState<string | null>(null)
   const [detailBudgetId, setDetailBudgetId] = useState<string | null>(null)
+  const [factureTemplateId, setFactureTemplateId] = useState<string | null>(null)
+  const { generate: generateDocument, generating: generatingDocument } = useDocumentDownload()
 
   const loadBudgets = async () => {
     const res = await getBudgetValidations()
@@ -119,6 +123,10 @@ export default function TresoreriePage() {
     setLoading(true)
     reload().finally(() => setLoading(false))
     loadBudgets()
+    listTemplates().then((res) => {
+      const tpl = (res as any)?.data?.find((t: any) => t.category === "facture")
+      if (tpl) setFactureTemplateId(tpl.id)
+    })
   }, [])
 
   const facturesFiltrees = useMemo(() => {
@@ -451,6 +459,16 @@ export default function TresoreriePage() {
                                 title="Marquer comme payée (aujourd'hui)"
                               >
                                 <Check className="w-4 h-4" />
+                              </button>
+                            )}
+                            {factureTemplateId && (
+                              <button
+                                onClick={() => generateDocument({ template_id: factureTemplateId, scope: "facture", entity_id: f.id })}
+                                disabled={generatingDocument}
+                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-zinc-400 hover:text-[#00236f] hover:bg-[#d0d8ff] transition-all disabled:opacity-50"
+                                title="Télécharger la facture"
+                              >
+                                <Download className="w-4 h-4" />
                               </button>
                             )}
                             <button
@@ -918,6 +936,8 @@ function FactureModal({
     nom: facture?.nom ?? "",
     etude_id: facture?.etude_id ?? "",
     montant_ht: facture?.montant_ht?.toString() ?? "",
+    type: facture?.type ?? "",
+    accompte_pct: facture?.accompte_pct?.toString() ?? "",
     date_emission: facture?.date_emission ?? "",
     date_echeance: facture?.date_echeance ?? "",
     date_paiement: facture?.date_paiement ?? "",
@@ -947,6 +967,8 @@ function FactureModal({
               nom: form.nom || null,
               etude_id: form.etude_id || null,
               montant_ht: Number(form.montant_ht || 0),
+              type: (form.type || null) as "acompte" | "intermediaire" | "solde" | null,
+              accompte_pct: form.type === "acompte" && form.accompte_pct ? Number(form.accompte_pct) : null,
               date_emission: form.date_emission || null,
               date_echeance: form.date_echeance || null,
               date_paiement: form.date_paiement || null,
@@ -1008,6 +1030,37 @@ function FactureModal({
                 ))}
               </select>
             </div>
+            <div>
+              <label className="block text-xs font-semibold text-zinc-600 mb-1">Type de facture</label>
+              <select
+                value={form.type}
+                onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+                className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+              >
+                <option value="">— Non précisé —</option>
+                <option value="acompte">Acompte</option>
+                <option value="intermediaire">Intermédiaire</option>
+                <option value="solde">Solde</option>
+              </select>
+              <p className="text-xs text-zinc-400 mt-1">Utilisé pour la génération Word.</p>
+            </div>
+            {form.type === "acompte" ? (
+              <div>
+                <label className="block text-xs font-semibold text-zinc-600 mb-1">% d&apos;acompte</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={form.accompte_pct}
+                  onChange={(e) => setForm((f) => ({ ...f, accompte_pct: e.target.value }))}
+                  placeholder="Ex : 30"
+                  className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                />
+              </div>
+            ) : (
+              <div />
+            )}
             <div>
               <label className="block text-xs font-semibold text-zinc-600 mb-1">Date d&apos;émission</label>
               <input

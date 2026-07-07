@@ -12,6 +12,7 @@ import {
   Landmark,
   MapPin,
   ScrollText,
+  Percent,
 } from "lucide-react"
 import { setParametres } from "@/lib/actions/etudes"
 import { getParametres } from "@/lib/actions/parametres"
@@ -27,8 +28,17 @@ import { toast } from "sonner"
  *   - textes par défaut (contexte / CDC)  → Prospection ▸ Pilotage des phases
  * ────────────────────────────────────────────────────────────────────────── */
 
-type FieldDef = { key: string; label: string; type?: string; genreKey?: string; full?: boolean }
-type SectionDef = { title: string; icon: any; fields: FieldDef[] }
+type FieldDef = {
+  key: string
+  label: string
+  type?: string
+  genreKey?: string
+  full?: boolean
+  // Sous-titre visuel (pas un champ) — key doit rester unique mais n'est ni
+  // chargée ni sauvegardée.
+  heading?: boolean
+}
+type SectionDef = { title: string; icon: any; note?: string; fields: FieldDef[] }
 
 const STRUCTURE_SECTIONS: SectionDef[] = [
   {
@@ -109,6 +119,35 @@ const STRUCTURE_SECTIONS: SectionDef[] = [
       { key: "numero_tva", label: "Numéro TVA intracom.", type: "text" },
     ],
   },
+  {
+    title: "Cotisations Bulletin de Versement",
+    icon: Percent,
+    note: "Taux officiels URSSAF à renseigner par le trésorier (mis à jour chaque année). Utilisés pour le calcul automatique du tableau de cotisations du Bulletin de Versement. Un taux à 0 laisse la ligne vide sur le document.",
+    fields: [
+      { key: "bv_base_urssaf", label: "Assiette forfaitaire par JEH (€)", type: "number" },
+      { key: "bv_csg_assiette_pct", label: "Assiette CSG/CRDS (% de la rétribution brute)", type: "number" },
+      { key: "_h_sante", label: "Santé", heading: true },
+      { key: "bv_am_taux_junior", label: "Assurance maladie — part Junior (%)", type: "number" },
+      { key: "bv_am_taux_etudiant", label: "Assurance maladie — part étudiant (%)", type: "number" },
+      { key: "bv_at_taux_junior", label: "Accident du travail — part Junior (%)", type: "number" },
+      { key: "bv_at_taux_etudiant", label: "Accident du travail — part étudiant (%)", type: "number" },
+      { key: "_h_retraite", label: "Retraite", heading: true },
+      { key: "bv_avp_taux_junior", label: "Vieillesse plafonnée — part Junior (%)", type: "number" },
+      { key: "bv_avp_taux_etudiant", label: "Vieillesse plafonnée — part étudiant (%)", type: "number" },
+      { key: "bv_avd_taux_junior", label: "Vieillesse déplafonnée — part Junior (%)", type: "number" },
+      { key: "bv_avd_taux_etudiant", label: "Vieillesse déplafonnée — part étudiant (%)", type: "number" },
+      { key: "_h_famille", label: "Famille & autres contributions", heading: true },
+      { key: "bv_af_taux_junior", label: "Allocations familiales — part Junior (%)", type: "number" },
+      { key: "bv_af_taux_etudiant", label: "Allocations familiales — part étudiant (%)", type: "number" },
+      { key: "bv_autre_taux_junior", label: "Autres contributions — part Junior (%)", type: "number" },
+      { key: "bv_autre_taux_etudiant", label: "Autres contributions — part étudiant (%)", type: "number" },
+      { key: "_h_csg", label: "CSG / CRDS", heading: true },
+      { key: "bv_csg_taux_junior", label: "CSG déductible — part Junior (%)", type: "number" },
+      { key: "bv_csg_taux_etudiant", label: "CSG déductible — part étudiant (%)", type: "number" },
+      { key: "bv_crdscsg_taux_junior", label: "CSG/CRDS non déductible — part Junior (%)", type: "number" },
+      { key: "bv_crdscsg_taux_etudiant", label: "CSG/CRDS non déductible — part étudiant (%)", type: "number" },
+    ],
+  },
 ]
 
 export default function ParametresAdminPage() {
@@ -127,6 +166,7 @@ export default function ParametresAdminPage() {
         const sForm: Record<string, string> = {}
         for (const section of STRUCTURE_SECTIONS) {
           for (const f of section.fields) {
+            if (f.heading) continue
             sForm[f.key] = all[f.key] ?? ""
             if (f.genreKey && all[f.genreKey] != null) sForm[f.genreKey] = all[f.genreKey]
           }
@@ -194,17 +234,31 @@ export default function ParametresAdminPage() {
       <div className="max-w-5xl space-y-6 pb-8">
         {STRUCTURE_SECTIONS.map((section) => (
           <Card key={section.title} icon={section.icon} title={section.title}>
+            {section.note && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                {section.note}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {section.fields.map((field) => (
-                <StructureField
-                  key={field.key}
-                  field={field}
-                  value={structureForm[field.key] ?? ""}
-                  genreValue={field.genreKey ? structureForm[field.genreKey] : undefined}
-                  onChange={(v) => updateStructure(field.key, v)}
-                  onGenreChange={(v) => field.genreKey && updateStructure(field.genreKey, v)}
-                />
-              ))}
+              {section.fields.map((field) =>
+                field.heading ? (
+                  <p
+                    key={field.key}
+                    className="md:col-span-2 pt-2 text-[11px] font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-100 pb-1"
+                  >
+                    {field.label}
+                  </p>
+                ) : (
+                  <StructureField
+                    key={field.key}
+                    field={field}
+                    value={structureForm[field.key] ?? ""}
+                    genreValue={field.genreKey ? structureForm[field.genreKey] : undefined}
+                    onChange={(v) => updateStructure(field.key, v)}
+                    onGenreChange={(v) => field.genreKey && updateStructure(field.genreKey, v)}
+                  />
+                )
+              )}
             </div>
           </Card>
         ))}

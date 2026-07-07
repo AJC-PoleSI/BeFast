@@ -5,7 +5,7 @@ import { toast } from "sonner"
 
 type GenerateParams = {
   template_id: string
-  scope: "etude" | "mission" | "personne" | "general"
+  scope: "etude" | "mission" | "personne" | "general" | "facture"
   entity_id: string
   intervenant_id?: string
 }

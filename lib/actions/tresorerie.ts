@@ -9,6 +9,8 @@ export type FactureRow = {
   numero: string
   nom: string | null
   montant_ht: number
+  type: "acompte" | "intermediaire" | "solde" | null
+  accompte_pct: number | null
   date_emission: string | null
   date_echeance: string | null
   date_paiement: string | null
@@ -143,6 +145,8 @@ export async function getTresorerieData() {
     numero: f.numero,
     nom: f.nom,
     montant_ht: Number(f.montant_ht ?? 0),
+    type: f.type ?? null,
+    accompte_pct: f.accompte_pct != null ? Number(f.accompte_pct) : null,
     date_emission: f.date_emission,
     date_echeance: f.date_echeance,
     date_paiement: f.date_paiement,
@@ -276,6 +280,8 @@ export async function createFacture(input: {
   etude_id?: string | null
   bloc_id?: string | null
   montant_ht: number
+  type?: "acompte" | "intermediaire" | "solde" | null
+  accompte_pct?: number | null
   date_emission?: string | null
   date_echeance?: string | null
   date_paiement?: string | null
@@ -295,6 +301,8 @@ export async function createFacture(input: {
       etude_id: input.etude_id ?? null,
       bloc_id: input.bloc_id ?? null,
       montant_ht: input.montant_ht,
+      type: input.type ?? null,
+      accompte_pct: input.type === "acompte" ? input.accompte_pct ?? null : null,
       date_emission: input.date_emission ?? null,
       date_echeance: input.date_echeance ?? null,
       date_paiement: input.date_paiement ?? null,
@@ -320,6 +328,8 @@ export async function updateFacture(
     nom: string | null
     etude_id: string | null
     montant_ht: number
+    type: "acompte" | "intermediaire" | "solde" | null
+    accompte_pct: number | null
     date_emission: string | null
     date_echeance: string | null
     date_paiement: string | null
