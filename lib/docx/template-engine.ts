@@ -218,6 +218,24 @@ function applyFilter(value: any, filterStr: string, scope: any): any {
 }
 
 /**
+ * Construit la séquence de runs OOXML d'un champ Word complexe NUMPAGES
+ * (begin → instrText → separate → valeur en cache → end), en réutilisant les
+ * attributs et le style (rPr) du run d'origine — sans la couleur "à remplir"
+ * (rouge) qui n'a plus lieu d'être une fois le champ automatisé.
+ */
+function buildNumPagesFieldRuns(rAttrs: string, rPr?: string): string {
+  const rPrClean = rPr ? rPr.replace(/<w:color[^/]*\/>/g, "") : ""
+  const rPrTag = rPrClean ? `<w:rPr>${rPrClean}</w:rPr>` : ""
+  return (
+    `<w:r${rAttrs}>${rPrTag}<w:fldChar w:fldCharType="begin"/></w:r>` +
+    `<w:r${rAttrs}>${rPrTag}<w:instrText xml:space="preserve"> NUMPAGES </w:instrText></w:r>` +
+    `<w:r${rAttrs}>${rPrTag}<w:fldChar w:fldCharType="separate"/></w:r>` +
+    `<w:r${rAttrs}>${rPrTag}<w:t>1</w:t></w:r>` +
+    `<w:r${rAttrs}>${rPrTag}<w:fldChar w:fldCharType="end"/></w:r>`
+  )
+}
+
+/**
  * Remplit un DOCX ou PPTX avec les données fournies.
  * Utilise un parseur Angular pour gérer les pipes et les chemins imbriqués.
  */
@@ -263,6 +281,15 @@ export function renderTemplate(
     cleaned = cleaned.replace(
       /<w:instrText[^>]*>([\s\S]*?)<\/w:instrText>/g,
       (match, inner) => (/\b(PAGE|NUMPAGES|SECTIONPAGES)\b/.test(inner) ? match : "")
+    )
+
+    // Remplace le texte figé "[nombre de pages]" (pense-bête laissé dans les
+    // templates, ex. "Document comportant [nombre de pages] pages") par un
+    // vrai champ Word NUMPAGES, pour qu'il se remplisse automatiquement comme
+    // en pied de page, sur n'importe quel template.
+    cleaned = cleaned.replace(
+      /<w:r\b([^>]*)>(?:<w:rPr>((?:<w:[a-zA-Z]+(?:\s+[^<>]*)?\/>)*)<\/w:rPr>)?<w:t[^>]*>\s*\[\s*nombre\s+de\s+pages?\s*\]\s*<\/w:t>\s*<\/w:r>/gi,
+      (_match, rAttrs, rPr) => buildNumPagesFieldRuns(rAttrs, rPr)
     )
 
     // PowerPoint elements
