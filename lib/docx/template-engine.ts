@@ -256,8 +256,14 @@ export function renderTemplate(
     cleaned = cleaned.replace(/<w:rsidSect[^/]*\/>/g, "")
     cleaned = cleaned.replace(/<w:lang[^/]*\/>/g, "")
 
-    // Remove instruction texts (fields)
-    cleaned = cleaned.replace(/<w:instrText[^>]*>[\s\S]*?<\/w:instrText>/g, "")
+    // Remove instruction texts (fields), sauf les champs de pagination Word
+    // natifs (PAGE, NUMPAGES, SECTIONPAGES) : on les préserve pour que le
+    // "Page X sur Y" reste un champ auto-calculé par Word après génération,
+    // au lieu de se figer/vider.
+    cleaned = cleaned.replace(
+      /<w:instrText[^>]*>([\s\S]*?)<\/w:instrText>/g,
+      (match, inner) => (/\b(PAGE|NUMPAGES|SECTIONPAGES)\b/.test(inner) ? match : "")
+    )
 
     // PowerPoint elements
     cleaned = cleaned.replace(/<a:bookmarkStart[^/]*\/>/g, "")
