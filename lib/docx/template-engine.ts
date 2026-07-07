@@ -223,17 +223,31 @@ function applyFilter(value: any, filterStr: string, scope: any): any {
  * attributs et le style (rPr) du run d'origine — sans la couleur "à remplir"
  * (rouge) qui n'a plus lieu d'être une fois le champ automatisé.
  */
-function buildNumPagesFieldRuns(rAttrs: string, rPr?: string): string {
+function buildNumPagesFieldRuns(rAttrs: string, rPr?: string, suffixText?: string): string {
   const rPrClean = rPr ? rPr.replace(/<w:color[^/]*\/>/g, "") : ""
   const rPrTag = rPrClean ? `<w:rPr>${rPrClean}</w:rPr>` : ""
+  const suffixRun = suffixText
+    ? `<w:r${rAttrs}>${rPrTag}<w:t xml:space="preserve">${suffixText}</w:t></w:r>`
+    : ""
   return (
     `<w:r${rAttrs}>${rPrTag}<w:fldChar w:fldCharType="begin"/></w:r>` +
     `<w:r${rAttrs}>${rPrTag}<w:instrText xml:space="preserve"> NUMPAGES </w:instrText></w:r>` +
     `<w:r${rAttrs}>${rPrTag}<w:fldChar w:fldCharType="separate"/></w:r>` +
     `<w:r${rAttrs}>${rPrTag}<w:t>1</w:t></w:r>` +
-    `<w:r${rAttrs}>${rPrTag}<w:fldChar w:fldCharType="end"/></w:r>`
+    `<w:r${rAttrs}>${rPrTag}<w:fldChar w:fldCharType="end"/></w:r>` +
+    suffixRun
   )
 }
+
+// Bloc de propriétés d'un run limité à des balises auto-fermantes (rFonts, color,
+// sz…) — borne volontairement le nettoyage pour ne jamais franchir la fin d'un
+// run/paragraphe voisin (voir historique : un `[\s\S]*?` non borné avait fini
+// par avaler ~100 000 caractères jusqu'au prochain "}</w:rPr>" du document).
+const SIMPLE_RPR = `(?:<w:rPr>((?:<w:[a-zA-Z]+(?:\\s+[^<>]*)?\\/>)*)<\\/w:rPr>)?`
+// Même chose mais sans groupe capturant, pour les runs de bordure dont on n'a
+// pas besoin d'extraire le style (évite de décaler la numérotation des
+// groupes capturants utilisés dans les callbacks de replace()).
+const SIMPLE_RPR_NC = `(?:<w:rPr>(?:<w:[a-zA-Z]+(?:\\s+[^<>]*)?\\/>)*<\\/w:rPr>)?`
 
 /**
  * Remplit un DOCX ou PPTX avec les données fournies.
@@ -290,6 +304,33 @@ export function renderTemplate(
     cleaned = cleaned.replace(
       /<w:r\b([^>]*)>(?:<w:rPr>((?:<w:[a-zA-Z]+(?:\s+[^<>]*)?\/>)*)<\/w:rPr>)?<w:t[^>]*>\s*\[\s*nombre\s+de\s+pages?\s*\]\s*<\/w:t>\s*<\/w:r>/gi,
       (_match, rAttrs, rPr) => buildNumPagesFieldRuns(rAttrs, rPr)
+    )
+
+    // Autres pense-bêtes "Document de <espace réservé> pages" repérés sur
+    // d'autres templates (PVRI/PVRF : run isolé "X pages" ; avenants : run
+    // isolé "trois" avant "pages" dans un run séparé). Le run réservé est
+    // isolé entre un run se terminant par "Document de"/"Document comportant"
+    // et un run commençant par "page(s)" — peu importe son contenu exact.
+    cleaned = cleaned.replace(
+      new RegExp(
+        `<w:r\\b[^>]*>${SIMPLE_RPR_NC}<w:t[^>]*>[^<]*?Document\\s+(?:de|comportant)\\s*<\\/w:t><\\/w:r>` +
+          `(<w:r\\b([^>]*)>${SIMPLE_RPR}<w:t[^>]*>[^<{}]{1,20}?\\s*<\\/w:t><\\/w:r>)` +
+          `<w:r\\b[^>]*>${SIMPLE_RPR_NC}<w:t[^>]*>\\s*pages?\\b[^<]*<\\/w:t><\\/w:r>`,
+        "gi"
+      ),
+      (fullMatch, middleRun, rAttrs, rPr) => fullMatch.replace(middleRun, buildNumPagesFieldRuns(rAttrs, rPr))
+    )
+
+    // Variante où le mot-réservé et "pages" sont dans le MÊME run
+    // (ex. PVRI/PVRF : un seul run "X pages ").
+    cleaned = cleaned.replace(
+      new RegExp(
+        `(<w:r\\b[^>]*>${SIMPLE_RPR_NC}<w:t[^>]*>[^<]*?Document\\s+(?:de|comportant)\\s*<\\/w:t><\\/w:r>)` +
+          `<w:r\\b([^>]*)>${SIMPLE_RPR}<w:t[^>]*>([^<{}]{1,20}?)(\\s+pages?\\b[^<]*)<\\/w:t><\\/w:r>`,
+        "gi"
+      ),
+      (_fullMatch, prefixRun, rAttrs, rPr, _placeholder, suffixText) =>
+        prefixRun + buildNumPagesFieldRuns(rAttrs, rPr, suffixText)
     )
 
     // PowerPoint elements
