@@ -396,6 +396,13 @@ export async function signProposal(id: string) {
   }
   const etudeId = etude!.id as string
 
+  if (prop.cdp_id) {
+    const { error: suivErr } = await sb
+      .from("etude_suiveurs")
+      .insert({ etude_id: etudeId, personne_id: prop.cdp_id })
+    if (suivErr) console.error("[acceptProposal] Suiveur insert error:", suivErr.message)
+  }
+
   // 3. Phases -> blocs d'échéancier (Gantt) + missions
   const phases = ((prop.proposal_phases as any[]) || []).slice().sort(
     (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)

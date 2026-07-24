@@ -74,10 +74,10 @@ export const DOCUMENT_FIELDS: FieldDef[] = [
   { placeholder: "signataire.email", label: "Email du signataire", source: "clients.contact_email" },
   { placeholder: "signataire.telephone", label: "Téléphone du signataire", source: "clients.contact_phone" },
 
-  // ── Suiveur ───────────────────────────────────────────────
-  { placeholder: "suiveur.prenom", label: "Prénom du suiveur", source: "personnes.prenom" },
-  { placeholder: "suiveur.nom", label: "Nom du suiveur", source: "personnes.nom" },
-  { placeholder: "suiveur.email", label: "Email du suiveur", source: "personnes.email" },
+  // ── Suiveur (liste séparée par ", " si l'étude a plusieurs suiveurs) ──
+  { placeholder: "suiveur.prenom", label: "Prénom(s) du/des suiveur(s)", source: "etude_suiveurs.personnes.prenom" },
+  { placeholder: "suiveur.nom", label: "Nom(s) du/des suiveur(s)", source: "etude_suiveurs.personnes.nom" },
+  { placeholder: "suiveur.email", label: "Email(s) du/des suiveur(s)", source: "etude_suiveurs.personnes.email" },
 
   // ── Intervenant / Étudiant ────────────────────────────────
   { placeholder: "intervenant.prenom", label: "Prénom de l'intervenant", source: "personnes.prenom" },

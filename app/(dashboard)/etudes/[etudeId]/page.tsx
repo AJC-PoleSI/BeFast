@@ -43,6 +43,7 @@ import type {
   Mission,
   EcheancierBloc,
 } from "@/types/database.types"
+import { getMembers } from "@/lib/actions/etudes"
 
 const STATUT_COLORS: Record<string, string> = {
   prospection: "bg-purple-100 text-purple-700 border-purple-200",
@@ -108,10 +109,18 @@ export default function EtudeDetailPage() {
 
     const { data: e } = await supabase
       .from("etudes")
-      .select("*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)")
+      .select("*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), etude_suiveurs(personnes(id, prenom, nom, email))")
       .eq("id", etudeId)
       .single()
-    setEtude(e as unknown as EtudeWithRelations | null)
+    if (e) {
+      const { etude_suiveurs, ...rest } = e as any
+      setEtude({
+        ...rest,
+        suiveurs: (etude_suiveurs ?? []).map((es: any) => es.personnes).filter(Boolean),
+      } as unknown as EtudeWithRelations)
+    } else {
+      setEtude(null)
+    }
 
     const { data: m } = await supabase
       .from("missions")
@@ -155,17 +164,11 @@ export default function EtudeDetailPage() {
       .then(({ data }) => setTarifJeh(Number(data?.value ?? 0) || 0))
   }, [])
 
-  // Charger la liste des suiveurs potentiels
+  // Charger la liste des suiveurs potentiels (membres AJC actuels uniquement)
   useEffect(() => {
-    const sb = createClient()
-    ;(async () => {
-      const { data: excl } = await sb.from("profils_types").select("id").in("slug", ["intervenant", "membre_en_attente"])
-      const exclIds = (excl ?? []).map((r: any) => r.id)
-      let q = sb.from("personnes").select("id, prenom, nom").eq("account_status", "validated").order("nom")
-      if (exclIds.length > 0) q = q.not("profil_type_id", "in", `(${exclIds.join(",")})`)
-      const { data } = await q
-      setMissionSuiveurs((data as any[]) ?? [])
-    })()
+    getMembers().then((res) => {
+      if ((res as any).data) setMissionSuiveurs((res as any).data)
+    })
   }, [])
 
   const handleCreateMission = async () => {
@@ -325,12 +328,16 @@ export default function EtudeDetailPage() {
               <p className="text-xs text-muted-foreground uppercase">{etude.clients.type}</p>
             </div>
           )}
-          {etude.suiveur && (
+          {((etude.suiveurs && etude.suiveurs.length > 0) || etude.suiveur) && (
             <div className="rounded-lg bg-muted/30 p-3">
               <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                <User className="h-3 w-3" /> Suiveur
+                <User className="h-3 w-3" /> Suiveur{(etude.suiveurs?.length ?? 0) > 1 ? "s" : ""}
               </div>
-              <p className="font-medium text-sm">{etude.suiveur.prenom} {etude.suiveur.nom}</p>
+              <p className="font-medium text-sm">
+                {(etude.suiveurs && etude.suiveurs.length > 0)
+                  ? etude.suiveurs.map(s => `${s.prenom} ${s.nom}`).join(", ")
+                  : `${etude.suiveur!.prenom} ${etude.suiveur!.nom}`}
+              </p>
             </div>
           )}
           {etude.budget && (

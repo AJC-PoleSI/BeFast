@@ -140,6 +140,7 @@ export interface Etude {
 export interface EtudeWithRelations extends Etude {
   clients: Client | null
   suiveur: Pick<Personne, "id" | "prenom" | "nom" | "email"> | null
+  suiveurs?: Pick<Personne, "id" | "prenom" | "nom" | "email">[]
 }
 
 export type MissionType = "chef_projet" | "intervenant"

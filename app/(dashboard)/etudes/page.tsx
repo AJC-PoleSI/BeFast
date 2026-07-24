@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { getEtudes, createEtude, updateEtude, getClients, getMembers, getParametre, deleteEtude, toggleEtudePublished } from "@/lib/actions/etudes"
 import { Skeleton } from "@/components/ui/skeleton"
+import { MultiSelect } from "@/components/ui/multi-select"
 import Link from "next/link"
 import { X, Loader2, Trash2, Pencil, Eye, EyeOff } from "lucide-react"
 import type { EtudeWithRelations, Client } from "@/types/database.types"
@@ -52,7 +53,7 @@ export default function EtudesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
+  const [form, setForm] = useState({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_ids: [] as string[] })
   const [tvaRate, setTvaRate] = useState(20)
   const [clients, setClients] = useState<Client[]>([])
   const [membres, setMembres] = useState<{ id: string; prenom: string | null; nom: string | null }[]>([])
@@ -111,7 +112,7 @@ export default function EtudesPage() {
           <p className="text-sm text-zinc-500 mt-0.5">Gestion des études et projets clients</p>
         </div>
         <button
-          onClick={() => { setEditingId(null); setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_id: "" }); setShowModal(true); setFormError(null) }}
+          onClick={() => { setEditingId(null); setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_ids: [] as string[] }); setShowModal(true); setFormError(null) }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors"
         >
           <span className="material-symbols-outlined text-lg">add_circle</span>
@@ -198,11 +199,13 @@ export default function EtudesPage() {
                       <p className="text-sm font-semibold text-zinc-800">{activeStudy.clients.nom}</p>
                     </div>
                   )}
-                  {activeStudy.suiveur && (
+                  {((activeStudy.suiveurs && activeStudy.suiveurs.length > 0) || activeStudy.suiveur) && (
                     <div>
-                      <p className="text-xs text-zinc-400 mb-1">Suiveur</p>
+                      <p className="text-xs text-zinc-400 mb-1">Suiveur{(activeStudy.suiveurs?.length ?? 0) > 1 ? "s" : ""}</p>
                       <p className="text-sm font-semibold text-zinc-800">
-                        {activeStudy.suiveur.prenom} {activeStudy.suiveur.nom}
+                        {(activeStudy.suiveurs && activeStudy.suiveurs.length > 0)
+                          ? activeStudy.suiveurs.map(s => `${s.prenom} ${s.nom}`).join(", ")
+                          : `${activeStudy.suiveur!.prenom} ${activeStudy.suiveur!.nom}`}
                       </p>
                     </div>
                   )}
@@ -256,7 +259,9 @@ export default function EtudesPage() {
                             <p className="text-xs text-zinc-400 truncate">
                               {etude.numero}
                               {etude.clients ? ` · ${etude.clients.nom}` : ""}
-                              {(etude as any).suiveur ? ` · Suiveur : ${(etude as any).suiveur.prenom} ${(etude as any).suiveur.nom}` : ""}
+                              {(etude.suiveurs && etude.suiveurs.length > 0)
+                                ? ` · Suiveur${etude.suiveurs.length > 1 ? "s" : ""} : ${etude.suiveurs.map(s => `${s.prenom} ${s.nom}`).join(", ")}`
+                                : (etude as any).suiveur ? ` · Suiveur : ${(etude as any).suiveur.prenom} ${(etude as any).suiveur.nom}` : ""}
                             </p>
                           </div>
                           <div className="flex flex-col items-end gap-1 shrink-0">
@@ -305,7 +310,9 @@ export default function EtudesPage() {
                               type: etude.type ?? "",
                               commentaire: etude.commentaire ?? "",
                               client_id: etude.client_id ?? "",
-                              suiveur_id: etude.suiveur_id ?? "",
+                              suiveur_ids: (etude.suiveurs && etude.suiveurs.length > 0)
+                                ? etude.suiveurs.map(s => s.id)
+                                : (etude.suiveur_id ? [etude.suiveur_id] : []),
                             })
                             setShowModal(true)
                           }}
@@ -371,7 +378,7 @@ export default function EtudesPage() {
                   marge_pct: form.marge_pct ? Number(form.marge_pct) : undefined,
                   commentaire: form.commentaire || undefined,
                   client_id: form.client_id || undefined,
-                  suiveur_id: form.suiveur_id || undefined,
+                  suiveur_ids: form.suiveur_ids,
                 }
                 const result = editingId
                   ? await updateEtude(editingId, payload as any)
@@ -380,7 +387,7 @@ export default function EtudesPage() {
                 if ((result as any).error) { setFormError((result as any).error); return }
                 setShowModal(false)
                 setEditingId(null)
-                setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_id: "" })
+                setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_ids: [] as string[] })
                 // Refresh list
                 const fresh = await getEtudes()
                 if ((fresh as any).data) setEtudes((fresh as any).data)
@@ -485,15 +492,12 @@ export default function EtudesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-600 mb-1">Suiveur</label>
-                  <select
-                    value={form.suiveur_id}
-                    onChange={e => setForm(f => ({ ...f, suiveur_id: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
-                  >
-                    <option value="">— Sélectionner —</option>
-                    {membres.map(m => <option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}
-                  </select>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1">Suiveur(s)</label>
+                  <MultiSelect
+                    options={membres.map(m => ({ value: m.id, label: `${m.prenom ?? ""} ${m.nom ?? ""}`.trim() }))}
+                    selected={form.suiveur_ids}
+                    onChange={ids => setForm(f => ({ ...f, suiveur_ids: ids }))}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-zinc-600 mb-1">Statut</label>

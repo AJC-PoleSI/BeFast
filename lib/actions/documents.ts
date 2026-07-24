@@ -502,6 +502,17 @@ function buildMentionAvenant(etude: any): string {
 }
 
 // Construit {signataire.*} à partir des colonnes contact_* du client.
+// Contexte "suiveur" à partir de la liste des suiveurs d'une étude (etude_suiveurs).
+// Plusieurs suiveurs -> prenom/nom/email deviennent des listes séparées par ", ".
+function buildSuiveurContext(suiveurs: any[]) {
+  const list = (suiveurs ?? []).filter(Boolean)
+  return {
+    prenom: list.map((s) => s.prenom).filter(Boolean).join(", "),
+    nom: list.map((s) => s.nom).filter(Boolean).join(", "),
+    email: list.map((s) => s.email).filter(Boolean).join(", "),
+  }
+}
+
 function buildSignataire(clientData: any) {
   return {
     civilite: clientData?.contact_civilite || "",
@@ -633,18 +644,18 @@ export async function buildTemplateContext(
     const referenceRecapMission = rdmDoc?.file_name ? String(rdmDoc.file_name).replace(/\.(docx|pdf|pptx)$/i, "") : ""
 
 
-    // Step 3: Fetch client and suiveur for the etude (in parallel)
-    const [clientRes, suiveurRes] = await Promise.all([
+    // Step 3: Fetch client and suiveurs for the etude (in parallel)
+    const [clientRes, suiveursRes] = await Promise.all([
       etude.client_id
         ? sb.from("clients").select("*").eq("id", etude.client_id).single()
         : Promise.resolve({ data: null, error: null }),
-      etude.suiveur_id
-        ? sb.from("personnes").select("id, prenom, nom, email").eq("id", etude.suiveur_id).single()
-        : Promise.resolve({ data: null, error: null }),
+      etude.id
+        ? sb.from("etude_suiveurs").select("personnes(id, prenom, nom, email)").eq("etude_id", etude.id)
+        : Promise.resolve({ data: [], error: null }),
     ])
 
     const clientData: any = (clientRes as any).data || {}
-    const suiveur: any = (suiveurRes as any).data || {}
+    const suiveur = buildSuiveurContext(((suiveursRes as any).data ?? []).map((r: any) => r.personnes))
 
     const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(blocs)
 
@@ -760,14 +771,12 @@ export async function buildTemplateContext(
     }
     const eAny = e as any
 
-    // Step 2: Fetch client, suiveur, blocs, intervenant in PARALLEL
-    const [clientRes, suiveurRes, blocsRes, intervenantRes] = await Promise.all([
+    // Step 2: Fetch client, suiveurs, blocs, intervenant in PARALLEL
+    const [clientRes, suiveursRes, blocsRes, intervenantRes] = await Promise.all([
       eAny.client_id
         ? sb.from("clients").select("*").eq("id", eAny.client_id).single()
         : Promise.resolve({ data: null, error: null }),
-      eAny.suiveur_id
-        ? sb.from("personnes").select("id, prenom, nom, email").eq("id", eAny.suiveur_id).single()
-        : Promise.resolve({ data: null, error: null }),
+      sb.from("etude_suiveurs").select("personnes(id, prenom, nom, email)").eq("etude_id", entityId),
       sb.from("echeancier_blocs").select("*").eq("etude_id", entityId),
       intervenantId
         ? sb.from("personnes").select("*").eq("id", intervenantId).single()
@@ -775,7 +784,7 @@ export async function buildTemplateContext(
     ])
 
     const clientData: any = (clientRes as any).data || {}
-    const suiveur: any = (suiveurRes as any).data || {}
+    const suiveur = buildSuiveurContext(((suiveursRes as any).data ?? []).map((r: any) => r.personnes))
     const blocs: any[] = (blocsRes as any).data || []
     const selectedIntervenant: any = (intervenantRes as any).data
 

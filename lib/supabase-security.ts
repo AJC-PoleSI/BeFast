@@ -102,17 +102,14 @@ export async function requireEtudeSuiveur(
   const { user } = await getCurrentUserProfile(supabase);
 
   const { data, error } = await supabase
-    .from('etudes')
-    .select('suiveur_id')
-    .eq('id', etudeId)
-    .single();
+    .from('etude_suiveurs')
+    .select('etude_id, personne_id')
+    .eq('etude_id', etudeId)
+    .eq('personne_id', user.id)
+    .maybeSingle();
 
   if (error || !data) {
-    throw new Error(`Etude not found: ${etudeId}`);
-  }
-
-  if (data.suiveur_id !== user.id) {
-    throw new Error(`Unauthorized: you are not the suiveur for this etude`);
+    throw new Error(`Unauthorized: you are not a suiveur for this etude`);
   }
 
   return data;
@@ -179,13 +176,14 @@ export async function requireMissionAccess(
     .single();
 
   if (mission) {
-    const { data: etude } = await supabase
-      .from('etudes')
-      .select('suiveur_id')
-      .eq('id', mission.etude_id)
-      .single();
+    const { data: suiveurRow } = await supabase
+      .from('etude_suiveurs')
+      .select('etude_id')
+      .eq('etude_id', mission.etude_id)
+      .eq('personne_id', user.id)
+      .maybeSingle();
 
-    if (etude?.suiveur_id === user.id) {
+    if (suiveurRow) {
       return { access: true as const, role: 'suiveur' as const };
     }
   }

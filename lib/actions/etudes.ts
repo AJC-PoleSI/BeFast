@@ -27,15 +27,29 @@ const _getClientsCached = unstable_cache(
   { tags: [CLIENTS_TAG], revalidate: 600 }
 )
 
-// Cached members list (validated personnes only)
+// Cached members list (membres AJC actuels uniquement — exclut les
+// intervenants externes et les anciens membres)
 const _getMembersCached = unstable_cache(
   async () => {
     const sb = createAdminClient()
-    const { data, error } = await sb
+
+    const { data: excludedTypes } = await sb
+      .from("profils_types")
+      .select("id")
+      .in("slug", ["intervenant", "ancien_membre_agc"])
+
+    let query = sb
       .from("personnes")
       .select("id, prenom, nom, email")
       .eq("account_status", "validated")
       .order("nom", { ascending: true })
+
+    const excludedIds = (excludedTypes ?? []).map((t) => t.id)
+    if (excludedIds.length > 0) {
+      query = query.not("profil_type_id", "in", `(${excludedIds.join(",")})`)
+    }
+
+    const { data, error } = await query
     if (error) return { error: error.message }
     return { data }
   },
@@ -96,7 +110,7 @@ export async function getEtudes(filters?: { statut?: string }) {
   let query = supabase
     .from("etudes")
     .select(
-      "*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)"
+      "*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), etude_suiveurs(personnes(id, prenom, nom, email))"
     )
     .order("created_at", { ascending: false })
   if (filters?.statut) query = query.eq("statut", filters.statut)
@@ -105,7 +119,7 @@ export async function getEtudes(filters?: { statut?: string }) {
     console.error("[getEtudes] Query error:", error)
     return { error: error.message }
   }
-  return { data }
+  return { data: (data ?? []).map(withSuiveursList) }
 }
 
 // Détail d'une étude — PAS de cache pour garantir la fraîcheur des données
@@ -121,19 +135,33 @@ export async function getEtude(id: string) {
   const { data, error } = await supabase
     .from("etudes")
     .select(
-      "*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email)"
+      "*, clients(id, nom, type), suiveur:personnes!etudes_suiveur_id_fkey(id, prenom, nom, email), etude_suiveurs(personnes(id, prenom, nom, email))"
     )
     .eq("id", id)
     .single()
   if (error) return { error: error.message }
-  return { data }
+  return { data: data ? withSuiveursList(data) : data }
+}
+
+// Aplati la jointure etude_suiveurs(personnes(...)) en un tableau `suiveurs`
+// directement exploitable côté UI.
+function withSuiveursList<T extends { etude_suiveurs?: { personnes: unknown }[] | null }>(
+  etude: T
+) {
+  const { etude_suiveurs, ...rest } = etude
+  return {
+    ...rest,
+    suiveurs: (etude_suiveurs ?? [])
+      .map((es) => es.personnes)
+      .filter(Boolean) as { id: string; prenom: string | null; nom: string | null; email: string | null }[],
+  }
 }
 
 export async function createEtude(formData: {
   nom: string
   numero: string
   client_id?: string
-  suiveur_id?: string
+  suiveur_ids?: string[]
   budget?: number
   budget_ht?: number
   frais_dossier?: number
@@ -149,11 +177,13 @@ export async function createEtude(formData: {
 
   if (!user) return { error: "Non authentifié" }
 
+  const { suiveur_ids, ...rest } = formData
   console.log("[createEtude] Creating étude:", formData.numero, formData.nom)
   const { data, error } = await supabase
     .from("etudes")
     .insert({
-      ...formData,
+      ...rest,
+      suiveur_id: suiveur_ids?.[0] ?? null,
       created_by: user.id,
     })
     .select()
@@ -166,6 +196,14 @@ export async function createEtude(formData: {
     }
     return { error: error.message }
   }
+
+  if (data && suiveur_ids && suiveur_ids.length > 0) {
+    const { error: suiveursError } = await supabase
+      .from("etude_suiveurs")
+      .insert(suiveur_ids.map((personne_id) => ({ etude_id: data.id, personne_id })))
+    if (suiveursError) console.error("[createEtude] Suiveurs insert error:", suiveursError.message)
+  }
+
   console.log("[createEtude] Created successfully, ID:", data?.id)
   revalidateTag(ETUDES_TAG)
   revalidatePath("/etudes")
@@ -178,7 +216,7 @@ export async function updateEtude(
     nom: string
     numero: string
     client_id: string
-    suiveur_id: string
+    suiveur_ids: string[]
     budget: number
     budget_ht: number
     frais_dossier: number
@@ -194,12 +232,28 @@ export async function updateEtude(
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
+  const { suiveur_ids, ...rest } = updates
+  const payload: Record<string, unknown> = { ...rest }
+  if (suiveur_ids !== undefined) payload.suiveur_id = suiveur_ids[0] ?? null
+
   const { error } = await supabase
     .from("etudes")
-    .update(updates)
+    .update(payload)
     .eq("id", id)
 
   if (error) return { error: error.message }
+
+  if (suiveur_ids !== undefined) {
+    const { error: delErr } = await supabase.from("etude_suiveurs").delete().eq("etude_id", id)
+    if (delErr) return { error: delErr.message }
+    if (suiveur_ids.length > 0) {
+      const { error: insErr } = await supabase
+        .from("etude_suiveurs")
+        .insert(suiveur_ids.map((personne_id) => ({ etude_id: id, personne_id })))
+      if (insErr) return { error: insErr.message }
+    }
+  }
+
   revalidateTag(ETUDES_TAG)
   revalidateTag(ETUDE_DETAIL_TAG(id))
   revalidatePath("/etudes")

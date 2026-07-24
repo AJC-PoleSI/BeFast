@@ -6,6 +6,11 @@ import { hashToken, siteUrl } from "@/lib/auth/verification"
 // Validates the one-time token, marks the account email_verified, clears the
 // token. Always redirects (never leaks whether a token matched a real account
 // beyond the generic invalid/expired states).
+//
+// NOTE (intégration RH) : cette route est celle des inscriptions BeFast
+// « classiques » (membres AGC). Elle NE crée AUCUN compte RH Manager et n'a
+// aucun lien avec le recrutement. Le provisioning RH se fait uniquement dans
+// le flux candidat `/api/onboarding/verify` (hub d'onboarding).
 export async function GET(req: NextRequest) {
   const base = siteUrl()
   const token = req.nextUrl.searchParams.get("token")
