@@ -354,8 +354,8 @@ export default function EtudesPage() {
       {/* ── Modale Nouvelle étude ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100 shrink-0">
               <h2 className="font-manrope font-bold text-[#00236f] text-lg">{editingId ? "Modifier l'étude" : "Nouvelle étude"}</h2>
               <button onClick={() => { setShowModal(false); setEditingId(null) }} className="text-zinc-400 hover:text-zinc-600 transition-colors">
                 <X className="h-5 w-5" />
@@ -392,8 +392,9 @@ export default function EtudesPage() {
                 const fresh = await getEtudes()
                 if ((fresh as any).data) setEtudes((fresh as any).data)
               }}
-              className="p-6 space-y-4"
+              className="flex flex-col flex-1 min-h-0"
             >
+              <div className="p-6 space-y-4 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-zinc-600 mb-1">Nom de l&apos;étude *</label>
@@ -528,8 +529,9 @@ export default function EtudesPage() {
               {formError && (
                 <p className="text-xs text-red-500 font-medium">{formError}</p>
               )}
+              </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex justify-end gap-3 px-6 py-4 border-t border-zinc-100 shrink-0">
                 <button type="button" onClick={() => { setShowModal(false); setEditingId(null) }} className="px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors">
                   Annuler
                 </button>
