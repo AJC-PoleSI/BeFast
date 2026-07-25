@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { randomUUID } from "crypto"
 import { createClient } from "@/lib/supabase/server"
-import { getCurrentUserProfile, logAudit } from "@/lib/supabase-security"
+import { getCurrentUserProfile, isMissionIntervenant, logAudit } from "@/lib/supabase-security"
 import { PutObjectCommand } from "@aws-sdk/client-s3"
 import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
 
@@ -23,15 +23,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Verify user is actually an intervenant on this mission
-    const { data: missionRole } = await supabase
-      .from("mission_intervenants")
-      .select("mission_id")
-      .eq("mission_id", missionId)
-      .eq("personne_id", user.id)
-      .single()
+    // Verify user is actually an intervenant on this mission.
+    // NB : interrogeait `mission_intervenants` (table inexistante) → la requête
+    // échouait toujours et l'upload renvoyait systématiquement 403.
+    const estIntervenant = await isMissionIntervenant(supabase, missionId, user.id)
 
-    if (!missionRole) {
+    if (!estIntervenant) {
       return NextResponse.json(
         { error: "Unauthorized: you are not an intervenant on this mission" },
         { status: 403 }

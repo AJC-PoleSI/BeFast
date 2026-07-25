@@ -116,6 +116,41 @@ export async function requireEtudeSuiveur(
 }
 
 /**
+ * Est-ce que `userId` intervient sur cette mission ?
+ *
+ * Il n'existe pas de table `mission_intervenants` dans ce schéma : le lien se
+ * fait par `missions.intervenant_id` (intervenant principal) et par la table
+ * `mission_collaborations` (intervenants additionnels, migration 041).
+ * Les appelants historiques interrogeaient `mission_intervenants`, qui n'a
+ * jamais existé — la requête échouait donc systématiquement et l'accès était
+ * toujours refusé (fail-closed, mais fonctionnalité cassée).
+ */
+export async function isMissionIntervenant(
+  supabase: SupabaseClient,
+  missionId: string,
+  userId: string
+): Promise<boolean> {
+  if (!missionId) return false;
+
+  const { data: mission } = await supabase
+    .from('missions')
+    .select('intervenant_id')
+    .eq('id', missionId)
+    .maybeSingle();
+
+  if (mission?.intervenant_id === userId) return true;
+
+  const { data: collab } = await supabase
+    .from('mission_collaborations')
+    .select('mission_id')
+    .eq('mission_id', missionId)
+    .eq('intervenant_id', userId)
+    .maybeSingle();
+
+  return !!collab;
+}
+
+/**
  * Check if user is intervenant on a mission
  */
 export async function requireMissionIntervenant(
@@ -124,20 +159,13 @@ export async function requireMissionIntervenant(
 ) {
   const { user } = await getCurrentUserProfile(supabase);
 
-  const { data, error } = await supabase
-    .from('mission_intervenants')
-    .select('mission_id')
-    .eq('mission_id', missionId)
-    .eq('personne_id', user.id)
-    .single();
-
-  if (error || !data) {
+  if (!(await isMissionIntervenant(supabase, missionId, user.id))) {
     throw new Error(
       `Unauthorized: you are not an intervenant on this mission`
     );
   }
 
-  return data;
+  return { mission_id: missionId };
 }
 
 /**
@@ -157,14 +185,7 @@ export async function requireMissionAccess(
   }
 
   // Check if intervenant on mission
-  const { data: intervenant } = await supabase
-    .from('mission_intervenants')
-    .select('mission_id')
-    .eq('mission_id', missionId)
-    .eq('personne_id', user.id)
-    .single();
-
-  if (intervenant) {
+  if (await isMissionIntervenant(supabase, missionId, user.id)) {
     return { access: true as const, role: 'intervenant' as const };
   }
 

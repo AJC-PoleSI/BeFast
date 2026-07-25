@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getSignedDownloadUrl, objectKeyFromValue } from "@/lib/scaleway/client"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { hasPermission } from "@/lib/auth/permissions"
+import { isMissionIntervenant } from "@/lib/supabase-security"
 
 export const dynamic = "force-dynamic"
 
@@ -35,16 +36,11 @@ export async function GET(req: NextRequest) {
   const isPrivileged = hasPermission(profile, "voir_factures")
   const isAdmin = profile?.profils_types?.slug === "administrateur"
 
-  const isIntervenant = async (missionId: string): Promise<boolean> => {
-    if (!missionId) return false
-    const { data } = await supabase
-      .from("mission_intervenants")
-      .select("mission_id")
-      .eq("mission_id", missionId)
-      .eq("personne_id", user.id)
-      .maybeSingle()
-    return !!data
-  }
+  // NB : interrogeait `mission_intervenants` (table inexistante) → renvoyait
+  // toujours false, ce qui rendait les fichiers de collaboration
+  // téléchargeables uniquement par un administrateur.
+  const isIntervenant = (missionId: string): Promise<boolean> =>
+    isMissionIntervenant(supabase, missionId, user.id)
 
   let allowed = false
   if (parts[0] === "notes_de_frais") {
