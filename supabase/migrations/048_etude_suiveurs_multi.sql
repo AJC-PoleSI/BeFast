@@ -9,6 +9,11 @@
 -- etudes.suiveur_id est conservé (premier suiveur sélectionné) pour la
 -- compatibilité des jointures existantes (suiveur:personnes!etudes_suiveur_id_fkey)
 -- et sert de valeur de repli si etude_suiveurs est vide.
+--
+-- Note : les policies réécrites ici s'appuient sur missions.intervenant_id
+-- (colonne réelle) et non sur une table mission_intervenants / equipes —
+-- ces deux tables n'existent pas dans ce schéma (référencées par erreur
+-- dans les anciennes migrations 023/035, jamais créées).
 
 -- ============================================================
 -- 1. TABLE DE LIAISON (créée avant les fonctions qui la référencent)
@@ -71,8 +76,7 @@ CREATE POLICY "etude_suiveurs read"
     OR public.is_etude_suiveur(etude_id, auth.uid())
     OR EXISTS (
       SELECT 1 FROM public.missions m
-      JOIN public.mission_intervenants mi ON mi.mission_id = m.id
-      WHERE m.etude_id = etude_suiveurs.etude_id AND mi.personne_id = auth.uid()
+      WHERE m.etude_id = etude_suiveurs.etude_id AND m.intervenant_id = auth.uid()
     )
   );
 
@@ -108,18 +112,6 @@ CREATE POLICY "users_can_read_own_etude_encrypted_data"
   ON public.etudes FOR SELECT
   USING (
     public.is_etude_suiveur(etudes.id, auth.uid())
-    OR (
-      EXISTS (
-        SELECT 1 FROM public.personnes p
-        WHERE p.id = auth.uid()
-        AND p.profil_type_id IN (SELECT id FROM public.profils_types WHERE slug = 'manager')
-      )
-      AND EXISTS (
-        SELECT 1 FROM public.equipes eq
-        JOIN public.etude_suiveurs es ON es.personne_id = eq.membre_id
-        WHERE eq.manager_id = auth.uid() AND es.etude_id = etudes.id
-      )
-    )
     OR public.is_admin(auth.uid())
   );
 
@@ -135,20 +127,8 @@ DROP POLICY IF EXISTS "users_can_read_own_mission_encrypted_data" ON public.miss
 CREATE POLICY "users_can_read_own_mission_encrypted_data"
   ON public.missions FOR SELECT
   USING (
-    id IN (SELECT mission_id FROM public.mission_intervenants WHERE personne_id = auth.uid())
+    missions.intervenant_id = auth.uid()
     OR public.is_etude_suiveur(missions.etude_id, auth.uid())
-    OR (
-      EXISTS (
-        SELECT 1 FROM public.personnes p
-        WHERE p.id = auth.uid()
-        AND p.profil_type_id IN (SELECT id FROM public.profils_types WHERE slug = 'manager')
-      )
-      AND EXISTS (
-        SELECT 1 FROM public.mission_intervenants mi
-        JOIN public.equipes e ON mi.personne_id = e.membre_id
-        WHERE mi.mission_id = missions.id AND e.manager_id = auth.uid()
-      )
-    )
     OR public.is_admin(auth.uid())
   );
 
@@ -170,8 +150,7 @@ CREATE POLICY "budget_etude read own etude"
     OR etude_id IN (
       SELECT DISTINCT missions.etude_id
       FROM public.missions
-      JOIN public.mission_intervenants ON mission_intervenants.mission_id = missions.id
-      WHERE mission_intervenants.personne_id = auth.uid()
+      WHERE missions.intervenant_id = auth.uid()
     )
     OR public.is_admin(auth.uid())
   );
@@ -197,8 +176,7 @@ CREATE POLICY "factures read own or assigned"
     OR etude_id IN (
       SELECT DISTINCT missions.etude_id
       FROM public.missions
-      JOIN public.mission_intervenants ON mission_intervenants.mission_id = missions.id
-      WHERE mission_intervenants.personne_id = auth.uid()
+      WHERE missions.intervenant_id = auth.uid()
     )
     OR public.is_admin(auth.uid())
   );
@@ -211,8 +189,7 @@ CREATE POLICY "etudes read assigned"
     OR id IN (
       SELECT DISTINCT missions.etude_id
       FROM public.missions
-      JOIN public.mission_intervenants ON mission_intervenants.mission_id = missions.id
-      WHERE mission_intervenants.personne_id = auth.uid()
+      WHERE missions.intervenant_id = auth.uid()
     )
     OR public.is_admin(auth.uid())
   );
@@ -245,8 +222,7 @@ CREATE POLICY "clients read assigned"
       FROM public.clients
       JOIN public.etudes ON etudes.client_id = clients.id
       JOIN public.missions ON missions.etude_id = etudes.id
-      JOIN public.mission_intervenants ON mission_intervenants.mission_id = missions.id
-      WHERE mission_intervenants.personne_id = auth.uid()
+      WHERE missions.intervenant_id = auth.uid()
     )
     OR public.is_admin(auth.uid())
   );
