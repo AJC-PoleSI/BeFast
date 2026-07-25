@@ -134,8 +134,8 @@ export function CustomFieldModal({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-      <div className="bg-white rounded-xl shadow-lg max-w-md w-full mx-4 p-6">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center" onClick={() => onOpenChange(false)}>
+      <div className="bg-white rounded-xl shadow-lg max-w-md w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
         <h2 className="font-manrope font-bold text-[#00236f] text-lg mb-4">
           {field?.id ? "Modifier le champ" : "Créer un champ"}
         </h2>

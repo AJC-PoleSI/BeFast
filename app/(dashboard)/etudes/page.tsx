@@ -353,8 +353,14 @@ export default function EtudesPage() {
 
       {/* ── Modale Nouvelle étude ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => { setShowModal(false); setEditingId(null) }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100 shrink-0">
               <h2 className="font-manrope font-bold text-[#00236f] text-lg">{editingId ? "Modifier l'étude" : "Nouvelle étude"}</h2>
               <button onClick={() => { setShowModal(false); setEditingId(null) }} className="text-zinc-400 hover:text-zinc-600 transition-colors">

@@ -947,8 +947,8 @@ function FactureModal({
   const [error, setError] = useState<string | null>(null)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100">
           <h2 className="font-manrope font-bold text-[#00236f] text-lg">
             {facture ? "Modifier la facture" : "Nouvelle facture"}
@@ -1135,8 +1135,8 @@ function RejectBudgetModal({
 }) {
   const [comment, setComment] = useState(row.budget_comment ?? "")
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100">
           <h2 className="font-manrope font-bold text-red-600 text-lg">Rejeter le budget</h2>
           <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600">
@@ -1193,8 +1193,8 @@ function PayMissionModal({
   const [error, setError] = useState<string | null>(null)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100">
           <h2 className="font-manrope font-bold text-[#00236f] text-lg">Paiement intervenant</h2>
           <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600">
@@ -1339,8 +1339,8 @@ function BudgetDetailModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100 shrink-0">
           <div>
             <h2 className="font-manrope font-bold text-[#00236f] text-lg">Budget de la proposition</h2>
