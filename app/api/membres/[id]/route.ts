@@ -24,20 +24,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     const callerRole = (caller?.profils_types as any)?.slug
 
-    let hasAccess = false
-    if (user.id === targetId) {
-      hasAccess = true
-    } else if (callerRole === "administrateur") {
-      hasAccess = true
-    } else if (callerRole === "manager") {
-      const { data: isManaged } = await admin
-        .from("equipes")
-        .select("id")
-        .eq("manager_id", user.id)
-        .eq("membre_id", targetId)
-        .single()
-      hasAccess = !!isManaged
-    }
+    // Accès à une fiche membre (contient des PII déchiffrées) : soi-même ou admin.
+    // NB : une branche « manager » s'appuyait sur une table `equipes` qui n'existe
+    // pas dans ce schéma — elle échouait systématiquement (fail-closed) et a été
+    // retirée. Il n'existe pas non plus de rôle `manager` dans profils_types.
+    const hasAccess = user.id === targetId || callerRole === "administrateur"
 
     if (!hasAccess) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })

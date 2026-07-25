@@ -2,12 +2,16 @@ export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { requireApiAdmin } from "@/lib/auth/api-guards"
 
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  // Les templates sont des documents internes (modèles de conventions, RDM…) :
+  // le téléchargement est réservé aux admins, pas à tout compte authentifié.
+  const guard = await requireApiAdmin()
+  if (!guard.ok) return guard.response
+
   const sb = createClient()
-  const { data: { user } } = await sb.auth.getUser()
-  if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
   const { data: tpl, error } = await sb
     .from("document_templates")
