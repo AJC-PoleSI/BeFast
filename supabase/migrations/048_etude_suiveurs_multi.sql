@@ -11,7 +11,28 @@
 -- et sert de valeur de repli si etude_suiveurs est vide.
 
 -- ============================================================
--- 1. HELPERS SECURITY DEFINER (évitent la récursion RLS)
+-- 1. TABLE DE LIAISON (créée avant les fonctions qui la référencent)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.etude_suiveurs (
+  etude_id    UUID NOT NULL REFERENCES public.etudes(id) ON DELETE CASCADE,
+  personne_id UUID NOT NULL REFERENCES public.personnes(id) ON DELETE CASCADE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (etude_id, personne_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_etude_suiveurs_personne ON public.etude_suiveurs(personne_id);
+
+-- Backfill depuis la colonne suiveur_id existante
+INSERT INTO public.etude_suiveurs (etude_id, personne_id)
+SELECT id, suiveur_id FROM public.etudes
+WHERE suiveur_id IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+ALTER TABLE public.etude_suiveurs ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- 2. HELPERS SECURITY DEFINER (évitent la récursion RLS)
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.is_admin(p_user_id uuid)
@@ -40,27 +61,6 @@ AS $$
     WHERE etude_id = p_etude_id AND personne_id = p_user_id
   );
 $$;
-
--- ============================================================
--- 2. TABLE DE LIAISON
--- ============================================================
-
-CREATE TABLE IF NOT EXISTS public.etude_suiveurs (
-  etude_id    UUID NOT NULL REFERENCES public.etudes(id) ON DELETE CASCADE,
-  personne_id UUID NOT NULL REFERENCES public.personnes(id) ON DELETE CASCADE,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  PRIMARY KEY (etude_id, personne_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_etude_suiveurs_personne ON public.etude_suiveurs(personne_id);
-
--- Backfill depuis la colonne suiveur_id existante
-INSERT INTO public.etude_suiveurs (etude_id, personne_id)
-SELECT id, suiveur_id FROM public.etudes
-WHERE suiveur_id IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-ALTER TABLE public.etude_suiveurs ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "etude_suiveurs read" ON public.etude_suiveurs;
 CREATE POLICY "etude_suiveurs read"
