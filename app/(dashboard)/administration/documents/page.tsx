@@ -454,7 +454,7 @@ export default function DocumentTemplatesPage() {
     }
 
     return (
-      <div className="fixed inset-y-0 right-0 w-[420px] bg-white border-l border-zinc-200 shadow-2xl z-50 flex flex-col animate-slide-in">
+      <div className="fixed inset-y-0 right-0 w-full max-w-[420px] bg-white border-l border-zinc-200 shadow-2xl z-50 flex flex-col animate-slide-in">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
           <div className="min-w-0">

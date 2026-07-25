@@ -257,7 +257,7 @@ export default function PilotagePhasesPage() {
       {/* MODALE CONFIRMATION ARCHIVAGE */}
       {archiveTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setArchiveTarget(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-zinc-100">
               <h2 className="font-manrope font-bold text-red-600 text-lg flex items-center gap-2"><Archive className="w-5 h-5" /> Archiver la phase</h2>
               <button onClick={() => setArchiveTarget(null)} className="text-zinc-400 hover:text-zinc-600"><X className="h-5 w-5" /></button>

@@ -43,7 +43,7 @@ function DeleteModal({ role, onConfirm, onCancel, loading }: {
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onCancel}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 border border-red-100" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 border border-red-100 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
             <AlertTriangle className="w-6 h-6 text-red-600" />
@@ -104,7 +104,7 @@ function CreateModal({ onConfirm, onCancel, loading }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onCancel}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-manrope font-bold text-zinc-900">Créer un nouveau rôle</h2>
           <button onClick={onCancel} className="text-zinc-400 hover:text-zinc-600">

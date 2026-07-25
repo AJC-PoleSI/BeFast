@@ -49,6 +49,7 @@ export function BudgetSheet({
       )}
 
       {/* Tableau principal — Budget Final */}
+      <div className="overflow-x-auto">
       <table className="w-full text-sm border border-zinc-800 border-collapse">
         <thead>
           <tr className="bg-zinc-700 text-white">
@@ -77,6 +78,7 @@ export function BudgetSheet({
           )}
         </tbody>
       </table>
+      </div>
 
       <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Modalités de règlement */}
@@ -100,6 +102,7 @@ export function BudgetSheet({
 
         {/* Synthèse */}
         <div className="text-sm">
+          <div className="overflow-x-auto">
           <table className="w-full border border-zinc-300 border-collapse">
             <tbody>
               <tr>
@@ -124,6 +127,7 @@ export function BudgetSheet({
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>
