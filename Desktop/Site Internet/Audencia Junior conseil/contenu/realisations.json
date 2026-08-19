@@ -1,101 +1,524 @@
 {
   "_comment": "Source unique pour la page 'Nos réalisations' et chaque fiche détaillée. Voir contenu/README-realisations.md.",
-
   "page": {
     "titre": "Nos<strong>réalisations</strong>",
     "eyebrow": "Portfolio · 2020 — 2026",
     "intro": "Découvrez les missions menées par nos consultants juniors pour des PME, ETI et grands groupes. Chaque étude est conduite avec la rigueur d'Audencia et la méthodologie ISO 9001.",
     "stats": [
-      { "valeur": "28",  "libelle": "Études réalisées" },
-      { "valeur": "12",  "libelle": "Secteurs couverts" },
-      { "valeur": "97%", "libelle": "Clients satisfaits" }
-    ]
+      {
+        "valeur": "28",
+        "libelle": "Études réalisées",
+        "libelle_en": "Studies completed"
+      },
+      {
+        "valeur": "12",
+        "libelle": "Secteurs couverts",
+        "libelle_en": "Sectors covered"
+      },
+      {
+        "valeur": "97%",
+        "libelle": "Clients satisfaits",
+        "libelle_en": "Satisfied clients"
+      }
+    ],
+    "titre_en": "Our<strong>projects</strong>",
+    "eyebrow_en": "Portfolio · 2020 — 2026",
+    "intro_en": "Discover the missions carried out by our junior consultants for SMEs, mid-caps and large groups. Every study is conducted with Audencia's rigor and the ISO 9001 methodology."
   },
-
+  "_comment_accompagnement": "Bandeau cliquable (en haut de page) + section dédiée (en bas de page). Modifiez librement les textes ci-dessous.",
+  "accompagnement_local": {
+    "banner_titre": "Accompagnement à l'échelle locale",
+    "banner_sous_titre": "PME & startups de la région nantaise",
+    "eyebrow": "Au plus près de vous",
+    "titre": "Accompagnement à<strong>l'échelle locale</strong>",
+    "intro": "Parce que les entreprises de notre région méritent un conseil d'excellence accessible, nous accompagnons les PME, commerces et startups de Nantes et de Loire-Atlantique avec la même rigueur que les grands groupes — à un tarif adapté à votre échelle.",
+    "points": [
+      {
+        "titre": "Proximité",
+        "texte": "Des consultants basés à Nantes, disponibles pour des échanges en présentiel tout au long de la mission.",
+        "titre_en": "Proximity",
+        "texte_en": "Consultants based in Nantes, available for in-person meetings throughout the mission."
+      },
+      {
+        "titre": "Tarif adapté",
+        "texte": "Le sérieux d'Audencia à un coût pensé pour les budgets des PME et jeunes entreprises.",
+        "titre_en": "Tailored pricing",
+        "texte_en": "Audencia's rigor at a cost designed for the budgets of SMEs and young companies."
+      },
+      {
+        "titre": "Impact concret",
+        "texte": "Des livrables directement actionnables, pensés pour des structures qui doivent avancer vite.",
+        "titre_en": "Concrete impact",
+        "texte_en": "Directly actionable deliverables, designed for organizations that need to move fast."
+      }
+    ],
+    "cta": "Parler de mon projet",
+    "banner_titre_en": "Local-scale support",
+    "banner_sous_titre_en": "SMEs & startups in the Nantes region",
+    "eyebrow_en": "Close to you",
+    "titre_en": "Support at<strong>the local scale</strong>",
+    "intro_en": "Because companies in our region deserve accessible, top-quality consulting, we support SMEs, shops and startups in Nantes and Loire-Atlantique with the same rigor as large groups — at a price suited to your scale.",
+    "cta_en": "Discuss my project"
+  },
   "realisations": [
+    {
+      "slug": "boulangerie-martin",
+      "client": "Boulangerie Martin",
+      "client_initiale": "BM",
+      "client_label": "Boulangerie Martin",
+      "annee": 2025,
+      "echelle": "locale",
+      "expertise": [
+        "marketing"
+      ],
+      "secteur": "retail",
+      "secteur_libelle": "Artisanat / Alimentaire",
+      "secteur_libelle_en": "Craft / Food",
+      "tags": [
+        "Marketing",
+        "Étude de marché"
+      ],
+      "tags_detail": [
+        "Marketing",
+        "Étude de marché",
+        "Analyse concurrentielle",
+        "Plan de développement"
+      ],
+      "tags_detail_en": [
+        "Marketing",
+        "Market research",
+        "Competitive analysis",
+        "Development plan"
+      ],
+      "titre": "Stratégie d'expansion pour une boulangerie artisanale nantaise",
+      "titre_detail": "Stratégie d'expansion pour une<strong>boulangerie artisanale nantaise</strong>",
+      "titre_detail_en": "Expansion strategy for an<strong>artisan bakery in Nantes</strong>",
+      "description": "Étude de marché et plan de développement pour l'ouverture d'un second point de vente en centre-ville de Nantes.",
+      "meta": {
+        "duree": "2 mois",
+        "duree_en": "2 months",
+        "equipe": "3 consultants",
+        "livrables": "Étude de marché + plan d'action",
+        "livrables_en": "Market research + action plan"
+      },
+      "titre_en": "Expansion strategy for an artisan bakery in Nantes",
+      "description_en": "Market research and growth plan to open a second outlet in downtown Nantes."
+    },
+    {
+      "slug": "startup-greentech",
+      "client": "GreenWave",
+      "client_initiale": "GW",
+      "client_label": "GreenWave",
+      "annee": 2025,
+      "echelle": "locale",
+      "expertise": [
+        "finance"
+      ],
+      "secteur": "tech",
+      "secteur_libelle": "GreenTech / Startup",
+      "tags": [
+        "Finance",
+        "Business plan"
+      ],
+      "tags_detail": [
+        "Finance",
+        "Business plan",
+        "Levée de fonds",
+        "Valorisation"
+      ],
+      "tags_detail_en": [
+        "Finance",
+        "Business plan",
+        "Fundraising",
+        "Valuation"
+      ],
+      "titre": "Business plan et préparation à la levée de fonds",
+      "titre_detail": "Business plan et<strong>préparation à la levée de fonds</strong>",
+      "titre_detail_en": "Business plan and<strong>fundraising preparation</strong>",
+      "description": "Construction du business plan et du pitch deck pour une startup nantaise de la GreenTech en phase de seed.",
+      "meta": {
+        "duree": "6 semaines",
+        "duree_en": "6 weeks",
+        "equipe": "3 consultants",
+        "livrables": "Business plan + pitch deck"
+      },
+      "titre_en": "Business plan and fundraising preparation",
+      "description_en": "Business plan and pitch deck for a Nantes-based GreenTech startup at the seed stage."
+    },
+    {
+      "slug": "restaurant-loiseau",
+      "client": "Loiseau & Co",
+      "client_initiale": "L&C",
+      "client_label": "Loiseau & Co",
+      "annee": 2025,
+      "echelle": "locale",
+      "expertise": [
+        "communication"
+      ],
+      "secteur": "services",
+      "secteur_libelle": "Restauration / Hôtellerie",
+      "secteur_libelle_en": "Food Service / Hospitality",
+      "tags": [
+        "Communication",
+        "Digital"
+      ],
+      "tags_detail": [
+        "Communication",
+        "Stratégie digitale",
+        "Réseaux sociaux",
+        "Google Ads"
+      ],
+      "tags_detail_en": [
+        "Communication",
+        "Digital strategy",
+        "Social media",
+        "Google Ads"
+      ],
+      "titre": "Stratégie digitale pour un restaurant du centre de Nantes",
+      "titre_detail": "Stratégie digitale pour un<strong>restaurant nantais</strong>",
+      "titre_detail_en": "Digital strategy for a<strong>restaurant in Nantes</strong>",
+      "description": "Audit de présence en ligne et plan de communication digitale (réseaux sociaux, référencement local) pour booster la visibilité.",
+      "meta": {
+        "duree": "6 semaines",
+        "duree_en": "6 weeks",
+        "equipe": "2 consultants",
+        "livrables": "Audit + plan de communication",
+        "livrables_en": "Audit + communication plan"
+      },
+      "titre_en": "Digital strategy for a restaurant in central Nantes",
+      "description_en": "Online presence audit and digital communication plan (social media, local SEO) to boost visibility."
+    },
+    {
+      "slug": "pme-industrie-44",
+      "client": "Métal Loire",
+      "client_initiale": "ML",
+      "client_label": "Métal Loire",
+      "annee": 2024,
+      "echelle": "locale",
+      "expertise": [
+        "rse"
+      ],
+      "secteur": "industrie",
+      "secteur_libelle": "Industrie / PME",
+      "secteur_libelle_en": "Industry / SME",
+      "tags": [
+        "RSE",
+        "Bilan carbone"
+      ],
+      "tags_detail": [
+        "RSE",
+        "Bilan carbone",
+        "Transition énergétique"
+      ],
+      "tags_detail_en": [
+        "CSR",
+        "Carbon footprint",
+        "Energy transition"
+      ],
+      "titre": "Premier bilan carbone d'une PME industrielle de Loire-Atlantique",
+      "titre_detail": "Premier bilan carbone d'une<strong>PME industrielle de Loire-Atlantique</strong>",
+      "titre_detail_en": "First carbon footprint for an<strong>industrial SME in Loire-Atlantique</strong>",
+      "description": "Réalisation du premier bilan carbone (Scope 1 & 2) et feuille de route transition énergétique pour une PME de 45 salariés.",
+      "meta": {
+        "duree": "2 mois",
+        "duree_en": "2 months",
+        "equipe": "3 consultants",
+        "livrables": "Bilan carbone + feuille de route",
+        "livrables_en": "Carbon footprint + roadmap"
+      },
+      "titre_en": "First carbon footprint for an industrial SME in Loire-Atlantique",
+      "description_en": "First carbon assessment (Scope 1 & 2) and energy transition roadmap for a 45-employee SME."
+    },
+    {
+      "slug": "startup-saas-nantes",
+      "client": "DataSmart",
+      "client_initiale": "DS",
+      "client_label": "DataSmart",
+      "annee": 2024,
+      "echelle": "locale",
+      "expertise": [
+        "marketing"
+      ],
+      "secteur": "tech",
+      "secteur_libelle": "SaaS / Tech",
+      "tags": [
+        "Marketing",
+        "Go-to-market"
+      ],
+      "tags_detail": [
+        "Marketing",
+        "Stratégie go-to-market",
+        "Segmentation",
+        "Personas"
+      ],
+      "tags_detail_en": [
+        "Marketing",
+        "Go-to-market strategy",
+        "Segmentation",
+        "Personas"
+      ],
+      "titre": "Stratégie go-to-market pour un SaaS B2B nantais",
+      "titre_detail": "Stratégie go-to-market pour un<strong>SaaS B2B nantais</strong>",
+      "titre_detail_en": "Go-to-market strategy for a<strong>B2B SaaS in Nantes</strong>",
+      "description": "Définition de la cible, segmentation et plan go-to-market pour le lancement commercial d'une solution SaaS auprès des PME régionales.",
+      "meta": {
+        "duree": "2 mois",
+        "duree_en": "2 months",
+        "equipe": "4 consultants",
+        "livrables": "Stratégie GTM + personas",
+        "livrables_en": "GTM strategy + personas"
+      },
+      "titre_en": "Go-to-market strategy for a Nantes-based B2B SaaS",
+      "description_en": "Targeting, segmentation and go-to-market plan for the commercial launch of a SaaS solution to regional SMEs."
+    },
     {
       "slug": "bagelstein",
       "client": "Bagelstein",
       "client_initiale": "B.",
       "client_label": "Bagelstein",
       "annee": 2024,
-      "expertise": ["marketing"],
+      "echelle": "grands-comptes",
+      "expertise": [
+        "marketing"
+      ],
       "secteur": "retail",
       "secteur_libelle": "Restauration / Retail",
-      "tags": ["Marketing", "Étude de marché"],
-      "tags_detail": ["Marketing", "Étude de marché", "Étude quantitative", "Recommandations stratégiques"],
+      "secteur_libelle_en": "Food Service / Retail",
+      "tags": [
+        "Marketing",
+        "Étude de marché"
+      ],
+      "tags_detail": [
+        "Marketing",
+        "Étude de marché",
+        "Étude quantitative",
+        "Recommandations stratégiques"
+      ],
+      "tags_detail_en": [
+        "Marketing",
+        "Market research",
+        "Quantitative study",
+        "Strategic recommendations"
+      ],
       "titre": "Lancement d'une gamme végane en région nantaise",
       "titre_detail": "Lancement d'un nouveau<strong>produit en région nantaise</strong>",
+      "titre_detail_en": "Launch of a new<strong>product in the Nantes area</strong>",
       "description": "Étude de marché et recommandations stratégiques pour le déploiement d'une nouvelle gamme sur la zone nantaise avant scale-up national.",
       "image": "photos/realisations/bagelstein.jpg",
       "image_alt": "Photo Bagelstein",
-
       "meta": {
-        "duree":     "3 mois",
-        "equipe":    "4 consultants",
-        "livrables": "2 rapports + soutenance"
+        "duree": "3 mois",
+        "duree_en": "3 months",
+        "equipe": "4 consultants",
+        "livrables": "2 rapports + soutenance",
+        "livrables_en": "2 reports + final presentation"
       },
-
       "contexte": {
         "intro": "Bagelstein, enseigne française de restauration rapide premium, souhaitait lancer une nouvelle gamme de bagels véganes sur le marché nantais avant un déploiement national.",
+        "intro_en": "Bagelstein, a French premium fast-food chain, wanted to launch a new range of vegan bagels on the Nantes market ahead of a national rollout.",
         "enjeu": "L'enjeu : comprendre l'appétence d'une cible urbaine 25-40 ans, identifier les freins à l'achat et déterminer le positionnement prix optimal pour maximiser le taux de conversion à l'ouverture.",
-        "defi":  "Valider la viabilité commerciale d'une gamme végane en 3 mois, avec une équipe terrain restreinte et un budget d'étude maîtrisé.",
+        "enjeu_en": "The challenge: understand the appetite of an urban 25-40 target audience, identify purchase barriers and determine the optimal price positioning to maximise the conversion rate at launch.",
+        "defi": "Valider la viabilité commerciale d'une gamme végane en 3 mois, avec une équipe terrain restreinte et un budget d'étude maîtrisé.",
+        "defi_en": "Validate the commercial viability of a vegan range within 3 months, with a small field team and a controlled study budget.",
         "objectifs": [
-          { "num": "01 · Dimensionner",  "texte": "Quantifier le potentiel de marché à 12 mois sur la zone" },
-          { "num": "02 · Cartographier", "texte": "Identifier les attentes et freins de la cible 25-40 ans" },
-          { "num": "03 · Recommander",   "texte": "Définir un pricing et un mix produit optimaux" }
+          {
+            "num": "01 · Dimensionner",
+            "texte": "Quantifier le potentiel de marché à 12 mois sur la zone"
+          },
+          {
+            "num": "02 · Cartographier",
+            "texte": "Identifier les attentes et freins de la cible 25-40 ans"
+          },
+          {
+            "num": "03 · Recommander",
+            "texte": "Définir un pricing et un mix produit optimaux"
+          }
+        ],
+        "objectifs_en": [
+          {
+            "num": "01 · Size",
+            "texte": "Quantify the 12-month market potential in the area"
+          },
+          {
+            "num": "02 · Map",
+            "texte": "Identify the expectations and barriers of the 25-40 target"
+          },
+          {
+            "num": "03 · Recommend",
+            "texte": "Define optimal pricing and product mix"
+          }
         ]
       },
-
       "approche": {
         "intro": "Une méthodologie en 4 étapes, éprouvée sur plus de 200 missions, certifiée ISO 9001.",
+        "intro_en": "A 4-step methodology, proven over more than 200 missions, ISO 9001 certified.",
         "etapes": [
-          { "step": "Cadrage",   "titre": "Immersion et brief stratégique",       "description": "Atelier de cadrage avec les équipes Bagelstein, analyse des données internes (ventes, données clients) et revue documentaire du marché." },
-          { "step": "Collecte",  "titre": "Étude quanti & quali sur le terrain",  "description": "420 questionnaires en ligne, 18 entretiens semi-directifs et 3 focus groups menés sur la zone nantaise pendant 4 semaines." },
-          { "step": "Analyse",   "titre": "Modélisation et benchmark concurrentiel","description": "Analyse statistique, segmentation comportementale, mapping concurrentiel et veille des best practices en restauration végane." },
-          { "step": "Livrables", "titre": "Recommandations & soutenance",         "description": "Rapport stratégique 60 pages, deck de soutenance, plan d'actions priorisé et accompagnement pour la mise en œuvre." }
+          {
+            "step": "Cadrage",
+            "titre": "Immersion et brief stratégique",
+            "description": "Atelier de cadrage avec les équipes Bagelstein, analyse des données internes (ventes, données clients) et revue documentaire du marché."
+          },
+          {
+            "step": "Collecte",
+            "titre": "Étude quanti & quali sur le terrain",
+            "description": "420 questionnaires en ligne, 18 entretiens semi-directifs et 3 focus groups menés sur la zone nantaise pendant 4 semaines."
+          },
+          {
+            "step": "Analyse",
+            "titre": "Modélisation et benchmark concurrentiel",
+            "description": "Analyse statistique, segmentation comportementale, mapping concurrentiel et veille des best practices en restauration végane."
+          },
+          {
+            "step": "Livrables",
+            "titre": "Recommandations & soutenance",
+            "description": "Rapport stratégique 60 pages, deck de soutenance, plan d'actions priorisé et accompagnement pour la mise en œuvre."
+          }
+        ],
+        "etapes_en": [
+          {
+            "step": "Scoping",
+            "titre": "Immersion and strategic brief",
+            "description": "Scoping workshop with the Bagelstein teams, analysis of internal data (sales, customer data) and market literature review."
+          },
+          {
+            "step": "Collection",
+            "titre": "Quantitative & qualitative field study",
+            "description": "420 online questionnaires, 18 semi-structured interviews and 3 focus groups conducted in the Nantes area over 4 weeks."
+          },
+          {
+            "step": "Analysis",
+            "titre": "Modelling and competitive benchmark",
+            "description": "Statistical analysis, behavioural segmentation, competitive mapping and monitoring of best practices in vegan dining."
+          },
+          {
+            "step": "Deliverables",
+            "titre": "Recommendations & presentation",
+            "description": "60-page strategic report, presentation deck, prioritised action plan and implementation support."
+          }
         ]
       },
-
       "resultats": {
         "intro": "Notre étude a permis à Bagelstein de sécuriser le lancement de sa gamme végane. Six mois après l'ouverture, les ventes dépassent les prévisions de <strong>+15%</strong>.",
+        "intro_en": "Our study allowed Bagelstein to secure the launch of its vegan range. Six months after opening, sales are exceeding forecasts by <strong>+15%</strong>.",
         "kpis": [
-          { "libelle": "Répondants collectés", "valeur": "420" },
-          { "libelle": "Intention d'achat",    "valeur": "+38%", "highlight": true },
-          { "libelle": "Segments identifiés",  "valeur": "3" },
-          { "libelle": "Prix psychologique",   "valeur": "€8,90" }
+          {
+            "libelle": "Répondants collectés",
+            "valeur": "420"
+          },
+          {
+            "libelle": "Intention d'achat",
+            "valeur": "+38%",
+            "highlight": true
+          },
+          {
+            "libelle": "Segments identifiés",
+            "valeur": "3"
+          },
+          {
+            "libelle": "Prix psychologique",
+            "valeur": "€8,90"
+          }
+        ],
+        "kpis_en": [
+          {
+            "libelle": "Respondents collected",
+            "valeur": "420"
+          },
+          {
+            "libelle": "Purchase intent",
+            "valeur": "+38%",
+            "highlight": true
+          },
+          {
+            "libelle": "Segments identified",
+            "valeur": "3"
+          },
+          {
+            "libelle": "Psychological price point",
+            "valeur": "€8.90"
+          }
         ],
         "outcomes": [
-          { "titre": "Lancement réussi",     "texte": "Gamme végane lancée en septembre 2024 sur la zone nantaise, +15% vs prévisionnel." },
-          { "titre": "Déploiement national", "texte": "Validation pour 12 nouvelles villes en 2025 sur la base de nos recommandations." },
-          { "titre": "Partenariat continu",  "texte": "Mission de suivi confiée à AJC pour la phase de scale-up nationale." }
+          {
+            "titre": "Lancement réussi",
+            "texte": "Gamme végane lancée en septembre 2024 sur la zone nantaise, +15% vs prévisionnel."
+          },
+          {
+            "titre": "Déploiement national",
+            "texte": "Validation pour 12 nouvelles villes en 2025 sur la base de nos recommandations."
+          },
+          {
+            "titre": "Partenariat continu",
+            "texte": "Mission de suivi confiée à AJC pour la phase de scale-up nationale."
+          }
+        ],
+        "outcomes_en": [
+          {
+            "titre": "Successful launch",
+            "texte": "Vegan range launched in September 2024 in the Nantes area, +15% vs forecast."
+          },
+          {
+            "titre": "National rollout",
+            "texte": "Approval for 12 new cities in 2025 based on our recommendations."
+          },
+          {
+            "titre": "Ongoing partnership",
+            "texte": "Follow-up mission entrusted to AJC for the national scale-up phase."
+          }
         ]
       },
-
       "temoignage": {
         "quote": "L'équipe d'Audencia Junior Conseil nous a livré une analyse fine et actionnable. Leur rigueur méthodologique et la qualité du livrable ont dépassé nos attentes.",
+        "quote_en": "The Audencia Junior Conseil team delivered a sharp, actionable analysis. Their methodological rigor and the quality of the deliverable exceeded our expectations.",
         "auteur": "Marie D.",
-        "role": "Responsable Marketing · Bagelstein"
-      }
+        "role": "Responsable Marketing · Bagelstein",
+        "role_en": "Marketing Manager · Bagelstein"
+      },
+      "titre_en": "Launch of a vegan range in the Nantes area",
+      "description_en": "Market research and strategic recommendations to roll out a new range in the Nantes area before national scale-up."
     },
-
     {
       "slug": "maison-luxe",
       "client": "LVMH",
       "client_initiale": "L.",
       "client_label": "Maison Luxe",
       "annee": 2024,
-      "expertise": ["communication"],
+      "echelle": "grands-comptes",
+      "expertise": [
+        "communication"
+      ],
       "secteur": "luxe",
       "secteur_libelle": "Luxe / Parfumerie",
-      "tags": ["Communication", "Stratégie éditoriale"],
-      "tags_detail": ["Communication", "Stratégie éditoriale", "Identité de marque"],
+      "secteur_libelle_en": "Luxury / Perfumery",
+      "tags": [
+        "Communication",
+        "Stratégie éditoriale"
+      ],
+      "tags_detail": [
+        "Communication",
+        "Stratégie éditoriale",
+        "Identité de marque"
+      ],
+      "tags_detail_en": [
+        "Communication",
+        "Editorial strategy",
+        "Brand identity"
+      ],
       "titre": "Refonte de la stratégie éditoriale d'une maison de parfumerie",
       "titre_detail": "Refonte de la stratégie<strong>éditoriale d'une maison de luxe</strong>",
+      "titre_detail_en": "Editorial strategy overhaul<strong>for a luxury house</strong>",
       "description": "Audit complet des prises de parole et construction d'un nouveau territoire d'expression sur 18 mois.",
       "image": "photos/realisations/maison-luxe.jpg",
       "image_alt": "Photo maison parfumerie",
-      "meta": { "duree": "5 mois", "equipe": "3 consultants", "livrables": "Plateforme de marque + guide éditorial" }
+      "meta": {
+        "duree": "5 mois",
+        "duree_en": "5 months",
+        "equipe": "3 consultants",
+        "livrables": "Plateforme de marque + guide éditorial",
+        "livrables_en": "Brand platform + editorial guide"
+      },
+      "titre_en": "Editorial strategy overhaul for a perfume house",
+      "description_en": "Full audit of brand communications and a new territory of expression over 18 months."
     },
     {
       "slug": "saint-gobain",
@@ -103,17 +526,42 @@
       "client_initiale": "SG",
       "client_label": "Industrie",
       "annee": 2023,
-      "expertise": ["rse"],
+      "echelle": "grands-comptes",
+      "expertise": [
+        "rse"
+      ],
       "secteur": "industrie",
       "secteur_libelle": "Industrie",
-      "tags": ["RSE", "Bilan carbone"],
-      "tags_detail": ["RSE", "Bilan carbone", "Scope 1-2-3"],
+      "secteur_libelle_en": "Industry",
+      "tags": [
+        "RSE",
+        "Bilan carbone"
+      ],
+      "tags_detail": [
+        "RSE",
+        "Bilan carbone",
+        "Scope 1-2-3"
+      ],
+      "tags_detail_en": [
+        "CSR",
+        "Carbon footprint",
+        "Scope 1-2-3"
+      ],
       "titre": "Diagnostic RSE et bilan carbone d'une division industrielle",
       "titre_detail": "Diagnostic RSE et<strong>bilan carbone industriel</strong>",
+      "titre_detail_en": "CSR assessment and<strong>industrial carbon footprint</strong>",
       "description": "Cartographie des émissions Scope 1, 2 & 3 et plan de réduction sur 5 ans pour une division de 1 200 collaborateurs.",
       "image": "photos/realisations/saint-gobain.jpg",
       "image_alt": "Photo site industriel",
-      "meta": { "duree": "4 mois", "equipe": "5 consultants", "livrables": "Bilan carbone + plan d'action 5 ans" }
+      "meta": {
+        "duree": "4 mois",
+        "duree_en": "4 months",
+        "equipe": "5 consultants",
+        "livrables": "Bilan carbone + plan d'action 5 ans",
+        "livrables_en": "Carbon footprint + 5-year action plan"
+      },
+      "titre_en": "CSR assessment and carbon footprint of an industrial division",
+      "description_en": "Mapping of Scope 1, 2 & 3 emissions and a 5-year reduction plan for a 1,200-employee division."
     },
     {
       "slug": "grdf",
@@ -121,17 +569,36 @@
       "client_initiale": "G.",
       "client_label": "Énergie",
       "annee": 2023,
-      "expertise": ["bigdata"],
+      "echelle": "grands-comptes",
+      "expertise": [
+        "bigdata"
+      ],
       "secteur": "energie",
       "secteur_libelle": "Énergie",
-      "tags": ["Big Data", "Dashboards"],
-      "tags_detail": ["Big Data", "Dashboards", "Power BI"],
+      "secteur_libelle_en": "Energy",
+      "tags": [
+        "Big Data",
+        "Dashboards"
+      ],
+      "tags_detail": [
+        "Big Data",
+        "Dashboards",
+        "Power BI"
+      ],
       "titre": "Construction d'un dashboard de pilotage commercial",
       "titre_detail": "Dashboard de<strong>pilotage commercial</strong>",
+      "titre_detail_en": "Commercial<strong>steering dashboard</strong>",
       "description": "Conception et déploiement d'un tableau de bord temps réel pour 80 commerciaux terrain, intégration de 6 sources de données.",
       "image": "photos/realisations/grdf.jpg",
       "image_alt": "Photo réseau gaz",
-      "meta": { "duree": "3 mois", "equipe": "3 consultants", "livrables": "Dashboard + documentation" }
+      "meta": {
+        "duree": "3 mois",
+        "duree_en": "3 months",
+        "equipe": "3 consultants",
+        "livrables": "Dashboard + documentation"
+      },
+      "titre_en": "Building a commercial steering dashboard",
+      "description_en": "Design and rollout of a real-time dashboard for 80 field sales reps, integrating 6 data sources."
     },
     {
       "slug": "leroy-merlin",
@@ -139,17 +606,36 @@
       "client_initiale": "LM",
       "client_label": "Bricolage",
       "annee": 2023,
-      "expertise": ["marketing"],
+      "echelle": "grands-comptes",
+      "expertise": [
+        "marketing"
+      ],
       "secteur": "retail",
       "secteur_libelle": "Retail",
-      "tags": ["Marketing", "Segmentation"],
-      "tags_detail": ["Marketing", "Segmentation", "Personas"],
+      "tags": [
+        "Marketing",
+        "Segmentation"
+      ],
+      "tags_detail": [
+        "Marketing",
+        "Segmentation",
+        "Personas"
+      ],
       "titre": "Segmentation comportementale des clients pro",
       "titre_detail": "Segmentation comportementale<strong>des clients pro</strong>",
+      "titre_detail_en": "Behavioural segmentation<strong>of professional customers</strong>",
       "description": "Identification de 5 segments stratégiques sur la cible artisans et création de personas pour la communication ciblée.",
       "image": "photos/realisations/leroy-merlin.jpg",
       "image_alt": "Photo enseigne bricolage",
-      "meta": { "duree": "4 mois", "equipe": "4 consultants", "livrables": "Personas + roadmap commerciale" }
+      "meta": {
+        "duree": "4 mois",
+        "duree_en": "4 months",
+        "equipe": "4 consultants",
+        "livrables": "Personas + roadmap commerciale",
+        "livrables_en": "Personas + commercial roadmap"
+      },
+      "titre_en": "Behavioral segmentation of professional customers",
+      "description_en": "Identification of 5 strategic segments among tradespeople and creation of personas for targeted communication."
     },
     {
       "slug": "vinci",
@@ -157,17 +643,42 @@
       "client_initiale": "V.",
       "client_label": "BTP",
       "annee": 2022,
-      "expertise": ["finance"],
+      "echelle": "grands-comptes",
+      "expertise": [
+        "finance"
+      ],
       "secteur": "services",
       "secteur_libelle": "BTP / Immobilier",
-      "tags": ["Finance", "Business plan"],
-      "tags_detail": ["Finance", "Business plan", "Étude de rentabilité"],
+      "secteur_libelle_en": "Construction / Real Estate",
+      "tags": [
+        "Finance",
+        "Business plan"
+      ],
+      "tags_detail": [
+        "Finance",
+        "Business plan",
+        "Étude de rentabilité"
+      ],
+      "tags_detail_en": [
+        "Finance",
+        "Business plan",
+        "Profitability study"
+      ],
       "titre": "Étude de rentabilité d'un projet immobilier mixte",
       "titre_detail": "Étude de rentabilité<strong>d'un projet immobilier</strong>",
+      "titre_detail_en": "Profitability study<strong>of a real estate project</strong>",
       "description": "Modélisation financière et analyse de risque pour un programme immobilier de 8 500 m² en région lyonnaise.",
       "image": "photos/realisations/vinci.jpg",
       "image_alt": "Photo projet immobilier",
-      "meta": { "duree": "3 mois", "equipe": "3 consultants", "livrables": "Business plan + analyse de risque" }
+      "meta": {
+        "duree": "3 mois",
+        "duree_en": "3 months",
+        "equipe": "3 consultants",
+        "livrables": "Business plan + analyse de risque",
+        "livrables_en": "Business plan + risk analysis"
+      },
+      "titre_en": "Profitability study of a mixed-use real estate project",
+      "description_en": "Financial modeling and risk analysis for an 8,500 sqm real estate program in the Lyon region."
     },
     {
       "slug": "bouygues-telecom",
@@ -175,17 +686,41 @@
       "client_initiale": "BT",
       "client_label": "Telecom",
       "annee": 2022,
-      "expertise": ["communication"],
+      "echelle": "grands-comptes",
+      "expertise": [
+        "communication"
+      ],
       "secteur": "tech",
       "secteur_libelle": "Telecom",
-      "tags": ["Communication", "Plan média"],
-      "tags_detail": ["Communication", "Plan média", "B2B"],
+      "tags": [
+        "Communication",
+        "Plan média"
+      ],
+      "tags_detail": [
+        "Communication",
+        "Plan média",
+        "B2B"
+      ],
+      "tags_detail_en": [
+        "Communication",
+        "Media plan",
+        "B2B"
+      ],
       "titre": "Plan média pour le lancement d'une offre fibre PME",
       "titre_detail": "Plan média pour une<strong>offre fibre PME</strong>",
+      "titre_detail_en": "Media plan for an<strong>SME fibre offer</strong>",
       "description": "Recommandations de mix média et création des supports clés pour le lancement national de l'offre B2B fibre.",
       "image": "photos/realisations/bouygues-telecom.jpg",
       "image_alt": "Photo plan média",
-      "meta": { "duree": "2 mois", "equipe": "3 consultants", "livrables": "Plan média + maquettes supports" }
+      "meta": {
+        "duree": "2 mois",
+        "duree_en": "2 months",
+        "equipe": "3 consultants",
+        "livrables": "Plan média + maquettes supports",
+        "livrables_en": "Media plan + material mockups"
+      },
+      "titre_en": "Media plan for the launch of a fibre offer for SMEs",
+      "description_en": "Media mix recommendations and key materials for the national launch of the B2B fibre offer."
     },
     {
       "slug": "sodexo",
@@ -193,17 +728,42 @@
       "client_initiale": "S.",
       "client_label": "Restauration",
       "annee": 2022,
-      "expertise": ["rse"],
+      "echelle": "grands-comptes",
+      "expertise": [
+        "rse"
+      ],
       "secteur": "services",
       "secteur_libelle": "Restauration collective",
-      "tags": ["RSE", "Stratégie durable"],
-      "tags_detail": ["RSE", "Stratégie durable", "SDG"],
+      "secteur_libelle_en": "Institutional catering",
+      "tags": [
+        "RSE",
+        "Stratégie durable"
+      ],
+      "tags_detail": [
+        "RSE",
+        "Stratégie durable",
+        "SDG"
+      ],
+      "tags_detail_en": [
+        "CSR",
+        "Sustainability strategy",
+        "SDG"
+      ],
       "titre": "Stratégie RSE pour la restauration collective",
       "titre_detail": "Stratégie RSE pour la<strong>restauration collective</strong>",
+      "titre_detail_en": "CSR strategy for<strong>institutional catering</strong>",
       "description": "Construction d'une roadmap RSE 2025 alignée sur les SDG et accompagnement du changement auprès des sites pilotes.",
       "image": "photos/realisations/sodexo.jpg",
       "image_alt": "Photo restauration collective",
-      "meta": { "duree": "4 mois", "equipe": "4 consultants", "livrables": "Roadmap RSE 2025 + guide pilotes" }
+      "meta": {
+        "duree": "4 mois",
+        "duree_en": "4 months",
+        "equipe": "4 consultants",
+        "livrables": "Roadmap RSE 2025 + guide pilotes",
+        "livrables_en": "2025 CSR roadmap + pilot guide"
+      },
+      "titre_en": "CSR strategy for collective catering",
+      "description_en": "Building a 2025 CSR roadmap aligned with the SDGs and change management for pilot sites."
     },
     {
       "slug": "credit-mutuel",
@@ -211,35 +771,65 @@
       "client_initiale": "CM",
       "client_label": "Banque",
       "annee": 2021,
-      "expertise": ["bigdata"],
+      "echelle": "grands-comptes",
+      "expertise": [
+        "bigdata"
+      ],
       "secteur": "services",
       "secteur_libelle": "Banque / Assurance",
-      "tags": ["Big Data", "Analyse prédictive"],
-      "tags_detail": ["Big Data", "Analyse prédictive", "Scoring"],
+      "secteur_libelle_en": "Banking / Insurance",
+      "tags": [
+        "Big Data",
+        "Analyse prédictive"
+      ],
+      "tags_detail": [
+        "Big Data",
+        "Analyse prédictive",
+        "Scoring"
+      ],
+      "tags_detail_en": [
+        "Big Data",
+        "Predictive analytics",
+        "Scoring"
+      ],
       "titre": "Modèle prédictif de churn pour les clients pros",
       "titre_detail": "Modèle prédictif de<strong>churn clients pros</strong>",
+      "titre_detail_en": "Predictive model for<strong>professional client churn</strong>",
       "description": "Développement d'un modèle de scoring pour anticiper les départs et déploiement d'un plan de rétention ciblé.",
       "image": "photos/realisations/credit-mutuel.jpg",
       "image_alt": "Photo agence bancaire",
-      "meta": { "duree": "5 mois", "equipe": "4 consultants", "livrables": "Modèle de scoring + plan de rétention" }
+      "meta": {
+        "duree": "5 mois",
+        "duree_en": "5 months",
+        "equipe": "4 consultants",
+        "livrables": "Modèle de scoring + plan de rétention",
+        "livrables_en": "Scoring model + retention plan"
+      },
+      "titre_en": "Predictive churn model for professional clients",
+      "description_en": "Development of a scoring model to anticipate departures and rollout of a targeted retention plan."
     }
   ],
-
   "temoignages": [
     {
       "quote": "Une équipe d'une grande rigueur. Les livrables sont actionnables dès la soutenance. Nous avons retrouvé une fraîcheur de regard sur notre marché.",
       "auteur": "Marie D.",
-      "role": "Responsable Marketing · Restauration"
+      "role": "Responsable Marketing · Restauration",
+      "quote_en": "A team of great rigor. The deliverables are actionable from the final presentation. We rediscovered a fresh perspective on our market.",
+      "role_en": "Marketing Manager · Restaurant"
     },
     {
       "quote": "Méthodologie irréprochable, écoute, qualité du livrable. Un partenariat à reconduire avec des étudiants engagés et bien formés.",
       "auteur": "Pierre L.",
-      "role": "Directeur RSE · Industrie"
+      "role": "Directeur RSE · Industrie",
+      "quote_en": "Flawless methodology, attentiveness, quality of deliverables. A partnership to renew with engaged, well-trained students.",
+      "role_en": "CSR Director · Industry"
     },
     {
       "quote": "Une fraîcheur stratégique précieuse, doublée d'une exécution professionnelle. Le rapport final a été directement présenté en comité de direction.",
       "auteur": "Sophie M.",
-      "role": "Directrice de la communication · Luxe"
+      "role": "Directrice de la communication · Luxe",
+      "quote_en": "Precious strategic freshness, combined with professional execution. The final report was presented directly to the executive committee.",
+      "role_en": "Communications Director · Luxury"
     }
   ]
 }

@@ -3,60 +3,75 @@
     {
       "id": "marketing",
       "titre": "Marketing",
+      "titre_en": "Marketing",
       "icone": "chart",
       "description": "Nos consultants réalisent des études de marché approfondies et des analyses stratégiques pour vous aider à comprendre votre environnement, vos clients et vos concurrents.",
+      "description_en": "Our consultants carry out in-depth market research and strategic analyses to help you understand your environment, customers and competitors.",
       "tags": ["Étude de marché", "Segmentation client", "Analyse concurrentielle", "Lancement produit", "Stratégie de marque"],
+      "tags_en": ["Market research", "Customer segmentation", "Competitive analysis", "Product launch", "Brand strategy"],
       "exemples": [
-        { "client": "Bagelstein", "contexte": "Lancement d'un nouveau produit sur le marché nantais", "livrable": "Étude de marché complète + recommandations stratégiques" },
-        { "client": "Leroy Merlin", "contexte": "Analyse de la satisfaction client en magasin", "livrable": "Rapport d'analyse + plan d'actions prioritaires" }
+        { "client": "Bagelstein", "contexte": "Lancement d'un nouveau produit sur le marché nantais", "contexte_en": "Launching a new product on the Nantes market", "livrable": "Étude de marché complète + recommandations stratégiques", "livrable_en": "Full market study + strategic recommendations" },
+        { "client": "Leroy Merlin", "contexte": "Analyse de la satisfaction client en magasin", "contexte_en": "In-store customer satisfaction analysis", "livrable": "Rapport d'analyse + plan d'actions prioritaires", "livrable_en": "Analysis report + priority action plan" }
       ],
-      "methodologie": ["Cadrage du besoin", "Collecte de données (quali/quanti)", "Analyse et benchmark", "Livrables et recommandations"]
+      "methodologie": ["Cadrage du besoin", "Collecte de données (quali/quanti) et recherche documentaire via Xerfi & Statista", "Analyse et benchmark sectoriel", "Livrables et recommandations"]
     },
     {
       "id": "communication",
       "titre": "Communication",
+      "titre_en": "Communication",
       "icone": "megaphone",
       "description": "De la stratégie éditoriale à l'identité de marque, nous vous aidons à construire une communication cohérente, efficace et adaptée à vos cibles.",
+      "description_en": "From editorial strategy to brand identity, we help you build a coherent, effective communication adapted to your audiences.",
       "tags": ["Stratégie éditoriale", "Identité de marque", "Plan media", "Community management", "Communication digitale"],
+      "tags_en": ["Editorial strategy", "Brand identity", "Media planning", "Community management", "Digital communication"],
       "exemples": [
-        { "client": "PME Nantaise", "contexte": "Refonte de l'identité visuelle et stratégie social media", "livrable": "Charte graphique + calendrier éditorial 6 mois" },
-        { "client": "Association sportive", "contexte": "Lancement de campagne de communication", "livrable": "Plan de communication complet + supports" }
+        { "client": "PME Nantaise", "contexte": "Refonte de l'identité visuelle et stratégie social media", "contexte_en": "Visual identity redesign and social media strategy", "livrable": "Charte graphique + calendrier éditorial 6 mois", "livrable_en": "Brand guidelines + 6-month editorial calendar" },
+        { "client": "Association sportive", "contexte": "Lancement de campagne de communication", "contexte_en": "Communication campaign launch", "livrable": "Plan de communication complet + supports", "livrable_en": "Full communication plan + materials" }
       ],
       "methodologie": ["Audit de l'existant", "Définition des cibles", "Élaboration de la stratégie", "Création des supports"]
     },
     {
       "id": "rse",
       "titre": "RSE",
+      "titre_en": "CSR",
       "icone": "leaf",
       "description": "Nous accompagnons les entreprises dans leur transition vers des pratiques plus responsables : diagnostics, bilans carbone, stratégies RSE et rapports extra-financiers.",
+      "description_en": "We support companies in their transition to more responsible practices: assessments, carbon footprints, CSR strategies and extra-financial reports.",
       "tags": ["Diagnostic RSE", "Bilan carbone", "Stratégie développement durable", "Rapport extra-financier", "CSRD"],
+      "tags_en": ["CSR assessment", "Carbon footprint", "Sustainability strategy", "Extra-financial report", "CSRD"],
       "exemples": [
-        { "client": "GRDF", "contexte": "Diagnostic RSE et stratégie de transition énergétique", "livrable": "Rapport RSE complet + feuille de route" },
-        { "client": "Vinci Energies", "contexte": "Bilan carbone et plan de réduction des émissions", "livrable": "Bilan carbone certifié + recommandations" }
+        { "client": "GRDF", "contexte": "Diagnostic RSE et stratégie de transition énergétique", "contexte_en": "CSR assessment and energy transition strategy", "livrable": "Rapport RSE complet + feuille de route", "livrable_en": "Full CSR report + roadmap" },
+        { "client": "Vinci Energies", "contexte": "Bilan carbone et plan de réduction des émissions", "contexte_en": "Carbon footprint and emission reduction plan", "livrable": "Bilan carbone certifié + recommandations", "livrable_en": "Certified carbon footprint + recommendations" }
       ],
       "methodologie": ["Diagnostic initial", "Collecte des données", "Analyse des impacts", "Plan d'action RSE"]
     },
     {
       "id": "bigdata",
       "titre": "Big Data",
+      "titre_en": "Big Data",
       "icone": "bars",
       "description": "Transformez vos données brutes en insights actionnables. Nos consultants maîtrisent l'analyse de données, la data visualisation et la modélisation prédictive.",
+      "description_en": "Turn your raw data into actionable insights. Our consultants master data analysis, data visualisation and predictive modelling.",
       "tags": ["Analyse de données", "Data visualisation", "Tableaux de bord", "Modélisation prédictive", "Business Intelligence"],
+      "tags_en": ["Data analysis", "Data visualisation", "Dashboards", "Predictive modelling", "Business Intelligence"],
       "exemples": [
-        { "client": "Groupe retail", "contexte": "Création d'un tableau de bord de suivi des KPIs commerciaux", "livrable": "Dashboard Power BI + documentation" },
-        { "client": "Startup SaaS", "contexte": "Analyse des données d'usage et segmentation clients", "livrable": "Analyse statistique + recommandations produit" }
+        { "client": "Groupe retail", "contexte": "Création d'un tableau de bord de suivi des KPIs commerciaux", "contexte_en": "Creation of a sales KPI monitoring dashboard", "livrable": "Dashboard Power BI + documentation", "livrable_en": "Power BI dashboard + documentation" },
+        { "client": "Startup SaaS", "contexte": "Analyse des données d'usage et segmentation clients", "contexte_en": "Usage data analysis and customer segmentation", "livrable": "Analyse statistique + recommandations produit", "livrable_en": "Statistical analysis + product recommendations" }
       ],
       "methodologie": ["Recueil et nettoyage des données", "Exploration et analyse", "Modélisation", "Visualisation et restitution"]
     },
     {
       "id": "finance",
       "titre": "Finance",
+      "titre_en": "Finance",
       "icone": "shield",
       "description": "Business plans, valorisations d'entreprise, analyses de rentabilité : nos consultants financiers vous accompagnent dans vos décisions stratégiques à fort enjeu.",
+      "description_en": "Business plans, company valuations, profitability analyses: our financial consultants support you in high-stakes strategic decisions.",
       "tags": ["Business plan", "Valorisation d'entreprise", "Analyse financière", "Étude de rentabilité", "Due diligence"],
+      "tags_en": ["Business plan", "Company valuation", "Financial analysis", "Profitability study", "Due diligence"],
       "exemples": [
-        { "client": "Saint-Gobain", "contexte": "Analyse financière et business plan pour une nouvelle activité", "livrable": "Business plan complet + modèle financier Excel" },
-        { "client": "Start-up deeptech", "contexte": "Valorisation pré-levée de fonds", "livrable": "Note de valorisation + pitch deck financier" }
+        { "client": "Saint-Gobain", "contexte": "Analyse financière et business plan pour une nouvelle activité", "contexte_en": "Financial analysis and business plan for a new activity", "livrable": "Business plan complet + modèle financier Excel", "livrable_en": "Full business plan + Excel financial model" },
+        { "client": "Start-up deeptech", "contexte": "Valorisation pré-levée de fonds", "contexte_en": "Pre-funding round valuation", "livrable": "Note de valorisation + pitch deck financier", "livrable_en": "Valuation report + financial pitch deck" }
       ],
       "methodologie": ["Analyse de l'existant", "Modélisation financière", "Tests de sensibilité", "Synthèse et recommandations"]
     }

@@ -14,7 +14,12 @@
   --slate-300: #cbd5e1;
   --slate-500: #64748b;
   --slate-700: #334155;
-  --stripes-r: repeating-linear-gradient(135deg, var(--marine) 0, var(--marine) 2px, rgba(255,255,255,0.04) 2px, rgba(255,255,255,0.04) 14px);
+  /* Fond des sections sombres : grille fine + halo rose, discret (charte AJC) */
+  --stripes-r:
+    radial-gradient(640px circle at 75% 0%, rgba(190, 49, 91, 0.16), transparent 70%),
+    linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+  --stripes-r-size: auto, 40px 40px, 40px 40px;
   --photo-stripes-r: repeating-linear-gradient(45deg, #c8c4bc 0, #c8c4bc 4px, #d8d4cc 4px, #d8d4cc 10px);
 
   font-family: 'Montserrat', sans-serif;
@@ -47,29 +52,34 @@
 .real-page .lede.on-dark { color: rgba(255,255,255,0.78); }
 
 /* ── Buttons (locaux, pas de conflit avec .btn-rose etc.) ── */
+/* Boutons réalisations alignés sur le standard du site (.btn-rose / .btn-outline-marine) :
+   coins arrondis 3px, letter-spacing 1.5px, bordure 2px. */
 .real-page .btn-r {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  padding: 16px 28px;
+  padding: 13px 28px;
+  font-family: 'Montserrat', sans-serif;
   font-size: 12px; font-weight: 700;
-  letter-spacing: 0.12em; text-transform: uppercase;
+  letter-spacing: 1.5px; text-transform: uppercase;
   border: 2px solid transparent;
-  transition: all .18s ease;
+  border-radius: 3px;
+  transition: background .2s, color .2s, border-color .2s;
   white-space: nowrap;
   cursor: pointer;
+  text-decoration: none;
 }
-.real-page .btn-r:hover { transform: translateY(-1px); }
 .real-page .btn-r .arrow { transition: transform .18s ease; }
 .real-page .btn-r:hover .arrow { transform: translateX(3px); }
 .real-page .btn-r-primary       { background: var(--rose); color: #fff; border-color: var(--rose); }
 .real-page .btn-r-primary:hover { background: #a8274e; border-color: #a8274e; }
 .real-page .btn-r-outline-white { background: transparent; color: #fff; border-color: rgba(255,255,255,0.6); }
 .real-page .btn-r-outline-white:hover { background: #fff; color: var(--marine); border-color: #fff; }
-.real-page .btn-r-lg { padding: 18px 32px; }
+.real-page .btn-r-lg { padding: 16px 36px; }
 
 /* ── Hero (page index) ──────────────────────────────────── */
 .real-page .hero-r {
   background: var(--marine);
   background-image: var(--stripes-r);
+  background-size: var(--stripes-r-size);
   color: #fff;
   padding: 80px 0 100px;
   position: relative; overflow: hidden;
@@ -114,7 +124,63 @@
 .real-page .hero-stats .v { font-size: 36px; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
 .real-page .hero-stats .l { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
 
-/* ── Filter bar ─────────────────────────────────────────── */
+/* ── Bandeau cliquable "Accompagnement à l'échelle locale" ── */
+.real-page .local-banner {
+  display: flex; align-items: center; gap: 18px;
+  padding: 22px var(--gutter-r);
+  background: var(--slate-50);
+  border-bottom: 1px solid var(--slate-200);
+  transition: background .2s ease;
+}
+.real-page .local-banner:hover { background: #fff; }
+.real-page .local-banner-pin { font-size: 22px; flex-shrink: 0; line-height: 1; }
+.real-page .local-banner-text { display: flex; flex-direction: column; gap: 3px; }
+.real-page .local-banner-text strong {
+  font-size: 16px; font-weight: 700; color: var(--marine); letter-spacing: -0.01em;
+}
+.real-page .local-banner-text span {
+  font-size: 12px; font-weight: 500; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--slate-500);
+}
+.real-page .local-banner-btn {
+  margin-left: auto; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--rose); color: #fff;
+  padding: 13px 28px; border-radius: 3px;
+  font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  transition: background .2s ease, transform .2s ease;
+}
+.real-page .local-banner-btn .arrow { transition: transform .2s ease; }
+.real-page .local-banner:hover .local-banner-btn { background: #a8274e; transform: translateY(-1px); }
+.real-page .local-banner:hover .local-banner-btn .arrow { transform: translateY(3px); }
+
+/* Bulle domaine (bas-droite de l'image) */
+.real-page .case-domain {
+  position: absolute; bottom: 12px; right: 12px; z-index: 2;
+  background: var(--marine); color: #fff;
+  padding: 6px 13px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(26,39,68,0.25);
+}
+
+/* ── Section "Accompagnement à l'échelle locale" ─────────── */
+.real-page .local-section { padding: 90px 0; background: #fff; border-top: 1px solid var(--slate-200); }
+.real-page .local-head { text-align: center; margin-bottom: 36px; }
+.real-page .local-head .accent-bar { margin: 22px auto 0; }
+.real-page .local-intro {
+  max-width: 760px; margin: 0 auto 48px; text-align: center;
+  font-size: 18px; font-weight: 300; line-height: 1.7; color: var(--slate-700);
+}
+.real-page .local-points {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px;
+  max-width: 1100px; margin: 0 auto 48px;
+}
+.real-page .local-point { border-top: 3px solid var(--rose); padding: 24px 8px 0; }
+.real-page .local-point h3 { font-size: 17px; font-weight: 700; color: var(--marine); margin-bottom: 10px; }
+.real-page .local-point p { font-size: 14px; color: var(--slate-500); line-height: 1.6; }
+.real-page .local-cta { display: flex; width: fit-content; margin: 0 auto; }
+
+/* ── Filter bar (non utilisée) ──────────────────────────── */
 .real-page .filter-bar {
   position: sticky; top: 68px; z-index: 50;
   background: #fff;
@@ -273,6 +339,7 @@
 .real-page .cta-final-r {
   background: var(--marine);
   background-image: var(--stripes-r);
+  background-size: var(--stripes-r-size);
   padding: 80px 0; color: #fff;
 }
 .real-page .cta-final-r .grid {
@@ -295,6 +362,7 @@
 .real-page .hero-detail {
   background: var(--marine);
   background-image: var(--stripes-r);
+  background-size: var(--stripes-r-size);
   color: #fff;
   padding: 40px 0 80px;
 }
@@ -500,4 +568,6 @@
   .real-page .hero-r { padding: 56px 0 72px; }
   .real-page .hero-stats .row { flex-direction: column; align-items: flex-start; gap: 4px; }
   .real-page .testimonial-solo .q { font-size: 19px; }
+  .real-page .local-points { grid-template-columns: 1fr; gap: 20px; }
+  .real-page .local-intro { font-size: 16px; }
 }

@@ -3,29 +3,41 @@
     {
       "nom": "Émilie Munsch",
       "role": "Présidente",
+      "role_en": "President",
       "description": "Émilie élabore la stratégie et s'assure de sa bonne mise en œuvre avec le soutien du bureau. En tant que représentante pénale de la Junior, elle coordonne l'ensemble des 24 chefs de projets tout en étant gardienne de la cohésion du mandat.",
-      "photo": "photos/equipe/bureau/president.jpg",
+
+      "description_en": "Émilie shapes the strategy and ensures it is properly carried out with the board's support. As the Junior's legal representative, she coordinates all 24 project managers while safeguarding the cohesion of the term.",
+      "photo": "photos/equipe/bureau/president.webp",
       "linkedin": "https://www.linkedin.com/in/emilie-munsch/"
     },
     {
       "nom": "Pierrick Rimaudière",
       "role": "Vice-Président",
+      "role_en": "Vice-President",
       "description": "Pierrick s'occupe de développer les partenariats avec les différentes parties-prenantes de Audencia Junior Conseil. En tant que membre du bureau, il se charge également de piloter l'efficacité des processus de la Junior et contribuer à leur amélioration continue en suivant les indicateurs de risques et de performances.",
-      "photo": "photos/equipe/bureau/vice-president.jpg",
+
+      "description_en": "Pierrick develops partnerships with AJC's various stakeholders. As a board member, he also drives the efficiency of the Junior's processes and contributes to their continuous improvement by tracking risk and performance indicators.",
+      "photo": "photos/equipe/bureau/vice-president.webp",
       "linkedin": "https://www.linkedin.com/in/pierrick-rimaudiere-b158822a3/"
     },
     {
       "nom": "Clara Chiche",
       "role": "Secrétaire Générale",
+      "role_en": "Secretary General",
       "description": "Premier point de contact entre vous et Audencia Junior Conseil, Clara relaie vos besoins à nos chefs de projet afin d'établir la rédaction d'un devis. Elle veille aussi au bon fonctionnement administratif de la structure.",
-      "photo": "photos/equipe/bureau/secretaire.jpg",
+
+      "description_en": "The first point of contact between you and Audencia Junior Conseil, Clara relays your needs to our project managers to draft a quote. She also oversees the smooth administrative running of the structure.",
+      "photo": "photos/equipe/bureau/secretaire.webp",
       "linkedin": "https://www.linkedin.com/in/clara-chiche-07243b306/"
     },
     {
       "nom": "Arthur Robin",
       "role": "Trésorier",
+      "role_en": "Treasurer",
       "description": "Arthur est au cœur du fonctionnement interne de la structure. Il est en charge de la partie financière des études et de la structure, effectue l'ensemble des paiements et s'assure du contrôle interne du pôle Trésorerie.",
-      "photo": "photos/equipe/bureau/tresorier.jpg",
+
+      "description_en": "Arthur is at the heart of the structure's internal operations. He handles the financial side of studies and the structure, processes all payments and ensures internal control of the Treasury division.",
+      "photo": "photos/equipe/bureau/tresorier.webp",
       "linkedin": "https://www.linkedin.com/in/arthur-robin49300/"
     }
   ],
@@ -33,126 +45,144 @@
     {
       "nom": "Victoire Gorioux",
       "role": "Responsable Développement Commercial",
-      "photo": "photos/equipe/bureau/resp-dev-commercial.jpg",
+      "role_en": "Head of Business Development",
+      "photo": "photos/equipe/bureau/resp-dev-commercial.webp",
       "linkedin": "https://www.linkedin.com/in/victoire-gorioux-6a04b0252/"
     },
     {
       "nom": "Anna Von Borowski",
       "role": "Responsable Ressources Humaines",
-      "photo": "photos/equipe/bureau/resp-rh.jpg",
+      "role_en": "Head of Human Resources",
+      "photo": "photos/equipe/bureau/resp-rh.webp",
       "linkedin": "https://www.linkedin.com/in/anna-von-borowski-617484286/"
+    },
+    {
+      "nom": "Félix Pitz",
+      "role": "Responsable Systèmes d'Informations",
+      "role_en": "Head of Information Systems",
+      "photo": "photos/equipe/bureau/resp-si.webp",
+      "linkedin": "https://www.linkedin.com/in/felix-pitz-a30b56232/"
     },
     {
       "nom": "Clémence Defosseux",
       "role": "Responsable Audit-Qualité",
-      "photo": "photos/equipe/bureau/resp-audit.jpg",
+      "role_en": "Head of Audit & Quality",
+      "photo": "photos/equipe/bureau/resp-audit.webp",
       "linkedin": "https://www.linkedin.com/in/cl%C3%A9mence-defosseux-74a99a343/"
     },
     {
       "nom": "Esther Gesny",
       "role": "Responsable Marketing",
-      "photo": "photos/equipe/bureau/resp-marketing.jpg",
+      "role_en": "Head of Marketing",
+      "photo": "photos/equipe/bureau/resp-marketing.webp",
       "linkedin": "https://www.linkedin.com/in/esthergesny/"
-    },
-    {
-      "nom": "Félix Pitz",
-      "role": "Responsable Systèmes d'Informations",
-      "photo": "photos/equipe/bureau/resp-si.jpg",
-      "linkedin": "https://www.linkedin.com/in/felix-pitz-a30b56232/"
     }
+
   ],
   "chefs_projet": [
     {
       "nom": "Maéva Poli",
       "role": "Vice-Trésoriere",
+      "role_en": "Deputy Treasurer",
       "description": "Maéva assiste le trésorier dans la gestion financière de la Junior et contribue au contrôle interne du pôle Trésorerie.",
-      "photo": "photos/equipe/bureau/vice-tresorier.jpg",
+      "photo": "photos/equipe/bureau/vice-tresorier.webp",
       "linkedin": "https://www.linkedin.com/in/maevapoli/"
     },
     {
       "nom": "Romain Messein",
       "role": "Coordinateur Trésorerie",
+      "role_en": "Treasury Coordinator",
       "description": "Romain coordonne les opérations de trésorerie et assure la fluidité des processus financiers de la structure.",
-      "photo": "photos/equipe/bureau/coordinateur-tresorerie.jpg",
+      "photo": "photos/equipe/bureau/coordinateur-tresorerie.webp",
       "linkedin": "https://www.linkedin.com/in/romain-messein-doideau-82425738a/"
+    },
+    {"nom": "Téo Fayon",
+      "role": "Systèmes d'Informations",
+      "role_en": "Information Systems",
+      "photo": "photos/equipe/chefs-projet/cdp-07.webp",
+      "linkedin": "https://www.linkedin.com/in/t%C3%A9o-fayon-491b5b354/"
     },
     {
       "nom": "Envel Bonno",
       "role": "Marketing",
-      "photo": "photos/equipe/chefs-projet/cdp-01.jpg",
+      "photo": "photos/equipe/chefs-projet/cdp-01.webp",
       "linkedin": "https://www.linkedin.com/in/envel-bonno-738881294/"
     },
     {
       "nom": "Laure Belliard",
       "role": "Marketing",
-      "photo": "photos/equipe/chefs-projet/cdp-02.jpg",
+      "photo": "photos/equipe/chefs-projet/cdp-02.webp",
       "linkedin": "https://www.linkedin.com/in/laure-belliard-a3a6b9368/"
     },
     {
       "nom": "Julien Suplisson",
       "role": "Développement Commercial",
-      "photo": "photos/equipe/chefs-projet/cdp-03.jpg",
+      "role_en": "Business Development",
+      "photo": "photos/equipe/chefs-projet/cdp-03.webp",
       "linkedin": "https://www.linkedin.com/in/julien-suplisson-2b6a42262/"
     },
     {
       "nom": "Léo Dakouri",
       "role": "Développement Commercial",
-      "photo": "photos/equipe/chefs-projet/cdp-04.jpg",
+      "role_en": "Business Development",
+      "photo": "photos/equipe/chefs-projet/cdp-04.webp",
       "linkedin": "https://www.linkedin.com/in/l%C3%A9o-dakouri/"
+    },
+    {"nom": "Amandine Barros",
+      "role": "Développement Commercial",
+      "role_en": "Business Development",
+      "photo": "photos/equipe/chefs-projet/cdp-13.webp",
+      "linkedin": "https://www.linkedin.com/in/amandine-barros/"
     },
     {
       "nom": "Arthur Sagot",
       "role": "Audit-Qualité",
-      "photo": "photos/equipe/chefs-projet/cdp-05.jpg",
+      "role_en": "Audit & Quality",
+      "photo": "photos/equipe/chefs-projet/cdp-05.webp",
       "linkedin": "https://www.linkedin.com/in/arthur-sagot-audencia/"
     },
     {
-      "nom": "Baptiste Le Bec",
+     "nom": "Baptiste Le Bec",
       "role": "Audit-Qualité",
-      "photo": "photos/equipe/chefs-projet/cdp-06.jpg",
+      "role_en": "Audit & Quality",
+      "photo": "photos/equipe/chefs-projet/cdp-06.webp",
       "linkedin": "https://www.linkedin.com/in/baptistelebec/"
-    },
-    {
-      "nom": "Amandine Barros",
-      "role": "Développement Commercial",
-      "photo": "photos/equipe/chefs-projet/cdp-13.jpg",
-      "linkedin": "https://www.linkedin.com/in/amandine-barros/"
     },
     {
       "nom": "Lucas Grancher",
       "role": "Audit-Qualité",
-      "photo": "photos/equipe/chefs-projet/cdp-08.jpg",
+      "role_en": "Audit & Quality",
+      "photo": "photos/equipe/chefs-projet/cdp-08.webp",
       "linkedin": "https://www.linkedin.com/in/lucasgrancher/"
     },
     {
       "nom": "Mylène Andela Ebela",
       "role": "Audit-Qualité",
-      "photo": "photos/equipe/chefs-projet/cdp-09.jpg",
+      "role_en": "Audit & Quality",
+      "photo": "photos/equipe/chefs-projet/cdp-09.webp",
       "linkedin": "https://www.linkedin.com/in/myl%C3%A8ne-andela-ebela-93ab94375/"
     },
     {
       "nom": "Raphaël Yana",
       "role": "Audit-Qualité",
-      "photo": "photos/equipe/chefs-projet/cdp-10.jpg",
+      "role_en": "Audit & Quality",
+      "photo": "photos/equipe/chefs-projet/cdp-10.webp",
       "linkedin": "https://www.linkedin.com/in/raphaelyana/"
     },
     {
       "nom": "Alexandre Chauchard",
       "role": "Ressources Humaines",
-      "photo": "photos/equipe/chefs-projet/cdp-11.jpg",
+      "role_en": "Human Resources",
+      "photo": "photos/equipe/chefs-projet/cdp-11.webp",
       "linkedin": "https://www.linkedin.com/in/alexandre-chauchard/"
     },
     {
       "nom": "Samy Kirat",
       "role": "Ressources Humaines",
-      "photo": "photos/equipe/chefs-projet/cdp-12.jpg",
+      "role_en": "Human Resources",
+      "photo": "photos/equipe/chefs-projet/cdp-12.webp",
       "linkedin": "https://www.linkedin.com/in/samy-k-26a021235/"
-    },
-    {
-      "nom": "Téo Fayon",
-      "role": "Systèmes d'Informations",
-      "photo": "photos/equipe/chefs-projet/cdp-07.jpg",
-      "linkedin": "https://www.linkedin.com/in/t%C3%A9o-fayon-491b5b354/"
     }
+
   ]
 }

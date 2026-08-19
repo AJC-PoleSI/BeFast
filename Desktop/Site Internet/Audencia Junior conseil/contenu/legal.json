@@ -1,58 +1,96 @@
 {
-  "_comment": "Fichier de contenu pour les pages 'Mentions légales' et 'Politique de confidentialité'. Modifie le texte directement dans ce fichier — il sera affiché automatiquement sur le site. Voir contenu/README-legal.md pour le guide complet.",
+  "_comment": "Fichier de contenu pour les pages 'Mentions légales' et 'Politique de confidentialité'. Modifie le texte directement dans ce fichier — il sera affiché automatiquement sur le site. Les champs suffixés '_en' contiennent la traduction anglaise (affichée quand le site est basculé en EN). Voir contenu/README-legal.md pour le guide complet.",
 
   "mentions_legales": {
     "page_titre": "Mentions légales",
+    "page_titre_en": "Legal Notice",
     "page_eyebrow": "Informations légales",
+    "page_eyebrow_en": "Legal information",
     "page_sous_titre": "Informations relatives à l'éditeur, à l'hébergement et à la propriété intellectuelle de ce site.",
+    "page_sous_titre_en": "Information about the publisher, hosting and intellectual property of this website.",
     "derniere_maj": "Mars 2026",
+    "derniere_maj_en": "March 2026",
     "sections": [
       {
         "titre": "Éditeur du site",
+        "titre_en": "Site publisher",
         "paragraphes": [
           "Ce site est édité par Audencia Junior Conseil dans le cadre de la gestion de son processus de recrutement interne et de la présentation de ses activités."
+        ],
+        "paragraphes_en": [
+          "This website is published by Audencia Junior Conseil as part of managing its internal recruitment process and presenting its activities."
         ],
         "liste": [
           "Dénomination : Audencia Junior Conseil",
           "Forme juridique : Association loi 1901",
           "Siège social : 8 Route de la Jonelière, 44312 Nantes",
           "Email : contact@ajc-mail.com"
+        ],
+        "liste_en": [
+          "Name: Audencia Junior Conseil",
+          "Legal form: Non-profit association (French law of 1901)",
+          "Registered office: 8 Route de la Jonelière, 44312 Nantes, France",
+          "Email: contact@ajc-mail.com"
         ]
       },
       {
         "titre": "Directeur de la publication",
+        "titre_en": "Publication director",
         "paragraphes": [
           "Le directeur de la publication est le/la Président(e) d'Audencia Junior Conseil."
+        ],
+        "paragraphes_en": [
+          "The publication director is the President of Audencia Junior Conseil."
         ]
       },
       {
         "titre": "Hébergement",
+        "titre_en": "Hosting",
         "paragraphes": [
           "Ce site est hébergé par Vercel Inc., 440 N Bayard St #201, Wilmington, DE 19801, États-Unis."
+        ],
+        "paragraphes_en": [
+          "This website is hosted by Vercel Inc., 440 N Bayard St #201, Wilmington, DE 19801, United States."
         ]
       },
       {
         "titre": "Propriété intellectuelle",
+        "titre_en": "Intellectual property",
         "paragraphes": [
           "L'ensemble des contenus (textes, images, logos, éléments graphiques) présentés sur ce site sont la propriété exclusive d'Audencia Junior Conseil ou de ses partenaires. Toute reproduction, représentation, modification ou exploitation, même partielle, est interdite sans autorisation écrite préalable."
+        ],
+        "paragraphes_en": [
+          "All content (text, images, logos, graphic elements) presented on this website is the exclusive property of Audencia Junior Conseil or its partners. Any reproduction, representation, modification or use, even partial, is prohibited without prior written authorisation."
         ]
       },
       {
         "titre": "Données personnelles",
+        "titre_en": "Personal data",
         "paragraphes": [
           "Les données collectées sur ce site sont traitées conformément au Règlement Général sur la Protection des Données (RGPD). Pour en savoir plus, consultez notre <a href=\"politique-confidentialite.html\">Politique de confidentialité</a>."
+        ],
+        "paragraphes_en": [
+          "Data collected on this website is processed in accordance with the General Data Protection Regulation (GDPR). For more information, see our <a href=\"politique-confidentialite.html\">Privacy Policy</a>."
         ]
       },
       {
         "titre": "Cookies",
+        "titre_en": "Cookies",
         "paragraphes": [
           "Ce site utilise des cookies strictement nécessaires au fonctionnement de l'application (authentification, session). Aucun cookie publicitaire ou de tracking n'est utilisé."
+        ],
+        "paragraphes_en": [
+          "This website uses cookies strictly necessary for the application to function (authentication, session). No advertising or tracking cookies are used."
         ]
       },
       {
         "titre": "Contact",
+        "titre_en": "Contact",
         "paragraphes": [
           "Pour toute question relative aux mentions légales, vous pouvez nous contacter à l'adresse : <a href=\"mailto:contact@ajc-mail.com\">contact@ajc-mail.com</a>."
+        ],
+        "paragraphes_en": [
+          "For any questions regarding this legal notice, you can contact us at: <a href=\"mailto:contact@ajc-mail.com\">contact@ajc-mail.com</a>."
         ]
       }
     ]
@@ -60,20 +98,32 @@
 
   "politique_confidentialite": {
     "page_titre": "Politique de confidentialité",
+    "page_titre_en": "Privacy Policy",
     "page_eyebrow": "Vos données, votre confiance",
+    "page_eyebrow_en": "Your data, your trust",
     "page_sous_titre": "Comment nous collectons, utilisons et protégeons vos données personnelles, dans le respect du RGPD.",
+    "page_sous_titre_en": "How we collect, use and protect your personal data, in compliance with the GDPR.",
     "derniere_maj": "Mars 2026",
+    "derniere_maj_en": "March 2026",
     "sections": [
       {
         "titre": "1. Responsable du traitement",
+        "titre_en": "1. Data controller",
         "paragraphes": [
           "Le responsable du traitement des données personnelles est Audencia Junior Conseil, association loi 1901, dont le siège social est situé 8 Route de la Jonelière, 44312 Nantes."
+        ],
+        "paragraphes_en": [
+          "The data controller for personal data is Audencia Junior Conseil, a non-profit association (French law of 1901), whose registered office is located at 8 Route de la Jonelière, 44312 Nantes, France."
         ]
       },
       {
         "titre": "2. Données collectées",
+        "titre_en": "2. Data collected",
         "paragraphes": [
           "Dans le cadre du processus de recrutement, nous collectons les données suivantes :"
+        ],
+        "paragraphes_en": [
+          "As part of the recruitment process, we collect the following data:"
         ],
         "liste": [
           "Nom, prénom, adresse email",
@@ -82,48 +132,86 @@
           "Choix de pôles et préférences",
           "Évaluations et notes attribuées lors des épreuves",
           "Disponibilités horaires des évaluateurs"
+        ],
+        "liste_en": [
+          "Last name, first name, email address",
+          "Phone number (optional)",
+          "Education and academic background",
+          "Division choices and preferences",
+          "Evaluations and scores assigned during assessments",
+          "Evaluators' time availability"
         ]
       },
       {
         "titre": "3. Finalité du traitement",
+        "titre_en": "3. Purpose of processing",
         "paragraphes": [
           "Les données collectées sont utilisées exclusivement pour :"
+        ],
+        "paragraphes_en": [
+          "The data collected is used exclusively for:"
         ],
         "liste": [
           "La gestion du processus de recrutement (candidatures, évaluations, délibérations)",
           "L'organisation logistique des épreuves (planning, salles, jurys)",
           "La communication avec les candidats et les membres évaluateurs",
           "L'établissement de statistiques anonymisées sur le recrutement"
+        ],
+        "liste_en": [
+          "Managing the recruitment process (applications, evaluations, deliberations)",
+          "Organising the logistics of assessments (scheduling, rooms, panels)",
+          "Communicating with candidates and evaluator members",
+          "Producing anonymised recruitment statistics"
         ]
       },
       {
         "titre": "4. Base légale",
+        "titre_en": "4. Legal basis",
         "paragraphes": [
           "Le traitement des données repose sur l'intérêt légitime d'Audencia Junior Conseil à gérer son processus de recrutement, ainsi que sur le consentement des candidats lors de leur inscription sur la plateforme."
+        ],
+        "paragraphes_en": [
+          "The processing of data is based on Audencia Junior Conseil's legitimate interest in managing its recruitment process, as well as on candidates' consent when they register on the platform."
         ]
       },
       {
         "titre": "5. Durée de conservation",
+        "titre_en": "5. Retention period",
         "paragraphes": [
           "Les données des candidats sont conservées pendant la durée du processus de recrutement et jusqu'à 12 mois après la fin de celui-ci. Les données des membres évaluateurs sont conservées pendant la durée de leur mandat."
+        ],
+        "paragraphes_en": [
+          "Candidates' data is retained for the duration of the recruitment process and up to 12 months after it ends. Evaluator members' data is retained for the duration of their term."
         ]
       },
       {
         "titre": "6. Destinataires des données",
+        "titre_en": "6. Data recipients",
         "paragraphes": [
           "Les données sont accessibles uniquement aux membres habilités d'Audencia Junior Conseil (administrateurs et évaluateurs) dans le cadre strict de leurs missions de recrutement. Aucune donnée n'est transmise à des tiers commerciaux."
+        ],
+        "paragraphes_en": [
+          "Data is accessible only to authorised members of Audencia Junior Conseil (administrators and evaluators) strictly within the scope of their recruitment duties. No data is transferred to commercial third parties."
         ]
       },
       {
         "titre": "7. Sécurité des données",
+        "titre_en": "7. Data security",
         "paragraphes": [
           "Nous mettons en œuvre des mesures techniques et organisationnelles appropriées pour protéger vos données : chiffrement des mots de passe, accès restreint par authentification, hébergement sécurisé, protocole HTTPS."
+        ],
+        "paragraphes_en": [
+          "We implement appropriate technical and organisational measures to protect your data: password encryption, access restricted by authentication, secure hosting, HTTPS protocol."
         ]
       },
       {
         "titre": "8. Vos droits",
+        "titre_en": "8. Your rights",
         "paragraphes": [
           "Conformément au RGPD, vous disposez des droits suivants :"
+        ],
+        "paragraphes_en": [
+          "In accordance with the GDPR, you have the following rights:"
         ],
         "liste": [
           "Droit d'accès : obtenir une copie de vos données personnelles",
@@ -132,21 +220,40 @@
           "Droit à la portabilité : recevoir vos données dans un format structuré",
           "Droit d'opposition : vous opposer au traitement de vos données"
         ],
+        "liste_en": [
+          "Right of access: obtain a copy of your personal data",
+          "Right to rectification: correct inaccurate or incomplete data",
+          "Right to erasure: request the deletion of your data",
+          "Right to portability: receive your data in a structured format",
+          "Right to object: object to the processing of your data"
+        ],
         "paragraphes_apres": [
           "Pour exercer ces droits, contactez-nous à : <a href=\"mailto:contact@ajc-mail.com\">contact@ajc-mail.com</a>."
+        ],
+        "paragraphes_apres_en": [
+          "To exercise these rights, contact us at: <a href=\"mailto:contact@ajc-mail.com\">contact@ajc-mail.com</a>."
         ]
       },
       {
         "titre": "9. Cookies",
+        "titre_en": "9. Cookies",
         "paragraphes": [
           "Cette application utilise uniquement des cookies techniques nécessaires à son fonctionnement (jeton d'authentification JWT). Aucun cookie de suivi, d'analyse ou publicitaire n'est utilisé."
+        ],
+        "paragraphes_en": [
+          "This application only uses technical cookies necessary for it to function (JWT authentication token). No tracking, analytics or advertising cookies are used."
         ]
       },
       {
         "titre": "10. Contact",
+        "titre_en": "10. Contact",
         "paragraphes": [
           "Pour toute question concernant cette politique de confidentialité ou l'exercice de vos droits, vous pouvez nous écrire à : <a href=\"mailto:contact@ajc-mail.com\">contact@ajc-mail.com</a>.",
           "Vous pouvez également introduire une réclamation auprès de la CNIL : <a href=\"https://www.cnil.fr\" target=\"_blank\" rel=\"noopener\">www.cnil.fr</a>."
+        ],
+        "paragraphes_en": [
+          "For any questions regarding this privacy policy or exercising your rights, you can write to us at: <a href=\"mailto:contact@ajc-mail.com\">contact@ajc-mail.com</a>.",
+          "You can also file a complaint with the CNIL (French data protection authority): <a href=\"https://www.cnil.fr\" target=\"_blank\" rel=\"noopener\">www.cnil.fr</a>."
         ]
       }
     ]

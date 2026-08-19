@@ -3,22 +3,30 @@
     {
       "quote": "Une Junior-Entreprise professionnelle et efficace. L'équipe a su s'adapter à nos contraintes et livrer un travail de qualité dans les délais impartis.",
       "auteur": "Bagelstein",
-      "mission": "Étude Marketing — Lancement produit"
+      "mission": "Étude Marketing — Lancement produit",
+      "quote_en": "A professional and efficient Junior-Enterprise. The team adapted to our constraints and delivered quality work within the agreed timeframe.",
+      "mission_en": "Marketing Study — Product Launch"
     },
     {
       "quote": "Nous avons été bluffés par la rigueur et la créativité des consultants d'AJC. Le rapport rendu dépassait nos attentes, tant en fond qu'en forme.",
       "auteur": "GRDF",
-      "mission": "Diagnostic RSE — Transition énergétique"
+      "mission": "Diagnostic RSE — Transition énergétique",
+      "quote_en": "We were impressed by the rigor and creativity of AJC's consultants. The final report exceeded our expectations, both in substance and in form.",
+      "mission_en": "CSR Assessment — Energy Transition"
     },
     {
       "quote": "AJC a réalisé pour nous une étude de marché complète avec une réactivité remarquable. Je recommande vivement cette Junior-Entreprise à toute organisation ambitieuse.",
       "auteur": "Vinci Energies",
-      "mission": "Étude de marché — Expansion régionale"
+      "mission": "Étude de marché — Expansion régionale",
+      "quote_en": "AJC carried out a complete market study for us with remarkable responsiveness. I highly recommend this Junior-Enterprise to any ambitious organisation.",
+      "mission_en": "Market Research — Regional Expansion"
     },
     {
       "quote": "Le sérieux, l'implication et la qualité des livrables nous ont convaincus de retravailler avec AJC dès notre prochain projet de développement.",
       "auteur": "Saint-Gobain",
-      "mission": "Analyse financière — Business plan"
+      "mission": "Analyse financière — Business plan",
+      "quote_en": "The seriousness, commitment and quality of the deliverables convinced us to work with AJC again on our next development project.",
+      "mission_en": "Financial Analysis — Business Plan"
     }
   ]
 }

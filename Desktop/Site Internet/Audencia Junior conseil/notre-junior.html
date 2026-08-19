@@ -19,8 +19,16 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="logo-config.css">
   <style>
+    /* ── GLOW DE PAGE (halo rose doux, centré, lié à la charte AJC) ── */
+    .page-glow {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background-image: radial-gradient(circle at 50% 38%, rgba(190, 49, 91, 0.45) 0%, transparent 68%);
+      opacity: 0.16;
+      mix-blend-mode: multiply;
+    }
+
     /* ── NOTRE HISTOIRE : timeline ───────────── */
-    #histoire { background: var(--white); padding: 96px 48px; }
+    #histoire { background: transparent; padding: 96px 48px; }
     .histoire-inner { max-width: 1000px; margin: 0 auto; }
     .timeline { position: relative; margin-top: 64px; }
     .timeline::before {
@@ -38,10 +46,10 @@
     .tl-year { font-size: 26px; font-weight: 800; color: var(--marine); line-height: 1; }
     .tl-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--rose); margin-top: 6px; }
     .tl-content h3 { font-size: 18px; font-weight: 800; color: var(--marine); margin-bottom: 10px; }
-    .tl-content p { font-size: 14px; color: var(--gray-text); line-height: 1.85; }
+    .tl-content p { font-size: 14px; color: var(--gray-text); line-height: 1.85; text-align: justify; }
 
     /* ── NOTRE ÉCOLE : cartes ────────────────── */
-    #ecole { background: var(--gray-bg); padding: 96px 48px; }
+    #ecole { background: transparent; padding: 96px 48px; }
     .ecole-inner { max-width: 1200px; margin: 0 auto; }
     .ecole-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 56px; }
     .ecole-card {
@@ -52,7 +60,7 @@
     .ec-stat { font-size: 32px; font-weight: 800; color: var(--rose); line-height: 1; margin-bottom: 8px; }
     .ec-stat-sub { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gray-text); margin-bottom: 22px; }
     .ec-title { font-size: 15px; font-weight: 800; color: var(--marine); margin-bottom: 10px; }
-    .ec-desc { font-size: 13px; color: var(--gray-text); line-height: 1.75; }
+    .ec-desc { font-size: 13px; color: var(--gray-text); line-height: 1.75; text-align: justify; }
 
     /* ── RSE / GAIA ──────────────────────────── */
     #rse { background: var(--marine); padding: 96px 48px; position: relative; overflow: hidden; }
@@ -66,19 +74,19 @@
     .rse-title { font-size: 32px; font-weight: 800; color: white; line-height: 1.25; margin-bottom: 20px; }
     .rse-title .accent { color: var(--rose); }
     .rse-accent { width: 40px; height: 3px; background: var(--rose); }
-    .rse-text p { font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.9; margin-bottom: 20px; }
+    .rse-text p { font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.9; margin-bottom: 20px; text-align: justify; }
     .rse-text p:last-child { margin-bottom: 0; color: rgba(255,255,255,0.92); font-weight: 600; }
 
     /* ── ECOS 2025 ───────────────────────────── */
-    #ecos { background: var(--white); padding: 96px 48px; }
+    #ecos { background: transparent; padding: 96px 48px; }
     .ecos-inner { max-width: 1100px; margin: 0 auto; }
-    .ecos-intro { font-size: 14px; color: var(--gray-text); line-height: 1.85; max-width: 780px; margin-top: 4px; }
+    .ecos-intro { font-size: 14px; color: var(--gray-text); line-height: 1.85; max-width: 780px; margin-top: 4px; text-align: justify; }
     .ecos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 56px; }
     .ecos-item { background: var(--gray-bg); border-radius: 8px; padding: 32px 28px; border-top: 3px solid var(--rose); transition: transform 0.2s, box-shadow 0.2s; }
     .ecos-item:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(26,39,68,0.08); }
     .ecos-num { font-size: 30px; font-weight: 800; color: var(--rose); opacity: 0.25; line-height: 1; }
     .ecos-title { font-size: 14px; font-weight: 800; color: var(--marine); margin: 12px 0 8px; }
-    .ecos-desc { font-size: 13px; color: var(--gray-text); line-height: 1.7; }
+    .ecos-desc { font-size: 13px; color: var(--gray-text); line-height: 1.7; text-align: justify; }
 
     /* ── CHIFFRES CLÉS DE L'ÉCOLE ────────────── */
     #chiffres-ecole { position: relative; padding: 80px 48px; background: var(--marine); overflow: hidden; }
@@ -97,6 +105,13 @@
     .chiffre-item:hover { background: rgba(255,255,255,0.07); }
     .chiffre-num { font-size: 52px; font-weight: 800; color: white; line-height: 1; margin-bottom: 8px; letter-spacing: -2px; }
     .chiffre-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+
+    /* ── TEXTES JUSTIFIÉS (page Notre Junior) ── */
+    #histoire .section-desc,
+    #ecole .section-desc,
+    .pf-text p {
+      text-align: justify;
+    }
 
     /* ── PRE-FOOTER ──────────────────────────── */
     #pre-footer { padding: 48px; }
@@ -130,8 +145,12 @@
       .chiffre-num { font-size: 40px; }
     }
   </style>
+  <script src="assets/i18n.js" defer></script>
+  <script src="assets/contact-modal.js" defer></script>
 </head>
 <body>
+
+<div class="page-glow" aria-hidden="true"></div>
 
 <!-- ══ HEADER ══════════════════════════════════════════════════════ -->
 <header id="main-header">
@@ -144,106 +163,116 @@
       <div class="logo-text">Audencia <small>Junior Conseil</small></div>
     </a>
     <nav>
+      <a href="documents/plaquette-ajc.pdf" download class="nav-plaquette" title="Télécharger notre plaquette PDF">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span data-i18n="nav.plaquette">Plaquette</span>
+      </a>
       <div class="nav-item">
-        <a href="qu-est-ce-une-je.html" class="active">La Junior-Entreprise <span class="arr">▾</span></a>
+        <a href="qu-est-ce-une-je.html" class="active"><span data-i18n="nav.je">La Junior-Entreprise</span> <span class="arr">▾</span></a>
         <div class="dropdown">
           <a href="qu-est-ce-une-je.html" class="dropdown-item">
-            <span><span class="di-title">Qu'est-ce qu'une JE ?</span><span class="di-sub">Le mouvement Junior-Entreprises</span></span>
+            <span><span class="di-title" data-i18n="dd.je.qje.t">Qu'est-ce qu'une JE ?</span><span class="di-sub" data-i18n="dd.je.qje.s">Le mouvement Junior-Entreprises</span></span>
           </a>
           <a href="notre-junior.html" class="dropdown-item">
-            <span><span class="di-title">Notre Junior</span><span class="di-sub">45 ans d'histoire et d'excellence</span></span>
+            <span><span class="di-title" data-i18n="dd.je.nj.t">Notre Junior</span><span class="di-sub" data-i18n="dd.je.nj.s">45 ans d'histoire et d'excellence</span></span>
           </a>
           <a href="notre-equipe.html" class="dropdown-item">
-            <span><span class="di-title">Notre Équipe</span><span class="di-sub">Bureau et chefs de projets</span></span>
+            <span><span class="di-title" data-i18n="dd.je.team.t">Notre Équipe</span><span class="di-sub" data-i18n="dd.je.team.s">Bureau et chefs de projets</span></span>
           </a>
           <div class="dropdown-divider"></div>
           <a href="contact.html" class="dropdown-item">
-            <span><span class="di-title">Nous contacter</span><span class="di-sub">Demander un devis</span></span>
+            <span><span class="di-title" data-i18n="dd.je.contact.t">Nous contacter</span><span class="di-sub" data-i18n="dd.je.contact.s">Demander un devis</span></span>
           </a>
         </div>
       </div>
       <div class="nav-item">
-        <a href="prestations.html">Nos prestations <span class="arr">▾</span></a>
+        <a href="prestations.html"><span data-i18n="nav.prestations">Nos prestations</span> <span class="arr">▾</span></a>
         <div class="dropdown">
           <a href="prestations.html#marketing" class="dropdown-item">
-            <span><span class="di-title">Marketing</span><span class="di-sub">Études de marché, stratégie</span></span>
+            <span><span class="di-title">Marketing</span><span class="di-sub" data-i18n="dd.p.mkt.s">Études de marché, stratégie</span></span>
           </a>
           <a href="prestations.html#communication" class="dropdown-item">
-            <span><span class="di-title">Communication</span><span class="di-sub">Stratégie éditoriale, digital</span></span>
+            <span><span class="di-title">Communication</span><span class="di-sub" data-i18n="dd.p.com.s">Stratégie éditoriale, digital</span></span>
           </a>
           <a href="prestations.html#rse" class="dropdown-item">
-            <span><span class="di-title">RSE</span><span class="di-sub">Diagnostic, bilan carbone</span></span>
+            <span><span class="di-title" data-i18n="dd.p.rse.t">RSE</span><span class="di-sub" data-i18n="dd.p.rse.s">Diagnostic, bilan carbone</span></span>
           </a>
           <a href="prestations.html#bigdata" class="dropdown-item">
-            <span><span class="di-title">Big Data</span><span class="di-sub">Analyse, dataviz</span></span>
+            <span><span class="di-title">Big Data</span><span class="di-sub" data-i18n="dd.p.data.s">Analyse, dataviz</span></span>
           </a>
           <a href="prestations.html#finance" class="dropdown-item">
-            <span><span class="di-title">Finance</span><span class="di-sub">Business plan, valorisation</span></span>
+            <span><span class="di-title">Finance</span><span class="di-sub" data-i18n="dd.p.fin.s">Business plan, valorisation</span></span>
           </a>
         </div>
       </div>
-      <a href="realisations.html">Nos réalisations</a>
+      <a href="realisations.html"><span data-i18n="nav.realisations">Nos réalisations</span></a>
     </nav>
     <button class="hamburger" id="hamburger" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
-    <a href="contact.html" class="btn-outline-marine" id="desktop-cta">Nous contacter</a>
+    <div class="lang-switch" role="group" aria-label="Langue / Language">
+      <button type="button" class="lang-opt is-active" data-lang="fr">FR</button>
+      <span class="lang-sep" aria-hidden="true">|</span>
+      <button type="button" class="lang-opt" data-lang="en">EN</button>
+    </div>
+    <a href="contact.html" class="btn-outline-marine" id="desktop-cta" data-i18n="nav.contact">Nous contacter</a>
   </div>
 </header>
 
 <!-- Mobile drawer -->
 <div class="mobile-drawer" id="mobile-drawer">
-  <a href="index.html">Accueil</a>
-  <a href="qu-est-ce-une-je.html">Qu'est-ce qu'une JE ?</a>
-  <a href="notre-junior.html">Notre Junior</a>
-  <a href="notre-equipe.html">Notre Équipe</a>
-  <a href="prestations.html">Nos Prestations</a>
-  <a href="realisations.html">Nos Réalisations</a>
-  <a href="contact.html" class="drawer-cta">Nous contacter →</a>
+  <a href="index.html" data-i18n="drawer.home">Accueil</a>
+  <a href="qu-est-ce-une-je.html" data-i18n="drawer.qje">Qu'est-ce qu'une JE ?</a>
+  <a href="notre-junior.html" data-i18n="drawer.nj">Notre Junior</a>
+  <a href="notre-equipe.html" data-i18n="drawer.team">Notre Équipe</a>
+  <a href="prestations.html" data-i18n="drawer.prestations">Nos Prestations</a>
+  <a href="realisations.html" data-i18n="drawer.realisations">Nos Réalisations</a>
+  <a href="documents/plaquette-ajc.pdf" download class="drawer-cta drawer-cta-secondary" data-i18n="drawer.plaquette">⬇ Télécharger la plaquette</a>
+  <a href="contact.html" class="drawer-cta" data-i18n="drawer.contact">Nous contacter →</a>
 </div>
 
 <!-- ══ HERO ════════════════════════════════════════════════════════ -->
 <section class="page-hero">
   <div class="page-hero-inner">
-    <p class="page-hero-eyebrow">Qui sommes-nous</p>
-    <h1 class="page-hero-title">Notre Junior</h1>
-    <p class="page-hero-sub">Depuis 1980, Audencia Junior Conseil met l'excellence des étudiants d'Audencia Business School au service des entreprises. Découvrez notre histoire et l'école qui nous forme.</p>
+    <p class="page-hero-eyebrow" data-i18n="nj.hero.eyebrow">Qui sommes-nous</p>
+    <h1 class="page-hero-title" data-i18n="nj.hero.title">Notre Junior</h1>
+    <p class="page-hero-sub" data-i18n="nj.hero.sub">Depuis 1980, Audencia Junior Conseil met l'excellence des étudiants d'Audencia Business School au service des entreprises. Découvrez notre histoire et l'école qui nous forme.</p>
   </div>
 </section>
 
 <!-- ══ NOTRE HISTOIRE ═══════════════════════════════════════════════ -->
 <section id="histoire">
   <div class="histoire-inner">
-    <p class="section-label">45 ans d'engagement</p>
-    <h2 class="section-title"><span class="thin">Notre</span> Histoire</h2>
+    <p class="section-label" data-i18n="nj.hist.label">45 ans d'engagement</p>
+    <h2 class="section-title" data-i18n="nj.hist.title"><span class="thin">Notre</span> Histoire</h2>
     <div class="section-accent"></div>
-    <p class="section-desc" style="max-width: 620px;">D'une association pédagogique fondée en 1980 à l'élite des Junior-Entreprises françaises : retour sur plus de quatre décennies de conseil, d'apprentissage et d'exigence.</p>
+    <p class="section-desc" style="max-width: 620px;" data-i18n="nj.hist.desc">D'une association pédagogique fondée en 1980 à l'élite des Junior-Entreprises françaises : retour sur plus de quatre décennies de conseil, d'apprentissage et d'exigence.</p>
 
     <div class="timeline">
       <div class="tl-item">
-        <div class="tl-marker"><div class="tl-year">1980</div><div class="tl-label">Création</div></div>
+        <div class="tl-marker"><div class="tl-year">1980</div><div class="tl-label" data-i18n="nj.hist.1.label">Création</div></div>
         <div class="tl-dot"></div>
         <div class="tl-content">
-          <h3>La fondation d'Audencia Junior Conseil</h3>
-          <p>Audencia Junior Conseil est fondée en 1980 afin de doter Audencia Business School — 6ᵉ école historique au classement des Grandes Écoles de Commerce françaises — d'une association pédagogique de conseil de loi 1901. Son objet social : la montée en compétences des étudiants à travers la réalisation de prestations de service pour des professionnels.</p>
+          <h3 data-i18n="nj.hist.1.title">La fondation d'Audencia Junior Conseil</h3>
+          <p data-i18n="nj.hist.1.text">Audencia Junior Conseil est fondée en 1980 afin de doter Audencia Business School — 6ᵉ école historique au classement des Grandes Écoles de Commerce françaises — d'une association pédagogique de conseil de loi 1901. Son objet social : la montée en compétences des étudiants à travers la réalisation de prestations de service pour des professionnels.</p>
         </div>
       </div>
 
       <div class="tl-item">
-        <div class="tl-marker"><div class="tl-year">∗</div><div class="tl-label">Notre mission</div></div>
+        <div class="tl-marker"><div class="tl-year">∗</div><div class="tl-label" data-i18n="nj.hist.2.label">Notre mission</div></div>
         <div class="tl-dot"></div>
         <div class="tl-content">
-          <h3>Une relation vertueuse, au service des entreprises</h3>
-          <p>Notre Junior-Entreprise entretient une relation vertueuse avec les étudiants d'Audencia : elle leur permet d'intervenir sur des missions de management variées et de mettre à profit les enseignements prodigués par l'école. En parallèle, Audencia Junior Conseil accompagne les entreprises de toutes tailles et de tous secteurs dans leur développement, en mettant à leur disposition les compétences d'étudiants spécialisés dans les domaines concernés.</p>
+          <h3 data-i18n="nj.hist.2.title">Une relation vertueuse, au service des entreprises</h3>
+          <p data-i18n="nj.hist.2.text">Notre Junior-Entreprise entretient une relation vertueuse avec les étudiants d'Audencia : elle leur permet d'intervenir sur des missions de management variées et de mettre à profit les enseignements prodigués par l'école. En parallèle, Audencia Junior Conseil accompagne les entreprises de toutes tailles et de tous secteurs dans leur développement, en mettant à leur disposition les compétences d'étudiants spécialisés dans les domaines concernés.</p>
         </div>
       </div>
 
       <div class="tl-item">
-        <div class="tl-marker"><div class="tl-year">∗</div><div class="tl-label">Expansion</div></div>
+        <div class="tl-marker"><div class="tl-year">∗</div><div class="tl-label" data-i18n="nj.hist.3.label">Expansion</div></div>
         <div class="tl-dot"></div>
         <div class="tl-content">
-          <h3>Un acteur-clé du Grand-Ouest</h3>
-          <p>Junior-Entreprise de l'école de référence de la région, Audencia Junior Conseil s'est érigée en acteur-clé du Grand-Ouest. Cette expansion a permis la signature d'un partenariat avec les Junior-Entreprises nantaises et la réalisation d'événements avec des acteurs régionaux comme l'incubateur de Nantes ou la chambre de commerce nantaise.</p>
+          <h3 data-i18n="nj.hist.3.title">Un acteur-clé du Grand-Ouest</h3>
+          <p data-i18n="nj.hist.3.text">Junior-Entreprise de l'école de référence de la région, Audencia Junior Conseil s'est érigée en acteur-clé du Grand-Ouest. Cette expansion a permis la signature d'un partenariat avec les Junior-Entreprises nantaises et la réalisation d'événements avec des acteurs régionaux comme l'incubateur de Nantes ou la chambre de commerce nantaise.</p>
         </div>
       </div>
 
@@ -251,8 +280,8 @@
         <div class="tl-marker"><div class="tl-year">2016</div><div class="tl-label">Top 30</div></div>
         <div class="tl-dot"></div>
         <div class="tl-content">
-          <h3>Entrée dans le Top 30 des Junior-Entreprises</h3>
-          <p>Audencia Junior Conseil intègre la L30, le Top 30 des meilleures Junior-Entreprises de France. Cette reconnaissance est le fruit d'un effort constant, réalisé dans le respect de nos valeurs.</p>
+          <h3 data-i18n="nj.hist.4.title">Entrée dans le Top 30 des Junior-Entreprises</h3>
+          <p data-i18n="nj.hist.4.text">Audencia Junior Conseil intègre la L30, le Top 30 des meilleures Junior-Entreprises de France. Cette reconnaissance est le fruit d'un effort constant, réalisé dans le respect de nos valeurs.</p>
         </div>
       </div>
 
@@ -260,8 +289,8 @@
         <div class="tl-marker"><div class="tl-year">2017</div><div class="tl-label">Top 4</div></div>
         <div class="tl-dot"></div>
         <div class="tl-content">
-          <h3>Entrée dans le Top 4 des Junior-Entreprises</h3>
-          <p>Audencia Junior Conseil intègre la L4, le Top 4 des meilleures Junior-Entreprises, au terme d'un travail assidu et cohérent qui s'articule autour de nos valeurs — toujours orienté vers la satisfaction du client.</p>
+          <h3 data-i18n="nj.hist.5.title">Entrée dans le Top 4 des Junior-Entreprises</h3>
+          <p data-i18n="nj.hist.5.text">Audencia Junior Conseil intègre la L4, le Top 4 des meilleures Junior-Entreprises, au terme d'un travail assidu et cohérent qui s'articule autour de nos valeurs — toujours orienté vers la satisfaction du client.</p>
         </div>
       </div>
     </div>
@@ -272,28 +301,28 @@
 <section id="ecole">
   <div class="ecole-inner">
     <p class="section-label">Audencia Business School</p>
-    <h2 class="section-title"><span class="thin">Notre</span> École</h2>
+    <h2 class="section-title" data-i18n="nj.ecole.title"><span class="thin">Notre</span> École</h2>
     <div class="section-accent"></div>
-    <p class="section-desc" style="max-width: 620px;">L'excellence académique d'Audencia est le socle de notre Junior-Entreprise. Chaque consultant junior est formé par l'une des meilleures écoles de management d'Europe.</p>
+    <p class="section-desc" style="max-width: 620px;" data-i18n="nj.ecole.desc">L'excellence académique d'Audencia est le socle de notre Junior-Entreprise. Chaque consultant junior est formé par l'une des meilleures écoles de management d'Europe.</p>
 
     <div class="ecole-grid">
       <div class="ecole-card">
         <div class="ec-stat">Top 6</div>
-        <div class="ec-stat-sub">des écoles de commerce françaises</div>
-        <div class="ec-title">Une école de premier plan</div>
-        <div class="ec-desc">Audencia est historiquement la sixième école du classement des Grandes Écoles de Commerce françaises, comme en témoigne le classement SIGEM de la décennie des choix des étudiants au concours.</div>
+        <div class="ec-stat-sub" data-i18n="nj.ecole.1.sub">des écoles de commerce françaises</div>
+        <div class="ec-title" data-i18n="nj.ecole.1.title">Une école de premier plan</div>
+        <div class="ec-desc" data-i18n="nj.ecole.1.desc">Audencia est historiquement la sixième école du classement des Grandes Écoles de Commerce françaises, comme en témoigne le classement SIGEM de la décennie des choix des étudiants au concours.</div>
       </div>
       <div class="ecole-card">
         <div class="ec-stat">1 %</div>
-        <div class="ec-stat-sub">des institutions mondiales</div>
-        <div class="ec-title">Triple accréditation EQUIS · AACSB · AMBA</div>
-        <div class="ec-desc">Audencia Business School est l'une des rares écoles au monde — 1 % des institutions — disposant des trois accréditations mondiales de référence du secteur : EQUIS, AACSB et AMBA.</div>
+        <div class="ec-stat-sub" data-i18n="nj.ecole.2.sub">des institutions mondiales</div>
+        <div class="ec-title" data-i18n="nj.ecole.2.title">Triple accréditation EQUIS · AACSB · AMBA</div>
+        <div class="ec-desc" data-i18n="nj.ecole.2.desc">Audencia Business School est l'une des rares écoles au monde — 1 % des institutions — disposant des trois accréditations mondiales de référence du secteur : EQUIS, AACSB et AMBA.</div>
       </div>
       <div class="ecole-card">
         <div class="ec-stat">2013</div>
         <div class="ec-stat-sub">Alliance Centrale Nantes · Audencia · ensa Nantes</div>
-        <div class="ec-title">L'hybridation des compétences</div>
-        <div class="ec-desc">Depuis 2013, l'École Centrale de Nantes, Audencia Business School et l'École Nationale Supérieure d'Architecture de Nantes forment une alliance stratégique qui conjugue ingénierie, management, architecture et création — pour enrichir l'enseignement, la recherche, les relations entreprises et la portée internationale des trois écoles.</div>
+        <div class="ec-title" data-i18n="nj.ecole.3.title">L'hybridation des compétences</div>
+        <div class="ec-desc" data-i18n="nj.ecole.3.desc">Depuis 2013, l'École Centrale de Nantes, Audencia Business School et l'École Nationale Supérieure d'Architecture de Nantes forment une alliance stratégique qui conjugue ingénierie, management, architecture et création — pour enrichir l'enseignement, la recherche, les relations entreprises et la portée internationale des trois écoles.</div>
       </div>
     </div>
   </div>
@@ -303,15 +332,15 @@
 <section id="rse">
   <div class="rse-inner">
     <div class="rse-left">
-      <p class="rse-label">Engagement</p>
-      <h2 class="rse-title">Une école pionnière en matière de <span class="accent">RSE</span></h2>
+      <p class="rse-label" data-i18n="nj.rse.label">Engagement</p>
+      <h2 class="rse-title" data-i18n="nj.rse.title">Une école pionnière en matière de <span class="accent">RSE</span></h2>
       <div class="rse-accent"></div>
     </div>
     <div class="rse-text">
-      <p>Audencia se distingue des autres Grandes Écoles de management par son engagement précoce et affirmé en matière de Responsabilité Sociétale des Entreprises. Cet engagement s'est récemment renforcé avec la création de l'école <strong style="color:white;">Gaia</strong>, un programme ambitieux dédié à la transition écologique et sociale.</p>
-      <p>Avec Gaia, Audencia réinvente le modèle de la business school en plaçant la durabilité au cœur de son enseignement et de sa vision. Cette initiative unique traduit la volonté de l'établissement de former des leaders capables de relever les défis environnementaux et sociaux, tout en promouvant une performance économique responsable.</p>
-      <p>Audencia aspire ainsi à bâtir un modèle éducatif plus vertueux, tourné vers la formation de « citoyens du monde », porteurs de valeurs humanistes et profondément convaincus de leur appartenance à une communauté de destin commune. Gaia incarne cette ambition et offre aux étudiants l'opportunité de devenir des acteurs clés de la transformation durable des entreprises et de la société.</p>
-      <p>Grâce à cette démarche innovante, Audencia ne se contente pas d'accompagner les évolutions du monde : elle les anticipe et contribue à les façonner.</p>
+      <p data-i18n="nj.rse.p1">Audencia se distingue des autres Grandes Écoles de management par son engagement précoce et affirmé en matière de Responsabilité Sociétale des Entreprises. Cet engagement s'est récemment renforcé avec la création de l'école <strong style="color:white;">Gaia</strong>, un programme ambitieux dédié à la transition écologique et sociale.</p>
+      <p data-i18n="nj.rse.p2">Avec Gaia, Audencia réinvente le modèle de la business school en plaçant la durabilité au cœur de son enseignement et de sa vision. Cette initiative unique traduit la volonté de l'établissement de former des leaders capables de relever les défis environnementaux et sociaux, tout en promouvant une performance économique responsable.</p>
+      <p data-i18n="nj.rse.p3">Audencia aspire ainsi à bâtir un modèle éducatif plus vertueux, tourné vers la formation de « citoyens du monde », porteurs de valeurs humanistes et profondément convaincus de leur appartenance à une communauté de destin commune. Gaia incarne cette ambition et offre aux étudiants l'opportunité de devenir des acteurs clés de la transformation durable des entreprises et de la société.</p>
+      <p data-i18n="nj.rse.p4">Grâce à cette démarche innovante, Audencia ne se contente pas d'accompagner les évolutions du monde : elle les anticipe et contribue à les façonner.</p>
     </div>
   </div>
 </section>
@@ -319,26 +348,26 @@
 <!-- ══ ECOS 2025 ════════════════════════════════════════════════════ -->
 <section id="ecos">
   <div class="ecos-inner">
-    <p class="section-label">Stratégie</p>
-    <h2 class="section-title"><span class="thin">Plan stratégique</span> ECOS 2025</h2>
+    <p class="section-label" data-i18n="nj.ecos.label">Stratégie</p>
+    <h2 class="section-title" data-i18n="nj.ecos.title"><span class="thin">Plan stratégique</span> ECOS 2025</h2>
     <div class="section-accent"></div>
-    <p class="ecos-intro">Soutenue par un plan de développement ambitieux — au travers de ses activités de recherche, de la formation de ses étudiants, de projets innovants et en collaboration avec l'ensemble de ses parties prenantes — Audencia s'engage, sur les cinq prochaines années, à avoir un impact sur trois défis majeurs :</p>
+    <p class="ecos-intro" data-i18n="nj.ecos.intro">Soutenue par un plan de développement ambitieux — au travers de ses activités de recherche, de la formation de ses étudiants, de projets innovants et en collaboration avec l'ensemble de ses parties prenantes — Audencia s'engage, sur les cinq prochaines années, à avoir un impact sur trois défis majeurs :</p>
 
     <div class="ecos-grid">
       <div class="ecos-item">
         <div class="ecos-num">01</div>
-        <div class="ecos-title">Technologies responsables</div>
-        <div class="ecos-desc">La création et l'utilisation de technologies et d'informations responsables.</div>
+        <div class="ecos-title" data-i18n="nj.ecos.1.title">Technologies responsables</div>
+        <div class="ecos-desc" data-i18n="nj.ecos.1.desc">La création et l'utilisation de technologies et d'informations responsables.</div>
       </div>
       <div class="ecos-item">
         <div class="ecos-num">02</div>
-        <div class="ecos-title">Organisations inclusives</div>
-        <div class="ecos-desc">La définition et l'adoption d'approches managériales favorisant des organisations et des sociétés inclusives.</div>
+        <div class="ecos-title" data-i18n="nj.ecos.2.title">Organisations inclusives</div>
+        <div class="ecos-desc" data-i18n="nj.ecos.2.desc">La définition et l'adoption d'approches managériales favorisant des organisations et des sociétés inclusives.</div>
       </div>
       <div class="ecos-item">
         <div class="ecos-num">03</div>
-        <div class="ecos-title">Modèles soutenables</div>
-        <div class="ecos-desc">La conception et la mise en œuvre de modèles d'affaires et de développements soutenables, en phase notamment avec les objectifs de neutralité carbone.</div>
+        <div class="ecos-title" data-i18n="nj.ecos.3.title">Modèles soutenables</div>
+        <div class="ecos-desc" data-i18n="nj.ecos.3.desc">La conception et la mise en œuvre de modèles d'affaires et de développements soutenables, en phase notamment avec les objectifs de neutralité carbone.</div>
       </div>
     </div>
   </div>
@@ -347,25 +376,25 @@
 <!-- ══ CHIFFRES CLÉS DE L'ÉCOLE ═════════════════════════════════════ -->
 <section id="chiffres-ecole">
   <div class="chiffres-header">
-    <div class="chiffres-header-label">Audencia en chiffres</div>
-    <div class="chiffres-header-title">L'ÉCOLE EN <span class="bold">CHIFFRES CLÉS</span></div>
+    <div class="chiffres-header-label" data-i18n="nj.chiffres.label">Audencia en chiffres</div>
+    <div class="chiffres-header-title" data-i18n="nj.chiffres.title">L'ÉCOLE EN <span class="bold">CHIFFRES CLÉS</span></div>
   </div>
   <div class="chiffres-inner">
     <div class="chiffre-item">
       <div class="chiffre-num" data-target="6000" data-suffix="+">0</div>
-      <div class="chiffre-label">Étudiants</div>
+      <div class="chiffre-label" data-i18n="nj.chiffres.1">Étudiants</div>
     </div>
     <div class="chiffre-item">
       <div class="chiffre-num" data-target="37000" data-suffix="+">0</div>
-      <div class="chiffre-label">Diplômés</div>
+      <div class="chiffre-label" data-i18n="nj.chiffres.2">Diplômés</div>
     </div>
     <div class="chiffre-item">
       <div class="chiffre-num" data-target="900" data-suffix="+">0</div>
-      <div class="chiffre-label">Entreprises partenaires</div>
+      <div class="chiffre-label" data-i18n="nj.chiffres.3">Entreprises partenaires</div>
     </div>
     <div class="chiffre-item">
       <div class="chiffre-num" data-target="148" data-suffix="">0</div>
-      <div class="chiffre-label">Professeurs permanents</div>
+      <div class="chiffre-label" data-i18n="nj.chiffres.4">Professeurs permanents</div>
     </div>
   </div>
 </section>
@@ -374,70 +403,47 @@
 <section id="pre-footer">
   <div class="pre-footer-inner">
     <div class="pf-text">
-      <h3>Envie d'écrire la suite avec nous ?</h3>
-      <p>Confiez votre projet à la Junior-Entreprise d'Audencia. Réponse sous 48h.</p>
+      <h3 data-i18n="nj.pf.title">Envie d'écrire la suite avec nous ?</h3>
+      <p data-i18n="nj.pf.text">Confiez votre projet à la Junior-Entreprise d'Audencia. Réponse sous 48h.</p>
     </div>
-    <a href="contact.html" class="btn-outline-marine">Nous contacter</a>
+    <a href="contact.html" class="btn-outline-marine open-contact-modal" data-i18n="nav.contact">Nous contacter</a>
   </div>
 </section>
 
 <!-- ══ FOOTER ═══════════════════════════════════════════════════════ -->
-<footer>
-  <div class="footer-inner">
-    <div class="footer-grid">
-      <div>
-        <div class="footer-col-title">Contact</div>
-        <div class="footer-contact-item">
-          <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
-          <span>+33 7 69 44 78 99</span>
-        </div>
-        <div class="footer-contact-item">
-          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7 L12 13 L22 7"/></svg>
-          <span>contact@ajc-mail.com</span>
-        </div>
-        <div class="footer-contact-item">
-          <svg viewBox="0 0 24 24"><path d="M12 2 C8 2 5 5.5 5 9.5 C5 15.5 12 22 12 22 S19 15.5 19 9.5 C19 5.5 16 2 12 2 Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
-          <span>8 route de la Jonelière<br>44312 Nantes Cedex 3</span>
-        </div>
-        <div class="footer-socials">
-          <a href="#" class="social-btn" aria-label="LinkedIn" data-social="linkedin" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
-          </a>
-          <a href="#" class="social-btn" aria-label="Instagram" data-social="instagram" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85 0 3.21-.01 3.58-.07 4.85-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07-3.2 0-3.58-.01-4.85-.07-3.26-.15-4.77-1.7-4.92-4.92-.06-1.27-.07-1.64-.07-4.85 0-3.2.01-3.58.07-4.85.15-3.23 1.66-4.77 4.92-4.92 1.27-.06 1.65-.07 4.85-.07zM12 0C8.74 0 8.33.01 7.05.07 2.7.27.27 2.69.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.2 4.36 2.62 6.78 6.98 6.98C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c4.35-.2 6.78-2.62 6.98-6.98.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95C23.73 2.7 21.31.27 16.95.07 15.67.01 15.26 0 12 0zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.41-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/></svg>
-          </a>
-        </div>
-      </div>
-      <div>
-        <div class="footer-col-title">Localisation</div>
-        <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2711.3!2d-1.5897!3d47.2557!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4805ef3e8b35ef6b%3A0xb0d17c2a6c9d6b1!2sAudencia%20Business%20School!5e0!3m2!1sfr!2sfr!4v1"
-          style="width:100%;aspect-ratio:16/9;border-radius:6px;border:1px solid rgba(255,255,255,0.08);display:block;"
-          allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-          title="Audencia Business School — Nantes">
-        </iframe>
-      </div>
-      <div>
-        <div class="footer-col-title">Mentions légales</div>
-        <div class="footer-mentions">
-          <a href="mentions-legales.html">Mentions légales</a>
-          <a href="politique-confidentialite.html">Politique de confidentialité</a>
-        </div>
-        <div style="margin-top:32px;">
-          <div class="footer-col-title">La JE</div>
-          <div class="footer-mentions">
-            <a href="qu-est-ce-une-je.html">Qui sommes-nous ?</a>
-            <a href="notre-junior.html">Notre Junior</a>
-            <a href="notre-equipe.html">Notre équipe</a>
-            <a href="contact.html">Nous contacter</a>
-          </div>
-        </div>
-      </div>
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <a href="index.html" class="site-footer-logo" aria-label="Audencia Junior Conseil — Accueil">
+      <img src="photos/logo.png" alt="Audencia Junior Conseil" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+      <span style="display:none;">AJC</span>
+    </a>
+
+    <nav class="site-footer-nav" aria-label="Liens de pied de page">
+      <a href="mentions-legales.html" data-i18n="footer.legal">Mentions légales</a>
+      <a href="politique-confidentialite.html" data-i18n="footer.privacy">Politique de confidentialité</a>
+      <a href="qu-est-ce-une-je.html" data-i18n="footer.about">Qui sommes-nous ?</a>
+      <a href="notre-equipe.html" data-i18n="footer.team">Notre équipe</a>
+      <a href="contact.html" data-i18n="footer.contact">Nous contacter</a>
+    </nav>
+
+    <div class="site-footer-contact">
+      <a href="tel:+33769447899">+33 7 69 44 78 99</a>
+      <span class="dot">·</span>
+      <a href="mailto:contact@ajc-mail.com">contact@ajc-mail.com</a>
+      <span class="dot">·</span>
+      <span>8 route de la Jonelière, 44312 Nantes Cedex 3</span>
     </div>
-    <div class="footer-bottom">
-      <div class="footer-logo-ghost">AJC</div>
-      <div class="footer-copyright">© 2025 Audencia Junior Conseil — Tous droits réservés</div>
+
+    <div class="site-footer-socials">
+      <a href="https://www.instagram.com/AUDENCIA_JUNIOR_CONSEIL_/" class="social-btn" data-social="instagram" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4zm9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3"></path></svg>
+      </a>
+      <a href="https://www.linkedin.com/company/audencia-junior-conseil/posts/?feedView=all" class="social-btn" data-social="linkedin" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93zM6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37z"></path></svg>
+      </a>
     </div>
+
+    <span class="site-footer-copy" data-i18n="footer.copy">© 2026 Audencia Junior Conseil — Tous droits réservés</span>
   </div>
 </footer>
 

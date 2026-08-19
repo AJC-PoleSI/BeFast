@@ -42,9 +42,15 @@
   }
 
   /* ── 2. Bouton retour en haut ─────────────────────────────────── */
+  function ajcPolishLang() {
+    if (window.AJCI18n && window.AJCI18n.lang) return window.AJCI18n.lang();
+    return localStorage.getItem('ajc-lang') === 'en' ? 'en' : 'fr';
+  }
   const btn = document.createElement('button');
   btn.className = 'back-to-top';
-  btn.setAttribute('aria-label', 'Retour en haut de page');
+  const setBackToTopLabel = () => btn.setAttribute('aria-label', ajcPolishLang() === 'en' ? 'Back to top' : 'Retour en haut de page');
+  setBackToTopLabel();
+  document.addEventListener('ajc:langchange', setBackToTopLabel);
   btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
   document.body.appendChild(btn);
 

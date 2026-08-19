@@ -26,27 +26,46 @@
  *  Pages légales : politique de confidentialité & mentions légales
  *  Usage :  loadLegalPage('politique_confidentialite')
  *           loadLegalPage('mentions_legales')
+ *  Bilingue : suit la langue du site (FR/EN) et se met à jour au switch.
  *  ────────────────────────────────────────────────────────────────── */
+function ajcLang() {
+  if (window.AJCI18n && window.AJCI18n.lang) return window.AJCI18n.lang();
+  return localStorage.getItem('ajc-lang') === 'en' ? 'en' : 'fr';
+}
+function ajcTr(obj, key) {
+  if (!obj) return '';
+  if (ajcLang() === 'en' && obj[key + '_en'] != null && obj[key + '_en'] !== '') return obj[key + '_en'];
+  return obj[key] != null ? obj[key] : '';
+}
+
 async function loadLegalPage(key) {
+  let legalPageData = null;
   try {
     const res = await fetch('contenu/legal.json');
-    const data = await res.json();
-    const page = data[key];
+    legalPageData = await res.json();
+  } catch (e) {
+    console.warn('Impossible de charger contenu/legal.json', e);
+    return;
+  }
+
+  function render() {
+    const page = legalPageData[key];
     if (!page) return;
+    const L = ajcLang() === 'en';
 
     // Hero
     const $ = (id) => document.getElementById(id);
-    if ($('legal-title'))    $('legal-title').textContent    = page.page_titre;
-    if ($('legal-eyebrow'))  $('legal-eyebrow').textContent  = page.page_eyebrow;
-    if ($('legal-sub'))      $('legal-sub').textContent      = page.page_sous_titre;
-    if ($('legal-maj'))      $('legal-maj').textContent      = 'Dernière mise à jour : ' + page.derniere_maj;
-    document.title = page.page_titre + ' — Audencia Junior Conseil';
+    if ($('legal-title'))    $('legal-title').textContent    = ajcTr(page, 'page_titre');
+    if ($('legal-eyebrow'))  $('legal-eyebrow').textContent  = ajcTr(page, 'page_eyebrow');
+    if ($('legal-sub'))      $('legal-sub').textContent      = ajcTr(page, 'page_sous_titre');
+    if ($('legal-maj'))      $('legal-maj').textContent      = (L ? 'Last updated: ' : 'Dernière mise à jour : ') + ajcTr(page, 'derniere_maj');
+    document.title = ajcTr(page, 'page_titre') + ' — Audencia Junior Conseil';
 
     // Table des matières
     const toc = $('legal-toc-list');
     if (toc) {
       toc.innerHTML = page.sections.map((s, i) =>
-        `<li><a href="#sec-${i+1}">${escapeHtml(s.titre)}</a></li>`
+        `<li><a href="#sec-${i+1}">${escapeHtml(ajcTr(s, 'titre'))}</a></li>`
       ).join('');
     }
 
@@ -54,20 +73,22 @@ async function loadLegalPage(key) {
     const container = $('legal-sections');
     if (container) {
       container.innerHTML = page.sections.map((s, i) => {
-        const parasBefore = (s.paragraphes || []).map(p => `<p>${p}</p>`).join('');
-        const list = s.liste && s.liste.length
-          ? `<ul>${s.liste.map(li => `<li>${li}</li>`).join('')}</ul>`
+        const parasBefore = (ajcTr(s, 'paragraphes') || []).map(p => `<p>${p}</p>`).join('');
+        const liste = L && s.liste_en ? s.liste_en : s.liste;
+        const list = liste && liste.length
+          ? `<ul>${liste.map(li => `<li>${li}</li>`).join('')}</ul>`
           : '';
-        const parasAfter = (s.paragraphes_apres || []).map(p => `<p>${p}</p>`).join('');
+        const parasAfter = (ajcTr(s, 'paragraphes_apres') || []).map(p => `<p>${p}</p>`).join('');
         return `<section class="legal-section" id="sec-${i+1}">
-                  <h2>${escapeHtml(s.titre)}</h2>
+                  <h2>${escapeHtml(ajcTr(s, 'titre'))}</h2>
                   ${parasBefore}${list}${parasAfter}
                 </section>`;
       }).join('');
     }
-  } catch (e) {
-    console.warn('Impossible de charger contenu/legal.json', e);
   }
+
+  render();
+  document.addEventListener('ajc:langchange', render);
 }
 
 function escapeHtml(str) {

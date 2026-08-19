@@ -7,15 +7,48 @@
       "accroche": "Comprenez votre marché avant de vous y lancer.",
       "description": "Nous réalisons des études de marché complètes pour vous aider à identifier les opportunités, les risques et les tendances de votre secteur. Nos consultants combinent approches qualitatives et quantitatives pour vous fournir une vision claire et actionnable.",
       "approche": [
-        { "titre": "Cadrage", "texte": "Définition des objectifs, du périmètre géographique et des hypothèses de départ." },
-        { "titre": "Collecte", "texte": "Questionnaires, entretiens qualitatifs, observations terrain et analyse documentaire." },
-        { "titre": "Analyse", "texte": "Traitement statistique des données, benchmarks concurrentiels et segmentation." },
-        { "titre": "Restitution", "texte": "Rapport complet avec recommandations stratégiques et plan d'actions prioritaires." }
+        {
+          "titre": "Cadrage",
+          "texte": "Définition des objectifs, du périmètre géographique et des hypothèses de départ.",
+          "titre_en": "Scoping",
+          "texte_en": "Defining objectives, geographic scope and initial assumptions."
+        },
+        {
+          "titre": "Collecte",
+          "texte": "Questionnaires, entretiens qualitatifs, observations terrain et recherche documentaire approfondie appuyée sur les bases de données de référence Xerfi et Statista.",
+          "titre_en": "Collection",
+          "texte_en": "Questionnaires, qualitative interviews, field observations and in-depth desk research drawing on the Xerfi and Statista reference databases."
+        },
+        {
+          "titre": "Analyse",
+          "texte": "Traitement statistique des données, benchmarks concurrentiels nourris par les études sectorielles Xerfi et Statista, et segmentation.",
+          "titre_en": "Analysis",
+          "texte_en": "Statistical data processing, competitive benchmarks fed by Xerfi and Statista industry studies, and segmentation."
+        },
+        {
+          "titre": "Restitution",
+          "texte": "Rapport complet avec recommandations stratégiques et plan d'actions prioritaires.",
+          "titre_en": "Presentation",
+          "texte_en": "Full report with strategic recommendations and a prioritised action plan."
+        }
       ],
       "livrables": [
-        { "titre": "Rapport d'étude", "texte": "Document complet avec méthodologie, résultats et recommandations." },
-        { "titre": "Présentation exécutive", "texte": "Synthèse des insights clés pour la prise de décision." }
-      ]
+        {
+          "titre": "Rapport d'étude",
+          "texte": "Document complet avec méthodologie, résultats et recommandations.",
+          "titre_en": "Study report",
+          "texte_en": "Full document with methodology, findings and recommendations."
+        },
+        {
+          "titre": "Présentation exécutive",
+          "texte": "Synthèse des insights clés pour la prise de décision.",
+          "titre_en": "Executive presentation",
+          "texte_en": "Summary of key insights for decision-making."
+        }
+      ],
+      "titre_en": "Market research",
+      "accroche_en": "Understand your market before entering it.",
+      "description_en": "We carry out comprehensive market studies to help you identify opportunities, risks and trends in your sector. Our consultants combine qualitative and quantitative approaches to deliver a clear, actionable vision."
     },
     {
       "id": "segmentation-client",
@@ -24,15 +57,48 @@
       "accroche": "Identifiez et ciblez vos clients avec précision.",
       "description": "La segmentation client permet de regrouper vos clients en groupes homogènes pour adapter vos offres et communications. Nous utilisons des méthodes statistiques avancées pour identifier les segments les plus porteurs.",
       "approche": [
-        { "titre": "Analyse des données", "texte": "Collecte et nettoyage des données clients existantes." },
-        { "titre": "Modélisation", "texte": "Application de méthodes de clustering et d'analyse factorielle." },
-        { "titre": "Profilage", "texte": "Description détaillée de chaque segment : comportements, besoins, valeur." },
-        { "titre": "Recommandations", "texte": "Stratégie d'activation et plan d'actions par segment." }
+        {
+          "titre": "Analyse des données",
+          "texte": "Collecte et nettoyage des données clients existantes.",
+          "titre_en": "Data analysis",
+          "texte_en": "Collection and cleaning of existing customer data."
+        },
+        {
+          "titre": "Modélisation",
+          "texte": "Application de méthodes de clustering et d'analyse factorielle.",
+          "titre_en": "Modelling",
+          "texte_en": "Application of clustering and factor analysis methods."
+        },
+        {
+          "titre": "Profilage",
+          "texte": "Description détaillée de chaque segment : comportements, besoins, valeur.",
+          "titre_en": "Profiling",
+          "texte_en": "Detailed description of each segment: behaviours, needs, value."
+        },
+        {
+          "titre": "Recommandations",
+          "texte": "Stratégie d'activation et plan d'actions par segment.",
+          "titre_en": "Recommendations",
+          "texte_en": "Activation strategy and action plan per segment."
+        }
       ],
       "livrables": [
-        { "titre": "Matrice de segmentation", "texte": "Définition claire des segments avec critères et tailles estimées." },
-        { "titre": "Fiches personas", "texte": "Profils détaillés de chaque segment pour guider les équipes." }
-      ]
+        {
+          "titre": "Matrice de segmentation",
+          "texte": "Définition claire des segments avec critères et tailles estimées.",
+          "titre_en": "Segmentation matrix",
+          "texte_en": "Clear definition of segments with criteria and estimated sizes."
+        },
+        {
+          "titre": "Fiches personas",
+          "texte": "Profils détaillés de chaque segment pour guider les équipes.",
+          "titre_en": "Persona sheets",
+          "texte_en": "Detailed profiles of each segment to guide teams."
+        }
+      ],
+      "titre_en": "Customer segmentation",
+      "accroche_en": "Identify and target your customers with precision.",
+      "description_en": "Customer segmentation groups your clients into homogeneous clusters to adapt your offers and communications. We use advanced statistical methods to identify the most promising segments."
     },
     {
       "id": "analyse-concurrentielle",
@@ -41,15 +107,48 @@
       "accroche": "Connaissez vos concurrents mieux qu'ils ne se connaissent.",
       "description": "Nous cartographions votre environnement concurrentiel pour identifier vos avantages différenciateurs et les axes de développement. Analyse des offres, positionnements, forces et faiblesses de vos concurrents.",
       "approche": [
-        { "titre": "Identification", "texte": "Cartographie des acteurs directs, indirects et des nouveaux entrants." },
-        { "titre": "Collecte", "texte": "Analyse des offres, prix, communications et avis clients des concurrents." },
-        { "titre": "Benchmarking", "texte": "Comparaison structurée sur les critères clés de votre marché." },
-        { "titre": "Positionnement", "texte": "Identification de votre espace de différenciation et recommandations." }
+        {
+          "titre": "Identification",
+          "texte": "Cartographie des acteurs directs, indirects et des nouveaux entrants.",
+          "titre_en": "Identification",
+          "texte_en": "Mapping of direct, indirect competitors and new entrants."
+        },
+        {
+          "titre": "Collecte",
+          "texte": "Analyse des offres, prix, communications et avis clients des concurrents, complétée par les études sectorielles Xerfi et les données de marché Statista.",
+          "titre_en": "Collection",
+          "texte_en": "Analysis of competitors' offers, pricing, communications and customer reviews, completed with Xerfi industry studies and Statista market data."
+        },
+        {
+          "titre": "Benchmarking",
+          "texte": "Comparaison structurée sur les critères clés de votre marché.",
+          "titre_en": "Benchmarking",
+          "texte_en": "Structured comparison on your market's key criteria."
+        },
+        {
+          "titre": "Positionnement",
+          "texte": "Identification de votre espace de différenciation et recommandations.",
+          "titre_en": "Positioning",
+          "texte_en": "Identification of your differentiation space and recommendations."
+        }
       ],
       "livrables": [
-        { "titre": "Mapping concurrentiel", "texte": "Visualisation du positionnement de chaque acteur sur le marché." },
-        { "titre": "Benchmark détaillé", "texte": "Tableau comparatif complet avec scoring et analyse." }
-      ]
+        {
+          "titre": "Mapping concurrentiel",
+          "texte": "Visualisation du positionnement de chaque acteur sur le marché.",
+          "titre_en": "Competitive mapping",
+          "texte_en": "Visualisation of each player's positioning in the market."
+        },
+        {
+          "titre": "Benchmark détaillé",
+          "texte": "Tableau comparatif complet avec scoring et analyse.",
+          "titre_en": "Detailed benchmark",
+          "texte_en": "Full comparison table with scoring and analysis."
+        }
+      ],
+      "titre_en": "Competitive analysis",
+      "accroche_en": "Know your competitors better than they know themselves.",
+      "description_en": "We map your competitive environment to identify your differentiating advantages and growth areas. Analysis of offers, positioning, strengths and weaknesses of your competitors."
     },
     {
       "id": "lancement-produit",
@@ -58,15 +157,48 @@
       "accroche": "Maximisez vos chances de succès dès le départ.",
       "description": "Nous vous accompagnons dans toutes les étapes du lancement de votre produit ou service : étude de faisabilité, plan de lancement, stratégie go-to-market et mesure des performances.",
       "approche": [
-        { "titre": "Faisabilité", "texte": "Analyse du marché cible, estimation de la demande et des barrières à l'entrée." },
-        { "titre": "Stratégie", "texte": "Définition du positionnement, du prix et des canaux de distribution." },
-        { "titre": "Plan de lancement", "texte": "Roadmap détaillée, budget et plan de communication associé." },
-        { "titre": "Suivi", "texte": "Définition des KPIs et tableau de bord de suivi post-lancement." }
+        {
+          "titre": "Faisabilité",
+          "texte": "Analyse du marché cible à partir des études sectorielles Xerfi et des données Statista, estimation de la demande et des barrières à l'entrée.",
+          "titre_en": "Feasibility",
+          "texte_en": "Target market analysis based on Xerfi industry studies and Statista data, demand estimation and entry barriers."
+        },
+        {
+          "titre": "Stratégie",
+          "texte": "Définition du positionnement, du prix et des canaux de distribution.",
+          "titre_en": "Strategy",
+          "texte_en": "Defining positioning, pricing and distribution channels."
+        },
+        {
+          "titre": "Plan de lancement",
+          "texte": "Roadmap détaillée, budget et plan de communication associé.",
+          "titre_en": "Launch plan",
+          "texte_en": "Detailed roadmap, budget and associated communication plan."
+        },
+        {
+          "titre": "Suivi",
+          "texte": "Définition des KPIs et tableau de bord de suivi post-lancement.",
+          "titre_en": "Monitoring",
+          "texte_en": "Defining KPIs and a post-launch monitoring dashboard."
+        }
       ],
       "livrables": [
-        { "titre": "Plan go-to-market", "texte": "Document stratégique complet pour le lancement." },
-        { "titre": "Roadmap d'exécution", "texte": "Planning détaillé des actions avec responsables et échéances." }
-      ]
+        {
+          "titre": "Plan go-to-market",
+          "texte": "Document stratégique complet pour le lancement.",
+          "titre_en": "Go-to-market plan",
+          "texte_en": "Full strategic document for the launch."
+        },
+        {
+          "titre": "Roadmap d'exécution",
+          "texte": "Planning détaillé des actions avec responsables et échéances.",
+          "titre_en": "Execution roadmap",
+          "texte_en": "Detailed action plan with owners and deadlines."
+        }
+      ],
+      "titre_en": "Product launch",
+      "accroche_en": "Maximise your chances of success from day one.",
+      "description_en": "We support you through every stage of your product or service launch: feasibility study, launch plan, go-to-market strategy and performance measurement."
     },
     {
       "id": "strategie-de-marque",
@@ -75,15 +207,48 @@
       "accroche": "Construisez une marque forte et cohérente.",
       "description": "Nous vous aidons à définir ou repositionner votre marque : plateforme de marque, architecture, identité verbale et guidelines. Une marque forte crée de la valeur et fidélise vos clients.",
       "approche": [
-        { "titre": "Audit de marque", "texte": "Analyse de la perception actuelle de votre marque en interne et externe." },
-        { "titre": "Plateforme", "texte": "Définition de la mission, vision, valeurs et promesse de marque." },
-        { "titre": "Identité verbale", "texte": "Ton, vocabulaire, messages clés et argumentaires adaptés à chaque cible." },
-        { "titre": "Guidelines", "texte": "Charte éditoriale et recommandations pour une communication cohérente." }
+        {
+          "titre": "Audit de marque",
+          "texte": "Analyse de la perception actuelle de votre marque en interne et externe.",
+          "titre_en": "Brand audit",
+          "texte_en": "Analysis of your brand's current perception internally and externally."
+        },
+        {
+          "titre": "Plateforme",
+          "texte": "Définition de la mission, vision, valeurs et promesse de marque.",
+          "titre_en": "Platform",
+          "texte_en": "Defining your brand's mission, vision, values and promise."
+        },
+        {
+          "titre": "Identité verbale",
+          "texte": "Ton, vocabulaire, messages clés et argumentaires adaptés à chaque cible.",
+          "titre_en": "Verbal identity",
+          "texte_en": "Tone, vocabulary, key messages and talking points tailored to each audience."
+        },
+        {
+          "titre": "Guidelines",
+          "texte": "Charte éditoriale et recommandations pour une communication cohérente.",
+          "titre_en": "Guidelines",
+          "texte_en": "Editorial charter and recommendations for consistent communication."
+        }
       ],
       "livrables": [
-        { "titre": "Plateforme de marque", "texte": "Document fondateur de votre stratégie de marque." },
-        { "titre": "Charte éditoriale", "texte": "Guide de référence pour toutes vos communications." }
-      ]
+        {
+          "titre": "Plateforme de marque",
+          "texte": "Document fondateur de votre stratégie de marque.",
+          "titre_en": "Brand platform",
+          "texte_en": "Founding document of your brand strategy."
+        },
+        {
+          "titre": "Charte éditoriale",
+          "texte": "Guide de référence pour toutes vos communications.",
+          "titre_en": "Editorial charter",
+          "texte_en": "Reference guide for all your communications."
+        }
+      ],
+      "titre_en": "Brand strategy",
+      "accroche_en": "Build a strong, coherent brand.",
+      "description_en": "We help you define or reposition your brand: brand platform, architecture, verbal identity and guidelines. A strong brand creates value and builds customer loyalty."
     },
     {
       "id": "strategie-editoriale",
@@ -92,15 +257,48 @@
       "accroche": "Publiez moins, mais mieux.",
       "description": "Nous définissons votre stratégie de contenu : thématiques, formats, fréquences et canaux adaptés à vos cibles. Une stratégie éditoriale efficace renforce votre autorité et crée du lien avec votre audience.",
       "approche": [
-        { "titre": "Audit", "texte": "Analyse de vos contenus existants et de vos concurrents." },
-        { "titre": "Cibles", "texte": "Définition des personas et de leurs besoins en contenu." },
-        { "titre": "Plan éditorial", "texte": "Thématiques, formats, fréquences et canaux de diffusion." },
-        { "titre": "Calendrier", "texte": "Planning de publication sur 3 à 6 mois avec sujets détaillés." }
+        {
+          "titre": "Audit",
+          "texte": "Analyse de vos contenus existants et de vos concurrents.",
+          "titre_en": "Audit",
+          "texte_en": "Analysis of your existing content and your competitors'."
+        },
+        {
+          "titre": "Cibles",
+          "texte": "Définition des personas et de leurs besoins en contenu.",
+          "titre_en": "Audiences",
+          "texte_en": "Defining personas and their content needs."
+        },
+        {
+          "titre": "Plan éditorial",
+          "texte": "Thématiques, formats, fréquences et canaux de diffusion.",
+          "titre_en": "Editorial plan",
+          "texte_en": "Topics, formats, frequencies and distribution channels."
+        },
+        {
+          "titre": "Calendrier",
+          "texte": "Planning de publication sur 3 à 6 mois avec sujets détaillés.",
+          "titre_en": "Calendar",
+          "texte_en": "3-to-6-month publishing schedule with detailed topics."
+        }
       ],
       "livrables": [
-        { "titre": "Stratégie éditoriale", "texte": "Document de référence pour votre ligne éditoriale." },
-        { "titre": "Calendrier éditorial", "texte": "Planning détaillé prêt à utiliser sur 6 mois." }
-      ]
+        {
+          "titre": "Stratégie éditoriale",
+          "texte": "Document de référence pour votre ligne éditoriale.",
+          "titre_en": "Editorial strategy",
+          "texte_en": "Reference document for your editorial line."
+        },
+        {
+          "titre": "Calendrier éditorial",
+          "texte": "Planning détaillé prêt à utiliser sur 6 mois.",
+          "titre_en": "Editorial calendar",
+          "texte_en": "Ready-to-use detailed 6-month schedule."
+        }
+      ],
+      "titre_en": "Editorial strategy",
+      "accroche_en": "Publish less, but better.",
+      "description_en": "We define your content strategy: topics, formats, frequencies and channels adapted to your audiences. An effective editorial strategy builds your authority and strengthens your audience connection."
     },
     {
       "id": "identite-de-marque",
@@ -109,15 +307,48 @@
       "accroche": "Une image forte et reconnaissable.",
       "description": "Nous vous accompagnons dans la création ou refonte de votre identité visuelle et verbale. Logo, couleurs, typographies, ton de voix : tous les éléments qui construisent une marque mémorable.",
       "approche": [
-        { "titre": "Brief créatif", "texte": "Compréhension de vos valeurs, cibles et ambitions." },
-        { "titre": "Exploration", "texte": "Pistes créatives, moodboards et benchmarks visuels." },
-        { "titre": "Développement", "texte": "Création des éléments graphiques et verbaux de l'identité." },
-        { "titre": "Charte", "texte": "Documentation complète pour une utilisation cohérente." }
+        {
+          "titre": "Brief créatif",
+          "texte": "Compréhension de vos valeurs, cibles et ambitions.",
+          "titre_en": "Creative brief",
+          "texte_en": "Understanding your values, audiences and ambitions."
+        },
+        {
+          "titre": "Exploration",
+          "texte": "Pistes créatives, moodboards et benchmarks visuels.",
+          "titre_en": "Exploration",
+          "texte_en": "Creative directions, moodboards and visual benchmarks."
+        },
+        {
+          "titre": "Développement",
+          "texte": "Création des éléments graphiques et verbaux de l'identité.",
+          "titre_en": "Development",
+          "texte_en": "Creation of the identity's graphic and verbal elements."
+        },
+        {
+          "titre": "Charte",
+          "texte": "Documentation complète pour une utilisation cohérente.",
+          "titre_en": "Style guide",
+          "texte_en": "Complete documentation for consistent use."
+        }
       ],
       "livrables": [
-        { "titre": "Charte graphique", "texte": "Guide complet de votre identité visuelle." },
-        { "titre": "Fichiers sources", "texte": "Tous les éléments graphiques en formats utilisables." }
-      ]
+        {
+          "titre": "Charte graphique",
+          "texte": "Guide complet de votre identité visuelle.",
+          "titre_en": "Brand guidelines",
+          "texte_en": "Complete guide to your visual identity."
+        },
+        {
+          "titre": "Fichiers sources",
+          "texte": "Tous les éléments graphiques en formats utilisables.",
+          "titre_en": "Source files",
+          "texte_en": "All graphic elements in usable formats."
+        }
+      ],
+      "titre_en": "Brand identity",
+      "accroche_en": "A strong, recognisable image.",
+      "description_en": "We support you in creating or redesigning your visual and verbal identity. Logo, colours, typography, tone of voice: all the elements that build a memorable brand."
     },
     {
       "id": "plan-media",
@@ -126,15 +357,48 @@
       "accroche": "Investissez au bon endroit, au bon moment.",
       "description": "Nous construisons votre plan media en sélectionnant les canaux les plus efficaces selon vos objectifs et budget. Offline, online, earned media : une approche intégrée pour maximiser votre visibilité.",
       "approche": [
-        { "titre": "Objectifs", "texte": "Définition des KPIs et du budget disponible." },
-        { "titre": "Canaux", "texte": "Sélection et pondération des médias selon vos cibles." },
-        { "titre": "Planning", "texte": "Calendrier de diffusion et arbitrages budgétaires." },
-        { "titre": "Mesure", "texte": "Indicateurs de performance et méthode de reporting." }
+        {
+          "titre": "Objectifs",
+          "texte": "Définition des KPIs et du budget disponible.",
+          "titre_en": "Objectives",
+          "texte_en": "Defining KPIs and available budget."
+        },
+        {
+          "titre": "Canaux",
+          "texte": "Sélection et pondération des médias selon vos cibles, appuyées sur les données d'audience et d'usage issues de Statista.",
+          "titre_en": "Channels",
+          "texte_en": "Selection and weighting of media according to your audiences, backed by audience and usage data from Statista."
+        },
+        {
+          "titre": "Planning",
+          "texte": "Calendrier de diffusion et arbitrages budgétaires.",
+          "titre_en": "Scheduling",
+          "texte_en": "Broadcast calendar and budget arbitration."
+        },
+        {
+          "titre": "Mesure",
+          "texte": "Indicateurs de performance et méthode de reporting.",
+          "titre_en": "Measurement",
+          "texte_en": "Performance indicators and reporting method."
+        }
       ],
       "livrables": [
-        { "titre": "Plan media", "texte": "Tableau détaillé des investissements par canal et période." },
-        { "titre": "Brief achat d'espace", "texte": "Documents prêts pour consultation d'agences médias." }
-      ]
+        {
+          "titre": "Plan media",
+          "texte": "Tableau détaillé des investissements par canal et période.",
+          "titre_en": "Media plan",
+          "texte_en": "Detailed table of investments by channel and period."
+        },
+        {
+          "titre": "Brief achat d'espace",
+          "texte": "Documents prêts pour consultation d'agences médias.",
+          "titre_en": "Media buying brief",
+          "texte_en": "Documents ready for media agency consultation."
+        }
+      ],
+      "titre_en": "Media planning",
+      "accroche_en": "Invest in the right place, at the right time.",
+      "description_en": "We build your media plan by selecting the most effective channels according to your objectives and budget. Offline, online, earned media: an integrated approach to maximise your visibility."
     },
     {
       "id": "community-management",
@@ -143,15 +407,48 @@
       "accroche": "Animez votre communauté avec méthode.",
       "description": "Nous définissons votre stratégie social media et créons les contenus adaptés à chaque plateforme. LinkedIn, Instagram, Facebook, TikTok : nous choisissons les bons canaux pour votre audience.",
       "approche": [
-        { "titre": "Audit social", "texte": "Analyse de vos comptes actuels et de vos concurrents." },
-        { "titre": "Stratégie", "texte": "Choix des plateformes, ligne éditoriale et ton de marque." },
-        { "titre": "Contenus", "texte": "Création de posts, visuels et formats adaptés à chaque réseau." },
-        { "titre": "Reporting", "texte": "Analyse des performances et recommandations d'optimisation." }
+        {
+          "titre": "Audit social",
+          "texte": "Analyse de vos comptes actuels et de vos concurrents.",
+          "titre_en": "Social audit",
+          "texte_en": "Analysis of your current accounts and your competitors'."
+        },
+        {
+          "titre": "Stratégie",
+          "texte": "Choix des plateformes, ligne éditoriale et ton de marque.",
+          "titre_en": "Strategy",
+          "texte_en": "Choice of platforms, editorial line and brand tone."
+        },
+        {
+          "titre": "Contenus",
+          "texte": "Création de posts, visuels et formats adaptés à chaque réseau.",
+          "titre_en": "Content",
+          "texte_en": "Creation of posts, visuals and formats adapted to each network."
+        },
+        {
+          "titre": "Reporting",
+          "texte": "Analyse des performances et recommandations d'optimisation.",
+          "titre_en": "Reporting",
+          "texte_en": "Performance analysis and optimisation recommendations."
+        }
       ],
       "livrables": [
-        { "titre": "Stratégie social media", "texte": "Document de référence pour votre présence sur les réseaux." },
-        { "titre": "Kit de contenus", "texte": "Posts et visuels prêts à publier sur plusieurs semaines." }
-      ]
+        {
+          "titre": "Stratégie social media",
+          "texte": "Document de référence pour votre présence sur les réseaux.",
+          "titre_en": "Social media strategy",
+          "texte_en": "Reference document for your presence on social networks."
+        },
+        {
+          "titre": "Kit de contenus",
+          "texte": "Posts et visuels prêts à publier sur plusieurs semaines.",
+          "titre_en": "Content kit",
+          "texte_en": "Posts and visuals ready to publish over several weeks."
+        }
+      ],
+      "titre_en": "Community management",
+      "accroche_en": "Engage your community with method.",
+      "description_en": "We define your social media strategy and create content adapted to each platform. LinkedIn, Instagram, Facebook, TikTok: we choose the right channels for your audience."
     },
     {
       "id": "communication-digitale",
@@ -160,15 +457,48 @@
       "accroche": "Soyez visible là où vos clients vous cherchent.",
       "description": "SEO, emailing, display, SEA : nous construisons votre stratégie de communication digitale pour générer de la visibilité et des conversions. Une approche data-driven pour optimiser chaque euro investi.",
       "approche": [
-        { "titre": "Audit digital", "texte": "Analyse de votre présence en ligne et de vos performances actuelles." },
-        { "titre": "Stratégie", "texte": "Sélection des leviers et définition des objectifs SMART." },
-        { "titre": "Déploiement", "texte": "Mise en œuvre des actions prioritaires et suivi des résultats." },
-        { "titre": "Optimisation", "texte": "A/B testing, analyse des données et ajustements continus." }
+        {
+          "titre": "Audit digital",
+          "texte": "Analyse de votre présence en ligne et de vos performances actuelles.",
+          "titre_en": "Digital audit",
+          "texte_en": "Analysis of your online presence and current performance."
+        },
+        {
+          "titre": "Stratégie",
+          "texte": "Sélection des leviers et définition des objectifs SMART.",
+          "titre_en": "Strategy",
+          "texte_en": "Selection of levers and definition of SMART objectives."
+        },
+        {
+          "titre": "Déploiement",
+          "texte": "Mise en œuvre des actions prioritaires et suivi des résultats.",
+          "titre_en": "Rollout",
+          "texte_en": "Implementation of priority actions and results tracking."
+        },
+        {
+          "titre": "Optimisation",
+          "texte": "A/B testing, analyse des données et ajustements continus.",
+          "titre_en": "Optimisation",
+          "texte_en": "A/B testing, data analysis and ongoing adjustments."
+        }
       ],
       "livrables": [
-        { "titre": "Stratégie digitale", "texte": "Plan d'actions complet avec priorisation et budget." },
-        { "titre": "Dashboard de performance", "texte": "Tableau de bord pour suivre vos KPIs en temps réel." }
-      ]
+        {
+          "titre": "Stratégie digitale",
+          "texte": "Plan d'actions complet avec priorisation et budget.",
+          "titre_en": "Digital strategy",
+          "texte_en": "Full action plan with prioritisation and budget."
+        },
+        {
+          "titre": "Dashboard de performance",
+          "texte": "Tableau de bord pour suivre vos KPIs en temps réel.",
+          "titre_en": "Performance dashboard",
+          "texte_en": "Dashboard to track your KPIs in real time."
+        }
+      ],
+      "titre_en": "Digital communication",
+      "accroche_en": "Be visible where your customers look.",
+      "description_en": "SEO, emailing, display, SEA: we build your digital communication strategy to generate visibility and conversions. A data-driven approach to optimise every euro invested."
     },
     {
       "id": "diagnostic-rse",
@@ -177,15 +507,48 @@
       "accroche": "Où en êtes-vous sur la voie de la responsabilité ?",
       "description": "Nous évaluons vos pratiques RSE actuelles selon les référentiels reconnus (GRI, ISO 26000, CSRD). Le diagnostic identifie vos forces, axes d'amélioration et priorités d'action.",
       "approche": [
-        { "titre": "Collecte", "texte": "Entretiens, questionnaires et analyse documentaire interne." },
-        { "titre": "Évaluation", "texte": "Notation sur les piliers environnemental, social et gouvernance." },
-        { "titre": "Benchmark", "texte": "Comparaison avec les meilleures pratiques de votre secteur." },
-        { "titre": "Plan d'action", "texte": "Feuille de route priorisée avec objectifs et indicateurs." }
+        {
+          "titre": "Collecte",
+          "texte": "Entretiens, questionnaires et analyse documentaire interne.",
+          "titre_en": "Collection",
+          "texte_en": "Interviews, questionnaires and internal document review."
+        },
+        {
+          "titre": "Évaluation",
+          "texte": "Notation sur les piliers environnemental, social et gouvernance.",
+          "titre_en": "Evaluation",
+          "texte_en": "Scoring across the environmental, social and governance pillars."
+        },
+        {
+          "titre": "Benchmark",
+          "texte": "Comparaison avec les meilleures pratiques de votre secteur, documentée par les études sectorielles Xerfi et les données Statista.",
+          "titre_en": "Benchmark",
+          "texte_en": "Comparison with best practices in your sector, documented with Xerfi industry studies and Statista data."
+        },
+        {
+          "titre": "Plan d'action",
+          "texte": "Feuille de route priorisée avec objectifs et indicateurs.",
+          "titre_en": "Action plan",
+          "texte_en": "Prioritised roadmap with objectives and indicators."
+        }
       ],
       "livrables": [
-        { "titre": "Rapport de diagnostic", "texte": "Évaluation complète de vos pratiques RSE avec scoring." },
-        { "titre": "Feuille de route RSE", "texte": "Plan d'actions prioritaires sur 1 à 3 ans." }
-      ]
+        {
+          "titre": "Rapport de diagnostic",
+          "texte": "Évaluation complète de vos pratiques RSE avec scoring.",
+          "titre_en": "Assessment report",
+          "texte_en": "Full evaluation of your CSR practices with scoring."
+        },
+        {
+          "titre": "Feuille de route RSE",
+          "texte": "Plan d'actions prioritaires sur 1 à 3 ans.",
+          "titre_en": "CSR roadmap",
+          "texte_en": "1-to-3-year priority action plan."
+        }
+      ],
+      "titre_en": "CSR assessment",
+      "accroche_en": "Where do you stand on the path to responsibility?",
+      "description_en": "We assess your current CSR practices according to recognised frameworks (GRI, ISO 26000, CSRD). The assessment identifies your strengths, areas for improvement and priority actions."
     },
     {
       "id": "bilan-carbone",
@@ -194,15 +557,48 @@
       "accroche": "Mesurez vos émissions pour mieux les réduire.",
       "description": "Nous réalisons le bilan des émissions de gaz à effet de serre de votre organisation selon la méthode Bilan Carbone® ou GHG Protocol. Un outil indispensable pour piloter votre transition bas-carbone.",
       "approche": [
-        { "titre": "Périmètre", "texte": "Définition des scopes 1, 2 et 3 à inclure dans le bilan." },
-        { "titre": "Collecte", "texte": "Recueil des données d'activité auprès de vos équipes." },
-        { "titre": "Calcul", "texte": "Application des facteurs d'émission et consolidation des résultats." },
-        { "titre": "Plan de réduction", "texte": "Identification des postes prioritaires et actions de réduction." }
+        {
+          "titre": "Périmètre",
+          "texte": "Définition des scopes 1, 2 et 3 à inclure dans le bilan.",
+          "titre_en": "Scope",
+          "texte_en": "Defining scopes 1, 2 and 3 to include in the assessment."
+        },
+        {
+          "titre": "Collecte",
+          "texte": "Recueil des données d'activité auprès de vos équipes.",
+          "titre_en": "Collection",
+          "texte_en": "Gathering activity data from your teams."
+        },
+        {
+          "titre": "Calcul",
+          "texte": "Application des facteurs d'émission et consolidation des résultats.",
+          "titre_en": "Calculation",
+          "texte_en": "Application of emission factors and consolidation of results."
+        },
+        {
+          "titre": "Plan de réduction",
+          "texte": "Identification des postes prioritaires et actions de réduction.",
+          "titre_en": "Reduction plan",
+          "texte_en": "Identification of priority items and reduction actions."
+        }
       ],
       "livrables": [
-        { "titre": "Bilan carbone", "texte": "Rapport complet des émissions par scope et poste." },
-        { "titre": "Plan de décarbonation", "texte": "Feuille de route de réduction avec objectifs chiffrés." }
-      ]
+        {
+          "titre": "Bilan carbone",
+          "texte": "Rapport complet des émissions par scope et poste.",
+          "titre_en": "Carbon footprint report",
+          "texte_en": "Full emissions report by scope and item."
+        },
+        {
+          "titre": "Plan de décarbonation",
+          "texte": "Feuille de route de réduction avec objectifs chiffrés.",
+          "titre_en": "Decarbonisation plan",
+          "texte_en": "Reduction roadmap with quantified targets."
+        }
+      ],
+      "titre_en": "Carbon footprint",
+      "accroche_en": "Measure your emissions to reduce them better.",
+      "description_en": "We carry out your organisation's greenhouse gas emissions report using the Bilan Carbone® or GHG Protocol methodology. An essential tool for steering your low-carbon transition."
     },
     {
       "id": "strategie-developpement-durable",
@@ -211,15 +607,48 @@
       "accroche": "Intégrez la durabilité au cœur de votre modèle.",
       "description": "Nous vous aidons à construire une stratégie de développement durable alignée sur vos enjeux et les attentes de vos parties prenantes. Objectifs, indicateurs, gouvernance et communication.",
       "approche": [
-        { "titre": "Analyse de matérialité", "texte": "Identification des enjeux RSE prioritaires pour votre activité." },
-        { "titre": "Vision", "texte": "Définition des ambitions et objectifs à long terme." },
-        { "titre": "Feuille de route", "texte": "Plan d'actions détaillé avec responsabilités et ressources." },
-        { "titre": "Indicateurs", "texte": "Construction d'un tableau de bord de suivi des performances." }
+        {
+          "titre": "Analyse de matérialité",
+          "texte": "Identification des enjeux RSE prioritaires pour votre activité.",
+          "titre_en": "Materiality analysis",
+          "texte_en": "Identification of priority CSR issues for your business."
+        },
+        {
+          "titre": "Vision",
+          "texte": "Définition des ambitions et objectifs à long terme.",
+          "titre_en": "Vision",
+          "texte_en": "Defining long-term ambitions and objectives."
+        },
+        {
+          "titre": "Feuille de route",
+          "texte": "Plan d'actions détaillé avec responsabilités et ressources.",
+          "titre_en": "Roadmap",
+          "texte_en": "Detailed action plan with responsibilities and resources."
+        },
+        {
+          "titre": "Indicateurs",
+          "texte": "Construction d'un tableau de bord de suivi des performances.",
+          "titre_en": "Indicators",
+          "texte_en": "Building a performance-tracking dashboard."
+        }
       ],
       "livrables": [
-        { "titre": "Stratégie RSE", "texte": "Document stratégique complet avec vision et objectifs." },
-        { "titre": "Tableau de bord", "texte": "Indicateurs et outils de pilotage de la performance RSE." }
-      ]
+        {
+          "titre": "Stratégie RSE",
+          "texte": "Document stratégique complet avec vision et objectifs.",
+          "titre_en": "CSR strategy",
+          "texte_en": "Full strategic document with vision and objectives."
+        },
+        {
+          "titre": "Tableau de bord",
+          "texte": "Indicateurs et outils de pilotage de la performance RSE.",
+          "titre_en": "Dashboard",
+          "texte_en": "CSR performance indicators and steering tools."
+        }
+      ],
+      "titre_en": "Sustainability strategy",
+      "accroche_en": "Put sustainability at the heart of your model.",
+      "description_en": "We help you build a sustainability strategy aligned with your challenges and stakeholder expectations. Objectives, indicators, governance and communication."
     },
     {
       "id": "rapport-extra-financier",
@@ -228,15 +657,48 @@
       "accroche": "Communiquez votre impact avec transparence.",
       "description": "Nous rédigeons votre rapport extra-financier (DPEF, rapport RSE, rapport intégré) conforme aux réglementations en vigueur. Un exercice de transparence qui renforce la confiance de vos parties prenantes.",
       "approche": [
-        { "titre": "Cadrage", "texte": "Choix du référentiel (GRI, ESRS, CSRD) et du périmètre de reporting." },
-        { "titre": "Collecte", "texte": "Structuration de la collecte de données auprès des équipes." },
-        { "titre": "Rédaction", "texte": "Production du rapport avec données, indicateurs et narratif." },
-        { "titre": "Validation", "texte": "Relecture, mise en forme et préparation à la publication." }
+        {
+          "titre": "Cadrage",
+          "texte": "Choix du référentiel (GRI, ESRS, CSRD) et du périmètre de reporting.",
+          "titre_en": "Scoping",
+          "texte_en": "Choice of framework (GRI, ESRS, CSRD) and reporting scope."
+        },
+        {
+          "titre": "Collecte",
+          "texte": "Structuration de la collecte de données auprès des équipes.",
+          "titre_en": "Collection",
+          "texte_en": "Structuring data collection from teams."
+        },
+        {
+          "titre": "Rédaction",
+          "texte": "Production du rapport avec données, indicateurs et narratif.",
+          "titre_en": "Drafting",
+          "texte_en": "Producing the report with data, indicators and narrative."
+        },
+        {
+          "titre": "Validation",
+          "texte": "Relecture, mise en forme et préparation à la publication.",
+          "titre_en": "Validation",
+          "texte_en": "Proofreading, formatting and preparation for publication."
+        }
       ],
       "livrables": [
-        { "titre": "Rapport extra-financier", "texte": "Document finalisé conforme aux exigences réglementaires." },
-        { "titre": "Annexes de données", "texte": "Tableaux de données brutes et méthodologie de calcul." }
-      ]
+        {
+          "titre": "Rapport extra-financier",
+          "texte": "Document finalisé conforme aux exigences réglementaires.",
+          "titre_en": "Extra-financial report",
+          "texte_en": "Finalised document compliant with regulatory requirements."
+        },
+        {
+          "titre": "Annexes de données",
+          "texte": "Tableaux de données brutes et méthodologie de calcul.",
+          "titre_en": "Data appendices",
+          "texte_en": "Raw data tables and calculation methodology."
+        }
+      ],
+      "titre_en": "Extra-financial report",
+      "accroche_en": "Communicate your impact with transparency.",
+      "description_en": "We write your extra-financial report (DPEF, CSR report, integrated report) in compliance with current regulations. A transparency exercise that builds stakeholder trust."
     },
     {
       "id": "csrd",
@@ -245,15 +707,48 @@
       "accroche": "Anticipez les nouvelles obligations de reporting.",
       "description": "La directive CSRD impose de nouvelles obligations de reporting ESG à partir de 2025. Nous vous accompagnons dans la mise en conformité : analyse d'écarts, collecte de données et rédaction des états de durabilité.",
       "approche": [
-        { "titre": "Gap analysis", "texte": "Évaluation de votre niveau de maturité vis-à-vis des ESRS." },
-        { "titre": "Matérialité", "texte": "Réalisation de l'analyse de double matérialité requise par la CSRD." },
-        { "titre": "Collecte", "texte": "Mise en place du système de collecte des données requises." },
-        { "titre": "Reporting", "texte": "Rédaction des états de durabilité conformes aux ESRS." }
+        {
+          "titre": "Gap analysis",
+          "texte": "Évaluation de votre niveau de maturité vis-à-vis des ESRS.",
+          "titre_en": "Gap analysis",
+          "texte_en": "Assessment of your maturity level against the ESRS."
+        },
+        {
+          "titre": "Matérialité",
+          "texte": "Réalisation de l'analyse de double matérialité requise par la CSRD.",
+          "titre_en": "Materiality",
+          "texte_en": "Carrying out the double materiality analysis required by the CSRD."
+        },
+        {
+          "titre": "Collecte",
+          "texte": "Mise en place du système de collecte des données requises.",
+          "titre_en": "Collection",
+          "texte_en": "Setting up the system to collect required data."
+        },
+        {
+          "titre": "Reporting",
+          "texte": "Rédaction des états de durabilité conformes aux ESRS.",
+          "titre_en": "Reporting",
+          "texte_en": "Drafting sustainability statements compliant with the ESRS."
+        }
       ],
       "livrables": [
-        { "titre": "Rapport de gap analysis", "texte": "État des lieux et plan de mise en conformité CSRD." },
-        { "titre": "États de durabilité", "texte": "Document de reporting conforme aux exigences CSRD/ESRS." }
-      ]
+        {
+          "titre": "Rapport de gap analysis",
+          "texte": "État des lieux et plan de mise en conformité CSRD.",
+          "titre_en": "Gap analysis report",
+          "texte_en": "Current-state assessment and CSRD compliance plan."
+        },
+        {
+          "titre": "États de durabilité",
+          "texte": "Document de reporting conforme aux exigences CSRD/ESRS.",
+          "titre_en": "Sustainability statements",
+          "texte_en": "Reporting document compliant with CSRD/ESRS requirements."
+        }
+      ],
+      "titre_en": "CSRD compliance",
+      "accroche_en": "Anticipate new reporting obligations.",
+      "description_en": "The CSRD directive imposes new ESG reporting obligations from 2025. We support you in compliance: gap analysis, data collection and drafting of sustainability statements."
     },
     {
       "id": "analyse-de-donnees",
@@ -262,15 +757,48 @@
       "accroche": "Transformez vos données en décisions.",
       "description": "Nous analysons vos données pour en extraire des insights actionnables. Statistiques descriptives, analyses de corrélation, segmentation : nos consultants maîtrisent les outils d'analyse modernes.",
       "approche": [
-        { "titre": "Audit des données", "texte": "Évaluation de la qualité et de la disponibilité de vos données." },
-        { "titre": "Nettoyage", "texte": "Traitement des valeurs manquantes, doublons et anomalies." },
-        { "titre": "Analyse", "texte": "Application des méthodes statistiques adaptées à vos questions." },
-        { "titre": "Restitution", "texte": "Présentation des résultats et recommandations actionnables." }
+        {
+          "titre": "Audit des données",
+          "texte": "Évaluation de la qualité et de la disponibilité de vos données.",
+          "titre_en": "Data audit",
+          "texte_en": "Assessment of the quality and availability of your data."
+        },
+        {
+          "titre": "Nettoyage",
+          "texte": "Traitement des valeurs manquantes, doublons et anomalies.",
+          "titre_en": "Cleaning",
+          "texte_en": "Processing missing values, duplicates and anomalies."
+        },
+        {
+          "titre": "Analyse",
+          "texte": "Application des méthodes statistiques adaptées à vos questions.",
+          "titre_en": "Analysis",
+          "texte_en": "Application of statistical methods suited to your questions."
+        },
+        {
+          "titre": "Restitution",
+          "texte": "Présentation des résultats et recommandations actionnables.",
+          "titre_en": "Presentation",
+          "texte_en": "Presentation of results and actionable recommendations."
+        }
       ],
       "livrables": [
-        { "titre": "Rapport d'analyse", "texte": "Résultats complets avec méthodologie et interprétations." },
-        { "titre": "Fichiers de données", "texte": "Données nettoyées et annotées en format exploitable." }
-      ]
+        {
+          "titre": "Rapport d'analyse",
+          "texte": "Résultats complets avec méthodologie et interprétations.",
+          "titre_en": "Analysis report",
+          "texte_en": "Full results with methodology and interpretations."
+        },
+        {
+          "titre": "Fichiers de données",
+          "texte": "Données nettoyées et annotées en format exploitable.",
+          "titre_en": "Data files",
+          "texte_en": "Cleaned, annotated data in a usable format."
+        }
+      ],
+      "titre_en": "Data analysis",
+      "accroche_en": "Turn your data into decisions.",
+      "description_en": "We analyse your data to extract actionable insights. Descriptive statistics, correlation analysis, segmentation: our consultants master modern analysis tools."
     },
     {
       "id": "data-visualisation",
@@ -279,15 +807,48 @@
       "accroche": "Rendez vos données lisibles et convaincantes.",
       "description": "Nous transformons vos données en visualisations claires et percutantes. Graphiques, infographies, dashboards interactifs : des représentations visuelles qui facilitent la compréhension et la prise de décision.",
       "approche": [
-        { "titre": "Compréhension", "texte": "Identification des messages à communiquer et du public cible." },
-        { "titre": "Choix des formats", "texte": "Sélection des types de visualisations adaptés à chaque donnée." },
-        { "titre": "Conception", "texte": "Création des visuels avec attention portée à l'expérience utilisateur." },
-        { "titre": "Intégration", "texte": "Intégration dans vos outils existants (PowerPoint, Power BI, Tableau)." }
+        {
+          "titre": "Compréhension",
+          "texte": "Identification des messages à communiquer et du public cible.",
+          "titre_en": "Understanding",
+          "texte_en": "Identifying the messages to convey and the target audience."
+        },
+        {
+          "titre": "Choix des formats",
+          "texte": "Sélection des types de visualisations adaptés à chaque donnée.",
+          "titre_en": "Format selection",
+          "texte_en": "Selecting the types of visualisation suited to each dataset."
+        },
+        {
+          "titre": "Conception",
+          "texte": "Création des visuels avec attention portée à l'expérience utilisateur.",
+          "titre_en": "Design",
+          "texte_en": "Creating visuals with attention to user experience."
+        },
+        {
+          "titre": "Intégration",
+          "texte": "Intégration dans vos outils existants (PowerPoint, Power BI, Tableau).",
+          "titre_en": "Integration",
+          "texte_en": "Integration into your existing tools (PowerPoint, Power BI, Tableau)."
+        }
       ],
       "livrables": [
-        { "titre": "Rapport visuel", "texte": "Ensemble de visualisations prêtes à utiliser en présentation." },
-        { "titre": "Fichiers sources", "texte": "Fichiers éditables pour mise à jour autonome." }
-      ]
+        {
+          "titre": "Rapport visuel",
+          "texte": "Ensemble de visualisations prêtes à utiliser en présentation.",
+          "titre_en": "Visual report",
+          "texte_en": "Set of visualisations ready to use in presentations."
+        },
+        {
+          "titre": "Fichiers sources",
+          "texte": "Fichiers éditables pour mise à jour autonome.",
+          "titre_en": "Source files",
+          "texte_en": "Editable files for independent updates."
+        }
+      ],
+      "titre_en": "Data visualisation",
+      "accroche_en": "Make your data readable and compelling.",
+      "description_en": "We transform your data into clear, impactful visualisations. Charts, infographics, interactive dashboards: visual representations that facilitate understanding and decision-making."
     },
     {
       "id": "tableaux-de-bord",
@@ -296,15 +857,48 @@
       "accroche": "Pilotez votre activité en temps réel.",
       "description": "Nous concevons et développons vos tableaux de bord de pilotage sous Power BI, Tableau ou Google Looker Studio. Suivi des KPIs, alertes automatiques et rapports programmés.",
       "approche": [
-        { "titre": "Cadrage", "texte": "Définition des KPIs, sources de données et fréquence de mise à jour." },
-        { "titre": "Architecture", "texte": "Conception du modèle de données et des flux d'alimentation." },
-        { "titre": "Développement", "texte": "Construction du dashboard avec les visualisations adaptées." },
-        { "titre": "Formation", "texte": "Formation des utilisateurs et documentation d'utilisation." }
+        {
+          "titre": "Cadrage",
+          "texte": "Définition des KPIs, sources de données et fréquence de mise à jour.",
+          "titre_en": "Scoping",
+          "texte_en": "Defining KPIs, data sources and update frequency."
+        },
+        {
+          "titre": "Architecture",
+          "texte": "Conception du modèle de données et des flux d'alimentation.",
+          "titre_en": "Architecture",
+          "texte_en": "Designing the data model and feed flows."
+        },
+        {
+          "titre": "Développement",
+          "texte": "Construction du dashboard avec les visualisations adaptées.",
+          "titre_en": "Development",
+          "texte_en": "Building the dashboard with suitable visualisations."
+        },
+        {
+          "titre": "Formation",
+          "texte": "Formation des utilisateurs et documentation d'utilisation.",
+          "titre_en": "Training",
+          "texte_en": "User training and usage documentation."
+        }
       ],
       "livrables": [
-        { "titre": "Dashboard opérationnel", "texte": "Tableau de bord fonctionnel connecté à vos sources de données." },
-        { "titre": "Documentation", "texte": "Guide d'utilisation et de maintenance du dashboard." }
-      ]
+        {
+          "titre": "Dashboard opérationnel",
+          "texte": "Tableau de bord fonctionnel connecté à vos sources de données.",
+          "titre_en": "Operational dashboard",
+          "texte_en": "Functional dashboard connected to your data sources."
+        },
+        {
+          "titre": "Documentation",
+          "texte": "Guide d'utilisation et de maintenance du dashboard.",
+          "titre_en": "Documentation",
+          "texte_en": "Dashboard usage and maintenance guide."
+        }
+      ],
+      "titre_en": "Dashboards",
+      "accroche_en": "Steer your business in real time.",
+      "description_en": "We design and build your management dashboards in Power BI, Tableau or Google Looker Studio. KPI tracking, automated alerts and scheduled reports."
     },
     {
       "id": "modelisation-predictive",
@@ -313,15 +907,48 @@
       "accroche": "Anticipez avant d'agir.",
       "description": "Nous développons des modèles prédictifs pour anticiper les comportements clients, les ventes ou les risques. Machine learning, régressions, arbres de décision : des modèles adaptés à votre problématique.",
       "approche": [
-        { "titre": "Problématique", "texte": "Formalisation du problème et définition de la variable cible." },
-        { "titre": "Données", "texte": "Collecte, nettoyage et feature engineering." },
-        { "titre": "Modélisation", "texte": "Entraînement et évaluation de plusieurs modèles." },
-        { "titre": "Déploiement", "texte": "Intégration du modèle dans vos processus métier." }
+        {
+          "titre": "Problématique",
+          "texte": "Formalisation du problème et définition de la variable cible.",
+          "titre_en": "Problem framing",
+          "texte_en": "Formalising the problem and defining the target variable."
+        },
+        {
+          "titre": "Données",
+          "texte": "Collecte, nettoyage et feature engineering.",
+          "titre_en": "Data",
+          "texte_en": "Collection, cleaning and feature engineering."
+        },
+        {
+          "titre": "Modélisation",
+          "texte": "Entraînement et évaluation de plusieurs modèles.",
+          "titre_en": "Modelling",
+          "texte_en": "Training and evaluating several models."
+        },
+        {
+          "titre": "Déploiement",
+          "texte": "Intégration du modèle dans vos processus métier.",
+          "titre_en": "Deployment",
+          "texte_en": "Integrating the model into your business processes."
+        }
       ],
       "livrables": [
-        { "titre": "Modèle prédictif", "texte": "Code et documentation du modèle avec métriques de performance." },
-        { "titre": "Rapport de modélisation", "texte": "Explication des choix méthodologiques et des résultats." }
-      ]
+        {
+          "titre": "Modèle prédictif",
+          "texte": "Code et documentation du modèle avec métriques de performance.",
+          "titre_en": "Predictive model",
+          "texte_en": "Model code and documentation with performance metrics."
+        },
+        {
+          "titre": "Rapport de modélisation",
+          "texte": "Explication des choix méthodologiques et des résultats.",
+          "titre_en": "Modelling report",
+          "texte_en": "Explanation of methodological choices and results."
+        }
+      ],
+      "titre_en": "Predictive modelling",
+      "accroche_en": "Anticipate before you act.",
+      "description_en": "We develop predictive models to anticipate customer behaviour, sales or risks. Machine learning, regressions, decision trees: models adapted to your challenge."
     },
     {
       "id": "business-intelligence",
@@ -330,15 +957,48 @@
       "accroche": "Une vision 360° de votre performance.",
       "description": "Nous construisons votre infrastructure BI : entrepôt de données, ETL, couche sémantique et reporting. Une solution complète pour centraliser vos données et démocratiser l'accès à l'information.",
       "approche": [
-        { "titre": "Audit", "texte": "Cartographie des sources de données et des besoins reporting." },
-        { "titre": "Architecture", "texte": "Conception de l'entrepôt de données et des flux de transformation." },
-        { "titre": "Développement", "texte": "Mise en place de l'infrastructure et des rapports." },
-        { "titre": "Formation", "texte": "Accompagnement des équipes à l'utilisation des outils." }
+        {
+          "titre": "Audit",
+          "texte": "Cartographie des sources de données et des besoins reporting.",
+          "titre_en": "Audit",
+          "texte_en": "Mapping of data sources and reporting needs."
+        },
+        {
+          "titre": "Architecture",
+          "texte": "Conception de l'entrepôt de données et des flux de transformation.",
+          "titre_en": "Architecture",
+          "texte_en": "Designing the data warehouse and transformation flows."
+        },
+        {
+          "titre": "Développement",
+          "texte": "Mise en place de l'infrastructure et des rapports.",
+          "titre_en": "Development",
+          "texte_en": "Setting up the infrastructure and reports."
+        },
+        {
+          "titre": "Formation",
+          "texte": "Accompagnement des équipes à l'utilisation des outils.",
+          "titre_en": "Training",
+          "texte_en": "Supporting teams in using the tools."
+        }
       ],
       "livrables": [
-        { "titre": "Infrastructure BI", "texte": "Système opérationnel de collecte, transformation et restitution." },
-        { "titre": "Catalogue de rapports", "texte": "Ensemble de rapports standards prêts à utiliser." }
-      ]
+        {
+          "titre": "Infrastructure BI",
+          "texte": "Système opérationnel de collecte, transformation et restitution.",
+          "titre_en": "BI infrastructure",
+          "texte_en": "Operational system for collecting, transforming and reporting data."
+        },
+        {
+          "titre": "Catalogue de rapports",
+          "texte": "Ensemble de rapports standards prêts à utiliser.",
+          "titre_en": "Report catalogue",
+          "texte_en": "Set of standard, ready-to-use reports."
+        }
+      ],
+      "titre_en": "Business Intelligence",
+      "accroche_en": "A 360° view of your performance.",
+      "description_en": "We build your BI infrastructure: data warehouse, ETL, semantic layer and reporting. A complete solution to centralise your data and democratise access to information."
     },
     {
       "id": "business-plan",
@@ -347,15 +1007,48 @@
       "accroche": "Construisez un plan financier solide et convaincant.",
       "description": "Nous élaborons votre business plan financier : modèle de revenus, projections P&L, bilan et trésorerie sur 3 à 5 ans. Un outil indispensable pour lever des fonds ou convaincre vos partenaires.",
       "approche": [
-        { "titre": "Compréhension", "texte": "Analyse du modèle d'affaires et des hypothèses de croissance." },
-        { "titre": "Modélisation", "texte": "Construction du modèle financier avec scénarios." },
-        { "titre": "Sensibilité", "texte": "Tests de résistance et analyse des hypothèses clés." },
-        { "titre": "Restitution", "texte": "Présentation des projections et recommandations financières." }
+        {
+          "titre": "Compréhension",
+          "texte": "Analyse du modèle d'affaires et confrontation des hypothèses de croissance aux données de marché Xerfi et Statista.",
+          "titre_en": "Understanding",
+          "texte_en": "Analysis of the business model and benchmarking of growth assumptions against Xerfi and Statista market data."
+        },
+        {
+          "titre": "Modélisation",
+          "texte": "Construction du modèle financier avec scénarios.",
+          "titre_en": "Modelling",
+          "texte_en": "Building the financial model with scenarios."
+        },
+        {
+          "titre": "Sensibilité",
+          "texte": "Tests de résistance et analyse des hypothèses clés.",
+          "titre_en": "Sensitivity",
+          "texte_en": "Stress tests and analysis of key assumptions."
+        },
+        {
+          "titre": "Restitution",
+          "texte": "Présentation des projections et recommandations financières.",
+          "titre_en": "Presentation",
+          "texte_en": "Presentation of projections and financial recommendations."
+        }
       ],
       "livrables": [
-        { "titre": "Modèle financier Excel", "texte": "Fichier dynamique avec toutes les projections et scénarios." },
-        { "titre": "Synthèse financière", "texte": "Présentation des chiffres clés pour vos interlocuteurs." }
-      ]
+        {
+          "titre": "Modèle financier Excel",
+          "texte": "Fichier dynamique avec toutes les projections et scénarios.",
+          "titre_en": "Excel financial model",
+          "texte_en": "Dynamic file with all projections and scenarios."
+        },
+        {
+          "titre": "Synthèse financière",
+          "texte": "Présentation des chiffres clés pour vos interlocuteurs.",
+          "titre_en": "Financial summary",
+          "texte_en": "Presentation of key figures for your stakeholders."
+        }
+      ],
+      "titre_en": "Business plan",
+      "accroche_en": "Build a solid, convincing financial plan.",
+      "description_en": "We prepare your financial business plan: revenue model, P&L projections, balance sheet and cash flow over 3 to 5 years. An essential tool for fundraising or convincing your partners."
     },
     {
       "id": "valorisation-d-entreprise",
@@ -364,15 +1057,48 @@
       "accroche": "Quelle est la vraie valeur de votre entreprise ?",
       "description": "Nous réalisons des valorisations d'entreprise selon les méthodes reconnues : DCF, comparables boursiers, transactions comparables. Une analyse rigoureuse pour vos levées de fonds, cessions ou acquisitions.",
       "approche": [
-        { "titre": "Analyse", "texte": "Étude de l'activité, du marché et des perspectives de croissance." },
-        { "titre": "Méthodes", "texte": "Application des méthodes DCF, multiples et actif net réévalué." },
-        { "titre": "Réconciliation", "texte": "Pondération des méthodes et fourchette de valorisation." },
-        { "titre": "Note", "texte": "Rédaction de la note de valorisation avec justifications." }
+        {
+          "titre": "Analyse",
+          "texte": "Étude de l'activité, du marché et des perspectives de croissance à partir des études sectorielles Xerfi et des données Statista.",
+          "titre_en": "Analysis",
+          "texte_en": "Study of the business, market and growth prospects based on Xerfi industry studies and Statista data."
+        },
+        {
+          "titre": "Méthodes",
+          "texte": "Application des méthodes DCF, multiples et actif net réévalué.",
+          "titre_en": "Methods",
+          "texte_en": "Application of DCF, multiples and revalued net asset methods."
+        },
+        {
+          "titre": "Réconciliation",
+          "texte": "Pondération des méthodes et fourchette de valorisation.",
+          "titre_en": "Reconciliation",
+          "texte_en": "Weighting of methods and valuation range."
+        },
+        {
+          "titre": "Note",
+          "texte": "Rédaction de la note de valorisation avec justifications.",
+          "titre_en": "Report",
+          "texte_en": "Drafting the valuation report with justifications."
+        }
       ],
       "livrables": [
-        { "titre": "Note de valorisation", "texte": "Document professionnel avec méthodologie et résultats." },
-        { "titre": "Modèle DCF", "texte": "Fichier Excel détaillé avec toutes les hypothèses." }
-      ]
+        {
+          "titre": "Note de valorisation",
+          "texte": "Document professionnel avec méthodologie et résultats.",
+          "titre_en": "Valuation report",
+          "texte_en": "Professional document with methodology and results."
+        },
+        {
+          "titre": "Modèle DCF",
+          "texte": "Fichier Excel détaillé avec toutes les hypothèses.",
+          "titre_en": "DCF model",
+          "texte_en": "Detailed Excel file with all assumptions."
+        }
+      ],
+      "titre_en": "Company valuation",
+      "accroche_en": "What is your company really worth?",
+      "description_en": "We carry out company valuations using recognised methods: DCF, market comparables, comparable transactions. A rigorous analysis for your fundraising, disposals or acquisitions."
     },
     {
       "id": "analyse-financiere",
@@ -381,15 +1107,48 @@
       "accroche": "Comprendre les chiffres pour mieux décider.",
       "description": "Nous analysons les états financiers de votre entreprise ou d'une cible d'acquisition : rentabilité, liquidité, solvabilité, efficacité opérationnelle. Un diagnostic complet pour éclairer vos décisions.",
       "approche": [
-        { "titre": "Collecte", "texte": "Récupération des états financiers sur 3 à 5 exercices." },
-        { "titre": "Analyse horizontale", "texte": "Évolution des indicateurs dans le temps." },
-        { "titre": "Analyse verticale", "texte": "Structure du compte de résultat et du bilan." },
-        { "titre": "Ratios", "texte": "Calcul et interprétation des ratios clés vs. secteur." }
+        {
+          "titre": "Collecte",
+          "texte": "Récupération des états financiers sur 3 à 5 exercices.",
+          "titre_en": "Collection",
+          "texte_en": "Gathering financial statements over 3 to 5 fiscal years."
+        },
+        {
+          "titre": "Analyse horizontale",
+          "texte": "Évolution des indicateurs dans le temps.",
+          "titre_en": "Horizontal analysis",
+          "texte_en": "Evolution of indicators over time."
+        },
+        {
+          "titre": "Analyse verticale",
+          "texte": "Structure du compte de résultat et du bilan.",
+          "titre_en": "Vertical analysis",
+          "texte_en": "Structure of the income statement and balance sheet."
+        },
+        {
+          "titre": "Ratios",
+          "texte": "Calcul et interprétation des ratios clés, comparés aux moyennes sectorielles issues de Xerfi.",
+          "titre_en": "Ratios",
+          "texte_en": "Calculation and interpretation of key ratios against Xerfi sector averages."
+        }
       ],
       "livrables": [
-        { "titre": "Rapport d'analyse", "texte": "Diagnostic complet avec ratios commentés et recommandations." },
-        { "titre": "Tableaux de synthèse", "texte": "Indicateurs clés mis en forme pour présentation." }
-      ]
+        {
+          "titre": "Rapport d'analyse",
+          "texte": "Diagnostic complet avec ratios commentés et recommandations.",
+          "titre_en": "Analysis report",
+          "texte_en": "Full diagnosis with commented ratios and recommendations."
+        },
+        {
+          "titre": "Tableaux de synthèse",
+          "texte": "Indicateurs clés mis en forme pour présentation.",
+          "titre_en": "Summary tables",
+          "texte_en": "Key indicators formatted for presentation."
+        }
+      ],
+      "titre_en": "Financial analysis",
+      "accroche_en": "Understand the numbers to decide better.",
+      "description_en": "We analyse the financial statements of your company or an acquisition target: profitability, liquidity, solvency, operational efficiency. A comprehensive diagnosis to inform your decisions."
     },
     {
       "id": "etude-de-rentabilite",
@@ -398,15 +1157,48 @@
       "accroche": "Ce projet vaut-il l'investissement ?",
       "description": "Nous évaluons la rentabilité de vos projets d'investissement : VAN, TRI, délai de récupération, point mort. Une analyse rigoureuse pour prendre des décisions d'investissement éclairées.",
       "approche": [
-        { "titre": "Cadrage", "texte": "Définition du projet, de l'horizon temporel et des hypothèses." },
-        { "titre": "Cash-flows", "texte": "Modélisation des flux de trésorerie sur la durée du projet." },
-        { "titre": "Indicateurs", "texte": "Calcul de la VAN, du TRI et du délai de récupération." },
-        { "titre": "Sensibilité", "texte": "Analyse de sensibilité aux variables clés du projet." }
+        {
+          "titre": "Cadrage",
+          "texte": "Définition du projet, de l'horizon temporel et des hypothèses.",
+          "titre_en": "Scoping",
+          "texte_en": "Defining the project, time horizon and assumptions."
+        },
+        {
+          "titre": "Cash-flows",
+          "texte": "Modélisation des flux de trésorerie sur la durée du projet.",
+          "titre_en": "Cash flows",
+          "texte_en": "Modelling cash flows over the project's duration."
+        },
+        {
+          "titre": "Indicateurs",
+          "texte": "Calcul de la VAN, du TRI et du délai de récupération.",
+          "titre_en": "Indicators",
+          "texte_en": "Calculation of NPV, IRR and payback period."
+        },
+        {
+          "titre": "Sensibilité",
+          "texte": "Analyse de sensibilité aux variables clés du projet.",
+          "titre_en": "Sensitivity",
+          "texte_en": "Sensitivity analysis on the project's key variables."
+        }
       ],
       "livrables": [
-        { "titre": "Modèle de rentabilité", "texte": "Fichier Excel avec indicateurs et analyse de sensibilité." },
-        { "titre": "Note de synthèse", "texte": "Recommandation argumentée sur la faisabilité du projet." }
-      ]
+        {
+          "titre": "Modèle de rentabilité",
+          "texte": "Fichier Excel avec indicateurs et analyse de sensibilité.",
+          "titre_en": "Profitability model",
+          "texte_en": "Excel file with indicators and sensitivity analysis."
+        },
+        {
+          "titre": "Note de synthèse",
+          "texte": "Recommandation argumentée sur la faisabilité du projet.",
+          "titre_en": "Summary memo",
+          "texte_en": "Reasoned recommendation on the project's feasibility."
+        }
+      ],
+      "titre_en": "Profitability study",
+      "accroche_en": "Is this project worth the investment?",
+      "description_en": "We assess the profitability of your investment projects: NPV, IRR, payback period, break-even point. A rigorous analysis for informed investment decisions."
     },
     {
       "id": "due-diligence",
@@ -415,15 +1207,48 @@
       "accroche": "Vérifiez avant d'acquérir.",
       "description": "Nous réalisons des missions de due diligence financière dans le cadre de vos opérations de M&A. Analyse des comptes, identification des risques et ajustements de valorisation.",
       "approche": [
-        { "titre": "Planification", "texte": "Définition du périmètre et de la liste des documents à analyser." },
-        { "titre": "Analyse", "texte": "Revue des états financiers, contrats et éléments hors bilan." },
-        { "titre": "Risques", "texte": "Identification des red flags et points d'attention." },
-        { "titre": "Rapport", "texte": "Synthèse des findings et ajustements recommandés." }
+        {
+          "titre": "Planification",
+          "texte": "Définition du périmètre et de la liste des documents à analyser.",
+          "titre_en": "Planning",
+          "texte_en": "Defining the scope and the list of documents to review."
+        },
+        {
+          "titre": "Analyse",
+          "texte": "Revue des états financiers, contrats et éléments hors bilan.",
+          "titre_en": "Analysis",
+          "texte_en": "Review of financial statements, contracts and off-balance-sheet items."
+        },
+        {
+          "titre": "Risques",
+          "texte": "Identification des red flags et points d'attention.",
+          "titre_en": "Risks",
+          "texte_en": "Identification of red flags and points of attention."
+        },
+        {
+          "titre": "Rapport",
+          "texte": "Synthèse des findings et ajustements recommandés.",
+          "titre_en": "Report",
+          "texte_en": "Summary of findings and recommended adjustments."
+        }
       ],
       "livrables": [
-        { "titre": "Rapport de due diligence", "texte": "Document complet avec findings et recommandations." },
-        { "titre": "Tableau des ajustements", "texte": "Liste des retraitements à appliquer à la valorisation." }
-      ]
+        {
+          "titre": "Rapport de due diligence",
+          "texte": "Document complet avec findings et recommandations.",
+          "titre_en": "Due diligence report",
+          "texte_en": "Full document with findings and recommendations."
+        },
+        {
+          "titre": "Tableau des ajustements",
+          "texte": "Liste des retraitements à appliquer à la valorisation.",
+          "titre_en": "Adjustments table",
+          "texte_en": "List of restatements to apply to the valuation."
+        }
+      ],
+      "titre_en": "Due diligence",
+      "accroche_en": "Verify before you acquire.",
+      "description_en": "We carry out financial due diligence missions for your M&A operations. Review of accounts, risk identification and valuation adjustments."
     }
   ]
 }

@@ -2,17 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "Static Site (npx serve)",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "."],
-      "port": 3000,
-      "autoPort": true
-    },
-    {
-      "name": "Static Site (Python HTTP)",
+      "name": "audencia-jc",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8080"],
-      "port": 8080
+      "runtimeArgs": ["-m", "http.server", "8123", "--directory", "/Users/felixpitz/Desktop/Site Internet/Audencia Junior conseil"],
+      "port": 8123
     }
   ]
 }

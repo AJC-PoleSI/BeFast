@@ -27,6 +27,7 @@
     /* ── SECTIONS ── */
     section { padding: 96px 48px; }
     .section-inner { max-width: 1200px; margin: 0 auto; }
+    .section-body p { text-align: justify; }
 
     /* ── QU'EST-CE QU'UNE JE ── */
     #qu-est-ce { background: var(--white); }
@@ -115,6 +116,8 @@
   <meta property="og:description" content="Qu'est-ce qu'une Junior-Entreprise ? Découvrez le mouvement des Junior-Entreprises et le fonctionnement d'Audencia Junior Conseil.">
   <meta property="og:image" content="https://project-y2gxy.vercel.app/photos/logo.png">
   <script src="assets/polish.js" defer></script>
+  <script src="assets/i18n.js" defer></script>
+  <script src="assets/contact-modal.js" defer></script>
 </head>
 <body>
 
@@ -129,68 +132,78 @@
       <div class="logo-text">Audencia <small>Junior Conseil</small></div>
     </a>
     <nav>
+      <a href="documents/plaquette-ajc.pdf" download class="nav-plaquette" title="Télécharger notre plaquette PDF">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span data-i18n="nav.plaquette">Plaquette</span>
+      </a>
       <div class="nav-item">
-        <a href="qu-est-ce-une-je.html" class="active">La Junior-Entreprise <span class="arr">▾</span></a>
+        <a href="qu-est-ce-une-je.html" class="active"><span data-i18n="nav.je">La Junior-Entreprise</span> <span class="arr">▾</span></a>
         <div class="dropdown">
           <a href="qu-est-ce-une-je.html" class="dropdown-item">
-            <span><span class="di-title">Qu'est-ce qu'une JE ?</span><span class="di-sub">Le mouvement Junior-Entreprises</span></span>
+            <span><span class="di-title" data-i18n="dd.je.qje.t">Qu'est-ce qu'une JE ?</span><span class="di-sub" data-i18n="dd.je.qje.s">Le mouvement Junior-Entreprises</span></span>
           </a>
           <a href="notre-junior.html" class="dropdown-item">
-            <span><span class="di-title">Notre Junior</span><span class="di-sub">45 ans d'histoire et d'excellence</span></span>
+            <span><span class="di-title" data-i18n="dd.je.nj.t">Notre Junior</span><span class="di-sub" data-i18n="dd.je.nj.s">45 ans d'histoire et d'excellence</span></span>
           </a>
           <a href="notre-equipe.html" class="dropdown-item">
-            <span><span class="di-title">Notre Équipe</span><span class="di-sub">Bureau et chefs de projets</span></span>
+            <span><span class="di-title" data-i18n="dd.je.team.t">Notre Équipe</span><span class="di-sub" data-i18n="dd.je.team.s">Bureau et chefs de projets</span></span>
           </a>
           <div class="dropdown-divider"></div>
           <a href="contact.html" class="dropdown-item">
-            <span><span class="di-title">Nous contacter</span><span class="di-sub">Demander un devis</span></span>
+            <span><span class="di-title" data-i18n="dd.je.contact.t">Nous contacter</span><span class="di-sub" data-i18n="dd.je.contact.s">Demander un devis</span></span>
           </a>
         </div>
       </div>
       <div class="nav-item">
-        <a href="prestations.html">Nos prestations <span class="arr">▾</span></a>
+        <a href="prestations.html"><span data-i18n="nav.prestations">Nos prestations</span> <span class="arr">▾</span></a>
         <div class="dropdown">
           <a href="prestations.html#marketing" class="dropdown-item">
-            <span><span class="di-title">Marketing</span><span class="di-sub">Études de marché, stratégie</span></span>
+            <span><span class="di-title">Marketing</span><span class="di-sub" data-i18n="dd.p.mkt.s">Études de marché, stratégie</span></span>
           </a>
           <a href="prestations.html#communication" class="dropdown-item">
-            <span><span class="di-title">Communication</span><span class="di-sub">Stratégie éditoriale, digital</span></span>
+            <span><span class="di-title">Communication</span><span class="di-sub" data-i18n="dd.p.com.s">Stratégie éditoriale, digital</span></span>
           </a>
           <a href="prestations.html#rse" class="dropdown-item">
-            <span><span class="di-title">RSE</span><span class="di-sub">Diagnostic, bilan carbone</span></span>
+            <span><span class="di-title" data-i18n="dd.p.rse.t">RSE</span><span class="di-sub" data-i18n="dd.p.rse.s">Diagnostic, bilan carbone</span></span>
           </a>
           <a href="prestations.html#bigdata" class="dropdown-item">
-            <span><span class="di-title">Big Data</span><span class="di-sub">Analyse, dataviz</span></span>
+            <span><span class="di-title">Big Data</span><span class="di-sub" data-i18n="dd.p.data.s">Analyse, dataviz</span></span>
           </a>
           <a href="prestations.html#finance" class="dropdown-item">
-            <span><span class="di-title">Finance</span><span class="di-sub">Business plan, valorisation</span></span>
+            <span><span class="di-title">Finance</span><span class="di-sub" data-i18n="dd.p.fin.s">Business plan, valorisation</span></span>
           </a>
         </div>
       </div>
-      <a href="realisations.html">Nos réalisations</a>
+      <a href="realisations.html"><span data-i18n="nav.realisations">Nos réalisations</span></a>
     </nav>
     <button class="hamburger" id="hamburger" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
-    <a href="contact.html" class="btn-outline-marine" id="desktop-cta">Nous contacter</a>
+    <div class="lang-switch" role="group" aria-label="Langue / Language">
+      <button type="button" class="lang-opt is-active" data-lang="fr">FR</button>
+      <span class="lang-sep" aria-hidden="true">|</span>
+      <button type="button" class="lang-opt" data-lang="en">EN</button>
+    </div>
+    <a href="contact.html" class="btn-outline-marine" id="desktop-cta" data-i18n="nav.contact">Nous contacter</a>
   </div>
 </header>
 <div class="mobile-drawer" id="mobile-drawer">
-  <a href="index.html">Accueil</a>
-  <a href="qu-est-ce-une-je.html">Qu'est-ce qu'une JE ?</a>
-  <a href="notre-junior.html">Notre Junior</a>
-  <a href="notre-equipe.html">Notre Équipe</a>
-  <a href="prestations.html">Nos Prestations</a>
-  <a href="realisations.html">Nos Réalisations</a>
-  <a href="contact.html" class="drawer-cta">Nous contacter →</a>
+  <a href="index.html" data-i18n="drawer.home">Accueil</a>
+  <a href="qu-est-ce-une-je.html" data-i18n="drawer.qje">Qu'est-ce qu'une JE ?</a>
+  <a href="notre-junior.html" data-i18n="drawer.nj">Notre Junior</a>
+  <a href="notre-equipe.html" data-i18n="drawer.team">Notre Équipe</a>
+  <a href="prestations.html" data-i18n="drawer.prestations">Nos Prestations</a>
+  <a href="realisations.html" data-i18n="drawer.realisations">Nos Réalisations</a>
+  <a href="documents/plaquette-ajc.pdf" download class="drawer-cta drawer-cta-secondary" data-i18n="drawer.plaquette">⬇ Télécharger la plaquette</a>
+  <a href="contact.html" class="drawer-cta" data-i18n="drawer.contact">Nous contacter →</a>
 </div>
 
 <!-- HERO BANNER -->
 <div class="page-hero">
   <div class="page-hero-inner">
-    <p class="page-hero-eyebrow">La Junior-Entreprise</p>
-    <h1 class="page-hero-title">Audencia<br>Junior Conseil</h1>
-    <p class="page-hero-sub">Fondée il y a plus de 45 ans, AJC est l'une des Junior-Entreprises les plus reconnues de France. Adossée à Audencia Business School, nous formons les consultants de demain.</p>
+    <p class="page-hero-eyebrow" data-i18n="je.hero.eyebrow">La Junior-Entreprise</p>
+    <h1 class="page-hero-title" data-i18n="je.hero.title">Audencia<br>Junior Conseil</h1>
+    <p class="page-hero-sub" data-i18n="je.hero.sub">Fondée il y a plus de 45 ans, AJC est l'une des Junior-Entreprises les plus reconnues de France. Adossée à Audencia Business School, nous formons les consultants de demain.</p>
   </div>
 </div>
 
@@ -201,74 +214,74 @@
     <!-- Intro grid -->
     <div class="je-intro-grid">
       <div>
-        <p class="section-eyebrow">Le mouvement</p>
-        <h2 class="section-title"><span class="thin">Qu'est-ce</span><br>qu'une JE ?</h2>
+        <p class="section-eyebrow" data-i18n="je.intro.eyebrow">Le mouvement</p>
+        <h2 class="section-title" data-i18n="je.intro.title"><span class="thin">Qu'est-ce</span><br>qu'une JE ?</h2>
         <div class="section-accent"></div>
         <div class="section-body">
-          <p>Une <strong>Junior-Entreprise</strong> est une association loi 1901 à but non lucratif, gérée et administrée par des étudiants. Elle a pour vocation de permettre aux étudiants de mettre en application les enseignements prodigués par leur école, en accompagnant des professionnels confrontés à des problématiques concrètes.</p>
-          <p>Les professionnels ont ainsi l'occasion de travailler avec des étudiants dynamiques, munis de compétences nouvellement acquises et opérationnelles, à des tarifs compétitifs.</p>
-          <p>Au sein du mouvement, chaque JE est régie par la <strong>CNJE</strong> qui veille au respect du <strong>Code de Déontologie</strong> par le biais d'audits annuels.</p>
+          <p data-i18n="je.def.p1">Une <strong>Junior-Entreprise</strong> est une association loi 1901 à but non lucratif, gérée et administrée par des étudiants. Elle a pour vocation de permettre aux étudiants de mettre en application les enseignements prodigués par leur école, en accompagnant des professionnels confrontés à des problématiques concrètes.</p>
+          <p data-i18n="je.def.p2">Les professionnels ont ainsi l'occasion de travailler avec des étudiants dynamiques, munis de compétences nouvellement acquises et opérationnelles, à des tarifs compétitifs.</p>
+          <p data-i18n="je.def.p3">Au sein du mouvement, chaque JE est régie par la <strong>CNJE</strong> qui veille au respect du <strong>Code de Déontologie</strong> par le biais d'audits annuels.</p>
         </div>
       </div>
       <div class="je-intro-img">
-        <img src="photos/accueil/hero.jpg" alt="Équipe AJC" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <img src="photos/accueil/hero.webp" alt="Équipe AJC" data-i18n-attr="alt:je.img.alt" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" loading="lazy">
         <div class="ph" style="aspect-ratio:4/3;display:none;"><span>campus Audencia</span></div>
       </div>
     </div>
 
     <!-- Citation CNJE -->
     <div class="je-definition-block">
-      <div class="je-def-label">Le mot de la CNJE</div>
-      <p class="je-def-quote">« Les Junior-Entrepreneurs sont des étudiants de Grandes Écoles et Universités engagés et investis, désireux de se professionnaliser avant la fin de leurs études en gérant les Junior-Entreprises et en réalisant des projets pour les professionnels. »</p>
-      <div class="je-def-source">Confédération Nationale des Junior-Entreprises</div>
+      <div class="je-def-label" data-i18n="je.cnje.label">Le mot de la CNJE</div>
+      <p class="je-def-quote" data-i18n="je.cnje.quote">« Les Junior-Entrepreneurs sont des étudiants de Grandes Écoles et Universités engagés et investis, désireux de se professionnaliser avant la fin de leurs études en gérant les Junior-Entreprises et en réalisant des projets pour les professionnels. »</p>
+      <div class="je-def-source" data-i18n="je.cnje.source">Confédération Nationale des Junior-Entreprises</div>
     </div>
 
     <!-- Cartes atouts -->
     <div class="je-cards">
       <div class="je-card">
         <div class="je-card-num">01</div>
-        <div class="je-card-title">Expertise académique</div>
-        <div class="je-card-desc">Nos consultants mobilisent les dernières méthodes enseignées à Audencia, l'une des meilleures business schools européennes.</div>
+        <div class="je-card-title" data-i18n="je.card1.title">Expertise académique</div>
+        <div class="je-card-desc" data-i18n="je.card1.desc">Nos étudiants-consultants mobilisent les dernières méthodes enseignées à Audencia, l'une des meilleures business schools européennes.</div>
       </div>
       <div class="je-card">
         <div class="je-card-num">02</div>
-        <div class="je-card-title">Encadrement rigoureux</div>
-        <div class="je-card-desc">Chaque étude est suivie par un bureau expérimenté et validée selon notre processus qualité certifié ISO 9001.</div>
+        <div class="je-card-title" data-i18n="je.card2.title">Encadrement rigoureux</div>
+        <div class="je-card-desc" data-i18n="je.card2.desc">Chaque étude est suivie par un bureau expérimenté et validée selon notre processus qualité certifié ISO 9001.</div>
       </div>
       <div class="je-card">
         <div class="je-card-num">03</div>
-        <div class="je-card-title">Tarifs compétitifs</div>
-        <div class="je-card-desc">Des prestations de conseil de niveau professionnel à des tarifs adaptés aux besoins des PME, start-ups et grandes entreprises.</div>
+        <div class="je-card-title" data-i18n="je.card3.title">Tarifs compétitifs</div>
+        <div class="je-card-desc" data-i18n="je.card3.desc">Des prestations de conseil de niveau professionnel à des tarifs adaptés aux besoins des PME, start-ups et grandes entreprises.</div>
       </div>
     </div>
 
     <!-- Le mouvement -->
     <div class="mouvement-grid">
       <div>
-        <p class="section-eyebrow">Depuis 1967</p>
-        <h2 class="section-title"><span class="thin">Le mouvement</span><br>Junior-Entreprises</h2>
+        <p class="section-eyebrow" data-i18n="je.mvt.eyebrow">Depuis 1967</p>
+        <h2 class="section-title" data-i18n="je.mvt.title"><span class="thin">Le mouvement</span><br>Junior-Entreprises</h2>
         <div class="section-accent"></div>
         <div class="section-body">
-          <p>Le mouvement <strong>Junior-Entreprise</strong> a vu le jour en 1967 et a été consolidé en 1969 par la création de la Confédération Nationale des Junior-Entreprises.</p>
-          <p>Aujourd'hui ce mouvement dépasse les frontières de l'Hexagone et génère un chiffre d'affaires de <strong>9,45 millions d'euros</strong>. L'institution veille à fédérer, pérenniser et développer le mouvement à l'échelle nationale.</p>
+          <p data-i18n="je.mvt.p1">Le mouvement <strong>Junior-Entreprise</strong> a vu le jour en 1967 et a été consolidé en 1969 par la création de la Confédération Nationale des Junior-Entreprises.</p>
+          <p data-i18n="je.mvt.p2">Aujourd'hui ce mouvement dépasse les frontières de l'Hexagone et génère un chiffre d'affaires de <strong>9,45 millions d'euros</strong>. L'institution veille à fédérer, pérenniser et développer le mouvement à l'échelle nationale.</p>
         </div>
       </div>
       <div class="mouvement-stats">
         <div class="stat-card">
           <div class="stat-num">200+</div>
-          <div class="stat-label">Junior-Entreprises</div>
+          <div class="stat-label" data-i18n="je.stat1">Junior-Entreprises</div>
         </div>
         <div class="stat-card">
           <div class="stat-num">20 000</div>
-          <div class="stat-label">Junior-Entrepreneurs</div>
+          <div class="stat-label" data-i18n="je.stat2">Junior-Entrepreneurs</div>
         </div>
         <div class="stat-card">
           <div class="stat-num">9,45M€</div>
-          <div class="stat-label">Chiffre d'affaires</div>
+          <div class="stat-label" data-i18n="je.stat3">Chiffre d'affaires</div>
         </div>
         <div class="stat-card">
           <div class="stat-num">1967</div>
-          <div class="stat-label">Année de création</div>
+          <div class="stat-label" data-i18n="je.stat4">Année de création</div>
         </div>
       </div>
     </div>
@@ -282,23 +295,23 @@
         <span style="display:none;">CNJE</span>
       </div>
       <div>
-        <div class="cnje-title">La <span class="accent">CNJE</span></div>
-        <p class="cnje-desc">La Confédération Nationale des Junior-Entreprises est l'institution qui, depuis bientôt 50 ans, œuvre pour permettre au mouvement des Junior-Entreprises de grandir. Elle a notamment pour vocation de :</p>
+        <div class="cnje-title" data-i18n="je.cnjeb.title">La <span class="accent">CNJE</span></div>
+        <p class="cnje-desc" data-i18n="je.cnjeb.desc">La Confédération Nationale des Junior-Entreprises est l'institution qui, depuis bientôt 50 ans, œuvre pour permettre au mouvement des Junior-Entreprises de grandir. Elle a notamment pour vocation de :</p>
         <div class="cnje-list">
-          <div class="cnje-item">Développer le mouvement</div>
-          <div class="cnje-item">Former et accompagner les Junior-Entreprises</div>
-          <div class="cnje-item">Promouvoir le concept et la marque Junior-Entreprise</div>
-          <div class="cnje-item">Organiser, animer et fédérer le mouvement</div>
-          <div class="cnje-item">Assurer l'esprit d'entreprise, gage d'un engagement individuel et d'un sens des responsabilités collectives</div>
+          <div class="cnje-item" data-i18n="je.cnjeb.l1">Développer le mouvement</div>
+          <div class="cnje-item" data-i18n="je.cnjeb.l2">Former et accompagner les Junior-Entreprises</div>
+          <div class="cnje-item" data-i18n="je.cnjeb.l3">Promouvoir le concept et la marque Junior-Entreprise</div>
+          <div class="cnje-item" data-i18n="je.cnjeb.l4">Organiser, animer et fédérer le mouvement</div>
+          <div class="cnje-item" data-i18n="je.cnjeb.l5">Assurer l'esprit d'entreprise, gage d'un engagement individuel et d'un sens des responsabilités collectives</div>
         </div>
       </div>
     </div>
 
     <!-- Code déontologie -->
     <div class="deon-block">
-      <div class="deon-title">Le code de <span class="accent">Déontologie</span></div>
-      <p class="deon-text">Chacun des Junior-Entrepreneurs est tenu au respect du Code de Déontologie élaboré par la CNJE, sur la base des textes de loi. Le respect de ce Code est scrupuleusement vérifié lors d'audits annuels, supervisés par l'institution.</p>
-      <p class="deon-text" style="margin-top:12px;">Par ailleurs, Audencia Junior Conseil met en œuvre des audits internes et assure ainsi, par ce double contrôle, un niveau de qualité élevé sur ses études.</p>
+      <div class="deon-title" data-i18n="je.deon.title">Le code de <span class="accent">Déontologie</span></div>
+      <p class="deon-text" data-i18n="je.deon.p1">Chacun des Junior-Entrepreneurs est tenu au respect du Code de Déontologie élaboré par la CNJE, sur la base des textes de loi. Le respect de ce Code est scrupuleusement vérifié lors d'audits annuels, supervisés par l'institution.</p>
+      <p class="deon-text" style="margin-top:12px;" data-i18n="je.deon.p2">Par ailleurs, Audencia Junior Conseil met en œuvre des audits internes et assure ainsi, par ce double contrôle, un niveau de qualité élevé sur ses études.</p>
     </div>
 
   </div>
@@ -308,66 +321,47 @@
 <section id="cta-je" style="padding:80px 48px;background:var(--marine);">
   <div class="cta-je-inner">
     <div class="cta-je-text">
-      <h2>Prêt à travailler<br>avec nous ?</h2>
-      <p>Réponse sous 48h. Sans engagement.</p>
+      <h2 data-i18n="cta.title">Prêt à travailler<br>avec nous ?</h2>
+      <p data-i18n="cta.sub">Réponse sous 48h. Sans engagement.</p>
     </div>
-    <a href="contact.html" class="btn-rose" style="font-size:13px;padding:18px 40px;white-space:nowrap;">Nous contacter</a>
+    <a href="contact.html" class="btn-rose open-contact-modal" style="font-size:13px;padding:18px 40px;white-space:nowrap;" data-i18n="cta.btn">Nous contacter</a>
   </div>
 </section>
 
 <!-- ── FOOTER ── -->
-<footer>
-  <div class="footer-inner">
-    <div class="footer-grid">
-      <div>
-        <div class="footer-col-title">Contact</div>
-        <div class="footer-contact-item">
-          <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
-          <span>+33 7 69 44 78 99</span>
-        </div>
-        <div class="footer-contact-item">
-          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7 L12 13 L22 7"/></svg>
-          <span>contact@ajc-mail.com</span>
-        </div>
-        <div class="footer-contact-item">
-          <svg viewBox="0 0 24 24"><path d="M12 2 C8 2 5 5.5 5 9.5 C5 15.5 12 22 12 22 S19 15.5 19 9.5 C19 5.5 16 2 12 2 Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
-          <span>8 route de la Jonelière<br>44312 Nantes Cedex 3</span>
-        </div>
-        <div class="footer-socials">
-          <a href="#" class="social-btn" aria-label="LinkedIn" data-social="linkedin" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
-          </a>
-          <a href="#" class="social-btn" aria-label="Instagram" data-social="instagram" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85 0 3.21-.01 3.58-.07 4.85-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07-3.2 0-3.58-.01-4.85-.07-3.26-.15-4.77-1.7-4.92-4.92-.06-1.27-.07-1.64-.07-4.85 0-3.2.01-3.58.07-4.85.15-3.23 1.66-4.77 4.92-4.92 1.27-.06 1.65-.07 4.85-.07zM12 0C8.74 0 8.33.01 7.05.07 2.7.27.27 2.69.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.2 4.36 2.62 6.78 6.98 6.98C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c4.35-.2 6.78-2.62 6.98-6.98.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95C23.73 2.7 21.31.27 16.95.07 15.67.01 15.26 0 12 0zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.41-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/></svg>
-          </a>
-        </div>
-      </div>
-      <div>
-        <div class="footer-col-title">Localisation</div>
-        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2711.3!2d-1.5897!3d47.2557!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4805ef3e8b35ef6b%3A0xb0d17c2a6c9d6b1!2sAudencia%20Business%20School!5e0!3m2!1sfr!2sfr!4v1"
-          style="width:100%;aspect-ratio:16/9;border-radius:6px;border:1px solid rgba(255,255,255,0.08);display:block;"
-          allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Audencia Nantes"></iframe>
-      </div>
-      <div>
-        <div class="footer-col-title">Mentions légales</div>
-        <div class="footer-mentions">
-          <a href="mentions-legales.html">Mentions légales</a>
-          <a href="politique-confidentialite.html">Politique de confidentialité</a>
-        </div>
-        <div style="margin-top:32px;">
-          <div class="footer-col-title">La JE</div>
-          <div class="footer-mentions">
-            <a href="qu-est-ce-une-je.html">Qui sommes-nous ?</a>
-            <a href="notre-equipe.html">Notre équipe</a>
-            <a href="contact.html">Nous contacter</a>
-          </div>
-        </div>
-      </div>
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <a href="index.html" class="site-footer-logo" aria-label="Audencia Junior Conseil — Accueil">
+      <img src="photos/logo.png" alt="Audencia Junior Conseil" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+      <span style="display:none;">AJC</span>
+    </a>
+
+    <nav class="site-footer-nav" aria-label="Liens de pied de page">
+      <a href="mentions-legales.html" data-i18n="footer.legal">Mentions légales</a>
+      <a href="politique-confidentialite.html" data-i18n="footer.privacy">Politique de confidentialité</a>
+      <a href="qu-est-ce-une-je.html" data-i18n="footer.about">Qui sommes-nous ?</a>
+      <a href="notre-equipe.html" data-i18n="footer.team">Notre équipe</a>
+      <a href="contact.html" data-i18n="footer.contact">Nous contacter</a>
+    </nav>
+
+    <div class="site-footer-contact">
+      <a href="tel:+33769447899">+33 7 69 44 78 99</a>
+      <span class="dot">·</span>
+      <a href="mailto:contact@ajc-mail.com">contact@ajc-mail.com</a>
+      <span class="dot">·</span>
+      <span>8 route de la Jonelière, 44312 Nantes Cedex 3</span>
     </div>
-    <div class="footer-bottom">
-      <div class="footer-logo-ghost">AJC</div>
-      <div class="footer-copyright">© 2025 Audencia Junior Conseil — Tous droits réservés</div>
+
+    <div class="site-footer-socials">
+      <a href="https://www.instagram.com/AUDENCIA_JUNIOR_CONSEIL_/" class="social-btn" data-social="instagram" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4zm9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3"></path></svg>
+      </a>
+      <a href="https://www.linkedin.com/company/audencia-junior-conseil/posts/?feedView=all" class="social-btn" data-social="linkedin" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93zM6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37z"></path></svg>
+      </a>
     </div>
+
+    <span class="site-footer-copy" data-i18n="footer.copy">© 2026 Audencia Junior Conseil — Tous droits réservés</span>
   </div>
 </footer>
 
