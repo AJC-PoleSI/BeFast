@@ -258,6 +258,12 @@
         <label for="message" class="form-label" data-i18n="contact.form.message">Description du projet *</label>
         <textarea id="message" name="message" required class="form-textarea" placeholder="Décrivez votre besoin en quelques lignes..." data-i18n-attr="placeholder:contact.form.message_ph"></textarea>
       </div>
+      <!-- Champ piege anti-robot : invisible et hors tabulation pour les humains.
+           Un robot qui remplit tous les champs le remplit aussi : le serveur ecarte alors le message. -->
+      <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
+        <label for="website">Ne pas remplir</label>
+        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+      </div>
       <button type="submit" class="btn-solid-marine form-submit" data-i18n="contact.form.submit">ENVOYER MA DEMANDE</button>
       <div id="form-success" class="form-success" data-i18n="contact.form.success">
         ✓ Message envoyé ! Nous vous répondrons sous 48h.
@@ -350,6 +356,7 @@
       societe: form.querySelector('#societe').value.trim(),
       domaine: form.querySelector('#domaine').value,
       message: form.querySelector('#message').value.trim(),
+      website: form.querySelector('#website').value,   // champ piege : vide chez un humain
     };
 
     try {
