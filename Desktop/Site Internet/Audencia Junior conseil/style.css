@@ -246,8 +246,10 @@ nav a.nav-plaquette svg { width: 13px; height: 13px; flex-shrink: 0; }
 /* ── FOOTER (centré, minimal) ───────────────────────────────────── */
 footer.site-footer { background: var(--gray-bg); border-top: 1px solid var(--gray-border); padding: 56px 24px; color: var(--gray-text); }
 .site-footer-inner { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 26px; text-align: center; }
+.site-footer-logos { display: flex; align-items: center; justify-content: center; gap: 28px; flex-wrap: wrap; }
 .site-footer-logo { display: block; line-height: 0; }
 .site-footer-logo img { max-width: 96px; height: auto; display: block; }
+.site-footer-logos .site-footer-logo img { max-width: none; width: auto; height: 56px; }
 .site-footer-logo span { font-size: 22px; font-weight: 800; letter-spacing: 2px; color: var(--marine); }
 .site-footer-nav { position: static; left: auto; transform: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 28px; }
 .site-footer-nav a { font-size: 13px; font-weight: 600; color: var(--marine); text-decoration: none; transition: color 0.15s; }

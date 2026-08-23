@@ -1,6 +1,5 @@
 {
   "_comment": "Fichier de contenu pour les pages 'Mentions légales' et 'Politique de confidentialité'. Modifie le texte directement dans ce fichier — il sera affiché automatiquement sur le site. Les champs suffixés '_en' contiennent la traduction anglaise (affichée quand le site est basculé en EN). Voir contenu/README-legal.md pour le guide complet.",
-
   "mentions_legales": {
     "page_titre": "Mentions légales",
     "page_titre_en": "Legal Notice",
@@ -15,10 +14,10 @@
         "titre": "Éditeur du site",
         "titre_en": "Site publisher",
         "paragraphes": [
-          "Ce site est édité par Audencia Junior Conseil dans le cadre de la gestion de son processus de recrutement interne et de la présentation de ses activités."
+          "Ce site est édité par Audencia Junior Conseil, la Junior-Entreprise d'Audencia Business School, afin de présenter ses activités, son équipe et ses prestations de conseil."
         ],
         "paragraphes_en": [
-          "This website is published by Audencia Junior Conseil as part of managing its internal recruitment process and presenting its activities."
+          "This website is published by Audencia Junior Conseil, the Junior-Enterprise of Audencia Business School, to present its activities, its team and its consulting services."
         ],
         "liste": [
           "Dénomination : Audencia Junior Conseil",
@@ -77,10 +76,10 @@
         "titre": "Cookies",
         "titre_en": "Cookies",
         "paragraphes": [
-          "Ce site utilise des cookies strictement nécessaires au fonctionnement de l'application (authentification, session). Aucun cookie publicitaire ou de tracking n'est utilisé."
+          "Ce site ne dépose aucun cookie. Il n'utilise ni mesure d'audience, ni cookie publicitaire, ni traceur tiers. Seul votre choix de langue est mémorisé localement par votre navigateur. Voir le détail dans notre <a href=\"politique-confidentialite.html\">Politique de confidentialité</a>."
         ],
         "paragraphes_en": [
-          "This website uses cookies strictly necessary for the application to function (authentication, session). No advertising or tracking cookies are used."
+          "This website does not set any cookies. It uses no analytics, no advertising cookies and no third-party trackers. Only your language preference is stored locally by your browser. See the details in our <a href=\"politique-confidentialite.html\">Privacy Policy</a>."
         ]
       },
       {
@@ -95,7 +94,6 @@
       }
     ]
   },
-
   "politique_confidentialite": {
     "page_titre": "Politique de confidentialité",
     "page_titre_en": "Privacy Policy",
@@ -103,105 +101,141 @@
     "page_eyebrow_en": "Your data, your trust",
     "page_sous_titre": "Comment nous collectons, utilisons et protégeons vos données personnelles, dans le respect du RGPD.",
     "page_sous_titre_en": "How we collect, use and protect your personal data, in compliance with the GDPR.",
-    "derniere_maj": "Mars 2026",
-    "derniere_maj_en": "March 2026",
+    "derniere_maj": "Août 2026",
+    "derniere_maj_en": "August 2026",
     "sections": [
       {
         "titre": "1. Responsable du traitement",
         "titre_en": "1. Data controller",
         "paragraphes": [
-          "Le responsable du traitement des données personnelles est Audencia Junior Conseil, association loi 1901, dont le siège social est situé 8 Route de la Jonelière, 44312 Nantes."
+          "Le responsable du traitement des données personnelles collectées sur ce site est Audencia Junior Conseil, association loi 1901, dont le siège social est situé 8 Route de la Jonelière, 44312 Nantes Cedex 3."
         ],
         "paragraphes_en": [
-          "The data controller for personal data is Audencia Junior Conseil, a non-profit association (French law of 1901), whose registered office is located at 8 Route de la Jonelière, 44312 Nantes, France."
+          "The controller of personal data collected on this website is Audencia Junior Conseil, a non-profit association (French law of 1901), whose registered office is located at 8 Route de la Jonelière, 44312 Nantes Cedex 3, France."
         ]
       },
       {
         "titre": "2. Données collectées",
         "titre_en": "2. Data collected",
         "paragraphes": [
-          "Dans le cadre du processus de recrutement, nous collectons les données suivantes :"
+          "Ce site est un site vitrine. Il ne comporte ni compte utilisateur, ni espace personnel, ni base de données. La seule collecte de données personnelles a lieu lorsque vous remplissez volontairement le formulaire de contact :"
         ],
         "paragraphes_en": [
-          "As part of the recruitment process, we collect the following data:"
+          "This is a showcase website. It has no user accounts, no personal area and no database. The only collection of personal data takes place when you voluntarily fill in the contact form:"
         ],
         "liste": [
-          "Nom, prénom, adresse email",
-          "Numéro de téléphone (optionnel)",
-          "Formation et parcours académique",
-          "Choix de pôles et préférences",
-          "Évaluations et notes attribuées lors des épreuves",
-          "Disponibilités horaires des évaluateurs"
+          "Prénom et nom",
+          "Adresse email",
+          "Nom de l'entreprise ou de l'organisation (facultatif)",
+          "Type de projet (facultatif)",
+          "Le contenu du message que vous rédigez"
         ],
         "liste_en": [
-          "Last name, first name, email address",
-          "Phone number (optional)",
-          "Education and academic background",
-          "Division choices and preferences",
-          "Evaluations and scores assigned during assessments",
-          "Evaluators' time availability"
+          "First name and last name",
+          "Email address",
+          "Company or organisation name (optional)",
+          "Type of project (optional)",
+          "The content of the message you write"
+        ],
+        "paragraphes_apres": [
+          "Aucune autre donnée n'est collectée : pas de profilage, pas de géolocalisation, pas de collecte automatique de votre navigation."
+        ],
+        "paragraphes_apres_en": [
+          "No other data is collected: no profiling, no geolocation, no automatic collection of your browsing activity."
         ]
       },
       {
         "titre": "3. Finalité du traitement",
         "titre_en": "3. Purpose of processing",
         "paragraphes": [
-          "Les données collectées sont utilisées exclusivement pour :"
+          "Les informations que vous nous transmettez via le formulaire de contact sont utilisées exclusivement pour :"
         ],
         "paragraphes_en": [
-          "The data collected is used exclusively for:"
+          "The information you send us through the contact form is used exclusively to:"
         ],
         "liste": [
-          "La gestion du processus de recrutement (candidatures, évaluations, délibérations)",
-          "L'organisation logistique des épreuves (planning, salles, jurys)",
-          "La communication avec les candidats et les membres évaluateurs",
-          "L'établissement de statistiques anonymisées sur le recrutement"
+          "Prendre connaissance de votre demande et vous répondre",
+          "Échanger avec vous sur votre projet et, le cas échéant, établir une proposition commerciale"
         ],
         "liste_en": [
-          "Managing the recruitment process (applications, evaluations, deliberations)",
-          "Organising the logistics of assessments (scheduling, rooms, panels)",
-          "Communicating with candidates and evaluator members",
-          "Producing anonymised recruitment statistics"
+          "Read your request and reply to you",
+          "Discuss your project with you and, where applicable, prepare a commercial proposal"
+        ],
+        "paragraphes_apres": [
+          "Vos données ne sont jamais vendues, louées ni utilisées à des fins publicitaires."
+        ],
+        "paragraphes_apres_en": [
+          "Your data is never sold, rented or used for advertising purposes."
         ]
       },
       {
         "titre": "4. Base légale",
         "titre_en": "4. Legal basis",
         "paragraphes": [
-          "Le traitement des données repose sur l'intérêt légitime d'Audencia Junior Conseil à gérer son processus de recrutement, ainsi que sur le consentement des candidats lors de leur inscription sur la plateforme."
+          "Le traitement repose sur votre consentement, matérialisé par l'envoi volontaire du formulaire de contact, ainsi que sur l'exécution de mesures précontractuelles prises à votre demande lorsque votre message porte sur une prestation."
         ],
         "paragraphes_en": [
-          "The processing of data is based on Audencia Junior Conseil's legitimate interest in managing its recruitment process, as well as on candidates' consent when they register on the platform."
+          "Processing is based on your consent, given by voluntarily submitting the contact form, and on the performance of pre-contractual steps taken at your request when your message concerns a service."
         ]
       },
       {
         "titre": "5. Durée de conservation",
         "titre_en": "5. Retention period",
         "paragraphes": [
-          "Les données des candidats sont conservées pendant la durée du processus de recrutement et jusqu'à 12 mois après la fin de celui-ci. Les données des membres évaluateurs sont conservées pendant la durée de leur mandat."
+          "Votre message est reçu sous forme d'email dans la boîte de réception d'Audencia Junior Conseil. Il y est conservé le temps nécessaire au traitement de votre demande, puis au maximum trois ans à compter de notre dernier échange, conformément aux recommandations de la CNIL en matière de prospection commerciale. Vous pouvez à tout moment demander sa suppression immédiate."
         ],
         "paragraphes_en": [
-          "Candidates' data is retained for the duration of the recruitment process and up to 12 months after it ends. Evaluator members' data is retained for the duration of their term."
+          "Your message is received as an email in Audencia Junior Conseil's inbox. It is kept for as long as needed to handle your request, then for a maximum of three years from our last exchange, in line with the French data protection authority's (CNIL) recommendations on business prospecting. You may request its immediate deletion at any time."
         ]
       },
       {
-        "titre": "6. Destinataires des données",
-        "titre_en": "6. Data recipients",
+        "titre": "6. Destinataires et sous-traitants",
+        "titre_en": "6. Recipients and processors",
         "paragraphes": [
-          "Les données sont accessibles uniquement aux membres habilités d'Audencia Junior Conseil (administrateurs et évaluateurs) dans le cadre strict de leurs missions de recrutement. Aucune donnée n'est transmise à des tiers commerciaux."
+          "Votre message est adressé aux seuls membres habilités d'Audencia Junior Conseil chargés de la relation client. Aucune donnée n'est transmise à des tiers commerciaux. Deux prestataires techniques interviennent uniquement pour acheminer votre message :"
         ],
         "paragraphes_en": [
-          "Data is accessible only to authorised members of Audencia Junior Conseil (administrators and evaluators) strictly within the scope of their recruitment duties. No data is transferred to commercial third parties."
+          "Your message is sent only to the authorised members of Audencia Junior Conseil responsible for client relations. No data is passed on to commercial third parties. Two technical providers are involved solely to deliver your message:"
+        ],
+        "liste": [
+          "Vercel Inc. — hébergement du site et exécution du formulaire de contact",
+          "Resend — acheminement de l'email jusqu'à notre boîte de réception"
+        ],
+        "liste_en": [
+          "Vercel Inc. — website hosting and execution of the contact form",
+          "Resend — delivery of the email to our inbox"
+        ],
+        "paragraphes_apres": [
+          "Ces prestataires agissent en qualité de sous-traitants au sens du RGPD et n'utilisent pas vos données pour leur propre compte."
+        ],
+        "paragraphes_apres_en": [
+          "These providers act as processors within the meaning of the GDPR and do not use your data for their own purposes."
         ]
       },
       {
         "titre": "7. Sécurité des données",
         "titre_en": "7. Data security",
         "paragraphes": [
-          "Nous mettons en œuvre des mesures techniques et organisationnelles appropriées pour protéger vos données : chiffrement des mots de passe, accès restreint par authentification, hébergement sécurisé, protocole HTTPS."
+          "Les mesures de sécurité applicables à ce site sont les suivantes :"
         ],
         "paragraphes_en": [
-          "We implement appropriate technical and organisational measures to protect your data: password encryption, access restricted by authentication, secure hosting, HTTPS protocol."
+          "The security measures applicable to this website are as follows:"
+        ],
+        "liste": [
+          "L'intégralité du site est servie en HTTPS, avec chiffrement TLS des échanges entre votre navigateur et nos serveurs",
+          "Le site ne dispose d'aucune base de données : aucune donnée personnelle n'y est stockée",
+          "Le formulaire de contact ne fait que transmettre votre message par email ; il ne l'enregistre nulle part",
+          "Les clés d'accès aux services techniques sont conservées côté serveur et ne sont jamais exposées au navigateur",
+          "Le site est protégé par des en-têtes de sécurité HTTP et le formulaire est doté de mesures anti-abus",
+          "L'hébergement est assuré par Vercel, dans une infrastructure sécurisée et supervisée"
+        ],
+        "liste_en": [
+          "The entire website is served over HTTPS, with TLS encryption of traffic between your browser and our servers",
+          "The website has no database: no personal data is stored on it",
+          "The contact form only forwards your message by email; it does not save it anywhere",
+          "Access keys to technical services are kept server-side and are never exposed to the browser",
+          "The website is protected by HTTP security headers and the form includes anti-abuse measures",
+          "Hosting is provided by Vercel, on secure and monitored infrastructure"
         ]
       },
       {
@@ -235,13 +269,17 @@
         ]
       },
       {
-        "titre": "9. Cookies",
-        "titre_en": "9. Cookies",
+        "titre": "9. Cookies et traceurs",
+        "titre_en": "9. Cookies and trackers",
         "paragraphes": [
-          "Cette application utilise uniquement des cookies techniques nécessaires à son fonctionnement (jeton d'authentification JWT). Aucun cookie de suivi, d'analyse ou publicitaire n'est utilisé."
+          "Ce site <strong>ne dépose aucun cookie</strong>. Il n'utilise ni outil de mesure d'audience, ni régie publicitaire, ni bouton de partage traçant, ni script tiers d'aucune sorte.",
+          "Votre navigateur conserve localement une seule information technique, votre choix de langue (français ou anglais), afin de la retrouver à votre prochaine visite. Elle ne quitte jamais votre appareil et peut être effacée en vidant les données du site dans votre navigateur.",
+          "C'est la raison pour laquelle aucun bandeau de consentement aux cookies ne vous est présenté : il n'y a rien à consentir."
         ],
         "paragraphes_en": [
-          "This application only uses technical cookies necessary for it to function (JWT authentication token). No tracking, analytics or advertising cookies are used."
+          "This website <strong>does not set any cookies</strong>. It uses no analytics tool, no advertising network, no tracking share buttons and no third-party scripts of any kind.",
+          "Your browser stores locally a single technical setting, your language choice (French or English), so that it can be restored on your next visit. It never leaves your device and can be removed by clearing the site data in your browser.",
+          "This is why no cookie consent banner is shown to you: there is nothing to consent to."
         ]
       },
       {
