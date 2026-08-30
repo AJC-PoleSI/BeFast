@@ -344,7 +344,11 @@ export default function EtudeDetailPage() {
   }
 
   const totalJehMissions = missions.reduce((sum, m) => sum + ((m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)), 0)
-  const totalJeh = blocs.reduce((sum, b) => sum + (b.jeh || 0), 0) || totalJehMissions
+  // Les missions sont la source de vérité du JEH ; le bloc de l'échéancier n'en
+  // garde qu'une copie qui peut dater d'avant une modification de la mission
+  // (cf. sync dans handleSaveMission). On ne retombe sur les blocs que si
+  // l'étude n'a aucune mission mais un échéancier renseigné (cas legacy).
+  const totalJeh = totalJehMissions || blocs.reduce((sum, b) => sum + (b.jeh || 0), 0)
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
