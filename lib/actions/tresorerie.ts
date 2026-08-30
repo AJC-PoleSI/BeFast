@@ -82,7 +82,11 @@ export async function getTresorerieData() {
   const [facturesRes, missionsRes0] = await Promise.all([
     supabase
       .from("factures")
-      .select("*, etudes(id, numero, nom, type, budget_ht, budget)")
+      // ⚠️ `etudes.budget` n'existe pas dans ce schéma (la colonne s'appelle
+      // `budget_ht`). L'y référencer faisait échouer TOUTE la requête en 42703,
+      // ce qui basculait la page en « migration manquante » : liste de factures
+      // vide et bouton « Nouvelle facture » désactivé.
+      .select("*, etudes(id, numero, nom, type, budget_ht)")
       .order("date_emission", { ascending: false, nullsFirst: false }),
     supabase
       .from("missions")
@@ -94,8 +98,11 @@ export async function getTresorerieData() {
 
   let facturesData: any[] = []
   if (facturesRes.error) {
-    // Code 42P01 = "relation does not exist" → migration pas encore appliquée
-    if (facturesRes.error.code === "42P01" || /does not exist/i.test(facturesRes.error.message)) {
+    // Code 42P01 = "relation does not exist" → migration pas encore appliquée.
+    // On ne se fie PLUS au message ("does not exist" matche aussi une colonne
+    // absente, 42703) : une simple faute de frappe dans le SELECT faisait alors
+    // passer la page en mode dégradé au lieu de remonter l'erreur.
+    if (facturesRes.error.code === "42P01") {
       migrationMissing = true
     } else {
       return { error: facturesRes.error.message }
@@ -109,7 +116,7 @@ export async function getTresorerieData() {
 
   if (missionsRes.error) {
     // Code 42703 = "column does not exist" → migration partielle
-    if (missionsRes.error.code === "42703" || /does not exist/i.test(missionsRes.error.message)) {
+    if (missionsRes.error.code === "42703") {
       migrationMissing = true
       const fallback = await supabase
         .from("missions")
@@ -209,7 +216,7 @@ export async function getTresorerieData() {
     const row = caMap.get(f.etude_id)
     if (row) {
       row.type = (f.etudes as any).type ?? null
-      row.budget = Number((f.etudes as any).budget_ht ?? (f.etudes as any).budget ?? 0)
+      row.budget = Number((f.etudes as any).budget_ht ?? 0)
     }
   }
   const caParEtude = Array.from(caMap.values())

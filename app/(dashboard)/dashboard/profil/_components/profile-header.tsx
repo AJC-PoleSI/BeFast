@@ -1,6 +1,7 @@
 "use client"
 
 import { AvatarUpload } from "./avatar-upload"
+import { RolesBadges } from "./roles-badges"
 import type { PersonneWithRole } from "@/types/database.types"
 
 interface ProfileHeaderProps {
@@ -22,11 +23,7 @@ export function ProfileHeader({ profile, onAvatarUpdate }: ProfileHeaderProps) {
       <div className="flex-1 min-w-0">
         <h2 className="text-lg font-manrope font-bold text-[#00236f] truncate">{fullName}</h2>
         <p className="text-sm text-zinc-500 mt-0.5 truncate">{profile.email}</p>
-        {profile.profils_types?.nom && (
-          <span className="inline-block mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#d0d8ff] text-[#00236f]">
-            {profile.profils_types.nom}
-          </span>
-        )}
+        <RolesBadges profile={profile} className="mt-2" />
       </div>
       <div className="hidden sm:flex items-center gap-2 shrink-0">
         <div className="text-right">

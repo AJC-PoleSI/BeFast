@@ -5,6 +5,9 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { encryptData, decryptData, generateEncryptionSalt } from "@/lib/crypto"
 import { getMasterKey } from "@/lib/crypto-key"
 import { getCurrentUserProfile, logAudit } from "@/lib/supabase-security"
+import { USER_PROFILE_TAG } from "@/lib/cache-tags"
+import { ETABLISSEMENTS, SCOLARITES } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
+import { revalidateTag } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(req: NextRequest) {
@@ -130,30 +133,51 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Champs en libre-service (modifiables par l'utilisateur sur son propre profil).
-    const ALLOWED = ["prenom", "nom", "portable", "promo", "adresse", "ville", "code_postal"] as const
+    // Cette liste DOIT rester alignée sur les champs du formulaire de profil
+    // (`ProfileFormValues`) : un champ envoyé mais absent d'ici est simplement
+    // ignoré côté serveur, et l'utilisateur voit sa saisie disparaître au
+    // rechargement sans le moindre message d'erreur.
+    const ALLOWED = [
+      "prenom", "nom", "portable", "promo", "adresse", "ville", "code_postal",
+      "etablissement", "scolarite", "date_naissance",
+    ] as const
     const updates: Record<string, string | null> = {}
 
     for (const field of ALLOWED) {
       if (body[field] !== undefined) updates[field] = body[field] || null
     }
 
-    // Forbidden fields for non-admins (protected by migration 035 trigger)
-    const FORBIDDEN_FIELDS = ["taux_horaire", "poles", "profil_type_id", "account_status", "email_verified"]
+    // Valeurs contraintes en base : on rejette explicitement plutôt que de
+    // laisser Postgres renvoyer une erreur de contrainte illisible.
+    if (updates.etablissement && !ETABLISSEMENTS.includes(updates.etablissement as any)) {
+      return NextResponse.json({ error: "Établissement invalide" }, { status: 400 })
+    }
+    if (updates.scolarite && !SCOLARITES.includes(updates.scolarite as any)) {
+      return NextResponse.json({ error: "Niveau de scolarité invalide" }, { status: 400 })
+    }
+    if (updates.date_naissance && !/^\d{4}-\d{2}-\d{2}$/.test(updates.date_naissance)) {
+      return NextResponse.json({ error: "Date de naissance invalide (AAAA-MM-JJ)" }, { status: 400 })
+    }
+
+    // Le pôle pilote les permissions : seul un administrateur peut l'attribuer.
+    // Le formulaire renvoie toujours `pole` (y compris pour un non-admin, qui le
+    // voit en lecture seule) → on l'ignore silencieusement au lieu de renvoyer
+    // un 403 qui bloquerait toute modification de profil.
+    if (isAdmin && body.pole !== undefined) {
+      updates.pole = body.pole || null
+    }
+
+    // Champs jamais modifiables via cette route, même par un administrateur :
+    // ils ont leurs propres routes dédiées (validation de compte, gestion des
+    // rôles) avec leurs contrôles et leurs notifications.
+    const FORBIDDEN_FIELDS = ["profil_type_id", "account_status", "is_candidate", "reset_token_hash"]
     for (const field of FORBIDDEN_FIELDS) {
-      if (body[field] !== undefined && !isAdmin) {
+      if (body[field] !== undefined) {
         return NextResponse.json(
-          { error: `Unauthorized: cannot modify ${field}` },
+          { error: `Champ non modifiable ici : ${field}` },
           { status: 403 }
         )
       }
-      if (body[field] !== undefined && isAdmin) {
-        updates[field] = body[field]
-      }
-    }
-
-    // Le pôle pilote les permissions : seul un administrateur peut l'attribuer
-    if (isAdmin && body.poles !== undefined) {
-      updates.poles = body.poles || null
     }
 
     if (Object.keys(updates).length === 0) {
@@ -169,6 +193,11 @@ export async function PATCH(req: NextRequest) {
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+    // Le profil est servi depuis un cache de 5 min (`getCachedProfile`) : sans
+    // invalidation, la modification n'apparaît nulle part avant expiration —
+    // symptôme identique à une sauvegarde qui échoue.
+    revalidateTag(USER_PROFILE_TAG(targetUserId))
 
     // Log profile updates
     await logAudit(sb, 'personnes', 'UPDATE', targetUserId, { fields: Object.keys(updates) })

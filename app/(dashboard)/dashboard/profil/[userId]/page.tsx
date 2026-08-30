@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { ProfileInfoForm } from "../_components/ProfileInfoForm"
+import { RolesBadges } from "../_components/roles-badges"
 import { DocumentsGrid } from "../_components/DocumentsGrid"
 import { toast } from "sonner"
 import {
@@ -34,13 +35,23 @@ export default function AdminProfilePage() {
 
   const fetchProfile = useCallback(async () => {
     const supabase = createClient()
-    const { data } = await supabase
-      .from("personnes")
-      .select("*, profils_types!profil_type_id(*)")
-      .eq("id", userId)
-      .single()
+    // Les postes (bureau/pôles) vivent dans `personne_postes` : sans cette
+    // seconde requête, la vue administrateur n'affiche que le rôle de base.
+    const [{ data }, { data: postes }] = await Promise.all([
+      supabase
+        .from("personnes")
+        .select("*, profils_types!profil_type_id(*)")
+        .eq("id", userId)
+        .single(),
+      supabase
+        .from("personne_postes")
+        .select("profils_types(*)")
+        .eq("personne_id", userId),
+    ])
 
-    setProfile(data as PersonneWithRole | null)
+    setProfile(
+      data ? ({ ...data, personne_postes: postes ?? [] } as PersonneWithRole) : null
+    )
     setLoading(false)
   }, [userId])
 
@@ -111,8 +122,6 @@ export default function AdminProfilePage() {
   const fullName =
     [profile.prenom, profile.nom].filter(Boolean).join(" ") || profile.email
 
-  const roleName = profile.profils_types?.nom || "Non assigné"
-
   const initialValues: ProfileFormValues = {
     prenom: profile.prenom || "",
     nom: profile.nom || "",
@@ -157,17 +166,12 @@ export default function AdminProfilePage() {
                 <div>
                   <h1 className="font-heading text-xl font-bold">{fullName}</h1>
                   <div className="flex flex-wrap items-center gap-3 mt-1">
-                    <Badge
-                      variant="secondary"
-                      className="bg-gold/10 text-gold border-gold/20"
-                    >
-                      {roleName}
-                    </Badge>
                     <span className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Mail className="h-3.5 w-3.5" />
                       {profile.email}
                     </span>
                   </div>
+                  <RolesBadges profile={profile} className="mt-2" />
                 </div>
 
                 <div className="flex flex-col items-end gap-2">
