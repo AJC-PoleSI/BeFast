@@ -323,6 +323,64 @@ export async function createClient_(formData: {
   return { data }
 }
 
+// Liste complète (tous les champs) — pour la page de gestion des clients.
+// PAS de cache : cette page reste peu fréquentée, la fraîcheur prime.
+export async function getClientsFull() {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
+  const { data, error } = await supabase
+    .from("clients")
+    .select("*")
+    .order("nom", { ascending: true })
+  if (error) return { error: error.message }
+  return { data }
+}
+
+export async function updateClient_(
+  id: string,
+  formData: Partial<{
+    nom: string
+    type: string
+    secteur: string
+    contact_civilite: string
+    contact_prenom: string
+    contact_nom: string
+    contact_poste: string
+    contact_email: string
+    contact_phone: string
+    adresse: string
+    code_postal: string
+    ville: string
+    pays: string
+    actif: boolean
+  }>
+) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { error: "Non authentifié" }
+  if (formData.nom !== undefined && !formData.nom.trim()) {
+    return { error: "Le nom du client est requis." }
+  }
+
+  const { data, error } = await supabase
+    .from("clients")
+    .update(formData)
+    .eq("id", id)
+    .select()
+    .single()
+
+  if (error) return { error: error.message }
+  revalidateTag(CLIENTS_TAG)
+  return { data }
+}
+
 // ---- Échéancier ----
 
 export async function getEcheancierBlocs(etudeId: string) {

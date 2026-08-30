@@ -8,7 +8,7 @@ import {
   signProposal,
   getProposalMembers,
 } from '@/lib/actions/propositions';
-import { Trash2, Edit, FileCheck, Search, Filter, Shield, List, Calendar as CalendarIcon, Clock, BarChart3, Copy, Download, Plus, FileSignature, ExternalLink, Loader2 } from 'lucide-react';
+import { Trash2, Edit, FileCheck, Search, Filter, Shield, List, Calendar as CalendarIcon, Clock, BarChart3, Copy, Download, Plus, FileSignature, ExternalLink, Loader2, Building2 } from 'lucide-react';
 
 // --- UTILS POUR L'ÉCHÉANCIER ---
 function getNextMonday(date: Date | string) {
@@ -342,6 +342,12 @@ export default function Dashboard() {
         </div>
 
         <div className="flex gap-3 items-center w-full md:w-auto shrink-0">
+          <a
+            href="/prospection/clients"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-xs font-bold text-zinc-600 hover:text-zinc-800 hover:bg-zinc-50 transition-all"
+          >
+            <Building2 size={14} /> Clients &amp; prospects
+          </a>
           <a
             href="/prospection/pipeline"
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-xs font-bold text-zinc-600 hover:text-zinc-800 hover:bg-zinc-50 transition-all"
