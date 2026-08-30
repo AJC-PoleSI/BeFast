@@ -26,6 +26,7 @@ import {
   Briefcase,
   Calendar,
   Plus,
+  Pencil,
   Trash2,
   Loader2,
   BarChart3,
@@ -76,17 +77,22 @@ const GANTT_COLORS = [
 export default function EtudeDetailPage() {
   const params = useParams()
   const etudeId = params.etudeId as string
-  const { isAdmin, permissions, loading: authLoading } = useUser()
+  const { user, isAdmin, permissions, loading: authLoading } = useUser()
   const canSelectCandidates = isAdmin || !!permissions?.selectionner_candidats
 
   const [etude, setEtude] = useState<EtudeWithRelations | null>(null)
+  // L'admin et les suiveurs de l'étude peuvent toujours modifier ses missions.
+  const canEditMissions =
+    isAdmin ||
+    !!(user && etude && (etude.suiveur?.id === user.id || etude.suiveurs?.some((s) => s.id === user.id)))
   const [missions, setMissions] = useState<Mission[]>([])
   const [blocs, setBlocs] = useState<EcheancierBloc[]>([])
   const [candidatures, setCandidatures] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Mission creation modal
+  // Mission creation / editing modal
   const [showMissionModal, setShowMissionModal] = useState(false)
+  const [editingMissionId, setEditingMissionId] = useState<string | null>(null)
   const [missionForm, setMissionForm] = useState({
     nom: "", description: "", type: "intervenant", voie: "", classe: "",
     date_debut: "", date_fin: "", remuneration: "", nb_jeh: "0", nb_intervenants: "1", suiveur_id: "",
@@ -171,14 +177,12 @@ export default function EtudeDetailPage() {
     })
   }, [])
 
-  const handleCreateMission = async () => {
+  const handleSaveMission = async () => {
     if (!missionForm.nom.trim()) { toast.error("Nom requis"); return }
     setCreatingMission(true)
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
-    const { data: newMission, error } = await supabase.from("missions").insert({
-      etude_id: etudeId,
+    const payload = {
       nom: missionForm.nom,
       description: missionForm.description || null,
       type: missionForm.type,
@@ -189,6 +193,25 @@ export default function EtudeDetailPage() {
       remuneration: missionForm.remuneration ? parseFloat(missionForm.remuneration) : null,
       nb_jeh: parseInt(missionForm.nb_jeh) || 0,
       nb_intervenants: parseInt(missionForm.nb_intervenants) || 1,
+    }
+
+    if (editingMissionId) {
+      const { error } = await supabase.from("missions").update(payload).eq("id", editingMissionId)
+      if (error) { toast.error(error.message || "Erreur") } else {
+        toast.success("Mission modifiée")
+        setShowMissionModal(false)
+        setEditingMissionId(null)
+        setMissionForm({ nom: "", description: "", type: "intervenant", voie: "", classe: "", date_debut: "", date_fin: "", remuneration: "", nb_jeh: "0", nb_intervenants: "1", suiveur_id: "" })
+        fetchData()
+      }
+      setCreatingMission(false)
+      return
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: newMission, error } = await supabase.from("missions").insert({
+      ...payload,
+      etude_id: etudeId,
       created_by: user?.id,
     }).select().single()
 
@@ -217,6 +240,24 @@ export default function EtudeDetailPage() {
       fetchData()
     }
     setCreatingMission(false)
+  }
+
+  const handleEditMission = (m: any) => {
+    setEditingMissionId(m.id)
+    setMissionForm({
+      nom: m.nom ?? "",
+      description: m.description ?? "",
+      type: m.type ?? "intervenant",
+      voie: m.voie ?? "",
+      classe: m.classe ?? "",
+      date_debut: m.date_debut ?? "",
+      date_fin: m.date_fin ?? "",
+      remuneration: m.remuneration != null ? String(m.remuneration) : "",
+      nb_jeh: m.nb_jeh != null ? String(m.nb_jeh) : "0",
+      nb_intervenants: m.nb_intervenants != null ? String(m.nb_intervenants) : "1",
+      suiveur_id: "",
+    })
+    setShowMissionModal(true)
   }
 
   const handleSaveBloc = async () => {
@@ -353,8 +394,10 @@ export default function EtudeDetailPage() {
             const frais = Number((etude as any).frais_dossier) || 0
             const margePct = Number((etude as any).marge_pct) || 0
             if (!base && !frais && !margePct) return null
+            // Le budget HT est saisi marge comprise : la marge n'est qu'affichée
+            // à titre informatif, jamais rajoutée au total.
             const margeEuros = base * (margePct / 100)
-            const total = base + frais + margeEuros
+            const total = base + frais
             return (
               <div className="rounded-lg bg-gold/10 border border-gold/30 p-3">
                 <div className="flex items-center gap-1 text-xs text-[#00236f] font-semibold mb-1">
@@ -364,7 +407,7 @@ export default function EtudeDetailPage() {
                   {total.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €
                 </p>
                 <p className="text-[10px] text-zinc-500 mt-0.5">
-                  Base {base.toLocaleString("fr-FR")} € + frais {frais.toLocaleString("fr-FR")} € + marge {margePct}%
+                  Base {base.toLocaleString("fr-FR")} € (dont marge {margePct}% = {margeEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €) + frais {frais.toLocaleString("fr-FR")} €
                 </p>
               </div>
             )
@@ -413,7 +456,15 @@ export default function EtudeDetailPage() {
         <TabsContent value="missions">
           <div className="space-y-3">
             <div className="flex justify-end">
-              <Button onClick={() => setShowMissionModal(true)} className="bg-gold text-navy font-semibold hover:bg-gold/90" size="sm">
+              <Button
+                onClick={() => {
+                  setEditingMissionId(null)
+                  setMissionForm({ nom: "", description: "", type: "intervenant", voie: "", classe: "", date_debut: "", date_fin: "", remuneration: "", nb_jeh: "0", nb_intervenants: "1", suiveur_id: "" })
+                  setShowMissionModal(true)
+                }}
+                className="bg-gold text-navy font-semibold hover:bg-gold/90"
+                size="sm"
+              >
                 <Plus className="h-4 w-4 mr-1.5" /> Créer une mission
               </Button>
             </div>
@@ -471,6 +522,16 @@ export default function EtudeDetailPage() {
                             </span>
                           )}
                         </span>
+                        {canEditMissions && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2"
+                            onClick={() => handleEditMission(m)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -744,12 +805,15 @@ export default function EtudeDetailPage() {
         )}
       </Tabs>
 
-      {/* Mission creation modal */}
-      <Dialog open={showMissionModal} onOpenChange={setShowMissionModal}>
+      {/* Mission creation / editing modal */}
+      <Dialog
+        open={showMissionModal}
+        onOpenChange={(open) => { setShowMissionModal(open); if (!open) setEditingMissionId(null) }}
+      >
         <DialogContent className="max-w-lg">
-          <DialogClose onClose={() => setShowMissionModal(false)} />
+          <DialogClose onClose={() => { setShowMissionModal(false); setEditingMissionId(null) }} />
           <DialogHeader>
-            <DialogTitle>Créer une mission</DialogTitle>
+            <DialogTitle>{editingMissionId ? "Modifier la mission" : "Créer une mission"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2 max-h-[60vh] overflow-y-auto pr-1">
             <div className="space-y-2">
@@ -814,10 +878,10 @@ export default function EtudeDetailPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowMissionModal(false)}>Annuler</Button>
-            <Button onClick={handleCreateMission} disabled={creatingMission || !missionForm.nom.trim()} className="bg-gold text-navy font-semibold hover:bg-gold/90">
-              {creatingMission ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-1.5 h-4 w-4" />}
-              Créer
+            <Button variant="ghost" onClick={() => { setShowMissionModal(false); setEditingMissionId(null) }}>Annuler</Button>
+            <Button onClick={handleSaveMission} disabled={creatingMission || !missionForm.nom.trim()} className="bg-gold text-navy font-semibold hover:bg-gold/90">
+              {creatingMission ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : editingMissionId ? <Pencil className="mr-1.5 h-4 w-4" /> : <Plus className="mr-1.5 h-4 w-4" />}
+              {editingMissionId ? "Enregistrer" : "Créer"}
             </Button>
           </DialogFooter>
         </DialogContent>

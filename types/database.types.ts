@@ -105,11 +105,19 @@ export type ClientType = "ao" | "cs" | "prospection"
 export interface Client {
   id: string
   nom: string
-  email: string | null
-  telephone: string | null
-  type: ClientType
-  notes: string | null
-  created_by: string | null
+  secteur: string | null
+  contact_nom: string | null
+  contact_prenom: string | null
+  contact_civilite: "Monsieur" | "Madame" | null
+  contact_poste: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  adresse: string | null
+  code_postal: string | null
+  ville: string | null
+  pays: string
+  type: ClientType | null
+  actif: boolean
   created_at: string
   updated_at: string
 }

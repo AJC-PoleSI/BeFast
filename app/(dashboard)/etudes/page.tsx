@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getEtudes, createEtude, updateEtude, getClients, getMembers, getParametre, deleteEtude, toggleEtudePublished } from "@/lib/actions/etudes"
+import { getEtudes, createEtude, updateEtude, getClients, createClient_ as addClient, getMembers, getParametre, deleteEtude, toggleEtudePublished } from "@/lib/actions/etudes"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MultiSelect } from "@/components/ui/multi-select"
 import Link from "next/link"
@@ -57,6 +57,42 @@ export default function EtudesPage() {
   const [tvaRate, setTvaRate] = useState(20)
   const [clients, setClients] = useState<Client[]>([])
   const [membres, setMembres] = useState<{ id: string; prenom: string | null; nom: string | null }[]>([])
+  const [showNewClient, setShowNewClient] = useState(false)
+  const [newClient, setNewClient] = useState({
+    nom: "", secteur: "", contact_civilite: "", contact_prenom: "", contact_nom: "",
+    contact_poste: "", contact_email: "", contact_phone: "", adresse: "", code_postal: "", ville: "",
+  })
+  const [creatingClient, setCreatingClient] = useState(false)
+  const [newClientError, setNewClientError] = useState<string | null>(null)
+
+  const handleCreateClient = async () => {
+    if (!newClient.nom.trim()) { setNewClientError("Le nom du client est requis."); return }
+    setCreatingClient(true)
+    setNewClientError(null)
+    const result = await addClient({
+      nom: newClient.nom,
+      secteur: newClient.secteur || undefined,
+      contact_civilite: newClient.contact_civilite || undefined,
+      contact_prenom: newClient.contact_prenom || undefined,
+      contact_nom: newClient.contact_nom || undefined,
+      contact_poste: newClient.contact_poste || undefined,
+      contact_email: newClient.contact_email || undefined,
+      contact_phone: newClient.contact_phone || undefined,
+      adresse: newClient.adresse || undefined,
+      code_postal: newClient.code_postal || undefined,
+      ville: newClient.ville || undefined,
+    })
+    setCreatingClient(false)
+    if ((result as any).error) { setNewClientError((result as any).error); return }
+    const created = (result as any).data as Client
+    setClients(prev => [...prev, created].sort((a, b) => a.nom.localeCompare(b.nom)))
+    setForm(f => ({ ...f, client_id: created.id }))
+    setShowNewClient(false)
+    setNewClient({
+      nom: "", secteur: "", contact_civilite: "", contact_prenom: "", contact_nom: "",
+      contact_poste: "", contact_email: "", contact_phone: "", adresse: "", code_postal: "", ville: "",
+    })
+  }
 
   useEffect(() => {
     const loadEtudes = async () => {
@@ -461,13 +497,15 @@ export default function EtudesPage() {
                     const base = Number(form.budget_ht) || 0
                     const frais = Number(form.frais_dossier) || 0
                     const margePct = Number(form.marge_pct) || 0
+                    // Le budget HT est saisi marge comprise : la marge n'est
+                    // qu'affichée à titre informatif, jamais rajoutée au total.
                     const margeEuros = base * (margePct / 100)
-                    const tarifTotal = base + frais + margeEuros
+                    const tarifTotal = base + frais
                     return (
                       <div className="flex flex-wrap gap-x-4 gap-y-1">
-                        <span>Base JEH : <strong>{base.toLocaleString("fr-FR")} €</strong></span>
+                        <span>Budget HT (marge comprise) : <strong>{base.toLocaleString("fr-FR")} €</strong></span>
                         <span>+ Frais : <strong>{frais.toLocaleString("fr-FR")} €</strong></span>
-                        <span>+ Marge ({margePct}%) : <strong>{margeEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €</strong></span>
+                        <span>dont Marge ({margePct}%) : <strong>{margeEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €</strong></span>
                         <span className="ml-auto">= Tarif étude HT : <strong className="text-sm">{tarifTotal.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €</strong></span>
                       </div>
                     )
@@ -489,15 +527,137 @@ export default function EtudesPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-zinc-600 mb-1">Client</label>
-                  <select
-                    value={form.client_id}
-                    onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
-                  >
-                    <option value="">— Sélectionner —</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      value={form.client_id}
+                      onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                    >
+                      <option value="">— Sélectionner —</option>
+                      {clients.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewClient(v => !v)}
+                      className="shrink-0 px-3 py-2 text-xs font-semibold border border-[#00236f]/30 rounded-lg text-[#00236f] hover:bg-[#00236f]/5"
+                    >
+                      {showNewClient ? "Annuler" : "+ Nouveau"}
+                    </button>
+                  </div>
                 </div>
+                {showNewClient && (
+                  <div className="col-span-2 rounded-lg border border-[#00236f]/20 bg-[#00236f]/[0.03] p-3 space-y-3">
+                    <p className="text-xs font-semibold text-[#00236f]">Nouveau client</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <label className="block text-xs font-semibold text-zinc-600 mb-1">Nom du client *</label>
+                        <input
+                          value={newClient.nom}
+                          onChange={e => setNewClient(c => ({ ...c, nom: e.target.value }))}
+                          placeholder="Ex : Danone"
+                          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-600 mb-1">Secteur</label>
+                        <input
+                          value={newClient.secteur}
+                          onChange={e => setNewClient(c => ({ ...c, secteur: e.target.value }))}
+                          placeholder="Ex : Agroalimentaire"
+                          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-600 mb-1">Adresse</label>
+                        <input
+                          value={newClient.adresse}
+                          onChange={e => setNewClient(c => ({ ...c, adresse: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-600 mb-1">Code postal</label>
+                        <input
+                          value={newClient.code_postal}
+                          onChange={e => setNewClient(c => ({ ...c, code_postal: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-600 mb-1">Ville</label>
+                        <input
+                          value={newClient.ville}
+                          onChange={e => setNewClient(c => ({ ...c, ville: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                        />
+                      </div>
+                      <p className="col-span-2 text-[11px] font-semibold text-zinc-500 pt-1">Interlocuteur (pour les documents)</p>
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-600 mb-1">Civilité</label>
+                        <select
+                          value={newClient.contact_civilite}
+                          onChange={e => setNewClient(c => ({ ...c, contact_civilite: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                        >
+                          <option value="">—</option>
+                          <option value="Monsieur">Monsieur</option>
+                          <option value="Madame">Madame</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-600 mb-1">Poste</label>
+                        <input
+                          value={newClient.contact_poste}
+                          onChange={e => setNewClient(c => ({ ...c, contact_poste: e.target.value }))}
+                          placeholder="Ex : Directeur marketing"
+                          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-600 mb-1">Prénom</label>
+                        <input
+                          value={newClient.contact_prenom}
+                          onChange={e => setNewClient(c => ({ ...c, contact_prenom: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-600 mb-1">Nom</label>
+                        <input
+                          value={newClient.contact_nom}
+                          onChange={e => setNewClient(c => ({ ...c, contact_nom: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-600 mb-1">Email</label>
+                        <input
+                          type="email"
+                          value={newClient.contact_email}
+                          onChange={e => setNewClient(c => ({ ...c, contact_email: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-600 mb-1">Téléphone</label>
+                        <input
+                          value={newClient.contact_phone}
+                          onChange={e => setNewClient(c => ({ ...c, contact_phone: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                        />
+                      </div>
+                    </div>
+                    {newClientError && <p className="text-xs text-red-500 font-medium">{newClientError}</p>}
+                    <button
+                      type="button"
+                      disabled={creatingClient}
+                      onClick={handleCreateClient}
+                      className="px-3 py-1.5 text-xs font-semibold text-white bg-[#00236f] rounded-lg hover:bg-[#00236f]/90 disabled:opacity-50"
+                    >
+                      {creatingClient ? "Création..." : "Créer le client"}
+                    </button>
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold text-zinc-600 mb-1">Suiveur(s)</label>
                   <MultiSelect

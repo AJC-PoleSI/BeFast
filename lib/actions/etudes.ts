@@ -291,10 +291,18 @@ export async function getClients() {
 
 export async function createClient_(formData: {
   nom: string
-  email?: string
-  telephone?: string
-  type: string
-  notes?: string
+  type?: string
+  secteur?: string
+  contact_civilite?: string
+  contact_prenom?: string
+  contact_nom?: string
+  contact_poste?: string
+  contact_email?: string
+  contact_phone?: string
+  adresse?: string
+  code_postal?: string
+  ville?: string
+  pays?: string
 }) {
   const supabase = createClient()
   const {
@@ -302,10 +310,11 @@ export async function createClient_(formData: {
   } = await supabase.auth.getUser()
 
   if (!user) return { error: "Non authentifié" }
+  if (!formData.nom?.trim()) return { error: "Le nom du client est requis." }
 
   const { data, error } = await supabase
     .from("clients")
-    .insert({ ...formData, created_by: user.id })
+    .insert(formData)
     .select()
     .single()
 
