@@ -526,7 +526,7 @@ export default function EtudeDetailPage() {
                           )}
                         </div>
                       ) : (
-                        <Link href={`/missions/${m.id}`} className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0 cursor-default">
                           <Briefcase className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium text-sm">{m.nom}</span>
                           <Badge variant="outline" className={`text-xs ${MISSION_STATUT_COLORS[m.statut]}`}>
@@ -538,7 +538,7 @@ export default function EtudeDetailPage() {
                           {etude?.numero && (
                             <span className="text-xs font-mono text-zinc-400">#{etude.numero}</span>
                           )}
-                        </Link>
+                        </div>
                       )}
                       <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                         {tarif != null && (
