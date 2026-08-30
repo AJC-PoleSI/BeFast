@@ -67,7 +67,7 @@ export interface BudgetBreakdown {
   totalJehHt: number // phases + suivi + marge (la marge est « fondue » dans le JEH)
   totalHt: number // totalJehHt + frais de structure
   tvaPct: number
-  tva: number
+  tva: number // calculée sur le JEH HT uniquement — les frais de structure ne sont pas assujettis
   netAPayer: number // TTC
   acompte60: number // 60 % à la signature (compat. schéma standard par défaut)
   solde40: number // 40 % au PV de recette (compat. schéma standard par défaut)
@@ -140,7 +140,9 @@ export function computeBudget(input: BudgetInput): BudgetBreakdown {
 
   const totalJehHt = r2(totalPhasesJeh + suiviTotal + margeJe)
   const totalHt = r2(totalJehHt + fraisStructure)
-  const tva = r2(totalHt * (tvaPct / 100))
+  // Les frais de structure (dossier + annexes) ne sont pas soumis à la TVA :
+  // seule la prestation JEH l'est.
+  const tva = r2(totalJehHt * (tvaPct / 100))
   const netAPayer = r2(totalHt + tva)
   const acompte60 = r2(netAPayer * 0.6)
   const solde40 = r2(netAPayer - acompte60)

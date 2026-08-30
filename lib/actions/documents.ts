@@ -659,10 +659,12 @@ export async function buildTemplateContext(
 
     const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(blocs)
 
+    // budget_ht est saisi TTC-marge-comprise (la marge est déjà dedans) : on ne
+    // l'ajoute pas une seconde fois, marge_euros n'est qu'informatif.
     const budget_ht = Number(etude.budget_ht) || 0
     const frais = Number(etude.frais_dossier) || 0
     const margePct = Number(etude.marge_pct) || 0
-    const tarif = budget_ht + frais + budget_ht * (margePct / 100)
+    const tarif = budget_ht + frais
 
     const intervenantCtx = buildIntervenantContext(selectedIntervenant)
 
@@ -788,10 +790,12 @@ export async function buildTemplateContext(
     const blocs: any[] = (blocsRes as any).data || []
     const selectedIntervenant: any = (intervenantRes as any).data
 
+    // budget_ht est saisi TTC-marge-comprise (la marge est déjà dedans) : on ne
+    // l'ajoute pas une seconde fois, marge_euros n'est qu'informatif.
     const budget_ht = Number(eAny.budget_ht) || 0
     const frais = Number(eAny.frais_dossier) || 0
     const margePct = Number(eAny.marge_pct) || 0
-    const tarif = budget_ht + frais + budget_ht * (margePct / 100)
+    const tarif = budget_ht + frais
 
     const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(blocs)
     const organigramme = buildOrganigramme(params)
@@ -916,10 +920,12 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
   const relevantBlocs = facture.bloc_id ? allBlocs.filter((b) => b.id === facture.bloc_id) : allBlocs
   const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(relevantBlocs)
 
+  // budget_ht est saisi TTC-marge-comprise (la marge est déjà dedans) : on ne
+  // l'ajoute pas une seconde fois, marge_euros n'est qu'informatif.
   const budget_ht = Number(etude.budget_ht) || 0
   const frais = Number(etude.frais_dossier) || 0
   const margePct = Number(etude.marge_pct) || 0
-  const totalHtEtude = budget_ht + frais + budget_ht * (margePct / 100)
+  const totalHtEtude = budget_ht + frais
 
   // Ne compter que les factures précédentes (émises avant celle-ci, ou sans date si celle-ci n'en a pas non plus)
   const dateEmissionCourante = facture.date_emission ? new Date(facture.date_emission).getTime() : null

@@ -52,6 +52,19 @@ describe("computeBudget", () => {
     expect(b.totalHt).toBe(80)
   })
 
+  it("does not charge TVA on frais de structure (JEH only)", () => {
+    // JEH HT = 1000, frais = 80 → TVA = 20% de 1000 (pas de 1080).
+    const b = computeBudget({
+      ...base,
+      phases: [{ name: "P", jehCount: 10, jehPrice: 100 }],
+      fraisDossier: 50,
+      globalFraisAnnexes: 30,
+    })
+    expect(b.totalHt).toBe(1080)
+    expect(b.tva).toBe(200)
+    expect(b.netAPayer).toBe(1280)
+  })
+
   it("supports a 0% TVA (netAPayer == totalHt)", () => {
     const b = computeBudget({
       ...base,
