@@ -74,6 +74,15 @@ const GANTT_COLORS = [
   "#C9A84C", "#4A90D9", "#6366F1", "#EC4899", "#14B8A6", "#F97316", "#8B5CF6",
 ]
 
+// Barème JEH par intervenant (template Excel Budget Audencia) : plus la
+// rémunération est élevée, plus la mission compte de JEH.
+function nbJehFromRemuneration(remuneration: number): number {
+  if (remuneration < 500) return 1
+  if (remuneration < 900) return 2
+  if (remuneration < 1350) return 3
+  return 4
+}
+
 export default function EtudeDetailPage() {
   const params = useParams()
   const etudeId = params.etudeId as string
@@ -198,6 +207,14 @@ export default function EtudeDetailPage() {
     if (editingMissionId) {
       const { error } = await supabase.from("missions").update(payload).eq("id", editingMissionId)
       if (error) { toast.error(error.message || "Erreur") } else {
+        // Le bloc de l'échéancier garde sa propre copie du JEH (calculée à la
+        // création) : sans cette synchro, "Total JEH" en tête de page reste
+        // sur l'ancienne valeur après une modification.
+        const jehTotal = (parseInt(missionForm.nb_jeh) || 0) * (parseInt(missionForm.nb_intervenants) || 1)
+        await supabase
+          .from("echeancier_blocs")
+          .update({ nom: missionForm.nom, jeh: jehTotal || null })
+          .eq("mission_id", editingMissionId)
         toast.success("Mission modifiée")
         setShowMissionModal(false)
         setEditingMissionId(null)
@@ -874,7 +891,20 @@ export default function EtudeDetailPage() {
             </div>
             <div className="space-y-2">
               <Label>Rémunération (€)</Label>
-              <Input type="number" value={missionForm.remuneration} onChange={(e) => setMissionForm({ ...missionForm, remuneration: e.target.value })} placeholder="0" />
+              <Input
+                type="number"
+                value={missionForm.remuneration}
+                onChange={(e) => {
+                  const remuneration = e.target.value
+                  const parsed = parseFloat(remuneration)
+                  setMissionForm({
+                    ...missionForm,
+                    remuneration,
+                    nb_jeh: Number.isFinite(parsed) ? String(nbJehFromRemuneration(parsed)) : missionForm.nb_jeh,
+                  })
+                }}
+                placeholder="0"
+              />
             </div>
           </div>
           <DialogFooter>
