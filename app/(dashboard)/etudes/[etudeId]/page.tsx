@@ -74,12 +74,21 @@ const GANTT_COLORS = [
   "#C9A84C", "#4A90D9", "#6366F1", "#EC4899", "#14B8A6", "#F97316", "#8B5CF6",
 ]
 
-// Barème JEH par intervenant (template Excel Budget Audencia) : plus la
-// rémunération est élevée, plus la mission compte de JEH.
-function nbJehFromRemuneration(remuneration: number): number {
-  if (remuneration < 500) return 1
-  if (remuneration < 900) return 2
-  if (remuneration < 1350) return 3
+// Grossissement marge (même règle que le budget de l'étude) : la rémunération
+// saisie est celle réellement versée à l'intervenant — jamais modifiée, c'est
+// ce chiffre qui s'affiche sur la mission publiée. La marge n'intervient que
+// pour déterminer le palier de JEH et le coût réel facturé au client.
+function coutAvecMarge(remuneration: number, margePct: number): number {
+  if (margePct <= 0) return remuneration
+  return Math.ceil(remuneration / (1 - margePct / 100))
+}
+
+// Barème JEH (template Excel Budget Audencia), appliqué au coût marge
+// comprise : plus la mission coûte cher au client, plus elle compte de JEH.
+function nbJehFromRemuneration(coutAvecMargeInclus: number): number {
+  if (coutAvecMargeInclus < 500) return 1
+  if (coutAvecMargeInclus < 900) return 2
+  if (coutAvecMargeInclus < 1350) return 3
   return 4
 }
 
@@ -170,14 +179,6 @@ export default function EtudeDetailPage() {
   useEffect(() => {
     if (!authLoading) fetchData()
   }, [authLoading, fetchData])
-
-  // Tarif JEH par défaut pour l'affichage en €
-  const [tarifJeh, setTarifJeh] = useState<number>(0)
-  useEffect(() => {
-    const sb = createClient()
-    sb.from("parametres").select("value").eq("key", "tarif_jeh_default").maybeSingle()
-      .then(({ data }) => setTarifJeh(Number(data?.value ?? 0) || 0))
-  }, [])
 
   // Charger la liste des suiveurs potentiels (membres AJC actuels uniquement)
   useEffect(() => {
@@ -349,6 +350,15 @@ export default function EtudeDetailPage() {
   // (cf. sync dans handleSaveMission). On ne retombe sur les blocs que si
   // l'étude n'a aucune mission mais un échéancier renseigné (cas legacy).
   const totalJeh = totalJehMissions || blocs.reduce((sum, b) => sum + (b.jeh || 0), 0)
+  // Somme réelle des montants affichés sur chaque ligne de mission (JEH ×
+  // rémunération propre à la mission), pas un taux moyen générique — pour que
+  // ce total corresponde exactement à l'addition des lignes visibles en dessous.
+  const totalMontantMissions = Math.round(
+    missions.reduce((sum, m: any) => {
+      const tarif = Number(m.remuneration ?? m.taux_jour) || 0
+      return sum + (m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1) * tarif
+    }, 0)
+  )
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -437,16 +447,15 @@ export default function EtudeDetailPage() {
             <div className="text-xs text-[#00236f] font-semibold mb-1">Total JEH</div>
             <p className="font-bold text-lg text-[#00236f]">
               {totalJeh}
-              {tarifJeh > 0 && (
+              {totalMontantMissions > 0 && (
                 <span className="ml-2 text-sm font-semibold text-[#00236f]/70">
-                  ({(totalJeh * tarifJeh).toLocaleString("fr-FR")} €)
+                  ({totalMontantMissions.toLocaleString("fr-FR")} €)
                 </span>
               )}
             </p>
             {totalJehMissions > 0 && (
               <p className="text-[10px] text-zinc-500 mt-0.5">
                 {missions.length} mission{missions.length > 1 ? "s" : ""}
-                {tarifJeh > 0 && ` · ${tarifJeh} €/JEH`}
               </p>
             )}
           </div>
@@ -901,10 +910,13 @@ export default function EtudeDetailPage() {
                 onChange={(e) => {
                   const remuneration = e.target.value
                   const parsed = parseFloat(remuneration)
+                  const margePct = Number((etude as any)?.marge_pct) || 0
                   setMissionForm({
                     ...missionForm,
                     remuneration,
-                    nb_jeh: Number.isFinite(parsed) ? String(nbJehFromRemuneration(parsed)) : missionForm.nb_jeh,
+                    nb_jeh: Number.isFinite(parsed)
+                      ? String(nbJehFromRemuneration(coutAvecMarge(parsed, margePct)))
+                      : missionForm.nb_jeh,
                   })
                 }}
                 placeholder="0"
