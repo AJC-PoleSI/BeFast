@@ -10,6 +10,8 @@ import {
   ETUDES_TAG,
   ETUDE_DETAIL_TAG,
 } from "@/lib/cache-tags"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { hasPermission, canEditEtude } from "@/lib/auth/permissions"
 
 // Cached version of getClients — clients rarely change.
 // Uses admin client (bypasses RLS) so unstable_cache works across requests.
@@ -232,6 +234,14 @@ export async function updateEtude(
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
+  const { data: existing } = await supabase.from("etudes").select("created_by").eq("id", id).single()
+  if (!existing) return { error: "Étude introuvable" }
+
+  const profile = await getCachedProfile(user.id)
+  if (!canEditEtude(profile, existing)) {
+    return { error: "Vous n'êtes pas autorisé à modifier cette étude." }
+  }
+
   const { suiveur_ids, ...rest } = updates
   const payload: Record<string, unknown> = { ...rest }
   if (suiveur_ids !== undefined) payload.suiveur_id = suiveur_ids[0] ?? null
@@ -444,6 +454,11 @@ export async function toggleEtudePublished(id: string, published: boolean) {
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
+  const profile = await getCachedProfile(user.id)
+  if (!hasPermission(profile, "publier_etudes")) {
+    return { error: "Vous n'êtes pas autorisé à publier ou dépublier une étude." }
+  }
+
   const { error } = await supabase.from("etudes").update({ published }).eq("id", id)
   if (error) return { error: error.message }
   revalidateTag(ETUDES_TAG)
@@ -459,6 +474,11 @@ export async function toggleMissionPublished(id: string, published: boolean) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+
+  const profile = await getCachedProfile(user.id)
+  if (!hasPermission(profile, "publier_missions")) {
+    return { error: "Vous n'êtes pas autorisé à publier ou dépublier une mission." }
+  }
 
   const { error } = await supabase.from("missions").update({ published }).eq("id", id)
   if (error) return { error: error.message }

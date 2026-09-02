@@ -5,8 +5,10 @@ import { getEtudes, createEtude, updateEtude, getClients, createClient_ as addCl
 import { Skeleton } from "@/components/ui/skeleton"
 import { MultiSelect } from "@/components/ui/multi-select"
 import Link from "next/link"
-import { X, Loader2, Trash2, Pencil, Eye, EyeOff } from "lucide-react"
+import { X, Loader2, Trash2, Pencil, Eye, EyeOff, AlertTriangle } from "lucide-react"
 import type { EtudeWithRelations, Client } from "@/types/database.types"
+import { useUser } from "@/hooks/useUser"
+import { canEditEtude, hasPermission } from "@/lib/auth/permissions"
 
 const STATUT_CONFIG: Record<string, { label: string; chipClass: string; dotClass: string }> = {
   prospection: {
@@ -45,7 +47,12 @@ const STATUT_ORDER: Record<string, number> = {
 }
 
 export default function EtudesPage() {
+  const { profile } = useUser()
+  const canPublish = hasPermission(profile, "publier_etudes")
   const [etudes, setEtudes] = useState<EtudeWithRelations[]>([])
+  const [publishConfirmEtude, setPublishConfirmEtude] = useState<EtudeWithRelations | null>(null)
+  const [publishConfirmChecked, setPublishConfirmChecked] = useState(false)
+  const [publishSubmitting, setPublishSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatut, setSelectedStatut] = useState<string | null>(null)
@@ -135,6 +142,29 @@ export default function EtudesPage() {
 
   // Active/featured study
   const activeStudy = filteredEtudes.find((e) => e.statut === "en_cours")
+
+  const handleTogglePublish = async (etude: EtudeWithRelations) => {
+    const newPublished = !(etude as any).published
+    // Passage brouillon → visible : on demande confirmation (missions publiées ?)
+    if (newPublished) {
+      setPublishConfirmChecked(false)
+      setPublishConfirmEtude(etude)
+      return
+    }
+    const res = await toggleEtudePublished(etude.id, newPublished)
+    if ((res as any).error) { alert((res as any).error); return }
+    setEtudes(prev => prev.map(x => x.id === etude.id ? { ...x, published: newPublished } as any : x))
+  }
+
+  const handleConfirmPublish = async () => {
+    if (!publishConfirmEtude || !publishConfirmChecked) return
+    setPublishSubmitting(true)
+    const res = await toggleEtudePublished(publishConfirmEtude.id, true)
+    setPublishSubmitting(false)
+    if ((res as any).error) { alert((res as any).error); return }
+    setEtudes(prev => prev.map(x => x.id === publishConfirmEtude.id ? { ...x, published: true } as any : x))
+    setPublishConfirmEtude(null)
+  }
 
   return (
     <div className="space-y-6">
@@ -318,19 +348,19 @@ export default function EtudesPage() {
                             )}
                           </div>
                         </Link>
-                        <button
-                          onClick={async (e) => {
-                            e.preventDefault(); e.stopPropagation()
-                            const newPublished = !(etude as any).published
-                            const res = await toggleEtudePublished(etude.id, newPublished)
-                            if ((res as any).error) { alert((res as any).error); return }
-                            setEtudes(prev => prev.map(x => x.id === etude.id ? { ...x, published: newPublished } as any : x))
-                          }}
-                          className={`p-1.5 rounded-md transition-all shrink-0 ${(etude as any).published ? "text-emerald-600 hover:bg-emerald-50" : "text-amber-600 hover:bg-amber-50"}`}
-                          title={(etude as any).published ? "Dépublier" : "Publier"}
-                        >
-                          {(etude as any).published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                        </button>
+                        {canPublish && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault(); e.stopPropagation()
+                              handleTogglePublish(etude)
+                            }}
+                            className={`p-1.5 rounded-md transition-all shrink-0 ${(etude as any).published ? "text-emerald-600 hover:bg-emerald-50" : "text-amber-600 hover:bg-amber-50"}`}
+                            title={(etude as any).published ? "Dépublier" : "Publier"}
+                          >
+                            {(etude as any).published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                          </button>
+                        )}
+                        {canEditEtude(profile, etude) && (
                         <button
                           onClick={(e) => {
                             e.preventDefault(); e.stopPropagation()
@@ -357,6 +387,7 @@ export default function EtudesPage() {
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
+                        )}
                         <button
                           onClick={async (e) => {
                             e.preventDefault(); e.stopPropagation()
@@ -711,6 +742,66 @@ export default function EtudesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modale de confirmation : passage brouillon → visible ── */}
+      {publishConfirmEtude && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => setPublishConfirmEtude(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-manrope font-bold text-zinc-900">Publier l&apos;étude</h2>
+                <p className="text-sm text-zinc-500 mt-1">
+                  Vous êtes sur le point de rendre l&apos;étude{" "}
+                  <span className="font-semibold text-zinc-800">"{publishConfirmEtude.nom}"</span> visible.
+                </p>
+                <p className="text-sm text-zinc-500 mt-2">
+                  Assurez-vous bien que les missions relatives à cette étude ont été publiées.
+                </p>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={publishConfirmChecked}
+                onChange={(e) => setPublishConfirmChecked(e.target.checked)}
+                className="rounded border-zinc-300"
+              />
+              <span className="text-sm font-medium text-amber-800">
+                Oui, les missions ont bien été publiées
+              </span>
+            </label>
+
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                type="button"
+                onClick={() => setPublishConfirmEtude(null)}
+                className="px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={!publishConfirmChecked || publishSubmitting}
+                onClick={handleConfirmPublish}
+                className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-[#00236f] text-white rounded-lg hover:bg-[#1e3a8a] transition-colors disabled:opacity-50"
+              >
+                {publishSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                Publier l&apos;étude
+              </button>
+            </div>
           </div>
         </div>
       )}

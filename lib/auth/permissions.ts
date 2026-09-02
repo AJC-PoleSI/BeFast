@@ -4,7 +4,7 @@ import type { PersonneWithRole, Permissions, PermissionKey } from "@/types/datab
 export const ALL_PERMISSION_KEYS: PermissionKey[] = [
   "dashboard", "profil", "missions", "etudes", "prospection", "statistiques",
   "administration", "membres", "documents", "nouvelle_mission",
-  "voir_documents_membres", "assigner_intervenants", "parametres_structure",
+  "voir_documents_membres", "assigner_intervenants", "modifier_etudes", "parametres_structure",
   "selectionner_candidats", "valider_comptes", "valider_bv", "voir_factures",
   "gerer_parametres", "publier_etudes", "publier_missions",
   "signer_documents", "signer_ba",
@@ -40,4 +40,18 @@ export function resolveEffectivePermissions(profile: PersonneWithRole | null): P
 export function hasPermission(profile: PersonneWithRole | null, key: PermissionKey): boolean {
   if (profile?.profils_types?.slug === "administrateur") return true
   return resolveEffectivePermissions(profile)[key] === true
+}
+
+/**
+ * Modification d'une étude : l'administrateur, le créateur de l'étude, et
+ * les postes disposant de la permission `modifier_etudes` (ex. Pôle SI).
+ */
+export function canEditEtude(
+  profile: PersonneWithRole | null,
+  etude: { created_by: string | null }
+): boolean {
+  if (!profile) return false
+  if (profile.profils_types?.slug === "administrateur") return true
+  if (etude.created_by && etude.created_by === profile.id) return true
+  return hasPermission(profile, "modifier_etudes")
 }

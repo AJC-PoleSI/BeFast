@@ -11,6 +11,7 @@ export type PermissionKey =
   | "nouvelle_mission"
   | "voir_documents_membres"
   | "assigner_intervenants"
+  | "modifier_etudes"
   | "parametres_structure"
   | "selectionner_candidats"
   | "valider_comptes"

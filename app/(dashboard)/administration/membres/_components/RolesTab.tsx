@@ -10,6 +10,7 @@ type PermKey =
   | "prospection" | "statistiques" | "administration"
   | "membres" | "documents" | "nouvelle_mission"
   | "voir_documents_membres" | "assigner_intervenants"
+  | "modifier_etudes" | "publier_etudes" | "publier_missions"
   | "parametres_structure" | "voir_factures"
   | "signer_documents" | "signer_ba"
 
@@ -26,6 +27,9 @@ const PERM_LABELS: Record<PermKey, { label: string; description: string; icon: s
   administration:          { label: "Administration",             description: "Accès complet au panneau admin",                    icon: "admin_panel_settings" },
   nouvelle_mission:        { label: "Créer une mission",          description: "Créer de nouvelles missions/études",                icon: "add_circle" },
   assigner_intervenants:   { label: "Assigner des intervenants",  description: "Peut assigner des intervenants aux missions (RH & SI)", icon: "person_add" },
+  modifier_etudes:         { label: "Modifier toutes les études", description: "Modifier les études même sans en être le créateur (créateur et admin toujours autorisés)", icon: "edit_note" },
+  publier_etudes:          { label: "Publier les études",         description: "Faire passer une étude de brouillon à visible (Marketing & SI)", icon: "publish" },
+  publier_missions:        { label: "Publier les missions",       description: "Faire passer une mission de brouillon à visible (Marketing & SI)", icon: "campaign" },
   parametres_structure:    { label: "Paramètres structure",       description: "Accès aux paramètres globaux (TVA, etc.)",           icon: "settings" },
   voir_factures:           { label: "Trésorerie",                 description: "Consulter et gérer les factures, paiements et rétributions intervenants", icon: "account_balance_wallet" },
   signer_documents:        { label: "Signer les documents",       description: "Signer les documents classiques (file du bureau)",   icon: "draw" },

@@ -19,6 +19,7 @@ const emptyPermissions: Permissions = {
   nouvelle_mission: false,
   voir_documents_membres: false,
   assigner_intervenants: false,
+  modifier_etudes: false,
   parametres_structure: false,
   selectionner_candidats: false,
   valider_comptes: false,

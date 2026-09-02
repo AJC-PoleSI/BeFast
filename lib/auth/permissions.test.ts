@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { resolveEffectivePermissions, hasPermission } from "./permissions"
+import { resolveEffectivePermissions, hasPermission, canEditEtude } from "./permissions"
 import type { PersonneWithRole } from "@/types/database.types"
 
 function make(basePerms: any, postes: any[] = [], slug = "membre_ajc"): PersonneWithRole {
@@ -47,5 +47,31 @@ describe("hasPermission", () => {
   })
   it("un membre sans poste n'a pas signer_ba", () => {
     expect(hasPermission(make({ dashboard: true }), "signer_ba")).toBe(false)
+  })
+})
+
+describe("canEditEtude", () => {
+  it("l'administrateur peut modifier n'importe quelle étude", () => {
+    const p = make({}, [], "administrateur")
+    expect(canEditEtude(p, { created_by: "autre-id" })).toBe(true)
+  })
+
+  it("le créateur peut modifier son étude même sans permission ni poste", () => {
+    const p = make({})
+    expect(canEditEtude(p, { created_by: "u1" })).toBe(true)
+  })
+
+  it("un poste avec modifier_etudes (ex. Pôle SI) peut modifier une étude qu'il n'a pas créée", () => {
+    const p = make({}, [{ profils_types: { permissions: { modifier_etudes: true } } }])
+    expect(canEditEtude(p, { created_by: "autre-id" })).toBe(true)
+  })
+
+  it("un membre sans permission ni créateur ne peut pas modifier une étude", () => {
+    const p = make({ dashboard: true })
+    expect(canEditEtude(p, { created_by: "autre-id" })).toBe(false)
+  })
+
+  it("un profil null ne peut rien modifier", () => {
+    expect(canEditEtude(null, { created_by: "u1" })).toBe(false)
   })
 })
