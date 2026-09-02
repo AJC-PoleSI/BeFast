@@ -53,6 +53,8 @@ export default function EtudesPage() {
   const [publishConfirmEtude, setPublishConfirmEtude] = useState<EtudeWithRelations | null>(null)
   const [publishConfirmChecked, setPublishConfirmChecked] = useState(false)
   const [publishSubmitting, setPublishSubmitting] = useState(false)
+  const [deleteConfirmEtude, setDeleteConfirmEtude] = useState<EtudeWithRelations | null>(null)
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatut, setSelectedStatut] = useState<string | null>(null)
@@ -164,6 +166,16 @@ export default function EtudesPage() {
     if ((res as any).error) { alert((res as any).error); return }
     setEtudes(prev => prev.map(x => x.id === publishConfirmEtude.id ? { ...x, published: true } as any : x))
     setPublishConfirmEtude(null)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmEtude) return
+    setDeleteSubmitting(true)
+    const res = await deleteEtude(deleteConfirmEtude.id)
+    setDeleteSubmitting(false)
+    if ((res as any).error) { alert((res as any).error); return }
+    setEtudes(prev => prev.filter(x => x.id !== deleteConfirmEtude.id))
+    setDeleteConfirmEtude(null)
   }
 
   return (
@@ -388,19 +400,18 @@ export default function EtudesPage() {
                           <Pencil className="w-4 h-4" />
                         </button>
                         )}
+                        {canEditEtude(profile, etude) && (
                         <button
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.preventDefault(); e.stopPropagation()
-                            if (!confirm(`Supprimer l'étude "${etude.nom}" ? Cette action est irréversible.`)) return
-                            const res = await deleteEtude(etude.id)
-                            if (res.error) { alert(res.error); return }
-                            setEtudes(prev => prev.filter(x => x.id !== etude.id))
+                            setDeleteConfirmEtude(etude)
                           }}
                           className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-all shrink-0"
                           title="Supprimer l'étude"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                        )}
                       </div>
                     )
                   })
@@ -800,6 +811,57 @@ export default function EtudesPage() {
               >
                 {publishSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 Publier l&apos;étude
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modale de confirmation : suppression d'une étude ── */}
+      {deleteConfirmEtude && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => setDeleteConfirmEtude(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-2xl text-red-600">warning</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-manrope font-bold text-zinc-900">Supprimer l&apos;étude</h2>
+                <p className="text-sm text-zinc-500 mt-1">
+                  Êtes-vous certain de vouloir supprimer l&apos;étude{" "}
+                  <span className="font-semibold text-zinc-800">"{deleteConfirmEtude.nom}"</span> ?
+                </p>
+                <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                  <p className="text-xs text-red-700 font-medium">
+                    ⚠️ Cette action est irréversible : ses missions, candidatures et documents liés
+                    seront supprimés avec elle.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmEtude(null)}
+                className="px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={deleteSubmitting}
+                onClick={handleConfirmDelete}
+                className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deleteSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                Supprimer définitivement
               </button>
             </div>
           </div>

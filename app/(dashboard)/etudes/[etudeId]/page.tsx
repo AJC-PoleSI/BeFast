@@ -46,7 +46,7 @@ import type {
 } from "@/types/database.types"
 import { getMembers } from "@/lib/actions/etudes"
 import { repondreCandidature } from "@/lib/actions/missions"
-import { hasPermission } from "@/lib/auth/permissions"
+import { hasPermission, canEditEtude } from "@/lib/auth/permissions"
 
 const STATUT_COLORS: Record<string, string> = {
   prospection: "bg-purple-100 text-purple-700 border-purple-200",
@@ -103,10 +103,9 @@ export default function EtudeDetailPage() {
   const canSelectCandidates = hasPermission(profile, "selectionner_candidats")
 
   const [etude, setEtude] = useState<EtudeWithRelations | null>(null)
-  // L'admin et les suiveurs de l'étude peuvent toujours modifier ses missions.
-  const canEditMissions =
-    isAdmin ||
-    !!(user && etude && (etude.suiveur?.id === user.id || etude.suiveurs?.some((s) => s.id === user.id)))
+  // Créer/modifier une mission = créateur de l'étude, Pôle SI, admin — même
+  // règle que la modification de l'étude elle-même (canEditEtude).
+  const canEditMissions = !!etude && canEditEtude(profile, etude)
   const [missions, setMissions] = useState<Mission[]>([])
   const [blocs, setBlocs] = useState<EcheancierBloc[]>([])
   const [candidatures, setCandidatures] = useState<any[]>([])
@@ -500,6 +499,7 @@ export default function EtudeDetailPage() {
         {/* Missions tab */}
         <TabsContent value="missions">
           <div className="space-y-3">
+            {canEditMissions && (
             <div className="flex justify-end">
               <Button
                 onClick={() => {
@@ -513,6 +513,7 @@ export default function EtudeDetailPage() {
                 <Plus className="h-4 w-4 mr-1.5" /> Créer une mission
               </Button>
             </div>
+            )}
 
             {missions.length === 0 ? (
               <div className="bg-white rounded-xl border border-border p-8 text-center text-muted-foreground text-sm">

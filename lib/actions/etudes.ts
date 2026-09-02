@@ -493,6 +493,14 @@ export async function deleteEtude(id: string) {
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
+  const { data: existing } = await supabase.from("etudes").select("created_by").eq("id", id).single()
+  if (!existing) return { error: "Étude introuvable" }
+
+  const profile = await getCachedProfile(user.id)
+  if (!canEditEtude(profile, existing)) {
+    return { error: "Vous n'êtes pas autorisé à supprimer cette étude." }
+  }
+
   const { error } = await supabase.from("etudes").delete().eq("id", id)
   if (error) return { error: error.message }
   revalidateTag(ETUDES_TAG)
