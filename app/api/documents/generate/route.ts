@@ -2,9 +2,12 @@ export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { renderTemplate } from "@/lib/docx/template-engine"
 import { buildTemplateContext } from "@/lib/actions/documents"
 import { requireApiAdmin } from "@/lib/auth/api-guards"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { canEditEtude } from "@/lib/auth/permissions"
 
 
 // Allow up to 30 seconds for DOCX rendering
@@ -72,6 +75,35 @@ export async function POST(req: NextRequest) {
   if (tpl.category === "bulletin_versement") {
     const guard = await requireApiAdmin()
     if (!guard.ok) return guard.response
+  }
+
+  // Génération de documents liés à une étude/mission : réservée au créateur
+  // de l'étude, au Pôle SI et aux admins — même règle que la modification de
+  // l'étude (canEditEtude). On lit via le client admin pour ne pas dépendre
+  // de la RLS "etudes read" (un non-interne, non-créateur ne verrait même
+  // pas la ligne, et le check tomberait toujours en échec sans distinction).
+  if (scope === "etude" || scope === "mission") {
+    const admin = createAdminClient()
+    let etudeCreatedBy: string | null = null
+
+    if (scope === "etude") {
+      const { data: e } = await admin.from("etudes").select("created_by").eq("id", entity_id).single()
+      etudeCreatedBy = e?.created_by ?? null
+    } else {
+      const { data: m } = await admin.from("missions").select("etude_id").eq("id", entity_id).single()
+      if (m?.etude_id) {
+        const { data: e } = await admin.from("etudes").select("created_by").eq("id", m.etude_id).single()
+        etudeCreatedBy = e?.created_by ?? null
+      }
+    }
+
+    const profile = await getCachedProfile(user.id)
+    if (!canEditEtude(profile, { created_by: etudeCreatedBy })) {
+      return NextResponse.json(
+        { error: "Seuls le créateur de l'étude, le Pôle SI et les administrateurs peuvent générer ce document." },
+        { status: 403 }
+      )
+    }
   }
 
   // Téléchargement du fichier et construction du contexte en parallèle —

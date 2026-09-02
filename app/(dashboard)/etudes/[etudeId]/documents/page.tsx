@@ -14,6 +14,9 @@ import {
   listMissionIntervenants,
   listEtudeAllDocuments,
 } from "@/lib/actions/documents"
+import { getEtude } from "@/lib/actions/etudes"
+import { useUser } from "@/hooks/useUser"
+import { canEditEtude } from "@/lib/auth/permissions"
 import {
   Dialog,
   DialogContent,
@@ -70,6 +73,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
 export default function EtudeDocumentsPage() {
   const params = useParams()
   const etudeId = params.etudeId as string
+  const { profile } = useUser()
 
   const [formState, dispatch] = useReducer(formReducer, initialFormState)
   const [templates, setTemplates] = useState<any[]>([])
@@ -77,17 +81,23 @@ export default function EtudeDocumentsPage() {
   const [missions, setMissions] = useState<any[]>([])
   const [generating, setGenerating] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [etudeCreatedBy, setEtudeCreatedBy] = useState<string | null>(null)
+  // Générer un document = créateur de l'étude, Pôle SI, admin — même règle
+  // que la modification de l'étude (canEditEtude).
+  const canGenerate = canEditEtude(profile, { created_by: etudeCreatedBy })
 
   const refresh = useCallback(async () => {
     setLoading(true)
-    const [tRes, dRes, mRes] = await Promise.all([
+    const [tRes, dRes, mRes, eRes] = await Promise.all([
       listTemplates(),
       listEtudeAllDocuments(etudeId),
       listEtudeMissions(etudeId),
+      getEtude(etudeId),
     ])
     setTemplates((tRes as any).data || [])
     setDocs((dRes as any).data || [])
     setMissions((mRes as any).data || [])
+    setEtudeCreatedBy((eRes as any).data?.created_by ?? null)
     setLoading(false)
   }, [etudeId])
 
@@ -165,18 +175,24 @@ export default function EtudeDocumentsPage() {
           <h2 className="text-sm font-semibold flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-gold" /> Générer un document
           </h2>
-          <Button
-            onClick={() => dispatch({ type: "TOGGLE_MODAL", payload: true })}
-            size="sm"
-            className="bg-[#00236f] text-white hover:bg-[#1e3a8a]"
-            disabled={loading}
-          >
-            <FileText className="h-4 w-4 mr-1.5" />
-            Nouveau document
-          </Button>
+          {canGenerate && (
+            <Button
+              onClick={() => dispatch({ type: "TOGGLE_MODAL", payload: true })}
+              size="sm"
+              className="bg-[#00236f] text-white hover:bg-[#1e3a8a]"
+              disabled={loading}
+            >
+              <FileText className="h-4 w-4 mr-1.5" />
+              Nouveau document
+            </Button>
+          )}
         </div>
         {loading ? (
           <p className="text-xs text-muted-foreground">Chargement…</p>
+        ) : !canGenerate ? (
+          <p className="text-xs text-muted-foreground">
+            Seuls le créateur de l&apos;étude, le Pôle SI et les administrateurs peuvent générer un document.
+          </p>
         ) : templates.length === 0 ? (
           <p className="text-xs text-muted-foreground">
             Aucun modèle disponible.{" "}

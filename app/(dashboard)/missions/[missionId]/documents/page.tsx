@@ -14,6 +14,10 @@ import {
   deleteGeneratedDocument,
   listMissionIntervenants,
 } from "@/lib/actions/documents"
+import { getMission } from "@/lib/actions/missions"
+import { getEtude } from "@/lib/actions/etudes"
+import { useUser } from "@/hooks/useUser"
+import { canEditEtude } from "@/lib/auth/permissions"
 import {
   Dialog,
   DialogContent,
@@ -28,6 +32,7 @@ import { DocumentViewer } from "@/components/documents/DocumentViewer"
 export default function MissionDocumentsPage() {
   const params = useParams()
   const missionId = params.missionId as string
+  const { profile } = useUser()
   const [templates, setTemplates] = useState<any[]>([])
   const [docs, setDocs] = useState<any[]>([])
   const [generating, setGenerating] = useState(false)
@@ -37,15 +42,20 @@ export default function MissionDocumentsPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
   const [showGenerateModal, setShowGenerateModal] = useState(false)
   const [initialLoadDone, setInitialLoadDone] = useState(false)
+  const [etudeCreatedBy, setEtudeCreatedBy] = useState<string | null>(null)
+  // Générer un document = créateur de l'étude, Pôle SI, admin — même règle
+  // que la modification de l'étude (canEditEtude).
+  const canGenerate = canEditEtude(profile, { created_by: etudeCreatedBy })
 
   const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
-    const [tRes, dRes, iRes] = await Promise.all([
+    const [tRes, dRes, iRes, mRes] = await Promise.all([
       listTemplates(),
       listEntityDocuments("mission", missionId),
       listMissionIntervenants(missionId),
+      getMission(missionId),
     ])
     setTemplates((tRes as any).data || [])
     setDocs((dRes as any).data || [])
@@ -54,6 +64,12 @@ export default function MissionDocumentsPage() {
     setIntervenants(intervenantsList)
     if (intervenantsList.length === 1 && !selectedIntervenantId) {
       setSelectedIntervenantId(intervenantsList[0].id)
+    }
+
+    const etudeId = (mRes as any).data?.etude_id ?? null
+    if (etudeId) {
+      const eRes = await getEtude(etudeId)
+      setEtudeCreatedBy((eRes as any).data?.created_by ?? null)
     }
 
     setLoading(false)
@@ -138,18 +154,24 @@ export default function MissionDocumentsPage() {
           <h2 className="text-sm font-semibold flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-gold" /> Générer un document
           </h2>
-          <Button
-            onClick={() => setShowGenerateModal(true)}
-            size="sm"
-            className="bg-[#00236f] text-white hover:bg-[#1e3a8a]"
-            disabled={loading}
-          >
-            <FileText className="h-4 w-4 mr-1.5" />
-            Nouveau document
-          </Button>
+          {canGenerate && (
+            <Button
+              onClick={() => setShowGenerateModal(true)}
+              size="sm"
+              className="bg-[#00236f] text-white hover:bg-[#1e3a8a]"
+              disabled={loading}
+            >
+              <FileText className="h-4 w-4 mr-1.5" />
+              Nouveau document
+            </Button>
+          )}
         </div>
         {loading ? (
           <p className="text-xs text-muted-foreground">Chargement…</p>
+        ) : !canGenerate ? (
+          <p className="text-xs text-muted-foreground">
+            Seuls le créateur de l&apos;étude, le Pôle SI et les administrateurs peuvent générer un document.
+          </p>
         ) : templates.length === 0 ? (
           <p className="text-xs text-muted-foreground">
             Aucun modèle disponible.{" "}
