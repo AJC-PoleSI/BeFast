@@ -15,15 +15,10 @@ export default function MotDePasseOubliePage() {
   async function handleSubmit(formData: FormData) {
     startTransition(async () => {
       const result = await resetPassword(formData)
-      if (result?.error) {
-        toast.error(result.error, { duration: 5000, position: "top-right" })
-      }
-      if (result?.success) {
-        toast.success(result.success, {
-          duration: 5000,
-          position: "top-right",
-        })
-      }
+      toast.success(result.success, {
+        duration: 5000,
+        position: "top-right",
+      })
     })
   }
 

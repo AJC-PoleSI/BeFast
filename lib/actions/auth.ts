@@ -12,6 +12,7 @@ import { sendEmail } from "@/lib/email/send"
 import {
   accountCreatedUserEmail,
   newAccountStaffNotificationEmail,
+  passwordResetEmail,
 } from "@/lib/email/templates"
 
 const VERIFICATION_SUBJECT = "Vérifiez votre adresse email — BeFast"
@@ -243,15 +244,49 @@ export async function signOut() {
   redirect("/login")
 }
 
+// Generic message used for password reset (anti-enumeration: identical reply
+// whether or not the address maps to an existing account).
+const RESET_GENERIC =
+  "Si un compte existe pour cette adresse, un email de réinitialisation vient d'être envoyé."
+
+// Le flux "mot de passe oublié" mint un lien à token_hash (verifyOtp côté
+// /reset-password) au lieu de s'appuyer sur resetPasswordForEmail + l'échange
+// PKCE de /auth/callback : ce dernier exige que le lien soit ouvert sur le
+// même navigateur que celui qui a fait la demande (le code_verifier PKCE est
+// local à ce navigateur), ce qui échoue silencieusement dès que le lien est
+// ouvert ailleurs (mail sur téléphone, autre navigateur…). token_hash est
+// vérifié côté serveur Supabase et fonctionne depuis n'importe quel appareil.
 export async function resetPassword(formData: FormData) {
-  const supabase = createClient()
-  const { error } = await supabase.auth.resetPasswordForEmail(
-    formData.get("email") as string,
-    {
-      redirectTo: `${siteUrl()}/auth/callback?next=/reset-password`,
+  const email = ((formData.get("email") as string) ?? "").trim().toLowerCase()
+  if (!email) return { success: RESET_GENERIC }
+
+  try {
+    const admin = createAdminClient()
+    const { data: link, error } = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: { redirectTo: `${siteUrl()}/reset-password` },
+    })
+
+    const tokenHash = link?.properties?.action_link
+      ? new URL(link.properties.action_link).searchParams.get("token")
+      : null
+
+    if (!error && tokenHash) {
+      const { data: rows } = await admin
+        .from("personnes")
+        .select("prenom")
+        .eq("email", email)
+        .limit(1)
+
+      const resetLink = `${siteUrl()}/reset-password?token_hash=${tokenHash}&type=recovery`
+      const tpl = passwordResetEmail({ prenom: rows?.[0]?.prenom ?? null, link: resetLink })
+      await sendEmail({ to: email, subject: tpl.subject, html: tpl.html })
     }
-  )
-  if (error)
-    return { error: "Une erreur est survenue. Veuillez réessayer." }
-  return { success: "Un email de réinitialisation a été envoyé." }
+  } catch (e) {
+    console.error("[resetPassword]", e)
+  }
+
+  // Always return the same message regardless of account existence/errors.
+  return { success: RESET_GENERIC }
 }

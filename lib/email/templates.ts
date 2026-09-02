@@ -121,6 +121,18 @@ export function passwordSetupEmail(opts: { prenom: string | null; link: string }
   }
 }
 
+export function passwordResetEmail(opts: { prenom: string | null; link: string }) {
+  return {
+    subject: "Réinitialisez votre mot de passe BeFast",
+    html: brandedEmail({
+      title: `Réinitialisation de mot de passe`,
+      intro: `${opts.prenom ? `Bonjour ${esc(opts.prenom)}, ` : ""}vous avez demandé la réinitialisation de votre mot de passe BeFast. Cliquez sur le bouton ci-dessous pour en choisir un nouveau. Ce lien est personnel, à usage unique et expire après un court délai. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.`,
+      ctaLabel: "Réinitialiser mon mot de passe",
+      ctaUrl: opts.link,
+    }),
+  }
+}
+
 export function missionAssignedEmail(prenom: string | null) {
   return {
     subject: "Votre candidature a été acceptée — mission attribuée",
