@@ -9,7 +9,8 @@ type PermKey =
   | "dashboard" | "profil" | "missions" | "etudes"
   | "prospection" | "statistiques" | "administration"
   | "membres" | "documents" | "nouvelle_mission"
-  | "voir_documents_membres" | "assigner_intervenants"
+  | "voir_documents_membres" | "voir_nss" | "voir_rib"
+  | "selectionner_candidats" | "assigner_intervenants"
   | "modifier_etudes" | "publier_etudes" | "publier_missions"
   | "parametres_structure" | "voir_factures"
   | "signer_documents" | "signer_ba"
@@ -20,7 +21,10 @@ const PERM_LABELS: Record<PermKey, { label: string; description: string; icon: s
   missions:                { label: "Missions",                   description: "Consulter et candidater aux missions",               icon: "assignment" },
   etudes:                  { label: "Études",                     description: "Accès aux études en cours",                          icon: "school" },
   documents:               { label: "Mes Documents",              description: "Gérer ses propres pièces justificatives",            icon: "folder_open" },
-  voir_documents_membres:  { label: "Documents des membres",      description: "Consulter et télécharger les documents des autres membres", icon: "folder_shared" },
+  voir_documents_membres:  { label: "Documents des membres",      description: "Consulter et télécharger les justificatifs des autres membres et candidats (RH)", icon: "folder_shared" },
+  voir_nss:                { label: "Voir le numéro de sécu",     description: "Voir le NSS sur la fiche d'un membre ou d'un candidat (RH)", icon: "badge" },
+  voir_rib:                { label: "Voir les RIB",               description: "Voir les coordonnées bancaires (IBAN) des membres et intervenants (Trésorerie)", icon: "account_balance" },
+  selectionner_candidats:  { label: "Accepter / refuser les candidatures", description: "Décider de l'issue des candidatures aux missions — envoie un email au candidat (RH)", icon: "how_to_reg" },
   prospection:             { label: "Prospection",                description: "Accès aux outils de prospection",                   icon: "timeline" },
   statistiques:            { label: "Statistiques",               description: "Voir les statistiques financières",                  icon: "bar_chart" },
   membres:                 { label: "Gestion membres",            description: "Voir et gérer la liste des membres",                icon: "group" },

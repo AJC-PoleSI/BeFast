@@ -164,6 +164,7 @@ export async function createRole(
       membres: false, documents: false, nouvelle_mission: false,
       selectionner_candidats: false, valider_comptes: false,
       voir_documents_membres: false, voir_factures: false,
+      voir_nss: false, voir_rib: false,
       valider_bv: false, assigner_intervenants: false,
       modifier_etudes: false,
       parametres_structure: false, gerer_parametres: false,

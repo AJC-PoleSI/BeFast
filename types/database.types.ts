@@ -10,6 +10,8 @@ export type PermissionKey =
   | "documents"
   | "nouvelle_mission"
   | "voir_documents_membres"
+  | "voir_nss"
+  | "voir_rib"
   | "assigner_intervenants"
   | "modifier_etudes"
   | "parametres_structure"

@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useUser } from "@/hooks/useUser"
 import { createClient } from "@/lib/supabase/client"
+import { repondreCandidature } from "@/lib/actions/missions"
+import { hasPermission } from "@/lib/auth/permissions"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -83,14 +85,16 @@ export default function MissionDetailPage() {
   const [myCandidature, setMyCandidature] = useState<CandidatureWithMission | null>(null)
   const [loading, setLoading] = useState(true)
   const [showCandidateModal, setShowCandidateModal] = useState(false)
+  const [pendingDecision, setPendingDecision] = useState<{
+    cand: CandidatureWithPersonne
+    statut: "acceptee" | "refusee"
+  } | null>(null)
+  const [decisionSubmitting, setDecisionSubmitting] = useState(false)
   const [motivation, setMotivation] = useState("")
   const [classe, setClasse] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
   const slug = profile?.profils_types?.slug
-  const isRH =
-    slug === "membre_ajc" &&
-    (profile?.pole ?? "").toLowerCase() === "rh"
   // isAGC = membres avec accès "staff" (voient toutes les candidatures, peuvent
   // accéder aux missions non publiées/SDP). Les membres AJC de base n'en font
   // PAS partie : ils doivent passer par le filtre (!isSDP && etudePublished).
@@ -99,7 +103,9 @@ export default function MissionDetailPage() {
     slug === "administrateur" ||
     isAdmin ||
     !!permissions?.selectionner_candidats
-  const canSelectCandidates = isAdmin || isRH || !!permissions?.selectionner_candidats
+  // Décider d'une candidature = RH / admin. Même règle que l'action serveur
+  // `repondreCandidature`, pour ne pas afficher des boutons qui échoueraient.
+  const canSelectCandidates = hasPermission(profile, "selectionner_candidats")
   const isIntervenant = slug === "intervenant"
   const [filterClasse, setFilterClasse] = useState("")
   const [filterLangue, setFilterLangue] = useState("")
@@ -180,18 +186,24 @@ export default function MissionDetailPage() {
     setSubmitting(false)
   }
 
-  const handleReponse = async (candId: string, statut: "acceptee" | "refusee") => {
-    const supabase = createClient()
-    const { error } = await supabase
-      .from("candidatures")
-      .update({ statut, reponse_date: new Date().toISOString() })
-      .eq("id", candId)
-    if (error) {
-      toast.error("Erreur")
-    } else {
-      toast.success(statut === "acceptee" ? "Candidature acceptée" : "Candidature refusée")
-      fetchData()
+  // La décision passe par une action serveur : elle vérifie la permission
+  // (RH / admin) et notifie le candidat par email.
+  const handleReponse = async () => {
+    if (!pendingDecision) return
+    setDecisionSubmitting(true)
+    const res = await repondreCandidature(pendingDecision.cand.id, pendingDecision.statut)
+    setDecisionSubmitting(false)
+    if ((res as any).error) {
+      toast.error((res as any).error)
+      return
     }
+    toast.success(
+      pendingDecision.statut === "acceptee"
+        ? "Candidature acceptée — le candidat a été notifié par email"
+        : "Candidature refusée — le candidat a été notifié par email"
+    )
+    setPendingDecision(null)
+    fetchData()
   }
 
   if (loading || authLoading) {
@@ -505,7 +517,7 @@ export default function MissionDetailPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       <Button
                         size="sm"
-                        onClick={() => handleReponse(cand.id, "acceptee")}
+                        onClick={() => setPendingDecision({ cand, statut: "acceptee" })}
                         className="bg-emerald-600 text-white hover:bg-emerald-700 h-8 text-xs"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
@@ -514,7 +526,7 @@ export default function MissionDetailPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleReponse(cand.id, "refusee")}
+                        onClick={() => setPendingDecision({ cand, statut: "refusee" })}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 text-xs"
                       >
                         <XCircle className="h-3.5 w-3.5 mr-1" />
@@ -528,6 +540,60 @@ export default function MissionDetailPage() {
           )}
         </div>
       )}
+
+      {/* Confirmation accepter / refuser une candidature */}
+      <Dialog
+        open={!!pendingDecision}
+        onOpenChange={(open) => { if (!open) setPendingDecision(null) }}
+      >
+        <DialogContent>
+          <DialogClose onClose={() => setPendingDecision(null)} />
+          <DialogHeader>
+            <DialogTitle>
+              {pendingDecision?.statut === "acceptee"
+                ? "Accepter cette candidature ?"
+                : "Refuser cette candidature ?"}
+            </DialogTitle>
+            <DialogDescription>
+              {pendingDecision?.statut === "acceptee" ? (
+                <>
+                  Êtes-vous sûr d&apos;accepter{" "}
+                  <strong>
+                    {pendingDecision?.cand.personnes?.prenom} {pendingDecision?.cand.personnes?.nom}
+                  </strong>{" "}
+                  sur cette mission ? Un email lui sera envoyé pour l&apos;informer que le ou les
+                  chefs de projet vont le contacter.
+                </>
+              ) : (
+                <>
+                  Êtes-vous sûr de refuser la candidature de{" "}
+                  <strong>
+                    {pendingDecision?.cand.personnes?.prenom} {pendingDecision?.cand.personnes?.nom}
+                  </strong>{" "}
+                  ? Un email de refus lui sera envoyé.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPendingDecision(null)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleReponse}
+              disabled={decisionSubmitting}
+              className={
+                pendingDecision?.statut === "acceptee"
+                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                  : "bg-red-600 text-white hover:bg-red-700"
+              }
+            >
+              {decisionSubmitting && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              {pendingDecision?.statut === "acceptee" ? "Accepter et notifier" : "Refuser et notifier"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Candidature modal */}
       <Dialog open={showCandidateModal} onOpenChange={setShowCandidateModal}>

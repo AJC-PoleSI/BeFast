@@ -74,6 +74,9 @@ export default function AdminProfilePage() {
   }
 
   const canViewMemberDocs = isAdmin || permissions?.voir_documents_membres === true
+  // Cloisonnement des PII : NSS pour le pôle RH, IBAN pour la trésorerie.
+  const canViewNss = isAdmin || permissions?.voir_nss === true
+  const canViewRib = isAdmin || permissions?.voir_rib === true
 
   useEffect(() => {
     if (!authLoading && canViewMemberDocs) {
@@ -227,30 +230,36 @@ export default function AdminProfilePage() {
             />
           </div>
 
-          {/* Sensitive fields - read-only info for admin */}
-          <div className="bg-white rounded-xl border border-border shadow-sm p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Shield className="h-5 w-5 text-gold" />
-              <h3 className="font-heading text-lg font-semibold">
-                Données sensibles
-              </h3>
-            </div>
-            <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
-              <p>
-                Chiffrées en AES-256.
-              </p>
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                  <span className="text-xs font-medium text-foreground">NSS</span>
-                  <p className="text-xs mt-1">{profile.nss_encrypted ? "✓" : "✗"}</p>
-                </div>
-                <div>
-                  <span className="text-xs font-medium text-foreground">IBAN</span>
-                  <p className="text-xs mt-1">{profile.iban_encrypted ? "✓" : "✗"}</p>
+          {/* Données sensibles — NSS réservé au pôle RH, IBAN à la trésorerie */}
+          {(canViewNss || canViewRib) && (
+            <div className="bg-white rounded-xl border border-border shadow-sm p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Shield className="h-5 w-5 text-gold" />
+                <h3 className="font-heading text-lg font-semibold">
+                  Données sensibles
+                </h3>
+              </div>
+              <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
+                <p>
+                  Chiffrées en AES-256.
+                </p>
+                <div className="grid grid-cols-2 gap-4 mt-3">
+                  {canViewNss && (
+                    <div>
+                      <span className="text-xs font-medium text-foreground">NSS</span>
+                      <p className="text-xs mt-1">{profile.nss_encrypted ? "✓" : "✗"}</p>
+                    </div>
+                  )}
+                  {canViewRib && (
+                    <div>
+                      <span className="text-xs font-medium text-foreground">IBAN</span>
+                      <p className="text-xs mt-1">{profile.iban_encrypted ? "✓" : "✗"}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="space-y-6">

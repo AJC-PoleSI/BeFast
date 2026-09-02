@@ -45,6 +45,8 @@ import type {
   EcheancierBloc,
 } from "@/types/database.types"
 import { getMembers } from "@/lib/actions/etudes"
+import { repondreCandidature } from "@/lib/actions/missions"
+import { hasPermission } from "@/lib/auth/permissions"
 
 const STATUT_COLORS: Record<string, string> = {
   prospection: "bg-purple-100 text-purple-700 border-purple-200",
@@ -95,8 +97,10 @@ function nbJehFromRemuneration(coutAvecMargeInclus: number): number {
 export default function EtudeDetailPage() {
   const params = useParams()
   const etudeId = params.etudeId as string
-  const { user, isAdmin, permissions, loading: authLoading } = useUser()
-  const canSelectCandidates = isAdmin || !!permissions?.selectionner_candidats
+  const { user, profile, isAdmin, permissions, loading: authLoading } = useUser()
+  // Décider d'une candidature = RH / admin. Même règle que l'action serveur
+  // `repondreCandidature`, pour ne pas afficher des boutons qui échoueraient.
+  const canSelectCandidates = hasPermission(profile, "selectionner_candidats")
 
   const [etude, setEtude] = useState<EtudeWithRelations | null>(null)
   // L'admin et les suiveurs de l'étude peuvent toujours modifier ses missions.
@@ -106,6 +110,11 @@ export default function EtudeDetailPage() {
   const [missions, setMissions] = useState<Mission[]>([])
   const [blocs, setBlocs] = useState<EcheancierBloc[]>([])
   const [candidatures, setCandidatures] = useState<any[]>([])
+  const [pendingDecision, setPendingDecision] = useState<{
+    cand: any
+    statut: "acceptee" | "refusee"
+  } | null>(null)
+  const [decisionSubmitting, setDecisionSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Mission creation / editing modal
@@ -309,14 +318,20 @@ export default function EtudeDetailPage() {
     setCreatingBloc(false)
   }
 
-  const handleCandidatureDecision = async (candId: string, statut: "acceptee" | "refusee") => {
-    const supabase = createClient()
-    const { error } = await supabase
-      .from("candidatures")
-      .update({ statut, reponse_date: new Date().toISOString() })
-      .eq("id", candId)
-    if (error) { toast.error(error.message || "Erreur"); return }
-    toast.success(statut === "acceptee" ? "Candidature acceptée" : "Candidature refusée")
+  // La décision passe par une action serveur : elle vérifie la permission
+  // (RH / admin) et notifie le candidat par email.
+  const handleCandidatureDecision = async () => {
+    if (!pendingDecision) return
+    setDecisionSubmitting(true)
+    const res = await repondreCandidature(pendingDecision.cand.id, pendingDecision.statut)
+    setDecisionSubmitting(false)
+    if ((res as any).error) { toast.error((res as any).error); return }
+    toast.success(
+      pendingDecision.statut === "acceptee"
+        ? "Candidature acceptée — le candidat a été notifié par email"
+        : "Candidature refusée — le candidat a été notifié par email"
+    )
+    setPendingDecision(null)
     fetchData()
   }
 
@@ -797,7 +812,7 @@ export default function EtudeDetailPage() {
                                 <div className="flex items-center gap-2 shrink-0">
                                   <Button
                                     size="sm"
-                                    onClick={() => handleCandidatureDecision(c.id, "acceptee")}
+                                    onClick={() => setPendingDecision({ cand: c, statut: "acceptee" })}
                                     disabled={
                                       c.statut === "acceptee" ||
                                       (full && c.statut !== "acceptee")
@@ -814,7 +829,7 @@ export default function EtudeDetailPage() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => handleCandidatureDecision(c.id, "refusee")}
+                                    onClick={() => setPendingDecision({ cand: c, statut: "refusee" })}
                                     disabled={c.statut === "refusee"}
                                     className="text-red-600 border-red-200 hover:bg-red-50"
                                   >
@@ -965,6 +980,58 @@ export default function EtudeDetailPage() {
             <Button onClick={handleSaveBloc} disabled={creatingBloc || !blocForm.nom.trim()} className="bg-gold text-navy font-semibold hover:bg-gold/90">
               {creatingBloc && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingBlocId ? "Enregistrer" : "Ajouter"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation accepter / refuser une candidature */}
+      <Dialog
+        open={!!pendingDecision}
+        onOpenChange={(open) => { if (!open) setPendingDecision(null) }}
+      >
+        <DialogContent>
+          <DialogClose onClose={() => setPendingDecision(null)} />
+          <DialogHeader>
+            <DialogTitle>
+              {pendingDecision?.statut === "acceptee"
+                ? "Accepter cette candidature ?"
+                : "Refuser cette candidature ?"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-2 text-sm text-muted-foreground">
+            {pendingDecision?.statut === "acceptee" ? (
+              <>
+                Êtes-vous sûr d&apos;accepter{" "}
+                <strong className="text-foreground">
+                  {pendingDecision?.cand?.personnes?.prenom} {pendingDecision?.cand?.personnes?.nom}
+                </strong>{" "}
+                sur cette mission ? Un email lui sera envoyé pour l&apos;informer que le ou les chefs
+                de projet vont le contacter.
+              </>
+            ) : (
+              <>
+                Êtes-vous sûr de refuser la candidature de{" "}
+                <strong className="text-foreground">
+                  {pendingDecision?.cand?.personnes?.prenom} {pendingDecision?.cand?.personnes?.nom}
+                </strong>{" "}
+                ? Un email de refus lui sera envoyé.
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPendingDecision(null)}>Annuler</Button>
+            <Button
+              onClick={handleCandidatureDecision}
+              disabled={decisionSubmitting}
+              className={
+                pendingDecision?.statut === "acceptee"
+                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                  : "bg-red-600 text-white hover:bg-red-700"
+              }
+            >
+              {decisionSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {pendingDecision?.statut === "acceptee" ? "Accepter et notifier" : "Refuser et notifier"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -18,6 +18,8 @@ const emptyPermissions: Permissions = {
   documents: false,
   nouvelle_mission: false,
   voir_documents_membres: false,
+  voir_nss: false,
+  voir_rib: false,
   assigner_intervenants: false,
   modifier_etudes: false,
   parametres_structure: false,

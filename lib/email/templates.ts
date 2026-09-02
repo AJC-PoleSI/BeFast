@@ -146,6 +146,55 @@ export function missionAssignedEmail(prenom: string | null) {
   }
 }
 
+/**
+ * Candidature acceptée : le candidat doit surveiller sa messagerie, le ou les
+ * chefs de projet de la mission vont le contacter.
+ */
+export function candidatureAccepteeEmail(opts: {
+  prenom: string | null
+  missionNom: string
+  chefsDeProjet: string[]
+}) {
+  const chefs = opts.chefsDeProjet.filter(Boolean)
+  const pluriel = chefs.length > 1
+  const contact = chefs.length
+    ? `${pluriel ? "Les chefs de projet" : "Le chef de projet"} <strong>${esc(
+        chefs.join(", ")
+      )}</strong> ${pluriel ? "vont" : "va"} chercher à vous contacter.`
+    : "Le chef de projet de la mission va chercher à vous contacter."
+
+  return {
+    subject: `Votre candidature a été acceptée — ${opts.missionNom}`,
+    html: brandedEmail({
+      title: `Félicitations${opts.prenom ? ` ${opts.prenom}` : ""} !`,
+      intro: `Vous avez été accepté·e sur la mission « ${esc(
+        opts.missionNom
+      )} ». Veillez à bien surveiller votre messagerie : ${contact}`,
+      details: [`Mission : <strong>${esc(opts.missionNom)}</strong>`],
+      ctaLabel: "Voir mes missions",
+      ctaUrl: `${SITE_URL}/missions`,
+    }),
+  }
+}
+
+/** Candidature refusée : message de refus, invitation à postuler ailleurs. */
+export function candidatureRefuseeEmail(opts: {
+  prenom: string | null
+  missionNom: string
+}) {
+  return {
+    subject: `Votre candidature — ${opts.missionNom}`,
+    html: brandedEmail({
+      title: `Bonjour${opts.prenom ? ` ${opts.prenom}` : ""},`,
+      intro: `Malheureusement, votre candidature pour la mission « ${esc(
+        opts.missionNom
+      )} » n'a pas été retenue. N'hésitez pas à postuler à d'autres missions.`,
+      ctaLabel: "Voir les missions disponibles",
+      ctaUrl: `${SITE_URL}/missions`,
+    }),
+  }
+}
+
 export function documentToSignEmail(opts: {
   recipientName: string | null
   documentName: string

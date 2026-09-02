@@ -5,7 +5,9 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noStore } from "next/cache"
 import { MISSIONS_TAG, MISSION_DETAIL_TAG, CANDIDATURES_TAG } from "@/lib/cache-tags"
 import { sendEmail } from "@/lib/email/send"
-import { missionAssignedEmail } from "@/lib/email/templates"
+import { candidatureAccepteeEmail, candidatureRefuseeEmail } from "@/lib/email/templates"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { hasPermission } from "@/lib/auth/permissions"
 
 // Liste des missions — PAS de cache. Les utilisateurs créent/modifient
 // fréquemment leurs missions et doivent toujours voir leur travail.
@@ -211,6 +213,14 @@ export async function getCandidaturesMission(missionId: string) {
   return { data }
 }
 
+/**
+ * Accepter ou refuser une candidature.
+ *
+ * Réservé aux détenteurs de `selectionner_candidats` (RH) et aux
+ * administrateurs. Le candidat est notifié par email dans les deux cas :
+ * refus courtois, ou acceptation mentionnant le ou les chefs de projet qui
+ * vont le contacter.
+ */
 export async function repondreCandidature(
   candidatureId: string,
   statut: "acceptee" | "refusee"
@@ -221,30 +231,94 @@ export async function repondreCandidature(
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
-  // Get candidature owner so we can invalidate their cache
-  const { data: cand } = await supabase
+  const profile = await getCachedProfile(user.id)
+  if (!hasPermission(profile, "selectionner_candidats")) {
+    return { error: "Seuls le pôle RH et les administrateurs peuvent accepter ou refuser une candidature." }
+  }
+
+  // Lecture via le client admin : la décision est déjà autorisée ci-dessus, et
+  // un membre RH n'a pas forcément le rôle de base « interne » exigé par la RLS.
+  const admin = createAdminClient()
+
+  const { data: cand } = await admin
     .from("candidatures")
-    .select("personne_id, personnes!candidatures_personne_id_fkey(prenom, email)")
+    .select(
+      "personne_id, mission_id, personnes!candidatures_personne_id_fkey(prenom, email), missions(nom, suiveur_id, etude_id)"
+    )
     .eq("id", candidatureId)
     .single()
 
-  const { error } = await supabase
+  if (!cand) return { error: "Candidature introuvable" }
+
+  const { error } = await admin
     .from("candidatures")
     .update({ statut, reponse_date: new Date().toISOString() })
     .eq("id", candidatureId)
 
   if (error) return { error: error.message }
-  if (cand?.personne_id) revalidateTag(CANDIDATURES_TAG(cand.personne_id))
+  if (cand.personne_id) revalidateTag(CANDIDATURES_TAG(cand.personne_id))
   revalidatePath("/missions")
 
-  // Notification best-effort au candidat retenu.
-  if (statut === "acceptee") {
-    const personne = cand?.personnes as { prenom?: string | null; email?: string | null } | null
-    if (personne?.email) {
-      const tpl = missionAssignedEmail(personne.prenom ?? null)
-      await sendEmail({ to: personne.email, subject: tpl.subject, html: tpl.html })
-    }
+  // Notification best-effort au candidat : un échec d'email ne doit pas
+  // annuler la décision, déjà enregistrée.
+  const personne = cand.personnes as { prenom?: string | null; email?: string | null } | null
+  const mission = cand.missions as {
+    nom?: string | null
+    suiveur_id?: string | null
+    etude_id?: string | null
+  } | null
+  const missionNom = mission?.nom ?? "la mission"
+
+  if (personne?.email) {
+    const tpl =
+      statut === "acceptee"
+        ? candidatureAccepteeEmail({
+            prenom: personne.prenom ?? null,
+            missionNom,
+            chefsDeProjet: await getChefsDeProjet(admin, mission),
+          })
+        : candidatureRefuseeEmail({ prenom: personne.prenom ?? null, missionNom })
+    await sendEmail({ to: personne.email, subject: tpl.subject, html: tpl.html })
   }
 
   return { success: true }
+}
+
+/**
+ * Noms des chefs de projet à annoncer au candidat retenu : le suiveur de la
+ * mission s'il est renseigné, sinon les suiveurs de l'étude.
+ */
+async function getChefsDeProjet(
+  admin: ReturnType<typeof createAdminClient>,
+  mission: { suiveur_id?: string | null; etude_id?: string | null } | null
+): Promise<string[]> {
+  const nomComplet = (p: { prenom?: string | null; nom?: string | null } | null) =>
+    p ? [p.prenom, p.nom].filter(Boolean).join(" ") : ""
+
+  if (mission?.suiveur_id) {
+    const { data } = await admin
+      .from("personnes")
+      .select("prenom, nom")
+      .eq("id", mission.suiveur_id)
+      .single()
+    const nom = nomComplet(data)
+    if (nom) return [nom]
+  }
+
+  if (!mission?.etude_id) return []
+
+  const [{ data: etude }, { data: suiveurs }] = await Promise.all([
+    admin.from("etudes").select("suiveur:personnes!etudes_suiveur_id_fkey(prenom, nom)").eq("id", mission.etude_id).single(),
+    admin.from("etude_suiveurs").select("personnes(prenom, nom)").eq("etude_id", mission.etude_id),
+  ])
+
+  const noms = (suiveurs ?? [])
+    .map((s) => nomComplet(s.personnes as { prenom?: string | null; nom?: string | null } | null))
+    .filter(Boolean)
+  if (noms.length > 0) return noms
+
+  const principal = nomComplet(
+    (etude?.suiveur ?? null) as { prenom?: string | null; nom?: string | null } | null
+  )
+  return principal ? [principal] : []
 }

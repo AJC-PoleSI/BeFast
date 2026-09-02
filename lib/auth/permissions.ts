@@ -4,7 +4,8 @@ import type { PersonneWithRole, Permissions, PermissionKey } from "@/types/datab
 export const ALL_PERMISSION_KEYS: PermissionKey[] = [
   "dashboard", "profil", "missions", "etudes", "prospection", "statistiques",
   "administration", "membres", "documents", "nouvelle_mission",
-  "voir_documents_membres", "assigner_intervenants", "modifier_etudes", "parametres_structure",
+  "voir_documents_membres", "voir_nss", "voir_rib",
+  "assigner_intervenants", "modifier_etudes", "parametres_structure",
   "selectionner_candidats", "valider_comptes", "valider_bv", "voir_factures",
   "gerer_parametres", "publier_etudes", "publier_missions",
   "signer_documents", "signer_ba",
