@@ -212,6 +212,13 @@ function applyFilter(value: any, filterStr: string, scope: any): any {
       }
       return isFemale ? suffix : ""
     }
+    case "pluriel": {
+      // {mission.nombre_jeh | pluriel} → "s" au pluriel, "" au singulier —
+      // pour accorder "Jour{...} Etude Homme" sans dupliquer le champ.
+      const n = Number(value)
+      const suffix = arg || "s"
+      return !isNaN(n) && Math.abs(n) > 1 ? suffix : ""
+    }
     default:
       return value
   }
