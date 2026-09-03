@@ -16,11 +16,14 @@ export const DOCUMENT_FIELDS: FieldDef[] = [
   { placeholder: "date", label: "Date du jour (DD/MM/YYYY)", source: "calculé", example: "27/04/2026" },
   { placeholder: "date_iso", label: "Date ISO", source: "calculé", example: "2026-04-27" },
   { placeholder: "annee", label: "Année en cours", source: "calculé", example: "2026" },
-  { placeholder: "reference", label: "Numéro d'étude", source: "etudes.numero" },
+  { placeholder: "reference", label: "Numéro d'étude (2 chiffres)", source: "etudes.numero", example: "18" },
+  { placeholder: "code_classeur", label: "Code classeur AA+NN (4 chiffres)", source: "etudes.numero", example: "2618" },
 
   // ── Étude ─────────────────────────────────────────────────
   { placeholder: "etude.nom", label: "Nom de l'étude", source: "etudes.nom" },
-  { placeholder: "etude.numero", label: "Numéro d'étude", source: "etudes.numero" },
+  { placeholder: "etude.numero", label: "Numéro d'étude dans l'année (2 chiffres)", source: "etudes.numero", example: "18" },
+  { placeholder: "etude.code_classeur", label: "Code classeur AA+NN (4 chiffres)", source: "etudes.numero", example: "2618" },
+  { placeholder: "etude.numero_complet", label: "Code classeur AA+NN (alias)", source: "etudes.numero", example: "2618" },
   { placeholder: "etude.statut", label: "Statut", source: "etudes.statut" },
   { placeholder: "etude.type", label: "Type (ao/cs/prospection)", source: "etudes.type" },
   { placeholder: "etude.budget_ht", label: "Budget HT", source: "etudes.budget_ht" },
@@ -47,7 +50,8 @@ export const DOCUMENT_FIELDS: FieldDef[] = [
   { placeholder: "mission.date_debut", label: "Date de début", source: "missions.date_debut" },
   { placeholder: "mission.date_fin", label: "Date de fin", source: "missions.date_fin" },
   { placeholder: "mission.statut", label: "Statut", source: "missions.statut" },
-  { placeholder: "mission.numero_etude", label: "Numéro d'étude liée", source: "etudes.numero" },
+  { placeholder: "mission.numero_etude", label: "Numéro de l'étude liée (2 chiffres)", source: "etudes.numero", example: "18" },
+  { placeholder: "mission.numero_etude_complet", label: "Code classeur de l'étude liée (4 chiffres)", source: "etudes.numero", example: "2618" },
   { placeholder: "mission.nombre_jeh", label: "Nombre de JEH (alias nb_jours)", source: "missions.nb_jours" },
   { placeholder: "mission.montant_remuneration", label: "Rémunération totale (JEH × taux/jour)", source: "calculé" },
   { placeholder: "mission.duree", label: "Durée en semaines (alias duree_semaines)", source: "calculé depuis date_debut/date_fin" },
@@ -180,6 +184,7 @@ export const DOCUMENT_FIELDS: FieldDef[] = [
 
   // ── Bulletin de Versement (scope mission) ─────────────────
   { placeholder: "numero_document", label: "Compteur du document dans l'étude (\"01\", \"02\"…)", source: "calculé" },
+  { placeholder: "reference_document", label: "Référence complète du document = son nom de fichier", source: "calculé", example: "26 RDM01 18" },
   { placeholder: "bv.base_urssaf", label: "Assiette forfaitaire par JEH (€)", source: "parametres.bv_base_urssaf" },
   { placeholder: "bv.assiette", label: "Assiette des cotisations (JEH × base)", source: "calculé" },
   { placeholder: "bv.retribution_par_jeh", label: "Rétribution brute par JEH", source: "calculé" },

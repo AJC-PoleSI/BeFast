@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { renderTemplate } from "@/lib/docx/template-engine"
 import { buildTemplateContext } from "@/lib/actions/documents"
 import { requireApiAdmin } from "@/lib/auth/api-guards"
+import { numeroEtudeCourt, segmentRdmParent } from "@/lib/document-numbering"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { canEditEtude } from "@/lib/auth/permissions"
 
@@ -13,8 +14,9 @@ import { canEditEtude } from "@/lib/auth/permissions"
 // Allow up to 30 seconds for DOCX rendering
 export const maxDuration = 30
 
-// Map template category → CODE_TYPE used in filename + whether to suffix a counter
-const CATEGORY_CODES: Record<string, { code: string; numbered: boolean }> = {
+// Map template category → CODE_TYPE used in filename, whether to suffix a counter,
+// et si le nom doit rappeler le RDM parent ("26 AV01 RDM01 18" — cf. nomenclature SDP).
+const CATEGORY_CODES: Record<string, { code: string; numbered: boolean; parentRdm?: boolean }> = {
   accord_confidentialite: { code: "AC", numbered: false },
   avant_projet: { code: "AP", numbered: false },
   bon_commande: { code: "BC", numbered: false },
@@ -27,8 +29,8 @@ const CATEGORY_CODES: Record<string, { code: string; numbered: boolean }> = {
   pv_recette_intermediaire: { code: "PVI", numbered: true },
   avenant_mission: { code: "AVM", numbered: true },
   rdm: { code: "RDM", numbered: true },
-  avenant_rdm: { code: "AV", numbered: true },
-  avenant_rupture_rdm: { code: "AVR", numbered: true },
+  avenant_rdm: { code: "AV", numbered: true, parentRdm: true },
+  avenant_rupture_rdm: { code: "AVR", numbered: true, parentRdm: true },
   bulletin_versement: { code: "BV", numbered: true },
   questionnaire_satisfaction: { code: "QS", numbered: false },
   rapport_pedagogique: { code: "RP", numbered: false },
@@ -127,14 +129,32 @@ export async function POST(req: NextRequest) {
   const etudeNumero: string = (context as any).reference || ""
   const factureNumero: string = scope === "facture" ? (context as any).facturation?.numero || "" : ""
 
-  // Year (last 2 digits) + étude number (last 2 digits)
+  // Year (last 2 digits) + étude number (toujours 2 chiffres — cf. nomenclature SDP)
   const aa = String(new Date().getFullYear()).slice(-2)
-  const numEtude = etudeNumero.slice(-2)
+  const numEtude = numeroEtudeCourt(etudeNumero)
   const codeInfo = CATEGORY_CODES[tpl.category as string] || { code: sanitize(tpl.category || "DOC").toUpperCase(), numbered: false }
 
-  // Counter: count existing docs for this template across the étude (étude-scoped + mission-scoped of this étude)
+  // Un avenant rappelle le RDM qu'il modifie : on reprend le dernier RDM généré
+  // pour la mission (même source que {mission.reference_recap_mission}).
+  // Sans RDM généré, le segment est simplement omis.
+  const rdmParent = codeInfo.parentRdm
+    ? segmentRdmParent((context as any).mission?.reference_recap_mission)
+    : ""
+
+  // Counter: pour un avenant, le compteur repart de 1 à chaque RDM parent
+  // ("AV01" du RDM08, "AV01" à nouveau du RDM09) — pas partagé avec le reste
+  // de l'étude. Pour les autres catégories numérotées, on compte across
+  // l'étude entière (étude-scoped + mission-scoped de cette étude).
   let counter = 1
-  if (codeInfo.numbered && etudeId) {
+  if (codeInfo.numbered && codeInfo.parentRdm) {
+    const { data: docs } = await sb
+      .from("generated_documents")
+      .select("file_name")
+      .eq("template_id", template_id)
+      .eq("scope", "mission")
+      .eq("entity_id", entity_id)
+    counter = (docs || []).filter((d: any) => segmentRdmParent(d.file_name) === rdmParent).length + 1
+  } else if (codeInfo.numbered && etudeId) {
     const { data: missionsOfEtude } = await sb
       .from("missions")
       .select("id")
@@ -152,10 +172,30 @@ export async function POST(req: NextRequest) {
     counter = (count || 0) + 1
   }
 
+  const isPptx = tpl.file_path.endsWith(".pptx")
+  const ext = isPptx ? ".pptx" : ".docx"
+  const mimeType = isPptx
+    ? "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+  // Build name: AA CODE[NN] [RDM_PARENT] NUMERO_ETUDE.ext
+  // Examples: "26 CE 07.docx", "26 RDM08 07.pptx", "26 AV01 RDM08 07.docx"
+  // Les factures utilisent directement leur propre numéro (Trésorerie), pas ce format.
+  const codePart = codeInfo.numbered ? `${codeInfo.code}${pad2(counter)}` : codeInfo.code
+  const baseName =
+    scope === "facture" && factureNumero
+      ? sanitize(factureNumero)
+      : [aa, codePart, rdmParent, numEtude].filter(Boolean).join(" ")
+  const outName = `${baseName}${ext}`
+  const outPath = `${scope}/${entity_id}/${Date.now()}_${outName}`
+
   // Exposé aux templates ({numero_document}) au format "01", "02"…
   context.numero_document = pad2(counter)
+  // Référence complète du document, identique au nom du fichier ("26 RDM01 18") :
+  // le document imprime ainsi exactement son propre nom, sans réassemblage manuel
+  // dans le template (source des décalages nom-interne / nom-de-fichier).
+  context.reference_document = baseName
 
-  const isPptx = tpl.file_path.endsWith(".pptx")
   let rendered: Buffer
   try {
     rendered = renderTemplate(templateBuf, context, isPptx)
@@ -166,22 +206,6 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
-
-  const ext = isPptx ? ".pptx" : ".docx"
-  const mimeType = isPptx 
-    ? "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-
-  // Build name: AA CODE[NN] NUMERO_ETUDE.ext
-  // Examples: "26 CE 07.docx", "26 RDM08 07.pptx"
-  // Les factures utilisent directement leur propre numéro (Trésorerie), pas ce format.
-  const codePart = codeInfo.numbered ? `${codeInfo.code}${pad2(counter)}` : codeInfo.code
-  const baseName =
-    scope === "facture" && factureNumero
-      ? sanitize(factureNumero)
-      : [aa, codePart, numEtude].filter(Boolean).join(" ")
-  const outName = `${baseName}${ext}`
-  const outPath = `${scope}/${entity_id}/${Date.now()}_${outName}`
 
   const { error: upErr } = await sb.storage.from("documents").upload(outPath, rendered, {
     contentType: mimeType,

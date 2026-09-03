@@ -6,6 +6,7 @@ import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noSt
 import { decryptData } from "@/lib/crypto"
 import { getMasterKey } from "@/lib/crypto-key"
 import { decryptFromString } from "@/lib/encryption"
+import { numeroEtudeCourt, codeClasseurEtude } from "@/lib/document-numbering"
 
 const TEMPLATES_TAG = "document_templates"
 
@@ -694,8 +695,10 @@ export async function buildTemplateContext(
 
     return {
       ...base,
-      // Reference = numéro d'étude
-      reference: etude.numero || "",
+      // Reference = numéro d'étude sur 2 chiffres ("18"), comme dans le nom
+      // des documents ; le code classeur 4 chiffres reste sur {code_classeur}.
+      reference: numeroEtudeCourt(etude.numero),
+      code_classeur: codeClasseurEtude(etude.numero),
       // Mission — only primitive fields + formatted dates
       mission: {
         ...missionPrimitives,
@@ -703,8 +706,8 @@ export async function buildTemplateContext(
         date_fin: fmtDate(m.date_fin),
         date_debut_iso: m.date_debut || "",
         date_fin_iso: m.date_fin || "",
-        numero_etude: (etude.numero || "").slice(-2),
-        numero_etude_complet: etude.numero || "",
+        numero_etude: numeroEtudeCourt(etude.numero),
+        numero_etude_complet: codeClasseurEtude(etude.numero),
         nombre_jeh: missionNbJeh,
         montant_remuneration: missionRemuneration,
         // Le RDM exprime la durée en semaines ("d'une durée de X semaines")
@@ -718,6 +721,11 @@ export async function buildTemplateContext(
       // Étude — dates formatted DD/MM/YYYY
       etude: {
         ...etude,
+        // etudes.numero stocke le code classeur ("2618") : {etude.numero} doit
+        // exposer le numéro d'étude seul, sur 2 chiffres.
+        numero: numeroEtudeCourt(etude.numero),
+        numero_complet: codeClasseurEtude(etude.numero),
+        code_classeur: codeClasseurEtude(etude.numero),
         date_debut: fmtDate(etude.date_debut),
         date_fin: fmtDate(etude.date_fin),
         date_debut_iso: etude.date_debut || "",
@@ -803,9 +811,15 @@ export async function buildTemplateContext(
 
     return {
       ...base,
-      reference: eAny.numero || "",
+      reference: numeroEtudeCourt(eAny.numero),
+      code_classeur: codeClasseurEtude(eAny.numero),
       etude: {
         ...e,
+        // etudes.numero stocke le code classeur ("2618") : {etude.numero} doit
+        // exposer le numéro d'étude seul, sur 2 chiffres.
+        numero: numeroEtudeCourt(eAny.numero),
+        numero_complet: codeClasseurEtude(eAny.numero),
+        code_classeur: codeClasseurEtude(eAny.numero),
         date_debut: fmtDate(eAny.date_debut),
         date_fin: fmtDate(eAny.date_fin),
         date_debut_iso: eAny.date_debut || "",
@@ -955,9 +969,15 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
 
   return {
     ...base,
-    reference: etude.numero || "",
+    reference: numeroEtudeCourt(etude.numero),
+    code_classeur: codeClasseurEtude(etude.numero),
     etude: {
       ...etude,
+      // etudes.numero stocke le code classeur ("2618") : {etude.numero} doit
+      // exposer le numéro d'étude seul, sur 2 chiffres.
+      numero: numeroEtudeCourt(etude.numero),
+      numero_complet: codeClasseurEtude(etude.numero),
+      code_classeur: codeClasseurEtude(etude.numero),
       date_debut: fmtDate(etude.date_debut),
       date_fin: fmtDate(etude.date_fin),
       prix: totalHtEtude.toFixed(2),
