@@ -8,6 +8,7 @@ import { ProfileInfoCard } from "./_components/profile-info-card"
 import { SensitiveFieldCard } from "./_components/sensitive-field-card"
 import { DynamicFieldsCard } from "./_components/dynamic-fields-card"
 import { DocumentsGrid } from "./_components/DocumentsGrid"
+import { DeleteAccountRequest } from "./_components/delete-account-request"
 import type { PersonneWithRole } from "@/types/database.types"
 
 export default function ProfilPage() {
@@ -108,6 +109,8 @@ export default function ProfilPage() {
               </div>
             </div>
           </div>
+
+          <DeleteAccountRequest />
         </div>
       </div>
     </div>
