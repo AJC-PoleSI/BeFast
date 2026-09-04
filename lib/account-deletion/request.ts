@@ -15,6 +15,7 @@ export const DELETION_TICKET_TYPE = "suppression_compte"
  * Vrai si une demande précédente est trop récente pour en accepter une autre.
  * Une date absente ou illisible ne bloque jamais l'utilisateur : mieux vaut un
  * email en double qu'une demande de suppression avalée en silence.
+ * Une date future (dérive d'horloge, donnée corrompue) ne bloque jamais non plus.
  */
 export function isDuplicateRequest(
   lastCreatedAt: string | null | undefined,
@@ -23,5 +24,7 @@ export function isDuplicateRequest(
   if (!lastCreatedAt) return false
   const previous = new Date(lastCreatedAt).getTime()
   if (Number.isNaN(previous)) return false
-  return now.getTime() - previous < DUPLICATE_WINDOW_MS
+  const nowMs = now.getTime()
+  if (previous > nowMs) return false // date dans le futur : ne pas bloquer
+  return nowMs - previous < DUPLICATE_WINDOW_MS
 }

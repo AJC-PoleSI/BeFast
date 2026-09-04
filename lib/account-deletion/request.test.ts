@@ -19,6 +19,21 @@ describe("isDuplicateRequest", () => {
     expect(isDuplicateRequest(ancienne, NOW)).toBe(false)
   })
 
+  it("teste la frontière exacte: bloque à DUPLICATE_WINDOW_MS - 1 ms", () => {
+    const limite = new Date(NOW.getTime() - DUPLICATE_WINDOW_MS + 1).toISOString()
+    expect(isDuplicateRequest(limite, NOW)).toBe(true)
+  })
+
+  it("teste la frontière exacte: ne bloque pas à DUPLICATE_WINDOW_MS pile", () => {
+    const exact = new Date(NOW.getTime() - DUPLICATE_WINDOW_MS).toISOString()
+    expect(isDuplicateRequest(exact, NOW)).toBe(false)
+  })
+
+  it("ne bloque pas l'utilisateur si la date est dans le futur", () => {
+    const future = new Date(NOW.getTime() + 60 * 60 * 1000).toISOString()
+    expect(isDuplicateRequest(future, NOW)).toBe(false)
+  })
+
   it("ne bloque pas l'utilisateur sur une date illisible", () => {
     expect(isDuplicateRequest("pas-une-date", NOW)).toBe(false)
   })
