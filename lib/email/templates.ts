@@ -249,17 +249,18 @@ export function accountDeletionRequestEmail(opts: {
   personneId: string
   motif: string | null
 }) {
-  const fullName = `${esc(opts.prenom)} ${esc(opts.nom)}`.trim() || esc(opts.email)
+  const rawFullName = `${opts.prenom ?? ""} ${opts.nom ?? ""}`.trim() || opts.email
+  const fullName = esc(rawFullName)
   const details = [
     `Membre : <strong>${fullName}</strong>`,
     `Email : <strong>${esc(opts.email)}</strong>`,
-    `Identifiant : ${esc(opts.personneId)}`,
-    `Demande reçue le : ${esc(new Date().toLocaleString("fr-FR", { timeZone: "Europe/Paris" }))}`,
+    `Identifiant : <strong>${esc(opts.personneId)}</strong>`,
+    `Demande reçue le : <strong>${esc(new Date().toLocaleString("fr-FR", { timeZone: "Europe/Paris" }))}</strong>`,
   ]
-  if (opts.motif) details.push(`Motif indiqué : ${esc(opts.motif)}`)
+  if (opts.motif) details.push(`Motif indiqué : <strong>${esc(opts.motif).replace(/\n/g, "<br>")}</strong>`)
 
   return {
-    subject: `Demande de suppression de compte — ${fullName}`,
+    subject: `Demande de suppression de compte — ${rawFullName}`,
     html: brandedEmail({
       title: "Demande de suppression de compte",
       intro:
