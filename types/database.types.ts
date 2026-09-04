@@ -60,7 +60,9 @@ export interface Personne {
   profil_type_id: string | null
   avatar_url: string | null
   actif: boolean
-  account_status: "pending_validation" | "validated" | "rejected"
+  // "deleted" : compte supprimé par un administrateur — la ligne subsiste,
+  // anonymisée (migration 059).
+  account_status: "pending_validation" | "validated" | "rejected" | "deleted"
   rejection_reason: string | null
   rejected_at: string | null
   rejected_by: string | null

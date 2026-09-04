@@ -1,11 +1,19 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, MoreVertical, Loader, ExternalLink, ShieldCheck, ShieldAlert, CheckCircle2, Clock, XCircle, Ban, X } from "lucide-react"
+import { Search, MoreVertical, Loader, ExternalLink, ShieldCheck, ShieldAlert, CheckCircle2, Clock, XCircle, Ban, X, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { getAllMembers, updateMemberRole, getAllRoles } from "@/lib/actions/members"
 import type { PersonneWithRole, ProfilType } from "@/types/database.types"
 import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { PostesMultiSelect } from "./PostesMultiSelect"
 
 // Couleurs des badges par slug de rôle de base (le libellé affiché vient de la
@@ -85,6 +93,78 @@ function RoleDropdown({ member, roles, onRoleChange, updating }: {
   )
 }
 
+/**
+ * Confirmation d'une suppression de compte. L'administrateur doit retaper
+ * l'email exact du membre : le geste est irréversible et ne doit pas pouvoir
+ * partir d'un clic distrait dans une liste.
+ */
+function DeleteMemberModal({ member, onCancel, onConfirm, busy }: {
+  member: PersonneWithRole
+  onCancel: () => void
+  onConfirm: () => void
+  busy: boolean
+}) {
+  const [saisie, setSaisie] = useState("")
+  const correspond = saisie.trim().toLowerCase() === (member.email ?? "").toLowerCase()
+
+  return (
+    <Dialog open onOpenChange={(next) => { if (!next && !busy) onCancel() }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-red-700">
+            <Trash2 className="w-5 h-5" />
+            Supprimer ce compte
+          </DialogTitle>
+          <DialogDescription>
+            L&apos;accès de{" "}
+            <span className="font-semibold text-zinc-800">
+              {member.prenom} {member.nom}
+            </span>{" "}
+            sera coupé immédiatement. Ses documents personnels, ses coordonnées et
+            ses données chiffrées seront effacés, et son identité anonymisée.
+          </DialogDescription>
+        </DialogHeader>
+
+        <p className="text-sm text-zinc-600">
+          L&apos;historique des missions, des candidatures et des notes de frais est
+          conservé. <span className="font-semibold">Cette action est irréversible.</span>
+        </p>
+
+        <div className="space-y-1.5 mt-4">
+          <label htmlFor="confirmation-suppression" className="block text-xs font-semibold text-zinc-600">
+            Retapez <span className="font-mono text-zinc-800">{member.email}</span> pour confirmer
+          </label>
+          <input
+            id="confirmation-suppression"
+            value={saisie}
+            onChange={(e) => setSaisie(e.target.value)}
+            autoComplete="off"
+            className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20"
+          />
+        </div>
+
+        <DialogFooter>
+          <button
+            onClick={onCancel}
+            disabled={busy}
+            className="px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg disabled:opacity-50"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={!correspond || busy}
+            className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-40 disabled:hover:bg-red-600"
+          >
+            {busy && <Loader className="h-4 w-4 animate-spin" />}
+            Supprimer définitivement
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function MembresTab() {
   const [members, setMembers] = useState<PersonneWithRole[]>([])
   const [allRoles, setAllRoles] = useState<ProfilType[]>([])
@@ -96,6 +176,25 @@ export function MembresTab() {
   const [statusFilter, setStatusFilter] = useState("Tous")
   const [updating, setUpdating] = useState<string | null>(null)
   const [rejectTarget, setRejectTarget] = useState<PersonneWithRole | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<PersonneWithRole | null>(null)
+
+  async function deleteMember(member: PersonneWithRole) {
+    setUpdating(member.id)
+    const res = await fetch(`/api/admin/personnes/${member.id}`, { method: "DELETE" })
+    const json = await res.json().catch(() => ({}))
+    if (res.ok) {
+      // Une purge partielle doit être signalée : le compte est neutralisé, mais
+      // il reste des données à retirer à la main.
+      if (json?.failedSteps?.length) {
+        alert(`Compte neutralisé, mais ces étapes ont échoué : ${json.failedSteps.join(", ")}`)
+      }
+      setDeleteTarget(null)
+      await loadMembers()
+    } else {
+      alert(json?.error ?? "Erreur lors de la suppression du compte")
+    }
+    setUpdating(null)
+  }
 
   async function patchStatus(id: string, account_status: string, rejection_reason?: string) {
     setUpdating(id)
@@ -190,7 +289,8 @@ export function MembresTab() {
                   { value: "Tous", label: "Tous" },
                   { value: "pending_validation", label: "En attente" },
                   { value: "validated", label: "Validés" },
-                  { value: "rejected", label: "Rejetés" }
+                  { value: "rejected", label: "Rejetés" },
+                  { value: "deleted", label: "Supprimés" }
                 ].map((s) => (
                   <button
                     key={s.value}
@@ -296,6 +396,11 @@ export function MembresTab() {
                             <XCircle className="w-3.5 h-3.5" />
                             Rejeté
                           </div>
+                        ) : m.account_status === "deleted" ? (
+                          <div className="flex items-center gap-1.5 text-zinc-400 font-medium text-xs">
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Supprimé
+                          </div>
                         ) : (
                           <div className="flex items-center gap-1.5 text-amber-600 font-medium text-xs">
                             <Clock className="w-3.5 h-3.5" />
@@ -312,7 +417,10 @@ export function MembresTab() {
                             <ExternalLink className="w-3.5 h-3.5" />
                             Voir Profil
                           </Link>
-                          {m.account_status !== "validated" && (
+                          {/* Un compte supprimé n'est pas revalidable : ses données
+                              personnelles ont été purgées, le revalider ne rendrait
+                              l'accès qu'à une coquille anonymisée. */}
+                          {m.account_status !== "validated" && m.account_status !== "deleted" && (
                             <button
                               onClick={() => patchStatus(m.id, "validated")}
                               disabled={updating === m.id}
@@ -330,6 +438,16 @@ export function MembresTab() {
                             >
                               <Ban className="w-3.5 h-3.5" />
                               Rejeter
+                            </button>
+                          )}
+                          {m.account_status !== "deleted" && (
+                            <button
+                              onClick={() => setDeleteTarget(m)}
+                              disabled={updating === m.id}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 disabled:opacity-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Supprimer
                             </button>
                           )}
                           <RoleDropdown
@@ -362,6 +480,15 @@ export function MembresTab() {
             await patchStatus(rejectTarget.id, "rejected", reason)
             setRejectTarget(null)
           }}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteMemberModal
+          member={deleteTarget}
+          busy={updating === deleteTarget.id}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={() => deleteMember(deleteTarget)}
         />
       )}
     </div>
