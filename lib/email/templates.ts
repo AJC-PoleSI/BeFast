@@ -241,3 +241,32 @@ export function signatureReminderEmail(opts: {
     }),
   }
 }
+
+export function accountDeletionRequestEmail(opts: {
+  prenom: string | null
+  nom: string | null
+  email: string
+  personneId: string
+  motif: string | null
+}) {
+  const fullName = `${esc(opts.prenom)} ${esc(opts.nom)}`.trim() || esc(opts.email)
+  const details = [
+    `Membre : <strong>${fullName}</strong>`,
+    `Email : <strong>${esc(opts.email)}</strong>`,
+    `Identifiant : ${esc(opts.personneId)}`,
+    `Demande reçue le : ${esc(new Date().toLocaleString("fr-FR", { timeZone: "Europe/Paris" }))}`,
+  ]
+  if (opts.motif) details.push(`Motif indiqué : ${esc(opts.motif)}`)
+
+  return {
+    subject: `Demande de suppression de compte — ${fullName}`,
+    html: brandedEmail({
+      title: "Demande de suppression de compte",
+      intro:
+        "Un membre demande la suppression de son compte BeFast. La demande est enregistrée dans les tickets de support ; la suppression s'effectue depuis l'administration des membres.",
+      details,
+      ctaLabel: "Gérer les membres",
+      ctaUrl: `${SITE_URL}/administration/membres`,
+    }),
+  }
+}
