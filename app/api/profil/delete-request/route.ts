@@ -28,7 +28,12 @@ export async function POST(request: Request) {
 
     // Anti-doublon : la politique RLS « user read own support_tickets » limite
     // déjà la lecture aux tickets de l'appelant.
-    const { data: previous } = await supabase
+    //
+    // Lecture puis écriture, sans transaction : deux appels quasi simultanés
+    // peuvent produire deux tickets. Assumé — le pire cas est un email en
+    // double chez l'administration, et un verrou coûterait plus qu'il ne
+    // rapporte ici.
+    const { data: previous, error: previousError } = await supabase
       .from("support_tickets")
       .select("created_at")
       .eq("utilisateur_id", guard.userId)
@@ -36,6 +41,13 @@ export async function POST(request: Request) {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle()
+
+    // On ne bloque pas l'utilisateur si cette lecture échoue, mais sans ce log
+    // rien ne distinguerait « aucune demande précédente » de « on n'a pas pu
+    // savoir » : l'anti-doublon pourrait être neutralisé en silence.
+    if (previousError) {
+      console.error("[delete-request] lecture anti-doublon échouée", previousError)
+    }
 
     if (isDuplicateRequest(previous?.created_at)) {
       // Réponse identique au cas nominal : inutile de signaler à l'utilisateur
