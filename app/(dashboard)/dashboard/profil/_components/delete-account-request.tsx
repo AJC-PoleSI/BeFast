@@ -19,6 +19,13 @@ import { Loader2 } from "lucide-react"
 const ADMIN_EMAIL = "systeme.info@ajc-mail.com"
 const MOTIF_MAX = 1000
 
+/**
+ * Au-delà, on abandonne l'attente. La modale se verrouille pendant l'envoi ;
+ * sans cette borne, une requête qui ne revient jamais y enfermerait
+ * l'utilisateur pour la durée de vie de l'onglet.
+ */
+const TIMEOUT_MS = 15_000
+
 type State = "idle" | "sending" | "sent" | "error"
 
 /**
@@ -35,15 +42,23 @@ export function DeleteAccountRequest() {
 
   async function submit() {
     setState("sending")
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
     try {
       const res = await fetch("/api/profil/delete-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ motif }),
+        signal: controller.signal,
       })
       setState(res.ok ? "sent" : "error")
     } catch {
+      // Inclut l'abandon sur délai. La demande a pu aboutir côté serveur malgré
+      // tout ; un nouvel envoi retombera sur la fenêtre anti-doublon de 24 h et
+      // ne créera pas de doublon.
       setState("error")
+    } finally {
+      clearTimeout(timeout)
     }
   }
 
