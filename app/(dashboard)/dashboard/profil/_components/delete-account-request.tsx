@@ -1,14 +1,32 @@
 "use client"
 
 import { useState } from "react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Loader2 } from "lucide-react"
+
+/** Adresse affichée en secours si l'envoi échoue. */
+const ADMIN_EMAIL = "systeme.info@ajc-mail.com"
+const MOTIF_MAX = 1000
 
 type State = "idle" | "sending" | "sent" | "error"
 
 /**
  * Demande de suppression de compte — volontairement discrète : un lien en
- * petits caractères, hors des actions principales du profil. Le clic ouvre une
- * modale qui explique que la demande part vers l'administration et qu'elle
- * n'est pas immédiate.
+ * petits caractères, hors des actions principales du profil.
+ *
+ * La modale ne promet que ce que le système fait réellement : la demande part
+ * vers l'administration, qui la traite à la main. Rien n'est supprimé ici.
  */
 export function DeleteAccountRequest() {
   const [open, setOpen] = useState(false)
@@ -30,8 +48,12 @@ export function DeleteAccountRequest() {
   }
 
   function close() {
+    // Pendant l'envoi, aucune sortie — ni bouton, ni Échap, ni clic extérieur.
+    // La requête est déjà partie : laisser fermer ferait croire à une annulation
+    // alors que la demande aboutirait quand même.
+    if (state === "sending") return
     setOpen(false)
-    // La demande envoyée reste envoyée : on ne réarme pas le formulaire.
+    // Une demande partie ne se rétracte pas : on ne réarme que si elle a échoué.
     if (state === "error") setState("idle")
   }
 
@@ -50,79 +72,83 @@ export function DeleteAccountRequest() {
         </button>
       </div>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-xl border border-zinc-200 shadow-xl w-full max-w-md p-6">
-            {state === "sent" ? (
-              <>
-                <h2 className="text-lg font-manrope font-bold text-[#00236f]">
-                  Demande envoyée
-                </h2>
-                <p className="text-sm text-zinc-600 mt-2 leading-relaxed">
-                  L&apos;administration a été prévenue. Vous serez recontacté avant
-                  que le compte ne soit supprimé.
-                </p>
-                <div className="flex justify-end mt-6">
-                  <button
-                    type="button"
-                    onClick={close}
-                    className="px-4 py-2 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors"
-                  >
-                    Fermer
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h2 className="text-lg font-manrope font-bold text-[#00236f]">
-                  Demander la suppression de mon compte
-                </h2>
-                <p className="text-sm text-zinc-600 mt-2 leading-relaxed">
+      <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
+        <DialogContent className="max-w-md">
+          <DialogClose onClose={close} />
+
+          {state === "sent" ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Demande envoyée</DialogTitle>
+                <DialogDescription>
+                  L&apos;administration a été prévenue et traitera votre demande
+                  manuellement.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button type="button" onClick={close}>
+                  Fermer
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Demander la suppression de mon compte</DialogTitle>
+                <DialogDescription>
                   Votre demande est transmise à l&apos;administration d&apos;Audencia
                   Junior Conseil. La suppression n&apos;est pas immédiate : elle est
                   effectuée manuellement, et elle est définitive.
-                </p>
+                </DialogDescription>
+              </DialogHeader>
 
-                <label className="block text-xs font-medium text-zinc-500 mt-5 mb-1.5">
-                  Motif (facultatif)
-                </label>
-                <textarea
+              <div className="space-y-2">
+                <Label htmlFor="delete-account-motif">Motif (facultatif)</Label>
+                <Textarea
+                  id="delete-account-motif"
                   value={motif}
                   onChange={(e) => setMotif(e.target.value)}
                   rows={3}
-                  maxLength={1000}
-                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+                  maxLength={MOTIF_MAX}
                 />
+              </div>
 
-                {state === "error" && (
-                  <p className="text-sm text-red-600 mt-3">
-                    L&apos;envoi a échoué. Réessayez, ou écrivez directement à
-                    l&apos;administration.
-                  </p>
-                )}
+              {state === "error" && (
+                <p className="text-sm text-red-600 mt-3">
+                  L&apos;envoi a échoué. Réessayez, ou écrivez directement à{" "}
+                  {ADMIN_EMAIL}.
+                </p>
+              )}
 
-                <div className="flex justify-end gap-2 mt-6">
-                  <button
-                    type="button"
-                    onClick={close}
-                    className="px-4 py-2 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="button"
-                    onClick={submit}
-                    disabled={state === "sending"}
-                    className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
-                  >
-                    {state === "sending" ? "Envoi…" : "Envoyer la demande"}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={close}
+                  disabled={state === "sending"}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={submit}
+                  disabled={state === "sending"}
+                >
+                  {state === "sending" ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Envoi…
+                    </>
+                  ) : (
+                    "Envoyer la demande"
+                  )}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
