@@ -257,7 +257,9 @@ export function accountDeletionRequestEmail(opts: {
     `Identifiant : <strong>${esc(opts.personneId)}</strong>`,
     `Demande reçue le : <strong>${esc(new Date().toLocaleString("fr-FR", { timeZone: "Europe/Paris" }))}</strong>`,
   ]
-  if (opts.motif) details.push(`Motif indiqué : <strong>${esc(opts.motif).replace(/\n/g, "<br>")}</strong>`)
+  // Pas de <strong> sur le motif : le gras signale une valeur courte, pas un
+  // texte libre qui peut faire mille caractères sur plusieurs lignes.
+  if (opts.motif) details.push(`Motif indiqué : ${esc(opts.motif).replace(/\n/g, "<br>")}`)
 
   return {
     subject: `Demande de suppression de compte — ${rawFullName}`,
