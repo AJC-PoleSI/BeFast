@@ -59,6 +59,13 @@ describe("buildAnonymisationPatch", () => {
     }
   })
 
+  it("invalide un lien de réinitialisation de mot de passe encore en vol", () => {
+    // Un token émis avant la suppression reste valable 72 h : le laisser en base
+    // rendrait la main sur un compte censé être neutralisé.
+    expect(patch.reset_token_hash).toBeNull()
+    expect(patch.reset_token_expires_at).toBeNull()
+  })
+
   it("ne touche ni au rôle ni au profil type", () => {
     expect(patch).not.toHaveProperty("profil_type_id")
     expect(patch).not.toHaveProperty("pole")

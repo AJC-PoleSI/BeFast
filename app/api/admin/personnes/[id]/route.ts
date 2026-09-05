@@ -6,6 +6,8 @@ import { sendEmail } from "@/lib/email/send"
 import { accountValidatedEmail } from "@/lib/email/templates"
 import { logAudit } from "@/lib/supabase-security"
 import { deleteAccount } from "@/lib/account-deletion/delete-account"
+import { revalidateTag } from "next/cache"
+import { USER_PROFILE_TAG } from "@/lib/cache-tags"
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -82,6 +84,11 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
     }
 
     const result = await deleteAccount(id)
+
+    // Le profil est mis en cache cinq minutes ; sans cette invalidation, la
+    // garde du tableau de bord laisserait la session en cours continuer
+    // jusqu'à l'expiration du cache.
+    revalidateTag(USER_PROFILE_TAG(id))
 
     await logAudit(createClient(), "personnes", "DELETE", id, {
       failedSteps: result.failedSteps,

@@ -55,6 +55,9 @@ export async function getCampaignStatus(): Promise<{ data: CampaignStatus | null
         "id, email, prenom, nom, password_setup_sent_at, password_set_at, profils_types!profil_type_id(slug, nom)"
       )
       .not("legacy_bequick_id", "is", null)
+      // Un compte supprimé n'a pas à figurer dans la campagne : lui envoyer un
+      // lien régénérerait un jeton de mot de passe sur un compte neutralisé.
+      .neq("account_status", "deleted")
       .order("nom", { ascending: true })
 
     if (error) {
@@ -144,6 +147,7 @@ export async function sendPasswordSetupBatch(
       .from("personnes")
       .select("id, email, prenom")
       .not("legacy_bequick_id", "is", null)
+      .neq("account_status", "deleted")
       .is("password_setup_sent_at", null)
       .order("nom", { ascending: true })
       .limit(batch)

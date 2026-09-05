@@ -36,6 +36,10 @@ export function buildAnonymisationPatch(personneId: string): Record<string, unkn
     portable: null,
     avatar_url: null,
     encryption_salt: null,
+    // Un lien de réinitialisation émis avant la suppression reste valable 72 h
+    // (migration 045) : le laisser en base rendrait la main sur le compte.
+    reset_token_hash: null,
+    reset_token_expires_at: null,
     // Colonnes en clair héritées des versions antérieures au chiffrement.
     adresse: null,
     ville: null,

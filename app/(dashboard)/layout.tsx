@@ -52,6 +52,16 @@ export default async function DashboardLayout({
   // Cached profile query — keyed by user.id. After first visit, this is a
   // ~5ms cache hit (vs ~200ms DB query) for the next 5 minutes.
   const profile = await getCachedProfile(user.id)
+
+  // Un compte supprimé n'a plus rien à faire ici : ses données ont été purgées.
+  // La restriction de permissions plus bas ne suffit pas — elle laisse l'accès
+  // au profil et aux documents, ce qui convient à un compte en attente, pas à
+  // un compte supprimé. Le bannissement Supabase ne coupe la session qu'au
+  // prochain rafraîchissement du jeton ; cette garde ferme l'intervalle.
+  if (profile?.account_status === "deleted") {
+    redirect("/login?compte=supprime")
+  }
+
   const isAdmin = profile?.profils_types?.slug === "administrateur"
 
   // Permissions effectives = rôle de base ∪ postes (bureau/pôles) assignés.
