@@ -52,8 +52,8 @@ describe("computeBudget", () => {
     expect(b.totalHt).toBe(80)
   })
 
-  it("does not charge TVA on frais de structure (JEH only)", () => {
-    // JEH HT = 1000, frais = 80 → TVA = 20% de 1000 (pas de 1080).
+  it("charges TVA on the whole HT, frais de structure included", () => {
+    // JEH HT = 1000, frais = 80 → TVA = 20% de 1080 (assiette des factures AJC).
     const b = computeBudget({
       ...base,
       phases: [{ name: "P", jehCount: 10, jehPrice: 100 }],
@@ -61,8 +61,61 @@ describe("computeBudget", () => {
       globalFraisAnnexes: 30,
     })
     expect(b.totalHt).toBe(1080)
-    expect(b.tva).toBe(200)
-    expect(b.netAPayer).toBe(1280)
+    expect(b.tva).toBe(216)
+    expect(b.netAPayer).toBe(1296)
+  })
+
+  it("reproduces the AJC invoice example (5 000 HT → 1 000 de TVA → 6 000 TTC)", () => {
+    const b = computeBudget({
+      ...base,
+      phases: [
+        { name: "Recueil terrain & grille", jehCount: 2, jehPrice: 439 },
+        { name: "Benchmark & tests des produits", jehCount: 2, jehPrice: 439 },
+        { name: "Matrice comparative & livrables", jehCount: 2, jehPrice: 439 },
+      ],
+      suiviJehCount: 6,
+      suiviJehPrice: 361,
+      fraisDossier: 200,
+    })
+    expect(b.totalJehHt).toBe(4800)
+    expect(b.totalHt).toBe(5000)
+    expect(b.tva).toBe(1000)
+    expect(b.netAPayer).toBe(6000)
+    expect(b.versements.map((v) => v.montant)).toEqual([3600, 2400])
+  })
+
+  it("folds the marge into per-line unit prices (lines sum to totalJehHt)", () => {
+    const b = computeBudget({
+      ...base,
+      phases: [
+        { name: "A", jehCount: 2, jehPrice: 100 },
+        { name: "B", jehCount: 3, jehPrice: 120 },
+      ],
+      suiviJehCount: 2,
+      suiviJehPrice: 90,
+      margeJePct: 38,
+    })
+    // Chaque ligne reste cohérente : jeh × prix unitaire = montant.
+    for (const p of b.phases) {
+      expect(p.montantMarge).toBe(Math.round(p.jeh * p.prixJehMarge * 100) / 100)
+      expect(p.prixJehMarge).toBeGreaterThan(p.prixJeh)
+    }
+    const somme =
+      b.phases.reduce((s, p) => s + p.montantMarge, 0) + b.suiviTotalMarge
+    expect(Math.round(somme * 100) / 100).toBe(b.totalJehHt)
+    expect(b.margeJe).toBe(Math.round((b.totalJehHt - 740) * 100) / 100)
+  })
+
+  it("leaves unit prices untouched when marge is 0", () => {
+    const b = computeBudget({
+      ...base,
+      phases: [{ name: "P", jehCount: 2, jehPrice: 439 }],
+      suiviJehCount: 1,
+      suiviJehPrice: 361,
+    })
+    expect(b.phases[0].prixJehMarge).toBe(439)
+    expect(b.suiviPrixJehMarge).toBe(361)
+    expect(b.margeJe).toBe(0)
   })
 
   it("supports a 0% TVA (netAPayer == totalHt)", () => {

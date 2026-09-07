@@ -103,12 +103,14 @@ export const DOCUMENT_FIELDS: FieldDef[] = [
   { placeholder: "president.nom", label: "Nom du président(e)", source: "parametres.president_nom" },
   { placeholder: "president.nom_complet", label: "Nom complet", source: "parametres.president_nom" },
   { placeholder: "president.civilite", label: "Civilité (Monsieur/Madame)", source: "calculé depuis parametres.president_genre" },
+  { placeholder: "president.titre_fonction", label: "Titre accordé au genre", source: "calculé", example: "Le Président / La Présidente" },
 
   // ── Trésorier ─────────────────────────────────────────────
   { placeholder: "tresorier.prenom", label: "Prénom du trésorier(e)", source: "parametres.tresorier_nom" },
   { placeholder: "tresorier.nom", label: "Nom du trésorier(e)", source: "parametres.tresorier_nom" },
   { placeholder: "tresorier.nom_complet", label: "Nom complet", source: "parametres.tresorier_nom" },
   { placeholder: "tresorier.civilite", label: "Civilité", source: "calculé depuis parametres.tresorier_genre" },
+  { placeholder: "tresorier.titre_fonction", label: "Titre accordé au genre", source: "calculé", example: "Le Trésorier / La Trésorière" },
 
   // ── Structure ─────────────────────────────────────────────
   { placeholder: "structure.raison_sociale", label: "Raison sociale", source: "parametres.raison_sociale" },
@@ -138,10 +140,12 @@ export const DOCUMENT_FIELDS: FieldDef[] = [
   { placeholder: "junior.code_postal", label: "Code postal (alias)", source: "parametres.code_postal" },
   { placeholder: "junior.ville", label: "Ville (alias)", source: "parametres.ville" },
   { placeholder: "junior.siret", label: "SIRET (alias)", source: "parametres.siret" },
+  { placeholder: "junior.siren", label: "SIREN (9 premiers chiffres du SIRET)", source: "calculé", example: "331647750" },
   { placeholder: "junior.code_ape", label: "Code APE (alias)", source: "parametres.code_ape" },
   { placeholder: "junior.n_urssaf", label: "N° URSSAF (alias)", source: "parametres.numero_urssaf" },
   { placeholder: "junior.n_tva_intra", label: "N° TVA intracommunautaire (alias)", source: "parametres.numero_tva" },
   { placeholder: "junior.nom_ecole", label: "Nom de l'école (alias)", source: "parametres.nom_ecole" },
+  { placeholder: "junior.affiliation", label: "Mention d'affiliation", source: "parametres.affiliation", example: "affiliée à la CNJE" },
   { placeholder: "junior.banque_rib", label: "Banque / RIB (alias)", source: "parametres.banque_rib" },
   { placeholder: "junior.banque_domiciliation", label: "Domiciliation bancaire (alias)", source: "parametres.banque_domiciliation" },
   { placeholder: "junior.banque_iban", label: "IBAN (alias)", source: "parametres.iban" },
@@ -181,6 +185,14 @@ export const DOCUMENT_FIELDS: FieldDef[] = [
   { placeholder: "facturation.montant_deduction", label: "Montant de la ligne déduction", source: "calculé" },
   { placeholder: "facturation.mention_tva_acompte", label: "\" sur l'acompte\" ou vide", source: "calculé" },
   { placeholder: "facturation.libelle_ttc", label: "\"Acompte\" ou \"Total\" (ligne TTC)", source: "calculé" },
+  { placeholder: "facturation.objet", label: "Objet complet de la facture (type + étude + références convention/PVRF)", source: "calculé", example: "Facture d'acompte concernant l'étude 2615 en référence à la convention d'étude 26CE15." },
+  { placeholder: "facturation.reference_convention", label: "Référence de la convention d'étude", source: "etudes.reference_convention_etude", example: "26CE15" },
+  { placeholder: "facturation.reference_pvrf", label: "Référence du dernier PV de recette final généré (facture de solde)", source: "generated_documents", example: "26PVF01 15" },
+  { placeholder: "facturation.conditions_reglement", label: "Conditions de règlement (propre à la facture)", source: "factures.conditions_reglement", example: "A réception de facture" },
+  { placeholder: "facturation.mention_escompte", label: "Mention d'escompte", source: "parametres.mention_escompte" },
+  { placeholder: "facturation.mention_regime_tva", label: "Régime de TVA", source: "parametres.regime_tva", example: "TVA sur les encaissements" },
+  { placeholder: "facturation.taux_penalites", label: "Taux des pénalités de retard", source: "parametres.taux_penalites", example: "3 fois le taux d'intérêt légal en vigueur" },
+  { placeholder: "facturation.indemnite_recouvrement", label: "Indemnité forfaitaire de recouvrement", source: "parametres.indemnite_recouvrement", example: "40 euros" },
 
   // ── Bulletin de Versement (scope mission) ─────────────────
   { placeholder: "numero_document", label: "Compteur du document dans l'étude (\"01\", \"02\"…)", source: "calculé" },

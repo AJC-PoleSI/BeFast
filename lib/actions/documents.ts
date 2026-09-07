@@ -1,5 +1,6 @@
 "use server"
 
+import { totalDejaFacture as calculerDejaFacture } from "@/lib/facture/reconciliation"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noStore } from "next/cache"
@@ -7,6 +8,8 @@ import { decryptData } from "@/lib/crypto"
 import { getMasterKey } from "@/lib/crypto-key"
 import { decryptFromString } from "@/lib/encryption"
 import { numeroEtudeCourt, codeClasseurEtude } from "@/lib/document-numbering"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { canAccessEntityDocuments, isMembreInterne } from "@/lib/auth/document-access"
 
 const TEMPLATES_TAG = "document_templates"
 
@@ -32,6 +35,8 @@ export async function listTemplates() {
     data: { user },
   } = await sb.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+  const profile = await getCachedProfile(user.id)
+  if (!isMembreInterne(profile)) return { error: "Non autorisé" }
 
   return _listTemplatesCached()
 }
@@ -82,6 +87,10 @@ export async function listEntityDocuments(scope: string, entityId: string) {
     data: { user },
   } = await sb.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+  const profile = await getCachedProfile(user.id)
+  if (!(await canAccessEntityDocuments(profile, scope, entityId))) {
+    return { error: "Non autorisé" }
+  }
 
   const { data, error } = await sb
     .from("generated_documents")
@@ -105,6 +114,10 @@ export async function listEtudeAllDocuments(etudeId: string) {
     data: { user },
   } = await sb.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+  const profile = await getCachedProfile(user.id)
+  if (!(await canAccessEntityDocuments(profile, "etude", etudeId))) {
+    return { error: "Non autorisé" }
+  }
 
   // Get mission IDs for this étude
   const { data: missions } = await sb
@@ -148,6 +161,10 @@ export async function deleteGeneratedDocument(id: string) {
     data: { user },
   } = await sb.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+  const profile = await getCachedProfile(user.id)
+  // Suppression d'un document officiel : réservée aux membres internes
+  // (un intervenant peut consulter ses documents mais pas les effacer).
+  if (!isMembreInterne(profile)) return { error: "Non autorisé" }
 
   const { data: doc } = await sb
     .from("generated_documents")
@@ -332,10 +349,16 @@ function buildJuniorAlias(params: Record<string, string>) {
     code_postal: params.code_postal || "",
     ville: params.ville || "",
     siret: params.siret || "",
+    // Le SIREN est les 9 premiers chiffres du SIRET — il était codé en dur dans
+    // le modèle de facture.
+    siren: (params.siret || "").replace(/\D/g, "").slice(0, 9),
     code_ape: params.code_ape || "",
     n_urssaf: params.numero_urssaf || "",
     n_tva_intra: params.numero_tva || "",
     nom_ecole: params.nom_ecole || "",
+    // Mention d'affiliation imprimée sous la raison sociale (était en dur
+    // dans le modèle de facture).
+    affiliation: params.affiliation || "affiliée à la CNJE",
     telephone: params.telephone || "",
     email: params.email_contact || "",
     site_web: params.site_web || "",
@@ -349,6 +372,11 @@ function buildJuniorAlias(params: Record<string, string>) {
 
 // Build president/tresorier/structure objects from parametres. Fonction pure (réutilisée).
 function buildOrganigramme(params: Record<string, string>) {
+  // « Le Trésorier » / « La Trésorière » : le titre était figé au masculin
+  // dans le modèle de facture alors qu'il change à chaque mandat.
+  const titreFonction = (genre: string, masculin: string, feminin: string) =>
+    genre === "F" ? `La ${feminin}` : `Le ${masculin}`
+
   // Parse president_nom which may be "Prénom Nom" or just "Nom"
   const presidentNomRaw = params.president_nom || ""
   const presidentParts = presidentNomRaw.trim().split(/\s+/).filter(Boolean)
@@ -366,6 +394,7 @@ function buildOrganigramme(params: Record<string, string>) {
       genre: presidentGenre,
       civilite: presidentGenre === "F" ? "Madame" : "Monsieur",
       titre: presidentGenre === "F" ? "Madame" : "Monsieur",
+      titre_fonction: titreFonction(presidentGenre, "Président", "Présidente"),
     },
     tresorier: {
       nom: tresorierParts.length > 1 ? tresorierParts.slice(1).join(" ") : tresorierParts[0] || "",
@@ -374,6 +403,7 @@ function buildOrganigramme(params: Record<string, string>) {
       genre: tresorierGenre,
       civilite: tresorierGenre === "F" ? "Madame" : "Monsieur",
       titre: tresorierGenre === "F" ? "Madame" : "Monsieur",
+      titre_fonction: titreFonction(tresorierGenre, "Trésorier", "Trésorière"),
     },
     structure: {
       raison_sociale: params.raison_sociale || "",
@@ -913,12 +943,32 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
       ? sb.from("etudes").select("*").eq("id", facture.etude_id).single()
       : Promise.resolve({ data: null, error: null }),
     facture.etude_id
-      ? sb.from("factures").select("montant_ht, date_emission").eq("etude_id", facture.etude_id).neq("id", factureId)
+      ? sb
+          .from("factures")
+          .select("montant_ht, date_emission, numero_dans_etude")
+          .eq("etude_id", facture.etude_id)
+          .neq("id", factureId)
       : Promise.resolve({ data: [], error: null }),
     facture.etude_id
       ? sb.from("echeancier_blocs").select("*").eq("etude_id", facture.etude_id)
       : Promise.resolve({ data: [], error: null }),
   ])
+
+  // Références citées dans l'objet de la facture : la convention d'étude
+  // toujours, le PV de recette final uniquement sur la facture de solde
+  // (« … en référence à la convention d'étude 26CE15 et au Procès-Verbal de
+  // Recette Final 26PVRF15 »).
+  const pvrfRes = facture.etude_id
+    ? await sb
+        .from("generated_documents")
+        .select("file_name, created_at, document_templates!inner(category)")
+        .eq("scope", "etude")
+        .eq("entity_id", facture.etude_id)
+        .eq("document_templates.category", "pv_recette_final")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null }
 
   const etude: any = (etudeRes as any).data || {}
   const autresFactures: any[] = (autresFacturesRes as any).data || []
@@ -932,7 +982,34 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
   // Si la facture est liée à une phase précise, ne montrer que celle-ci dans {#phases} ;
   // sinon, montrer l'intégralité de l'échéancier de l'étude.
   const relevantBlocs = facture.bloc_id ? allBlocs.filter((b) => b.id === facture.bloc_id) : allBlocs
-  const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(relevantBlocs)
+  const blocsCtx = buildPhasesContext(relevantBlocs)
+  const { planning } = blocsCtx
+  let { phases, nb_jeh, nb_phases } = blocsCtx
+
+  // Le suivi de l'étude est une ligne de facture au même titre qu'une phase,
+  // mais il ne vit pas dans l'échéancier (ce n'est pas un bloc de Gantt) : on
+  // l'ajoute en fin de tableau, comme sur les factures AJC. Absent quand la
+  // facture ne porte que sur une phase précise (bloc_id).
+  const suiviJeh = Number(etude.suivi_jeh) || 0
+  const suiviPrixJeh = Number(etude.suivi_prix_jeh) || 0
+  if (!facture.bloc_id && suiviJeh > 0) {
+    phases = [
+      ...phases,
+      {
+        numero: phases.length + 1,
+        lettre: String.fromCharCode(65 + phases.length),
+        nom: "Suivi de l'étude",
+        description: "",
+        prix_jeh: suiviPrixJeh,
+        nombre_jeh: suiviJeh,
+        montant_ht: Math.round(suiviJeh * suiviPrixJeh * 100) / 100,
+        semaine_debut: 0,
+        semaine_fin: 0,
+      },
+    ]
+    nb_jeh += suiviJeh
+    nb_phases += 1
+  }
 
   // budget_ht est saisi TTC-marge-comprise (la marge est déjà dedans) : on ne
   // l'ajoute pas une seconde fois, marge_euros n'est qu'informatif.
@@ -941,14 +1018,10 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
   const margePct = Number(etude.marge_pct) || 0
   const totalHtEtude = budget_ht + frais
 
-  // Ne compter que les factures précédentes (émises avant celle-ci, ou sans date si celle-ci n'en a pas non plus)
-  const dateEmissionCourante = facture.date_emission ? new Date(facture.date_emission).getTime() : null
-  const totalDejaFacture = autresFactures.reduce((sum, f: any) => {
-    if (dateEmissionCourante && f.date_emission) {
-      if (new Date(f.date_emission).getTime() >= dateEmissionCourante) return sum
-    }
-    return sum + (Number(f.montant_ht) || 0)
-  }, 0)
+  // « Déjà facturé » = somme des factures qui PRÉCÈDENT celle-ci dans l'étude
+  // (cf. lib/facture/reconciliation.ts, testé) : c'est ce qui garantit que
+  // l'acompte et le solde se recollent au Total HT de l'étude.
+  const totalDejaFacture = calculerDejaFacture(facture as any, autresFactures as any)
 
   const montantHt = Number(facture.montant_ht) || 0
   // tva_rate = clé éditée dans la page Paramètres ; tva_taux = repli migration 046
@@ -967,10 +1040,33 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
 
   const organigramme = buildOrganigramme(params)
 
+  const codeClasseur = codeClasseurEtude(etude.numero)
+  const refConvention = String(etude.reference_convention_etude || "").trim()
+  const pvrfDoc: any = (pvrfRes as any)?.data
+  const refPvrf = pvrfDoc?.file_name
+    ? String(pvrfDoc.file_name).replace(/\.(docx|pdf|pptx)$/i, "")
+    : ""
+
+  // Objet de la facture, assemblé côté serveur pour que le modèle n'ait qu'une
+  // balise : « Facture d'acompte concernant l'étude 2615 en référence à la
+  // convention d'étude 26CE15[ et au Procès-Verbal de Recette Final 26PVRF15]. »
+  const objetRefs = [
+    refConvention && `à la convention d'étude ${refConvention}`,
+    type === "solde" && refPvrf && `au Procès-Verbal de Recette Final ${refPvrf}`,
+  ].filter(Boolean) as string[]
+  const objet =
+    `Facture ${typeLibelles[type] || ""} concernant l'étude ${codeClasseur}`.replace(
+      /\s+/g,
+      " "
+    ) +
+    (objetRefs.length > 0 ? ` en référence ${objetRefs.join(" et ")}` : "") +
+    (buildMentionAvenant(etude) ? `, ${buildMentionAvenant(etude)}` : "") +
+    "."
+
   return {
     ...base,
     reference: numeroEtudeCourt(etude.numero),
-    code_classeur: codeClasseurEtude(etude.numero),
+    code_classeur: codeClasseur,
     etude: {
       ...etude,
       // etudes.numero stocke le code classeur ("2618") : {etude.numero} doit
@@ -1016,7 +1112,9 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
       // Bloc "totaux" de la facture (libellés + montants qui étaient des
       // ternaires dans l'ancien modèle Word)
       total_prestation: estAcompte ? totalHtEtude - frais : totalDejaFacture + montantHt,
-      ligne_frais: estAcompte ? frais : 0,
+      // Les frais de structure sont rappelés sur toutes les factures (acompte
+      // comme solde), comme sur les factures AJC de référence.
+      ligne_frais: frais,
       libelle_deduction: estAcompte ? "Total HT de l'étude" : "Déduction des factures précédentes (HT)",
       montant_deduction: estAcompte ? totalHtEtude : totalDejaFacture,
       libelle_ligne: estAcompte ? `Montant de l'acompte (${facture.accompte_pct || 0}%)` : "Total HT",
@@ -1026,6 +1124,22 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
       due_at: fmtDate(facture.date_echeance),
       paid_at: fmtDate(facture.date_paiement),
       notes: facture.notes || "",
+      objet,
+      reference_convention: refConvention,
+      reference_pvrf: refPvrf,
+      // Mentions qui étaient figées dans le modèle Word alors qu'elles
+      // changent d'une facture (conditions de règlement) ou d'un exercice
+      // (taux de pénalités, régime de TVA) à l'autre.
+      conditions_reglement:
+        facture.conditions_reglement ||
+        params.conditions_reglement_defaut ||
+        "A réception de facture",
+      mention_escompte:
+        params.mention_escompte ||
+        "Aucun escompte n'est accordé en cas de paiement anticipé",
+      mention_regime_tva: params.regime_tva || "TVA sur les encaissements",
+      taux_penalites: params.taux_penalites || "3 fois le taux d'intérêt légal en vigueur",
+      indemnite_recouvrement: params.indemnite_recouvrement || "40 euros",
     },
   }
 }

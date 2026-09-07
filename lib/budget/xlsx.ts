@@ -68,9 +68,10 @@ export async function buildBudgetWorkbook(
   r++
 
   const rows = [
-    ...b.phases.map((p) => [p.name || "Phase", p.jeh, p.prixJeh, p.montant] as const),
+    // Prix unitaires marge incluse (cf. lib/budget/compute.ts).
+    ...b.phases.map((p) => [p.name || "Phase", p.jeh, p.prixJehMarge, p.montantMarge] as const),
     ...(b.suiviJeh > 0 || b.suiviTotal > 0
-      ? [["Suivi de l'étude", b.suiviJeh, b.suiviPrixJeh, b.suiviTotal] as const]
+      ? [["Suivi de l'étude", b.suiviJeh, b.suiviPrixJehMarge, b.suiviTotalMarge] as const]
       : []),
   ]
   rows.forEach((row, idx) => {

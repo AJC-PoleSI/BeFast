@@ -3,6 +3,19 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next/cache"
 import { FACTURES_TAG, MISSIONS_TAG } from "@/lib/cache-tags"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { hasPermission } from "@/lib/auth/permissions"
+
+// Suivi de trésorerie (factures, paiements) : réservé aux profils disposant de
+// la permission `voir_factures` (Présidente, Trésorier·ère, Pôle Trésorerie…).
+// Avant ce garde, n'importe quel compte authentifié pouvait créer/modifier/
+// supprimer une facture via ces server actions, la permission ne filtrant que
+// l'affichage du lien dans la sidebar.
+async function requireVoirFactures(userId: string): Promise<string | null> {
+  const profile = await getCachedProfile(userId)
+  if (!hasPermission(profile, "voir_factures")) return "Non autorisé"
+  return null
+}
 
 export type FactureRow = {
   id: string
@@ -15,6 +28,7 @@ export type FactureRow = {
   date_echeance: string | null
   date_paiement: string | null
   notes: string | null
+  conditions_reglement: string | null
   etude_id: string | null
   bloc_id: string | null
   etude_numero: string | null
@@ -74,6 +88,8 @@ export async function getTresorerieData() {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+  const permErr = await requireVoirFactures(user.id)
+  if (permErr) return { error: permErr }
 
   let migrationMissing = false
 
@@ -158,6 +174,7 @@ export async function getTresorerieData() {
     date_echeance: f.date_echeance,
     date_paiement: f.date_paiement,
     notes: f.notes,
+    conditions_reglement: f.conditions_reglement ?? null,
     etude_id: f.etude_id,
     bloc_id: f.bloc_id,
     etude_numero: f.etudes?.numero ?? null,
@@ -272,13 +289,25 @@ export async function getEtudesForFactureSelect() {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+  const permErr = await requireVoirFactures(user.id)
+  if (permErr) return { error: permErr }
 
   const { data, error } = await supabase
     .from("etudes")
-    .select("id, numero, nom")
+    .select("id, numero, nom, budget_ht, frais_dossier")
     .order("numero", { ascending: false })
   if (error) return { error: error.message }
-  return { data: data ?? [] }
+  // `total_ht` = prestation + frais de structure : c'est l'assiette sur
+  // laquelle le trésorier applique le % d'acompte.
+  return {
+    data: (data ?? []).map((e: any) => ({
+      id: e.id,
+      numero: e.numero,
+      nom: e.nom,
+      total_ht:
+        Math.round(((Number(e.budget_ht) || 0) + (Number(e.frais_dossier) || 0)) * 100) / 100,
+    })),
+  }
 }
 
 export async function createFacture(input: {
@@ -293,12 +322,15 @@ export async function createFacture(input: {
   date_echeance?: string | null
   date_paiement?: string | null
   notes?: string | null
+  conditions_reglement?: string | null
 }) {
   const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+  const permErr = await requireVoirFactures(user.id)
+  if (permErr) return { error: permErr }
 
   const { data, error } = await supabase
     .from("factures")
@@ -314,6 +346,7 @@ export async function createFacture(input: {
       date_echeance: input.date_echeance ?? null,
       date_paiement: input.date_paiement ?? null,
       notes: input.notes ?? null,
+      conditions_reglement: input.conditions_reglement ?? null,
       created_by: user.id,
     })
     .select()
@@ -341,6 +374,7 @@ export async function updateFacture(
     date_echeance: string | null
     date_paiement: string | null
     notes: string | null
+    conditions_reglement: string | null
   }>
 ) {
   const supabase = createClient()
@@ -348,6 +382,8 @@ export async function updateFacture(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+  const permErr = await requireVoirFactures(user.id)
+  if (permErr) return { error: permErr }
 
   const { error } = await supabase.from("factures").update(updates).eq("id", id)
   if (error) return { error: error.message }
@@ -362,6 +398,8 @@ export async function deleteFacture(id: string) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+  const permErr = await requireVoirFactures(user.id)
+  if (permErr) return { error: permErr }
 
   const { error } = await supabase.from("factures").delete().eq("id", id)
   if (error) return { error: error.message }
@@ -384,6 +422,8 @@ export async function marquerMissionPaiement(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
+  const permErr = await requireVoirFactures(user.id)
+  if (permErr) return { error: permErr }
 
   const updates: Record<string, any> = { date_paiement }
   if (numero_bv !== undefined) updates.numero_bv = numero_bv

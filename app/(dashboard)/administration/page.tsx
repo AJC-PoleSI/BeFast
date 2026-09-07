@@ -13,6 +13,7 @@ import {
   MapPin,
   ScrollText,
   Percent,
+  Receipt,
 } from "lucide-react"
 import { setParametres } from "@/lib/actions/etudes"
 import { getParametres } from "@/lib/actions/parametres"
@@ -117,6 +118,19 @@ const STRUCTURE_SECTIONS: SectionDef[] = [
       { key: "code_ape", label: "Code APE", type: "text" },
       { key: "numero_urssaf", label: "Numéro URSSAF", type: "text" },
       { key: "numero_tva", label: "Numéro TVA intracom.", type: "text" },
+    ],
+  },
+  {
+    title: "Mentions de facturation",
+    icon: Receipt,
+    note: "Textes imprimés sur les factures (PDF et modèle Word). Les conditions de règlement se surchargent facture par facture depuis la Trésorerie ; la valeur ci-dessous n'est que le défaut.",
+    fields: [
+      { key: "affiliation", label: "Mention d'affiliation", type: "text", full: true },
+      { key: "conditions_reglement_defaut", label: "Conditions de règlement (défaut)", type: "text", full: true },
+      { key: "mention_escompte", label: "Mention d'escompte", type: "text", full: true },
+      { key: "regime_tva", label: "Régime de TVA", type: "text" },
+      { key: "taux_penalites", label: "Taux des pénalités de retard", type: "text" },
+      { key: "indemnite_recouvrement", label: "Indemnité de recouvrement", type: "text" },
     ],
   },
   {

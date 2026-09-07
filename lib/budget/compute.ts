@@ -10,6 +10,15 @@
 //   marge_€         = prix_avec_marge - base
 //   ex. base=100, marge=38% → ceil(100/0,62)=162 → marge=62
 // La base inclut le SDP des phases ET le suivi de projet.
+//
+// La marge n'est jamais montrée au client : elle est refondue dans le prix
+// unitaire de chaque ligne (`prixJehMarge`), de sorte que le tableau de la
+// facture — « Désignation / Nombre de JEH / Montant unitaire / Montant HT » —
+// se totalise exactement au Total prestation. `totalJehHt` est donc la somme
+// des lignes grossies, et `margeJe` l'écart avec le SDP brut.
+//
+// TVA : assiette = TOTAL HT (prestation JEH **et** frais de structure), comme
+// sur les factures et les slides budget émises par AJC (20 % × 5 000 = 1 000).
 
 export interface BudgetPhaseInput {
   name: string
@@ -51,8 +60,10 @@ export interface PaiementVersementLine {
 export interface BudgetPhaseLine {
   name: string
   jeh: number
-  prixJeh: number // « Montant » unitaire par JEH
+  prixJeh: number // « Montant » unitaire par JEH, SDP brut (hors marge)
   montant: number // « TOTAL » de la ligne = jeh × prixJeh
+  prixJehMarge: number // prix unitaire marge incluse — c'est celui facturé au client
+  montantMarge: number // jeh × prixJehMarge
 }
 
 export interface BudgetBreakdown {
@@ -60,6 +71,8 @@ export interface BudgetBreakdown {
   suiviJeh: number
   suiviPrixJeh: number
   suiviTotal: number
+  suiviPrixJehMarge: number // prix unitaire du suivi, marge incluse
+  suiviTotalMarge: number // suiviJeh × suiviPrixJehMarge
   totalPhasesJeh: number
   margePct: number
   margeJe: number
@@ -67,7 +80,7 @@ export interface BudgetBreakdown {
   totalJehHt: number // phases + suivi + marge (la marge est « fondue » dans le JEH)
   totalHt: number // totalJehHt + frais de structure
   tvaPct: number
-  tva: number // calculée sur le JEH HT uniquement — les frais de structure ne sont pas assujettis
+  tva: number // calculée sur le TOTAL HT (prestation + frais de structure)
   netAPayer: number // TTC
   acompte60: number // 60 % à la signature (compat. schéma standard par défaut)
   solde40: number // 40 % au PV de recette (compat. schéma standard par défaut)
@@ -120,7 +133,14 @@ export function computeBudget(input: BudgetInput): BudgetBreakdown {
   const phases: BudgetPhaseLine[] = (input.phases ?? []).map((p) => {
     const jeh = Number(p.jehCount || 0)
     const prixJeh = Number(p.jehPrice || 0)
-    return { name: p.name, jeh, prixJeh, montant: r2(jeh * prixJeh) }
+    return {
+      name: p.name,
+      jeh,
+      prixJeh,
+      montant: r2(jeh * prixJeh),
+      prixJehMarge: prixJeh,
+      montantMarge: r2(jeh * prixJeh),
+    }
   })
 
   const totalPhasesJeh = r2(phases.reduce((s, p) => s + p.montant, 0))
@@ -129,20 +149,40 @@ export function computeBudget(input: BudgetInput): BudgetBreakdown {
   const suiviPrixJeh = Number(input.suiviJehPrice || 0)
   const suiviTotal = r2(suiviJeh * suiviPrixJeh)
 
-  const margePct = Number(input.margeJePct || 0)
-  const margeBase = totalPhasesJeh + suiviTotal
-  const margeJe =
-    margePct > 0 ? r2(Math.ceil(margeBase / (1 - margePct / 100)) - margeBase) : 0
+  // À 100 % de marge, (1 - margePct/100) vaut 0 : la division produirait
+  // Infinity. Une marge de 100 % n'a pas de sens économique (prix infini) —
+  // on la plafonne à 99 % plutôt que de laisser passer un budget à Infinity/NaN.
+  const margePct = Math.min(Number(input.margeJePct || 0), 99)
+  const margeBase = r2(totalPhasesJeh + suiviTotal)
+  const cibleJehHt =
+    margePct > 0 && margeBase > 0
+      ? Math.ceil(margeBase / (1 - margePct / 100))
+      : margeBase
+
+  // Refonte de la marge dans les prix unitaires : chaque ligne est grossie du
+  // même facteur, puis son montant est recalculé (jeh × prix arrondi) pour que
+  // « Nombre de JEH × Montant unitaire = Montant HT » reste exact ligne à ligne
+  // sur la facture. `totalJehHt` est la somme de ces lignes — à quelques
+  // centimes d'arrondi près du ROUNDUP Excel, jamais au-delà.
+  const facteurMarge = margeBase > 0 ? cibleJehHt / margeBase : 1
+  for (const p of phases) {
+    p.prixJehMarge = r2(p.prixJeh * facteurMarge)
+    p.montantMarge = r2(p.jeh * p.prixJehMarge)
+  }
+  const suiviPrixJehMarge = r2(suiviPrixJeh * facteurMarge)
+  const suiviTotalMarge = r2(suiviJeh * suiviPrixJehMarge)
 
   const fraisStructure = r2(
     Number(input.fraisDossier || 0) + Number(input.globalFraisAnnexes || 0)
   )
 
-  const totalJehHt = r2(totalPhasesJeh + suiviTotal + margeJe)
+  const totalJehHt = r2(
+    phases.reduce((s, p) => s + p.montantMarge, 0) + suiviTotalMarge
+  )
+  const margeJe = r2(totalJehHt - margeBase)
   const totalHt = r2(totalJehHt + fraisStructure)
-  // Les frais de structure (dossier + annexes) ne sont pas soumis à la TVA :
-  // seule la prestation JEH l'est.
-  const tva = r2(totalJehHt * (tvaPct / 100))
+  // Assiette TVA = TOTAL HT, frais de structure compris (cf. en-tête).
+  const tva = r2(totalHt * (tvaPct / 100))
   const netAPayer = r2(totalHt + tva)
   const acompte60 = r2(netAPayer * 0.6)
   const solde40 = r2(netAPayer - acompte60)
@@ -157,6 +197,8 @@ export function computeBudget(input: BudgetInput): BudgetBreakdown {
     suiviJeh,
     suiviPrixJeh,
     suiviTotal,
+    suiviPrixJehMarge,
+    suiviTotalMarge,
     totalPhasesJeh,
     margePct,
     margeJe,

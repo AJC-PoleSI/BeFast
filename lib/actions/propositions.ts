@@ -6,6 +6,7 @@ import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next
 import { ETUDES_TAG, MEMBERS_TAG, CLIENTS_TAG, PROPOSALS_TAG } from "@/lib/cache-tags"
 import type { BudgetInput, PaiementModalites } from "@/lib/budget/compute"
 import { computeBudget } from "@/lib/budget/compute"
+import { repartirVersements } from "@/lib/facture/reconciliation"
 
 // Couleurs de Gantt — identiques à la page étude pour une cohérence visuelle
 const GANTT_COLORS = [
@@ -25,6 +26,29 @@ function niveauToClasse(niveau?: string | null): string | null {
     default:
       return null
   }
+}
+
+/**
+ * Prochain numéro de classeur disponible pour l'année en cours (nomenclature
+ * SDP, cf. lib/document-numbering.ts) : "AAxx" où AA = 2 derniers chiffres de
+ * l'année, xx = numéro d'étude suivant sur 2 chiffres (max existant + 1).
+ * Utilisé quand une étude est créée automatiquement (signature de propale)
+ * sans saisie manuelle du numéro par un membre.
+ */
+async function nextEtudeNumero(sb: ReturnType<typeof createClient>): Promise<string> {
+  const aa = String(new Date().getFullYear()).slice(-2)
+  const { data } = await sb
+    .from("etudes")
+    .select("numero")
+    .like("numero", `${aa}%`)
+  let max = 0
+  for (const row of data ?? []) {
+    const digits = String((row as { numero: string | null }).numero ?? "").replace(/\D/g, "")
+    if (!digits.startsWith(aa)) continue
+    const suffix = parseInt(digits.slice(-2), 10)
+    if (!Number.isNaN(suffix) && suffix > max) max = suffix
+  }
+  return `${aa}${String(max + 1).padStart(2, "0")}`
 }
 
 // ---- Référentiels (réutilisés par le formulaire) ----
@@ -358,6 +382,52 @@ export async function signProposal(id: string) {
     clientId = newClient?.id ?? null
   }
 
+  // 1bis. Budget de référence — recalculé côté serveur (jamais repris de
+  // `proposals.total_ht`, qui vient du formulaire CDP). C'est cette unique
+  // source qui alimente ensuite l'étude, l'échéancier, les factures et donc le
+  // tableau « Désignation / Nombre de JEH / Montant unitaire » de la facture.
+  const phases = ((prop.proposal_phases as any[]) || []).slice().sort(
+    (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)
+  )
+
+  let tvaPct = 20
+  {
+    const { data: tvaParam } = await sb
+      .from("parametres")
+      .select("value")
+      .eq("key", "tva_rate")
+      .maybeSingle()
+    const parsed = Number(tvaParam?.value)
+    if (!Number.isNaN(parsed) && parsed > 0) tvaPct = parsed
+  }
+
+  const rawModalites = (prop as any).paiement_modalites
+  const modalites: PaiementModalites | null =
+    rawModalites && Array.isArray(rawModalites.versements)
+      ? {
+          type: rawModalites.type === "pvri" ? "pvri" : "standard",
+          versements: rawModalites.versements.map((v: any) => ({
+            label: String(v.label ?? "Versement"),
+            pct: Number(v.pct ?? 0),
+          })),
+        }
+      : null
+
+  const breakdown = computeBudget({
+    phases: phases.map((ph: any) => ({
+      name: ph.name,
+      jehCount: Number(ph.jeh_count || 0),
+      jehPrice: Number(ph.jeh_price || 0),
+    })),
+    suiviJehCount: Number((prop as any).suivi_jeh_count || 0),
+    suiviJehPrice: Number((prop as any).suivi_jeh_price || 0),
+    margeJePct: Number((prop as any).marge_je || 0),
+    fraisDossier: Number((prop as any).frais_dossier || 0),
+    globalFraisAnnexes: Number((prop as any).global_frais_annexes || 0),
+    tvaPct,
+    paiementModalites: modalites,
+  })
+
   // 2. Créer l'étude
   const studyName = [prop.study_type, prop.client_company]
     .filter(Boolean)
@@ -372,29 +442,57 @@ export async function signProposal(id: string) {
     .filter(Boolean)
     .join("\n\n")
 
-  const { data: etude, error: etErr } = await sb
-    .from("etudes")
-    .insert({
-      numero: prop.id,
-      nom: studyName,
-      client_id: clientId,
-      suiveur_id: prop.cdp_id ?? null,
-      statut: "en_cours",
-      type: "cs",
-      budget_ht: prop.total_ht ?? 0,
-      description: description || null,
-      date_debut: prop.start_date ?? null,
-      created_by: user.id,
-    })
-    .select("id")
-    .single()
-  if (etErr) {
-    if ((etErr as { code?: string }).code === "23505") {
-      return { error: "Une étude avec ce numéro existe déjà." }
+  // Nomenclature SDP : `numero` doit être un code classeur "AAxx" (2 derniers
+  // chiffres de l'année + numéro d'étude sur 2 chiffres), jamais l'id libre
+  // de la propale — sinon {mission.numero_etude}/{etude.code_classeur} et le
+  // nommage des documents générés deviennent incohérents avec les études
+  // saisies manuellement (collision possible entre deux études différentes).
+  // Retry sur conflit `numero` (contrainte UNIQUE) : deux signatures
+  // concurrentes peuvent viser le même prochain numéro disponible.
+  let etude: { id: string } | null = null
+  let etErr: { message: string; code?: string } | null = null
+  let etudeNumero = ""
+  for (let attempt = 0; attempt < 5; attempt++) {
+    etudeNumero = await nextEtudeNumero(sb)
+    const { data, error } = await sb
+      .from("etudes")
+      .insert({
+        numero: etudeNumero,
+        nom: studyName,
+        client_id: clientId,
+        suiveur_id: prop.cdp_id ?? null,
+        statut: "en_cours",
+        type: "cs",
+        // `budget_ht` = prestation JEH seule (marge comprise) et `frais_dossier`
+        // = frais de structure : la facture reconstitue « Total prestation +
+        // Frais = Total HT de l'étude » à partir de ces deux colonnes.
+        budget_ht: breakdown.totalJehHt,
+        frais_dossier: breakdown.fraisStructure,
+        marge_pct: breakdown.margePct,
+        suivi_jeh: breakdown.suiviJeh,
+        suivi_prix_jeh: breakdown.suiviPrixJehMarge,
+        description: description || null,
+        date_debut: prop.start_date ?? null,
+        created_by: user.id,
+      })
+      .select("id")
+      .single()
+    if (!error) {
+      etude = data
+      etErr = null
+      break
     }
-    return { error: `Création étude: ${etErr.message}` }
+    etErr = error
+    if ((error as { code?: string }).code !== "23505") break
+    // Conflit de numéro : on retente avec le prochain numéro disponible.
   }
-  const etudeId = etude!.id as string
+  if (etErr || !etude) {
+    if ((etErr as { code?: string } | null)?.code === "23505") {
+      return { error: "Impossible d'attribuer un numéro d'étude disponible, réessayez." }
+    }
+    return { error: `Création étude: ${etErr?.message ?? "erreur inconnue"}` }
+  }
+  const etudeId = etude.id
 
   if (prop.cdp_id) {
     const { error: suivErr } = await sb
@@ -404,10 +502,6 @@ export async function signProposal(id: string) {
   }
 
   // 3. Phases -> blocs d'échéancier (Gantt) + missions
-  const phases = ((prop.proposal_phases as any[]) || []).slice().sort(
-    (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)
-  )
-
   let cursor = 1 // semaine de départ si non renseignée
   const blocs: any[] = []
   const missions: any[] = []
@@ -424,6 +518,11 @@ export async function signProposal(id: string) {
       couleur: GANTT_COLORS[i % GANTT_COLORS.length],
       ordre: i,
       jeh: Number(ph.jeh_count || 0),
+      // `nombre_jeh`/`prix_jeh` alimentent le tableau de la facture. Le prix
+      // unitaire porté ici est celui facturé au client (marge refondue) :
+      // Σ (nombre_jeh × prix_jeh) = Total prestation de l'étude.
+      nombre_jeh: Number(ph.jeh_count || 0),
+      prix_jeh: breakdown.phases[i]?.prixJehMarge ?? Number(ph.jeh_price || 0),
     })
 
     missions.push({
@@ -457,7 +556,7 @@ export async function signProposal(id: string) {
     phase: ph.name,
     nb_jeh: Number(ph.jeh_count || 0),
     prix_jeh: Number(ph.jeh_price || 0),
-    marge_pct: Number((prop as any).marge_je || 0),
+    marge_pct: breakdown.margePct,
   }))
   if (budgetRows.length > 0) {
     await sb.from("budget_etude").insert(budgetRows)
@@ -467,58 +566,29 @@ export async function signProposal(id: string) {
   // Une facture par versement (montant HT = % du Total HT). Best-effort : on
   // n'échoue jamais la signature si l'insertion des factures pose problème.
   try {
-    let tvaPct = 20
-    const { data: tvaParam } = await sb
-      .from("parametres")
-      .select("value")
-      .eq("key", "tva_rate")
-      .maybeSingle()
-    if (tvaParam?.value != null) {
-      const parsed = Number(tvaParam.value)
-      if (!Number.isNaN(parsed) && parsed > 0) tvaPct = parsed
-    }
-
-    const rawModalites = (prop as any).paiement_modalites
-    const modalites: PaiementModalites | null =
-      rawModalites && Array.isArray(rawModalites.versements)
-        ? {
-            type: rawModalites.type === "pvri" ? "pvri" : "standard",
-            versements: rawModalites.versements.map((v: any) => ({
-              label: String(v.label ?? "Versement"),
-              pct: Number(v.pct ?? 0),
-            })),
-          }
-        : null
-
-    const breakdown = computeBudget({
-      phases: phases.map((ph: any) => ({
-        name: ph.name,
-        jehCount: Number(ph.jeh_count || 0),
-        jehPrice: Number(ph.jeh_price || 0),
-      })),
-      suiviJehCount: Number((prop as any).suivi_jeh_count || 0),
-      suiviJehPrice: Number((prop as any).suivi_jeh_price || 0),
-      margeJePct: Number((prop as any).marge_je || 0),
-      fraisDossier: Number((prop as any).frais_dossier || 0),
-      globalFraisAnnexes: Number((prop as any).global_frais_annexes || 0),
-      tvaPct,
-      paiementModalites: modalites,
-    })
-
-    // Montants HT par versement (le dernier absorbe l'arrondi).
-    const totalHt = breakdown.totalHt
-    let cumulHt = 0
+    // Montants HT par versement : le dernier absorbe l'arrondi, donc la somme
+    // des factures égale exactement le Total HT de l'étude.
+    const dernier = breakdown.versements.length - 1
+    const montantsHt = repartirVersements(
+      breakdown.totalHt,
+      breakdown.versements.map((v) => v.pct)
+    )
     const factureRows = breakdown.versements.map((v, i) => {
-      const isLast = i === breakdown.versements.length - 1
-      const montantHt = isLast
-        ? Math.round((totalHt - cumulHt) * 100) / 100
-        : Math.round(totalHt * (v.pct / 100) * 100) / 100
-      cumulHt = Math.round((cumulHt + montantHt) * 100) / 100
+      const isLast = i === dernier
+      const montantHt = montantsHt[i]
+      // Le type pilote le libellé et le bloc de totaux de la facture générée
+      // (« Facture d'acompte… » / « Déduction des factures précédentes »).
+      const type = i === 0 ? "acompte" : isLast ? "solde" : "intermediaire"
       return {
-        numero: `${prop.id}-F${i + 1}`,
+        // Référencé sur le numéro d'étude réel (pas l'id de la propale, cf.
+        // correctif ci-dessus) pour rester traçable dans la nomenclature.
+        numero: `${etudeNumero}-F${i + 1}`,
         nom: v.label,
         etude_id: etudeId,
         montant_ht: montantHt,
+        type,
+        accompte_pct: type === "acompte" ? v.pct : null,
+        numero_dans_etude: i + 1,
         notes: `Généré automatiquement depuis le budget (versement ${v.pct} %).`,
         created_by: user.id,
       }

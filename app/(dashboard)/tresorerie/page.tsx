@@ -75,6 +75,32 @@ export default function TresoreriePage() {
   const [budgetBusy, setBudgetBusy] = useState<string | null>(null)
   const [detailBudgetId, setDetailBudgetId] = useState<string | null>(null)
   const [factureTemplateId, setFactureTemplateId] = useState<string | null>(null)
+  const [facturePdfId, setFacturePdfId] = useState<string | null>(null)
+
+  // Facture au format PDF : rendue par /api/factures/[id]/pdf à partir du même
+  // contexte que le modèle Word — c'est le format envoyé au client.
+  const telechargerFacturePdf = async (f: FactureRow) => {
+    setFacturePdfId(f.id)
+    try {
+      const res = await fetch(`/api/factures/${f.id}/pdf`)
+      if (!res.ok) {
+        const detail = await res.json().catch(() => null)
+        alert(detail?.error || "Impossible de générer la facture.")
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `Facture ${f.numero}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } finally {
+      setFacturePdfId(null)
+    }
+  }
   const { generate: generateDocument, generating: generatingDocument } = useDocumentDownload()
 
   const loadBudgets = async () => {
@@ -167,6 +193,19 @@ export default function TresoreriePage() {
     )
   }
   if (!data) {
+    if (loadError === "Non autorisé") {
+      return (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 flex items-start gap-3">
+          <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <h2 className="font-bold text-amber-900">Accès réservé</h2>
+            <p className="text-sm text-amber-800 mt-1">
+              La Trésorerie est réservée aux membres du Bureau et du Pôle Trésorerie. Contacte un administrateur si tu penses devoir y avoir accès.
+            </p>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="space-y-4">
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
@@ -461,14 +500,26 @@ export default function TresoreriePage() {
                                 <Check className="w-4 h-4" />
                               </button>
                             )}
+                            <button
+                              onClick={() => telechargerFacturePdf(f)}
+                              disabled={facturePdfId === f.id}
+                              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-zinc-400 hover:text-[#00236f] hover:bg-[#d0d8ff] transition-all disabled:opacity-50"
+                              title="Télécharger la facture (PDF)"
+                            >
+                              {facturePdfId === f.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Download className="w-4 h-4" />
+                              )}
+                            </button>
                             {factureTemplateId && (
                               <button
                                 onClick={() => generateDocument({ template_id: factureTemplateId, scope: "facture", entity_id: f.id })}
                                 disabled={generatingDocument}
                                 className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-zinc-400 hover:text-[#00236f] hover:bg-[#d0d8ff] transition-all disabled:opacity-50"
-                                title="Télécharger la facture"
+                                title="Télécharger la facture au format Word (modifiable)"
                               >
-                                <Download className="w-4 h-4" />
+                                <FileText className="w-4 h-4" />
                               </button>
                             )}
                             <button
@@ -743,9 +794,10 @@ export default function TresoreriePage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
-                          <button 
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-xs font-semibold"
-                            onClick={() => alert("Génération Excel (remplacement des balises) : Cette fonctionnalité sera implémentée prochainement. Pour le moment les infos sont : " + JSON.stringify({ montant: note.montant_total, intervenant: note.intervenant?.prenom + " " + note.intervenant?.nom, mission: note.mission?.nom }))}
+                          <button
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-indigo-50 text-indigo-400 cursor-not-allowed transition-colors text-xs font-semibold opacity-60"
+                            disabled
+                            title="Génération Excel : bientôt disponible"
                           >
                             <Download className="w-3.5 h-3.5" /> Générer
                           </button>
@@ -927,7 +979,7 @@ function FactureModal({
   onSaved,
 }: {
   facture: FactureRow | null
-  etudes: { id: string; numero: string; nom: string }[]
+  etudes: { id: string; numero: string; nom: string; total_ht?: number }[]
   onClose: () => void
   onSaved: () => void
 }) {
@@ -942,9 +994,35 @@ function FactureModal({
     date_echeance: facture?.date_echeance ?? "",
     date_paiement: facture?.date_paiement ?? "",
     notes: facture?.notes ?? "",
+    conditions_reglement: facture?.conditions_reglement ?? "",
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Total HT de l'étude sélectionnée = assiette du % d'acompte.
+  const totalEtude = etudes.find((e) => e.id === form.etude_id)?.total_ht ?? 0
+
+  // Saisir un % remplit le montant, et saisir un montant recalcule le % :
+  // le trésorier arbitre dans le sens qui l'arrange sans jamais sortir du
+  // budget de l'étude.
+  const setPct = (pct: string) => {
+    setForm((f) => {
+      const montant =
+        totalEtude > 0 && pct !== ""
+          ? (Math.round(totalEtude * (Number(pct) / 100) * 100) / 100).toString()
+          : f.montant_ht
+      return { ...f, accompte_pct: pct, montant_ht: montant }
+    })
+  }
+  const setMontant = (montant: string) => {
+    setForm((f) => {
+      const pct =
+        totalEtude > 0 && montant !== "" && f.type === "acompte"
+          ? (Math.round((Number(montant) / totalEtude) * 10000) / 100).toString()
+          : f.accompte_pct
+      return { ...f, montant_ht: montant, accompte_pct: pct }
+    })
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
@@ -973,6 +1051,7 @@ function FactureModal({
               date_echeance: form.date_echeance || null,
               date_paiement: form.date_paiement || null,
               notes: form.notes || null,
+              conditions_reglement: form.conditions_reglement || null,
             }
             const res = facture
               ? await updateFacture(facture.id, payload as any)
@@ -1001,10 +1080,15 @@ function FactureModal({
                 type="number"
                 step="0.01"
                 value={form.montant_ht}
-                onChange={(e) => setForm((f) => ({ ...f, montant_ht: e.target.value }))}
+                onChange={(e) => setMontant(e.target.value)}
                 placeholder="Ex : 1500"
                 className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               />
+              {totalEtude > 0 && (
+                <p className="text-xs text-zinc-400 mt-1">
+                  Total HT de l&apos;étude : {fmtEUR(totalEtude)}
+                </p>
+              )}
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-semibold text-zinc-600 mb-1">Nom de la facturation</label>
@@ -1042,7 +1126,7 @@ function FactureModal({
                 <option value="intermediaire">Intermédiaire</option>
                 <option value="solde">Solde</option>
               </select>
-              <p className="text-xs text-zinc-400 mt-1">Utilisé pour la génération Word.</p>
+              <p className="text-xs text-zinc-400 mt-1">Pilote les libellés et le bloc de totaux.</p>
             </div>
             {form.type === "acompte" ? (
               <div>
@@ -1053,10 +1137,15 @@ function FactureModal({
                   min="0"
                   max="100"
                   value={form.accompte_pct}
-                  onChange={(e) => setForm((f) => ({ ...f, accompte_pct: e.target.value }))}
-                  placeholder="Ex : 30"
+                  onChange={(e) => setPct(e.target.value)}
+                  placeholder="Ex : 60"
                   className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
                 />
+                {totalEtude > 0 && (
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Solde restant : {fmtEUR(Math.max(0, totalEtude - Number(form.montant_ht || 0)))}
+                  </p>
+                )}
               </div>
             ) : (
               <div />
@@ -1088,6 +1177,18 @@ function FactureModal({
                 className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               />
               <p className="text-xs text-zinc-400 mt-1">Laisser vide si pas encore payée.</p>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-zinc-600 mb-1">Conditions de règlement</label>
+              <input
+                value={form.conditions_reglement ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, conditions_reglement: e.target.value }))}
+                placeholder="A réception de facture"
+                className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+              />
+              <p className="text-xs text-zinc-400 mt-1">
+                Imprimé sur la facture. Vide = valeur par défaut des paramètres.
+              </p>
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-semibold text-zinc-600 mb-1">Notes</label>

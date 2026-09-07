@@ -22,9 +22,11 @@ export function BudgetSheet({
 }) {
   const b = breakdown
   const rows = [
-    ...b.phases.map((p) => ({ name: p.name || "Phase", jeh: p.jeh, montant: p.prixJeh, total: p.montant })),
+    // Prix unitaires marge incluse (cf. lib/budget/compute.ts) : les lignes se
+    // totalisent exactement au « Total J.E.H. HT » de la synthèse.
+    ...b.phases.map((p) => ({ name: p.name || "Phase", jeh: p.jeh, montant: p.prixJehMarge, total: p.montantMarge })),
     ...(b.suiviJeh > 0 || b.suiviTotal > 0
-      ? [{ name: "Suivi de l'étude", jeh: b.suiviJeh, montant: b.suiviPrixJeh, total: b.suiviTotal }]
+      ? [{ name: "Suivi de l'étude", jeh: b.suiviJeh, montant: b.suiviPrixJehMarge, total: b.suiviTotalMarge }]
       : []),
   ]
 

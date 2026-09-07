@@ -92,10 +92,12 @@ function generateBudgetTableXml(b: BudgetBreakdown, x: number, y: number, cx: nu
   </a:tr>`;
 
   // ── Lignes de phases ──────────────────────────────────────────────────────
+  // Prix unitaires marge incluse : le client ne voit jamais le SDP brut, et le
+  // tableau se totalise exactement au « Total J.E.H. HT » de la synthèse.
   const phaseRows = [
-    ...b.phases.map(p => ({ name: p.name || 'Phase', jeh: p.jeh, prixJeh: p.prixJeh, montant: p.montant })),
+    ...b.phases.map(p => ({ name: p.name || 'Phase', jeh: p.jeh, prixJeh: p.prixJehMarge, montant: p.montantMarge })),
     ...(b.suiviJeh > 0 || b.suiviTotal > 0
-      ? [{ name: "Suivi de l'étude", jeh: b.suiviJeh, prixJeh: b.suiviPrixJeh, montant: b.suiviTotal }]
+      ? [{ name: "Suivi de l'étude", jeh: b.suiviJeh, prixJeh: b.suiviPrixJehMarge, montant: b.suiviTotalMarge }]
       : []),
   ];
   phaseRows.forEach((p, i) => {
