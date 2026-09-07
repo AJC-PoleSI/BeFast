@@ -29,6 +29,11 @@ FROM doublons d
 WHERE d.id = gd.id
   AND d.rang > 1;
 
+-- Rejouable : sans ce DROP, un second passage échoue en 42710
+-- (constraint already exists).
+ALTER TABLE public.generated_documents
+  DROP CONSTRAINT IF EXISTS generated_documents_scope_entity_filename_key;
+
 ALTER TABLE public.generated_documents
   ADD CONSTRAINT generated_documents_scope_entity_filename_key
   UNIQUE (scope, entity_id, file_name);
