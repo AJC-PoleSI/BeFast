@@ -907,7 +907,13 @@ export async function annulerRetributionPaiement(missionId: string, personneId: 
     .eq("mission_id", missionId)
     .eq("personne_id", personneId)
     .maybeSingle()
-  if (lectureErr) return { error: messageErreurRetribution(lectureErr, null) }
+  // Table absente (migration 067 pas encore appliquée) : il ne PEUT pas exister
+  // de rétribution, donc le seul paiement annulable est celui hérité du niveau
+  // mission. On enchaîne sur le repli au lieu de bloquer l'annulation d'un
+  // versement saisi avant la migration.
+  if (lectureErr && !tableRetributionsAbsente(lectureErr)) {
+    return { error: messageErreurRetribution(lectureErr, null) }
+  }
 
   if (existante) {
     const { data, error } = await supabase
