@@ -5,6 +5,14 @@ import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next
 import { FACTURES_TAG, MISSIONS_TAG } from "@/lib/cache-tags"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { hasPermission } from "@/lib/auth/permissions"
+import {
+  buildRetributionRows,
+  agregerParPersonne,
+  kpisRetributions,
+  type MissionSource,
+  type IntervenantSource,
+  type RetributionRecord,
+} from "@/lib/tresorerie/retributions"
 
 // Suivi de trésorerie (factures, paiements) : réservé aux profils disposant de
 // la permission `voir_factures` (Présidente, Trésorier·ère, Pôle Trésorerie…).
@@ -37,21 +45,13 @@ export type FactureRow = {
   statut: "payee" | "en_retard" | "a_venir" | "brouillon"
 }
 
-export type MissionPayRow = {
-  id: string
-  nom: string
-  etude_id: string | null
-  etude_numero: string | null
-  etude_nom: string | null
-  date_debut: string | null
-  date_fin: string | null
-  date_paiement: string | null
-  numero_bv: string | null
-  paye: boolean
-  montant: number
-  intervenant_id: string | null
-  intervenant_nom: string | null
-}
+// Le suivi des rétributions se fait désormais intervenant par intervenant
+// (une ligne par couple mission/personne) : les types vivent dans le module
+// pur `lib/tresorerie/retributions.ts` et sont réexportés ici pour la page.
+export type {
+  RetributionRow,
+  RetributionParPersonne,
+} from "@/lib/tresorerie/retributions"
 
 export type CaParEtude = {
   etude_id: string
@@ -147,21 +147,110 @@ export async function getTresorerieData() {
     }
   }
 
-  // Fetch intervenants (personnes) for any missions that have intervenant_id
+  // Intervenants d'une mission = candidatures acceptées + intervenant assigné
+  // directement (missions de suivi d'étude). Même règle que
+  // listMissionIntervenants dans lib/actions/documents.ts.
+  //
+  // Pas de filtre `.in("mission_id", …)` : la requête missions ci-dessus n'est
+  // elle-même pas filtrée, donc toutes les candidatures acceptées et toutes
+  // les rétributions concernent forcément une mission déjà chargée. Le filtre
+  // ne restreindrait rien et ferait grossir l'URL GET d'un UUID par mission
+  // (414 Request-URI Too Large passé quelques centaines de missions).
+  const aDesMissions = (missionsRes.data ?? []).length > 0
+
+  const [candidaturesRes, retributionsRes] = await Promise.all([
+    // `candidatures` et `retributions` ont chacune deux clés étrangères vers
+    // `personnes` (personne_id et created_by) : sans l'indice explicite de
+    // contrainte, PostgREST refuse la jointure (PGRST201, embed ambigu).
+    aDesMissions
+      ? supabase
+          .from("candidatures")
+          .select("mission_id, personne_id, personnes!candidatures_personne_id_fkey(id, prenom, nom)")
+          .eq("statut", "acceptee")
+      : Promise.resolve({ data: [] as any[], error: null }),
+    aDesMissions
+      ? supabase
+          .from("retributions")
+          .select(
+            "mission_id, personne_id, numero_bv, date_paiement, montant, personnes!retributions_personne_id_fkey(id, prenom, nom)"
+          )
+      : Promise.resolve({ data: [] as any[], error: null }),
+  ])
+
+  // Table absente (migration 067 pas encore appliquée) : on continue en mode
+  // dégradé — les lignes s'affichent, seul l'enregistrement des paiements
+  // individuels est indisponible. PostgREST renvoie PGRST205 quand la table
+  // manque dans son cache de schéma, 42P01 quand l'erreur remonte de Postgres.
+  let retributionsData: any[] = []
+  if (retributionsRes.error) {
+    const code = (retributionsRes.error as any).code
+    if (code === "42P01" || code === "PGRST205") {
+      migrationMissing = true
+    } else {
+      return { error: retributionsRes.error.message }
+    }
+  } else {
+    retributionsData = retributionsRes.data ?? []
+  }
+  if (candidaturesRes.error) return { error: candidaturesRes.error.message }
+
+  // Personnes assignées directement (hors candidatures) : un seul aller-retour.
   const intervenantIds = Array.from(
     new Set((missionsRes.data ?? []).map((m: any) => m.intervenant_id).filter(Boolean))
   ) as string[]
-
-  let personnesById = new Map<string, { id: string; prenom: string | null; nom: string | null }>()
+  const personnesById = new Map<string, { id: string; prenom: string | null; nom: string | null }>()
   if (intervenantIds.length > 0) {
     const personnesRes = await supabase
       .from("personnes")
       .select("id, prenom, nom")
       .in("id", intervenantIds)
-    for (const p of personnesRes.data ?? []) {
-      personnesById.set(p.id, p)
-    }
+    for (const p of personnesRes.data ?? []) personnesById.set(p.id, p)
   }
+
+  const nomComplet = (p: { prenom?: string | null; nom?: string | null } | null | undefined) =>
+    p ? [p.prenom, p.nom].filter(Boolean).join(" ").trim() || null : null
+
+  const missionSources: MissionSource[] = (missionsRes.data ?? []).map((m: any) => ({
+    id: m.id,
+    nom: m.nom,
+    etude_id: m.etude_id,
+    etude_numero: m.etudes?.numero ?? null,
+    etude_nom: m.etudes?.nom ?? null,
+    date_debut: m.date_debut,
+    date_fin: m.date_fin,
+    remuneration: Number(m.remuneration ?? 0),
+    nb_jeh: Number(m.nb_jeh ?? 0),
+    nb_intervenants: Number(m.nb_intervenants ?? 1),
+    date_paiement: m.date_paiement ?? null,
+    numero_bv: m.numero_bv ?? null,
+  }))
+
+  const intervenantSources: IntervenantSource[] = [
+    ...(candidaturesRes.data ?? []).map((c: any) => ({
+      mission_id: c.mission_id,
+      personne_id: c.personne_id,
+      nom: nomComplet(c.personnes) ?? "Intervenant·e",
+    })),
+    ...(missionsRes.data ?? [])
+      .filter((m: any) => m.intervenant_id)
+      .map((m: any) => ({
+        mission_id: m.id,
+        personne_id: m.intervenant_id,
+        nom: nomComplet(personnesById.get(m.intervenant_id)) ?? "Intervenant·e",
+      })),
+  ]
+
+  const retributionRecords: RetributionRecord[] = retributionsData.map((r: any) => ({
+    mission_id: r.mission_id,
+    personne_id: r.personne_id,
+    personne_nom: nomComplet(r.personnes),
+    numero_bv: r.numero_bv ?? null,
+    date_paiement: r.date_paiement ?? null,
+    montant: Number(r.montant ?? 0),
+  }))
+
+  const retributions = buildRetributionRows(missionSources, intervenantSources, retributionRecords)
+  const retributionsParPersonne = agregerParPersonne(retributions)
 
   const factures: FactureRow[] = facturesData.map((f: any) => ({
     id: f.id,
@@ -182,30 +271,6 @@ export async function getTresorerieData() {
     jours_retard: joursRetard(f.date_emission, f.date_paiement),
     statut: computeStatut(f.date_emission, f.date_paiement),
   }))
-
-  const missions: MissionPayRow[] = (missionsRes.data ?? []).map((m: any) => {
-    const p = m.intervenant_id ? personnesById.get(m.intervenant_id) : null
-    const intervenant_nom = p
-      ? [p.prenom, p.nom].filter(Boolean).join(" ").trim() || null
-      : null
-    const totalJeh = Number(m.nb_jeh ?? 0) * Number(m.nb_intervenants ?? 1)
-    const montant = Number(m.remuneration ?? 0) * totalJeh
-    return {
-      id: m.id,
-      nom: m.nom,
-      etude_id: m.etude_id,
-      etude_numero: m.etudes?.numero ?? null,
-      etude_nom: m.etudes?.nom ?? null,
-      date_debut: m.date_debut,
-      date_fin: m.date_fin,
-      date_paiement: m.date_paiement,
-      numero_bv: m.numero_bv,
-      paye: !!m.date_paiement,
-      montant,
-      intervenant_id: m.intervenant_id,
-      intervenant_nom,
-    }
-  })
 
   // CA par étude (agrégé)
   const caMap = new Map<string, CaParEtude>()
@@ -245,8 +310,8 @@ export async function getTresorerieData() {
   const totalEnRetard = factures
     .filter((f) => f.statut === "en_retard")
     .reduce((s, f) => s + f.montant_ht, 0)
-  const totalRetributionDue = missions.filter((m) => !m.paye).reduce((s, m) => s + m.montant, 0)
-  const totalRetributionVersee = missions.filter((m) => m.paye).reduce((s, m) => s + m.montant, 0)
+  const { totalRetributionDue, totalRetributionVersee, nbRetributionsAPayer } =
+    kpisRetributions(retributions)
 
   const notesRes = await supabase
     .from("notes_de_frais")
@@ -263,7 +328,8 @@ export async function getTresorerieData() {
   return {
     data: {
       factures,
-      missions,
+      retributions,
+      retributionsParPersonne,
       notes_de_frais,
       caParEtude,
       migrationMissing,
@@ -276,7 +342,7 @@ export async function getTresorerieData() {
         totalRetributionVersee,
         nbFactures: factures.length,
         nbFacturesImpayees: factures.filter((f) => !f.date_paiement).length,
-        nbMissionsAPayer: missions.filter((m) => !m.paye).length,
+        nbRetributionsAPayer,
         nbNotesSoumises: notes_de_frais.filter((n: any) => n.statut === 'soumis').length
       },
     },
