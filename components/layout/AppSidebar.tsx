@@ -53,7 +53,7 @@ interface NavEntry {
 }
 
 const NAV: NavEntry[] = [
-  { label: "Accueil", href: "/", icon: LayoutDashboard, permission: "dashboard" },
+  { label: "Accueil", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard" },
   { label: "Mon profil", href: "/profil", icon: UserCircle, permission: "profil" },
   { label: "Missions", href: "/missions", icon: Briefcase, permission: "missions" },
   { label: "Mes documents", href: "/documents", icon: FolderOpen, permission: "documents" },
