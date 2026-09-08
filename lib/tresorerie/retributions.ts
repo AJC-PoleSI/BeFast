@@ -220,3 +220,56 @@ export function nextNumeroBV(
   }
   return `BV-${annee}-${String(max + 1).padStart(3, "0")}`
 }
+
+/** Récapitulatif de rétribution pour une personne, toutes missions confondues. */
+export type RetributionParPersonne = {
+  personne_id: string
+  intervenant_nom: string
+  nbMissions: number
+  nbBv: number
+  totalDu: number
+  totalVerse: number
+}
+
+/** Agrège les lignes par personne, triées par montant dû décroissant. */
+export function agregerParPersonne(rows: RetributionRow[]): RetributionParPersonne[] {
+  const parPersonne = new Map<string, RetributionParPersonne>()
+  for (const row of rows) {
+    if (!row.personne_id) continue
+    let agg = parPersonne.get(row.personne_id)
+    if (!agg) {
+      agg = {
+        personne_id: row.personne_id,
+        intervenant_nom: row.intervenant_nom ?? "—",
+        nbMissions: 0,
+        nbBv: 0,
+        totalDu: 0,
+        totalVerse: 0,
+      }
+      parPersonne.set(row.personne_id, agg)
+    }
+    agg.nbMissions += 1
+    if (row.numero_bv) agg.nbBv += 1
+    if (row.paye) agg.totalVerse = round2(agg.totalVerse + row.montant)
+    else agg.totalDu = round2(agg.totalDu + row.montant)
+  }
+  return Array.from(parPersonne.values()).sort(
+    (a, b) => b.totalDu - a.totalDu || a.intervenant_nom.localeCompare(b.intervenant_nom, "fr")
+  )
+}
+
+/** KPI de l'en-tête trésorerie, calculés sur les lignes de rétribution. */
+export function kpisRetributions(rows: RetributionRow[]) {
+  let totalRetributionDue = 0
+  let totalRetributionVersee = 0
+  let nbRetributionsAPayer = 0
+  for (const row of rows) {
+    if (row.paye) {
+      totalRetributionVersee = round2(totalRetributionVersee + row.montant)
+    } else {
+      totalRetributionDue = round2(totalRetributionDue + row.montant)
+      nbRetributionsAPayer += 1
+    }
+  }
+  return { totalRetributionDue, totalRetributionVersee, nbRetributionsAPayer }
+}

@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest"
 import {
   buildRetributionRows,
   nextNumeroBV,
+  agregerParPersonne,
+  kpisRetributions,
   type MissionSource,
   type IntervenantSource,
   type RetributionRecord,
@@ -209,5 +211,54 @@ describe("buildRetributionRows", () => {
     )
     expect(rows).toHaveLength(2)
     expect(rows.some((r) => r.personne_id === null)).toBe(false)
+  })
+})
+
+describe("agregerParPersonne", () => {
+  const rows = buildRetributionRows(
+    [
+      mission({ id: "m1", nb_intervenants: 2 }),
+      mission({ id: "m2", nom: "Focus group", nb_intervenants: 1, remuneration: 300, nb_jeh: 1 }),
+    ],
+    [
+      inter("p1", "Alice Martin", "m1"),
+      inter("p2", "Bob Durand", "m1"),
+      inter("p1", "Alice Martin", "m2"),
+    ],
+    [record({ mission_id: "m1", personne_id: "p1" })]
+  )
+
+  it("totalise le dû et le versé par personne", () => {
+    const agg = agregerParPersonne(rows)
+    const alice = agg.find((a) => a.personne_id === "p1")!
+    expect(alice.totalVerse).toBe(200)
+    expect(alice.totalDu).toBe(300)
+    expect(alice.nbMissions).toBe(2)
+    expect(alice.nbBv).toBe(1)
+  })
+
+  it("ignore les lignes d'alerte sans personne", () => {
+    const agg = agregerParPersonne(buildRetributionRows([mission({ nb_intervenants: 3 })], [], []))
+    expect(agg).toHaveLength(0)
+  })
+
+  it("trie par montant dû décroissant", () => {
+    const agg = agregerParPersonne(rows)
+    expect(agg.map((a) => a.personne_id)).toEqual(["p1", "p2"])
+  })
+})
+
+describe("kpisRetributions", () => {
+  it("sépare le dû, le versé et le nombre de rétributions à payer", () => {
+    const rows = buildRetributionRows(
+      [mission({ nb_intervenants: 3 })],
+      [inter("p1", "Alice Martin"), inter("p2", "Bob Durand")],
+      [record({ personne_id: "p1" })]
+    )
+    // Alice payée 200 ; Bob dû 200 ; ligne d'alerte 1 × 200 dû.
+    const kpis = kpisRetributions(rows)
+    expect(kpis.totalRetributionVersee).toBe(200)
+    expect(kpis.totalRetributionDue).toBe(400)
+    expect(kpis.nbRetributionsAPayer).toBe(2)
   })
 })
