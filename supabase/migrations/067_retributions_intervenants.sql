@@ -138,6 +138,29 @@ CREATE POLICY "candidatures read" ON public.candidatures FOR SELECT TO authentic
     OR public.has_permission(auth.uid(), 'voir_factures')
   );
 
+-- ── missions : même ouverture pour la trésorerie ──────────────────────────
+-- Même asymétrie, une table plus loin : "missions read" (dernière définition
+-- en migration 053) exige elle aussi `is_membre_interne`. Un·e trésorier·ère
+-- dont le droit `voir_factures` vient d'un poste cumulé, sans profil de base
+-- interne, ne lit donc AUCUNE mission — la page trésorerie lui renverrait un
+-- tableau vide avant même d'atteindre les candidatures. Ouvrir candidatures
+-- sans ouvrir missions ne servirait à rien.
+-- Les quatre branches de la migration 053 sont reprises à l'identique, une
+-- cinquième est ajoutée. Rejouable : DROP IF EXISTS puis CREATE.
+DROP POLICY IF EXISTS "missions read" ON public.missions;
+
+CREATE POLICY "missions read" ON public.missions FOR SELECT TO authenticated
+  USING (
+    public.is_membre_interne(auth.uid())
+    OR public.is_mission_intervenant(id, auth.uid())
+    OR published = true
+    OR EXISTS (
+      SELECT 1 FROM public.etudes e
+      WHERE e.id = missions.etude_id AND e.published = true
+    )
+    OR public.has_permission(auth.uid(), 'voir_factures')
+  );
+
 -- ── updated_at ─────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.set_retributions_updated_at()
 RETURNS TRIGGER AS $$
