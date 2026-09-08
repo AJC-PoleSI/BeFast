@@ -1,5 +1,43 @@
 import { describe, it, expect } from "vitest"
-import { nextNumeroBV } from "./retributions"
+import {
+  buildRetributionRows,
+  nextNumeroBV,
+  type MissionSource,
+  type IntervenantSource,
+  type RetributionRecord,
+} from "./retributions"
+
+const mission = (over: Partial<MissionSource> = {}): MissionSource => ({
+  id: "m1",
+  nom: "Création de contenus",
+  etude_id: "e1",
+  etude_numero: "2620",
+  etude_nom: "Étude contenus",
+  date_debut: "2026-10-05",
+  date_fin: "2026-11-29",
+  remuneration: 100,
+  nb_jeh: 2,
+  nb_intervenants: 3,
+  date_paiement: null,
+  numero_bv: null,
+  ...over,
+})
+
+const inter = (personne_id: string, nom: string, mission_id = "m1"): IntervenantSource => ({
+  mission_id,
+  personne_id,
+  nom,
+})
+
+const record = (over: Partial<RetributionRecord> = {}): RetributionRecord => ({
+  mission_id: "m1",
+  personne_id: "p1",
+  personne_nom: "Alice Martin",
+  numero_bv: "BV-2026-001",
+  date_paiement: "2026-12-01",
+  montant: 200,
+  ...over,
+})
 
 describe("nextNumeroBV", () => {
   it("démarre à 001 quand aucun numéro n'existe", () => {
@@ -20,5 +58,109 @@ describe("nextNumeroBV", () => {
 
   it("passe à 4 chiffres au-delà de 999 sans tronquer", () => {
     expect(nextNumeroBV(["BV-2026-999"], 2026)).toBe("BV-2026-1000")
+  })
+})
+
+describe("buildRetributionRows", () => {
+  it("crée une ligne par intervenant sélectionné, au montant unitaire remuneration × nb_jeh", () => {
+    const rows = buildRetributionRows(
+      [mission({ nb_intervenants: 2 })],
+      [inter("p1", "Alice Martin"), inter("p2", "Bob Durand")],
+      []
+    )
+    expect(rows).toHaveLength(2)
+    expect(rows.map((r) => r.intervenant_nom)).toEqual(["Alice Martin", "Bob Durand"])
+    expect(rows.every((r) => r.montant === 200)).toBe(true)
+    expect(rows.every((r) => r.paye === false)).toBe(true)
+  })
+
+  it("marque payée la seule ligne qui a une rétribution enregistrée", () => {
+    const rows = buildRetributionRows(
+      [mission({ nb_intervenants: 2 })],
+      [inter("p1", "Alice Martin"), inter("p2", "Bob Durand")],
+      [record({ personne_id: "p1" })]
+    )
+    const alice = rows.find((r) => r.personne_id === "p1")!
+    const bob = rows.find((r) => r.personne_id === "p2")!
+    expect(alice.paye).toBe(true)
+    expect(alice.numero_bv).toBe("BV-2026-001")
+    expect(bob.paye).toBe(false)
+    expect(bob.numero_bv).toBeNull()
+  })
+
+  it("fige le montant enregistré même si le barème de la mission a changé depuis", () => {
+    const rows = buildRetributionRows(
+      [mission({ nb_intervenants: 1, remuneration: 500 })],
+      [inter("p1", "Alice Martin")],
+      [record({ montant: 200 })]
+    )
+    expect(rows[0].montant).toBe(200)
+  })
+
+  it("ajoute une ligne d'alerte pour les intervenants déclarés mais non sélectionnés", () => {
+    const rows = buildRetributionRows(
+      [mission({ nb_intervenants: 3 })],
+      [inter("p1", "Alice Martin")],
+      []
+    )
+    const alerte = rows.find((r) => r.personne_id === null)!
+    expect(alerte.manquants).toBe(2)
+    expect(alerte.montant).toBe(400)
+  })
+
+  it("affiche une mission sans aucun intervenant comme une seule ligne d'alerte au montant total", () => {
+    const rows = buildRetributionRows([mission({ nb_intervenants: 3 })], [], [])
+    expect(rows).toHaveLength(1)
+    expect(rows[0].personne_id).toBeNull()
+    expect(rows[0].manquants).toBe(3)
+    expect(rows[0].montant).toBe(600)
+  })
+
+  it("hérite du paiement enregistré au niveau mission quand elle n'a qu'un intervenant", () => {
+    const rows = buildRetributionRows(
+      [mission({ nb_intervenants: 1, date_paiement: "2026-05-02", numero_bv: "BV-2026-007" })],
+      [inter("p1", "Alice Martin")],
+      []
+    )
+    expect(rows[0].paye).toBe(true)
+    expect(rows[0].date_paiement).toBe("2026-05-02")
+    expect(rows[0].numero_bv).toBe("BV-2026-007")
+  })
+
+  it("conserve une ligne payée pour une personne retirée de la mission, signalée orpheline", () => {
+    const rows = buildRetributionRows(
+      [mission({ nb_intervenants: 1 })],
+      [inter("p2", "Bob Durand")],
+      [record({ personne_id: "p1", personne_nom: "Alice Martin" })]
+    )
+    const orpheline = rows.find((r) => r.personne_id === "p1")!
+    expect(orpheline.orphelin).toBe(true)
+    expect(orpheline.intervenant_nom).toBe("Alice Martin")
+    expect(rows.find((r) => r.personne_id === "p2")!.orphelin).toBe(false)
+  })
+
+  it("dédoublonne une personne présente à la fois en candidature et en intervenant direct", () => {
+    const rows = buildRetributionRows(
+      [mission({ nb_intervenants: 1 })],
+      [inter("p1", "Alice Martin"), inter("p1", "Alice Martin")],
+      []
+    )
+    expect(rows).toHaveLength(1)
+  })
+
+  it("porte les informations d'étude et de mission sur chaque ligne", () => {
+    const rows = buildRetributionRows(
+      [mission({ nb_intervenants: 1 })],
+      [inter("p1", "Alice Martin")],
+      []
+    )
+    expect(rows[0]).toMatchObject({
+      mission_id: "m1",
+      mission_nom: "Création de contenus",
+      etude_id: "e1",
+      etude_numero: "2620",
+      date_debut: "2026-10-05",
+      date_fin: "2026-11-29",
+    })
   })
 })
