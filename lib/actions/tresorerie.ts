@@ -312,6 +312,13 @@ export async function getTresorerieData() {
     nb_intervenants: Number(m.nb_intervenants ?? 1),
     date_paiement: m.date_paiement ?? null,
     numero_bv: m.numero_bv ?? null,
+    // Seule trace en base de qui la mission visait au moment du paiement
+    // historique : `buildRetributionRows` en a besoin pour ne rattacher
+    // `date_paiement`/`numero_bv` qu'à la personne réellement enregistrée,
+    // jamais au seul fait qu'un intervenant unique soit sélectionné
+    // aujourd'hui. La requête `missions` ci-dessus sélectionne déjà la
+    // colonne.
+    intervenant_id: m.intervenant_id ?? null,
   }))
 
   const retributions = buildRetributionRows(missionSources, intervenantSources, retributionRecords)
@@ -802,11 +809,21 @@ export async function marquerRetributionPaiement(input: {
 }
 
 /**
- * Paiement hérité : mission mono-intervenant réglée AVANT la migration 067, le
- * paiement vit encore sur la ligne `missions` (cf. `buildRetributionRows`).
- * Sans ce repli, annuler une telle ligne ne toucherait aucune rétribution et
- * le tableau continuerait de l'afficher payée. Le numéro de BV de la mission
- * est conservé, seule la date de paiement est effacée.
+ * Paiement hérité : mission réglée AVANT la migration 067, le paiement vit
+ * encore sur la ligne `missions` (cf. `buildRetributionRows`). Sans ce repli,
+ * annuler une telle ligne ne toucherait aucune rétribution et le tableau
+ * continuerait de l'afficher payée. Le numéro de BV de la mission est
+ * conservé, seule la date de paiement est effacée.
+ *
+ * Même règle resserrée que `herite` dans `buildRetributionRows`
+ * (lib/tresorerie/retributions.ts) — à maintenir synchronisée avec elle :
+ * on n'efface `missions.date_paiement` que si `missions.intervenant_id`
+ * PROUVE que c'est bien `personneId` qui a été payé, ET qu'aucune ligne
+ * `retributions` n'existe déjà pour cette mission (sinon le paiement est déjà
+ * tracé ailleurs et ce repli n'a plus lieu d'être). Se fier au nombre
+ * d'intervenants actuellement sélectionnés (`ids.length === 1`) ne prouvait
+ * rien : rien n'empêche l'intervenant unique d'avoir changé depuis le
+ * paiement.
  * Renvoie un message d'erreur, ou null (repli effectué ou sans objet).
  */
 async function annulerPaiementHerite(
@@ -821,16 +838,16 @@ async function annulerPaiementHerite(
     .maybeSingle()
   if (error) return error.message
   if (!mission?.date_paiement) return null
+  if ((mission as any).intervenant_id !== personneId) return null
 
-  const { ids, error: intervenantsErr } = await chargerIntervenantsMission(
-    supabase,
-    missionId,
-    (mission as any).intervenant_id ?? null
-  )
-  if (intervenantsErr) return intervenantsErr.message
-  // L'héritage ne vaut que pour une mission à intervenant unique : au-delà,
-  // rien ne dit qui a été payé, donc rien à annuler ici.
-  if (ids.length !== 1 || ids[0] !== personneId) return null
+  const { count, error: recordsErr } = await supabase
+    .from("retributions")
+    .select("id", { count: "exact", head: true })
+    .eq("mission_id", missionId)
+  // Table absente (migration 067 pas encore appliquée) : il ne peut exister
+  // aucune ligne `retributions`, la condition est donc satisfaite.
+  if (recordsErr && !tableRetributionsAbsente(recordsErr)) return recordsErr.message
+  if (!recordsErr && (count ?? 0) > 0) return null
 
   // `.select()` obligatoire : la policy "missions write" (migration 050) exige
   // `is_membre_interne`, que ne possède pas un·e trésorier·ère dont le droit
@@ -934,14 +951,22 @@ export async function marquerMissionRetributionsPayees(missionId: string, date_p
   }
   if (numerosRes.error) return { error: messageErreurRetribution(numerosRes.error, null) }
 
-  const existantes = new Map<string, any>(
-    ((retributionsRes.data ?? []) as any[]).map((r) => [r.personne_id, r])
-  )
-  // Même règle d'héritage que `buildRetributionRows` : sur une mission
-  // mono-intervenant payée avant la migration 067, la personne est déjà
-  // affichée comme payée — le lot ne doit pas la repayer.
+  const enregistrements = (retributionsRes.data ?? []) as any[]
+  const existantes = new Map<string, any>(enregistrements.map((r) => [r.personne_id, r]))
+  // Même règle resserrée que `herite` dans `buildRetributionRows`
+  // (lib/tresorerie/retributions.ts) — à maintenir synchronisée avec elle :
+  // la personne est déjà affichée comme payée (paiement hérité du niveau
+  // mission) seulement si `missions.intervenant_id` PROUVE que c'est bien
+  // elle qui a été payée, ET qu'aucune ligne `retributions` n'existe déjà
+  // pour cette mission. Se fier au nombre d'intervenants actuellement
+  // sélectionnés (`intervenantsRes.ids.length === 1`) ne prouvait rien : rien
+  // n'empêche l'intervenant unique d'avoir changé depuis le paiement — le lot
+  // aurait alors sauté à tort la mauvaise personne, la laissant impayée sans
+  // BV alors qu'elle ne l'est pas.
   const herite = (id: string) =>
-    intervenantsRes.ids.length === 1 && !!(mission as any).date_paiement && !existantes.has(id)
+    !!(mission as any).date_paiement &&
+    (mission as any).intervenant_id === id &&
+    enregistrements.length === 0
 
   const aPayer = intervenantsRes.ids.filter(
     (id) => !existantes.get(id)?.date_paiement && !herite(id)

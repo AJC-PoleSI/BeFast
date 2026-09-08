@@ -22,6 +22,7 @@ const mission = (over: Partial<MissionSource> = {}): MissionSource => ({
   nb_intervenants: 3,
   date_paiement: null,
   numero_bv: null,
+  intervenant_id: null,
   ...over,
 })
 
@@ -118,15 +119,110 @@ describe("buildRetributionRows", () => {
     expect(rows[0].montant).toBe(600)
   })
 
-  it("hérite du paiement enregistré au niveau mission quand elle n'a qu'un intervenant", () => {
+  // Mise à jour (règle resserrée) : l'héritage ne suffit plus à ce que la
+  // mission ait un seul intervenant sélectionné — il faut en plus que
+  // `missions.intervenant_id` prouve que c'est BIEN cette personne qui a été
+  // payée. Le test précédent ne posait pas `intervenant_id` ; il exerçait donc
+  // l'ancienne règle (`liste.length === 1`), qui vient d'être supprimée
+  // justement parce qu'elle ne prouvait rien. On fixe ici `intervenant_id`
+  // pour continuer à couvrir le cas nominal : intervenant unique ET prouvé.
+  it("hérite du paiement enregistré au niveau mission quand l'intervenant unique sélectionné est celui prouvé par la mission", () => {
     const rows = buildRetributionRows(
-      [mission({ nb_intervenants: 1, date_paiement: "2026-05-02", numero_bv: "BV-2026-007" })],
+      [
+        mission({
+          nb_intervenants: 1,
+          date_paiement: "2026-05-02",
+          numero_bv: "BV-2026-007",
+          intervenant_id: "p1",
+        }),
+      ],
       [inter("p1", "Alice Martin")],
       []
     )
+    expect(rows).toHaveLength(1)
     expect(rows[0].paye).toBe(true)
     expect(rows[0].date_paiement).toBe("2026-05-02")
     expect(rows[0].numero_bv).toBe("BV-2026-007")
+    expect(rows[0].paiementMissionNonAttribue).toBe(false)
+  })
+
+  it("n'hérite plus du paiement mission pour un intervenant unique sélectionné qui n'est pas celui prouvé par la mission (candidature révoquée puis remplacée)", () => {
+    const rows = buildRetributionRows(
+      [
+        mission({
+          nb_intervenants: 1,
+          date_paiement: "2026-05-02",
+          numero_bv: "BV-2026-007",
+          intervenant_id: "p_ancien",
+        }),
+      ],
+      [inter("p_nouveau", "Nouvel intervenant")],
+      []
+    )
+    const ligneIntervenant = rows.find((r) => r.personne_id === "p_nouveau")!
+    expect(ligneIntervenant.paye).toBe(false)
+    expect(ligneIntervenant.date_paiement).toBeNull()
+    expect(ligneIntervenant.numero_bv).toBeNull()
+
+    // Le paiement n'est perdu nulle part : une ligne informationnelle le
+    // conserve, avec un montant à 0 pour ne pas gonfler le KPI « versé ».
+    const ligneInfo = rows.find((r) => r.paiementMissionNonAttribue)!
+    expect(ligneInfo).toBeDefined()
+    expect(ligneInfo.personne_id).toBeNull()
+    expect(ligneInfo.paye).toBe(true)
+    expect(ligneInfo.numero_bv).toBe("BV-2026-007")
+    expect(ligneInfo.date_paiement).toBe("2026-05-02")
+    expect(ligneInfo.montant).toBe(0)
+  })
+
+  it("ne compte le paiement mission qu'une seule fois quand un enregistrement orphelin coexiste avec un nouvel intervenant unique", () => {
+    const rows = buildRetributionRows(
+      [
+        mission({
+          nb_intervenants: 1,
+          date_paiement: "2026-05-02",
+          numero_bv: "BV-2026-007",
+          intervenant_id: null,
+        }),
+      ],
+      [inter("p_nouveau", "Nouvel intervenant")],
+      [record({ personne_id: "p_ancien", montant: 200, date_paiement: "2026-01-10", numero_bv: "BV-2026-001" })]
+    )
+    const nouvel = rows.find((r) => r.personne_id === "p_nouveau")!
+    expect(nouvel.paye).toBe(false)
+
+    const orpheline = rows.find((r) => r.personne_id === "p_ancien")!
+    expect(orpheline.paye).toBe(true)
+    expect(orpheline.orphelin).toBe(true)
+
+    const ligneInfo = rows.find((r) => r.paiementMissionNonAttribue)!
+    expect(ligneInfo).toBeDefined()
+    expect(ligneInfo.montant).toBe(0)
+
+    expect(kpisRetributions(rows).totalRetributionVersee).toBe(200)
+  })
+
+  it("laisse la ligne d'alerte porter seule le paiement mission quand aucun intervenant n'est sélectionné", () => {
+    const rows = buildRetributionRows(
+      [
+        mission({
+          nb_intervenants: 3,
+          date_paiement: "2026-05-02",
+          numero_bv: "BV-2026-007",
+        }),
+      ],
+      [],
+      []
+    )
+    expect(rows).toHaveLength(1)
+    const alerte = rows[0]
+    expect(alerte.personne_id).toBeNull()
+    expect(alerte.manquants).toBe(3)
+    expect(alerte.paye).toBe(true)
+    expect(alerte.numero_bv).toBe("BV-2026-007")
+    expect(alerte.date_paiement).toBe("2026-05-02")
+    expect(alerte.montant).toBe(600)
+    expect(alerte.paiementMissionNonAttribue).toBe(false)
   })
 
   it("conserve une ligne payée pour une personne retirée de la mission, signalée orpheline", () => {

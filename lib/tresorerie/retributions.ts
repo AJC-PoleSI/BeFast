@@ -35,6 +35,15 @@ export type MissionSource = {
   /** Paiement historique saisi au niveau mission (avant la table retributions). */
   date_paiement: string | null
   numero_bv: string | null
+  /**
+   * Personne assignée directement sur la mission — seule trace en base de qui
+   * la mission visait au moment du paiement historique. C'est la SEULE
+   * information qui permette de rattacher `date_paiement`/`numero_bv` à une
+   * personne précise : `nb_intervenants` ou le nombre d'intervenants
+   * sélectionnés aujourd'hui ne prouvent rien (l'intervenant a pu changer
+   * depuis le paiement).
+   */
+  intervenant_id: string | null
 }
 
 /** Personne intervenante sur une mission (candidature acceptée ou assignation directe). */
@@ -76,6 +85,13 @@ export type RetributionRow = {
   orphelin: boolean
   /** Nombre d'intervenants déclarés mais non sélectionnés (ligne d'alerte only). */
   manquants: number
+  /**
+   * Ligne informationnelle : paiement historique saisi au niveau mission,
+   * qu'aucune personne ne peut revendiquer avec certitude (l'intervenant
+   * enregistré au moment du paiement n'est plus l'intervenant sélectionné
+   * aujourd'hui, ou n'est pas connu). `false` sur toutes les autres lignes.
+   */
+  paiementMissionNonAttribue: boolean
 }
 
 /**
@@ -144,18 +160,27 @@ export function buildRetributionRows(
       date_fin: m.date_fin,
     }
 
+    // Le paiement mission a-t-il été rattaché à une personne précise (ci-dessous)
+    // ou à la ligne d'alerte « aucun intervenant sélectionné » ? Sert à décider,
+    // en fin de boucle, si une ligne informationnelle doit être ajoutée pour ne
+    // pas perdre le paiement.
+    let paiementMissionRattache = false
+
     for (const i of liste) {
       const rec = recParPersonne.get(i.personne_id)
-      // Mission mono-intervenant payée avant la migration : le paiement vit
-      // encore sur la ligne mission, on le rattache à son unique intervenant.
-      // Limite assumée : ce rattachement ne fonctionne que si la mission a
-      // exactement un intervenant sélectionné. Sur une mission à 2+
-      // intervenants, rien ne permet de savoir lequel a été payé — ces lignes
-      // restent donc affichées comme non payées. La migration 067 a rétabli
-      // l'intervenant sur les missions qui portaient un `intervenant_id`,
-      // donc en pratique ce cas ne concerne que les missions payées sans
-      // aucun intervenant identifié.
-      const herite = !rec && liste.length === 1
+      // Mission payée avant la migration 067 : le paiement vit encore sur la
+      // ligne mission, on ne le rattache à un intervenant que si c'est
+      // PROUVABLE — `missions.intervenant_id` est la seule trace en base de
+      // qui la mission visait au moment du paiement. Se fier à
+      // `liste.length === 1` (l'ancienne règle) ne prouvait rien : rien
+      // n'empêche l'intervenant unique d'avoir changé depuis le paiement
+      // (candidature révoquée puis remplacée), ce qui affichait la mauvaise
+      // personne comme payée. `recs.length === 0` évite en plus de reprendre
+      // un paiement déjà couvert par une ligne `retributions` existante
+      // (orpheline ou non) — sinon un même versement pouvait être compté à la
+      // fois sur la ligne orpheline et sur l'intervenant actuel.
+      const herite = !rec && recs.length === 0 && m.intervenant_id === i.personne_id
+      if (herite) paiementMissionRattache = true
       const date_paiement = rec ? rec.date_paiement : herite ? m.date_paiement : null
       const numero_bv = rec ? rec.numero_bv : herite ? m.numero_bv : null
       rows.push({
@@ -169,6 +194,7 @@ export function buildRetributionRows(
         montant: rec ? round2(rec.montant) : unitaire,
         orphelin: false,
         manquants: 0,
+        paiementMissionNonAttribue: false,
       })
     }
 
@@ -185,14 +211,17 @@ export function buildRetributionRows(
         montant: round2(r.montant),
         orphelin: true,
         manquants: 0,
+        paiementMissionNonAttribue: false,
       })
     }
 
     const manquants = Math.max(effectifDeclare(m) - liste.length, 0)
     if (manquants > 0) {
       // Le paiement mission n'est repris ici que si personne n'est sélectionné,
-      // sinon il a déjà été rattaché à l'intervenant unique ci-dessus.
+      // sinon il a déjà été rattaché à l'intervenant unique ci-dessus (ou reste
+      // orphelin, traité par la ligne informationnelle plus bas).
       const paiementMissionRepris = liste.length === 0
+      if (paiementMissionRepris) paiementMissionRattache = true
       rows.push({
         ...commun,
         key: `${m.id}:_reste`,
@@ -204,6 +233,35 @@ export function buildRetributionRows(
         montant: round2(unitaire * manquants),
         orphelin: false,
         manquants,
+        paiementMissionNonAttribue: false,
+      })
+    }
+
+    // Ligne informationnelle : la mission porte un paiement historique
+    // (`date_paiement` ou `numero_bv`) qu'aucune ligne ci-dessus n'a repris —
+    // ni un intervenant prouvé (herite), ni la ligne d'alerte (mission sans
+    // aucun intervenant sélectionné). Cas concret : la candidature acceptée au
+    // moment du paiement a depuis été révoquée et remplacée (le nouvel
+    // intervenant n'a aucun droit sur ce paiement), ou la migration 067 a
+    // laissé `missions.date_paiement` en place après avoir recopié le
+    // paiement vers `retributions` pour un intervenant qui a changé depuis.
+    // Montant volontairement à 0 : personne ne sait qui a été payé, compter ce
+    // montant une deuxième fois gonflerait le KPI « Rétribution versée » alors
+    // que les lignes par personne ci-dessus restent, elles, légitimement dues.
+    const paiementMission = !!(m.date_paiement || m.numero_bv)
+    if (paiementMission && liste.length > 0 && !paiementMissionRattache) {
+      rows.push({
+        ...commun,
+        key: `${m.id}:_paiement_mission`,
+        personne_id: null,
+        intervenant_nom: null,
+        numero_bv: m.numero_bv,
+        date_paiement: m.date_paiement,
+        paye: true,
+        montant: 0,
+        orphelin: false,
+        manquants: 0,
+        paiementMissionNonAttribue: true,
       })
     }
   }

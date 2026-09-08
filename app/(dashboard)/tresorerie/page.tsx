@@ -796,6 +796,15 @@ export default function TresoreriePage() {
                                     </span>
                                   )}
                                 </span>
+                              ) : r.paiementMissionNonAttribue ? (
+                                // Paiement historique conservé mais que personne ne peut
+                                // revendiquer avec certitude (candidature révoquée puis
+                                // remplacée depuis, ou intervenant jamais identifié) :
+                                // mention discrète plutôt que la ligne d'alerte
+                                // « intervenants non sélectionnés », qui ne s'applique pas ici.
+                                <span className="inline-block px-2 py-0.5 rounded-md bg-zinc-50 text-amber-700 text-xs font-medium border border-amber-200/70">
+                                  Paiement enregistré au niveau de la mission, sans intervenant identifié
+                                </span>
                               ) : (
                                 <span className="inline-block px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-xs font-medium border border-amber-200">
                                   {r.manquants} intervenant·e·s non sélectionné·e·s
