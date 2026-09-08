@@ -41,12 +41,29 @@ describe("resolveEffectivePermissions", () => {
 })
 
 describe("hasPermission", () => {
-  it("l'administrateur a toutes les permissions", () => {
+  it("l'administrateur a toutes les permissions, sauf voir_factures", () => {
     const p = make({}, [], "administrateur")
-    expect(hasPermission(p, "voir_factures")).toBe(true)
+    expect(hasPermission(p, "dashboard")).toBe(true)
+    expect(hasPermission(p, "membres")).toBe(true)
   })
   it("un membre sans poste n'a pas signer_ba", () => {
     expect(hasPermission(make({ dashboard: true }), "signer_ba")).toBe(false)
+  })
+
+  // La Trésorerie (factures, RIB de la structure) est exclue du bypass
+  // administrateur : seul le poste Trésorier·ère ou Pôle Trésorerie donne
+  // accès, un compte administrateur générique ne l'a pas de facto.
+  it("un administrateur SANS poste Trésorier n'a pas voir_factures", () => {
+    const p = make({}, [], "administrateur")
+    expect(hasPermission(p, "voir_factures")).toBe(false)
+  })
+  it("un administrateur avec le poste Trésorier a voir_factures", () => {
+    const p = make({}, [{ profils_types: { permissions: { voir_factures: true } } }], "administrateur")
+    expect(hasPermission(p, "voir_factures")).toBe(true)
+  })
+  it("un Trésorier non-administrateur a voir_factures", () => {
+    const p = make({ voir_factures: true }, [], "tresorier")
+    expect(hasPermission(p, "voir_factures")).toBe(true)
   })
 })
 
