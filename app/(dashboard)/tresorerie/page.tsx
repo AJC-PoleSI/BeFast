@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 import { Loader2, Plus, X, Pencil, Trash2, Check, Wallet, Clock, AlertTriangle, CircleCheck, Euro, Banknote, Search, Receipt, Download, FileText, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import {
@@ -11,8 +11,13 @@ import {
   deleteFacture,
   marquerFacturePaiement,
   marquerMissionPaiement,
+  marquerRetributionPaiement,
+  annulerRetributionPaiement,
+  marquerMissionRetributionsPayees,
+  getProchainNumeroBV,
   type FactureRow,
-  type MissionPayRow,
+  type RetributionRow,
+  type RetributionParPersonne,
   type CaParEtude,
 } from "@/lib/actions/tresorerie"
 import { getBudgetValidations, decideBudget, getProposalBudget, updateProposalModalites, type BudgetValidationRow, type ProposalBudgetDetail } from "@/lib/actions/propositions"
@@ -23,7 +28,7 @@ import { useDocumentDownload } from "@/hooks/useDocumentDownload"
 
 import PilotagePrix from "./PilotagePrix"
 
-type Tab = "factures" | "ca" | "missions" | "notes" | "validation" | "pilotage"
+type Tab = "factures" | "ca" | "retributions" | "personnes" | "notes" | "validation" | "pilotage"
 
 const BUDGET_STATUS_CHIP: Record<string, { label: string; cls: string }> = {
   brouillon: { label: "Brouillon", cls: "bg-zinc-100 text-zinc-600" },
@@ -53,23 +58,26 @@ function fmtDate(d: string | null | undefined): string {
 export default function TresoreriePage() {
   const [data, setData] = useState<{
     factures: FactureRow[]
-    missions: MissionPayRow[]
+    retributions: RetributionRow[]
+    retributionsParPersonne: RetributionParPersonne[]
     notes_de_frais: any[]
     caParEtude: CaParEtude[]
     kpis: any
     migrationMissing?: boolean
+    retributionsIndisponibles?: boolean
   } | null>(null)
   const [etudes, setEtudes] = useState<{ id: string; numero: string; nom: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [searchFacture, setSearchFacture] = useState("")
-  const [searchMission, setSearchMission] = useState("")
+  const [searchRetribution, setSearchRetribution] = useState("")
   const [activeTab, setActiveTab] = useState<Tab>("factures")
   const [showModal, setShowModal] = useState(false)
   const [exportFrom, setExportFrom] = useState("")
   const [exportTo, setExportTo] = useState("")
   const [editingFacture, setEditingFacture] = useState<FactureRow | null>(null)
-  const [showPayMission, setShowPayMission] = useState<MissionPayRow | null>(null)
+  const [showPayRetribution, setShowPayRetribution] = useState<RetributionRow | null>(null)
+  const [payingMission, setPayingMission] = useState<string | null>(null)
   const [budgetRows, setBudgetRows] = useState<BudgetValidationRow[] | null>(null)
   const [rejectBudget, setRejectBudget] = useState<BudgetValidationRow | null>(null)
   const [budgetBusy, setBudgetBusy] = useState<string | null>(null)
@@ -169,20 +177,57 @@ export default function TresoreriePage() {
     })
   }, [data, searchFacture])
 
-  const missionsFiltrees = useMemo(() => {
+  const retributionsFiltrees = useMemo(() => {
     if (!data) return []
-    const q = searchMission.toLowerCase().trim()
-    if (!q) return data.missions
-    return data.missions.filter((m) => {
+    const q = searchRetribution.toLowerCase().trim()
+    if (!q) return data.retributions
+    return data.retributions.filter((r) => {
       return (
-        m.nom.toLowerCase().includes(q) ||
-        (m.intervenant_nom ?? "").toLowerCase().includes(q) ||
-        (m.numero_bv ?? "").toLowerCase().includes(q) ||
-        (m.etude_numero ?? "").toLowerCase().includes(q) ||
-        (m.etude_nom ?? "").toLowerCase().includes(q)
+        r.mission_nom.toLowerCase().includes(q) ||
+        (r.intervenant_nom ?? "").toLowerCase().includes(q) ||
+        (r.numero_bv ?? "").toLowerCase().includes(q) ||
+        (r.etude_numero ?? "").toLowerCase().includes(q) ||
+        (r.etude_nom ?? "").toLowerCase().includes(q)
       )
     })
-  }, [data, searchMission])
+  }, [data, searchRetribution])
+
+  // Regroupement par mission, dans l'ordre d'arrivée des lignes (les
+  // rétributions d'une même mission se suivent déjà côté serveur).
+  // `restant` ignore volontairement la ligne d'alerte « intervenants non
+  // sélectionnés » : le lot ne sait payer que des personnes identifiées.
+  const groupesRetributions = useMemo(() => {
+    const groupes: {
+      mission_id: string
+      mission_nom: string
+      etude_id: string | null
+      etude_numero: string | null
+      total: number
+      restant: number
+      rows: RetributionRow[]
+    }[] = []
+    const parMission = new Map<string, (typeof groupes)[number]>()
+    for (const row of retributionsFiltrees) {
+      let groupe = parMission.get(row.mission_id)
+      if (!groupe) {
+        groupe = {
+          mission_id: row.mission_id,
+          mission_nom: row.mission_nom,
+          etude_id: row.etude_id,
+          etude_numero: row.etude_numero,
+          total: 0,
+          restant: 0,
+          rows: [],
+        }
+        parMission.set(row.mission_id, groupe)
+        groupes.push(groupe)
+      }
+      groupe.rows.push(row)
+      groupe.total += row.montant
+      if (!row.paye && row.personne_id) groupe.restant += row.montant
+    }
+    return groupes
+  }, [retributionsFiltrees])
 
   if (loading) {
     return (
@@ -379,8 +424,8 @@ export default function TresoreriePage() {
             <Clock className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Missions à payer</p>
-            <p className="text-lg font-manrope font-black text-[#00236f] tabular-nums">{kpis.nbMissionsAPayer}</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Rétributions à payer</p>
+            <p className="text-lg font-manrope font-black text-[#00236f] tabular-nums">{kpis.nbRetributionsAPayer}</p>
           </div>
         </div>
       </div>
@@ -390,7 +435,8 @@ export default function TresoreriePage() {
         {[
           { key: "factures" as Tab, label: `Suivi des factures (${data.factures.length})` },
           { key: "ca" as Tab, label: "CA facturé" },
-          { key: "missions" as Tab, label: `Suivi des missions (${data.missions.length})` },
+          { key: "retributions" as Tab, label: `Suivi des rétributions (${data.retributions.length})` },
+          { key: "personnes" as Tab, label: `Par intervenant (${data.retributionsParPersonne.length})` },
           { key: "notes" as Tab, label: `Notes de frais (${data.notes_de_frais.length})` },
           ...(budgetRows
             ? [{
@@ -613,116 +659,233 @@ export default function TresoreriePage() {
         </div>
       )}
 
-      {/* ─── Suivi des missions ───────────────────────────── */}
-      {activeTab === "missions" && (
+      {/* ─── Suivi des rétributions ───────────────────────── */}
+      {activeTab === "retributions" && (
+        <div className="space-y-4">
+          {/* Migration 067 absente : le suivi reste lisible, seul
+              l'enregistrement d'un versement individuel est impossible.
+              Bannière distincte de `migrationMissing` (factures, migration 024). */}
+          {data.retributionsIndisponibles && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-800 space-y-1">
+                <p className="font-semibold">Enregistrement des versements individuels indisponible.</p>
+                <p>
+                  Applique <code className="px-1.5 py-0.5 bg-amber-100 rounded text-xs font-mono">supabase/migrations/067_retributions_intervenants.sql</code> dans le{" "}
+                  <a href="https://supabase.com/dashboard/project/rslztpjwrrjrvajkwcvo/sql" target="_blank" rel="noopener" className="underline font-medium">SQL Editor Supabase</a>{" "}
+                  pour pouvoir marquer une rétribution payée intervenant par intervenant. Le suivi ci-dessous reste consultable.
+                </p>
+              </div>
+            </div>
+          )}
+          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+            <div className="relative p-3 border-b border-zinc-100">
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              <input
+                type="search"
+                placeholder="Rechercher un intervenant, une mission, un BV, une étude…"
+                value={searchRetribution}
+                onChange={(e) => setSearchRetribution(e.target.value)}
+                className="w-full h-10 pl-9 pr-4 rounded-lg bg-zinc-50 border border-zinc-100 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
+              />
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                    <th className="px-4 py-3">Intervenant</th>
+                    <th className="px-4 py-3">N° BV</th>
+                    <th className="px-4 py-3">Dates</th>
+                    <th className="px-4 py-3">Paiement</th>
+                    <th className="px-4 py-3 text-right">Montant</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {groupesRetributions.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-10 text-center text-zinc-400 text-sm">
+                        {searchRetribution ? "Aucune rétribution correspondante." : "Aucune rétribution à suivre."}
+                      </td>
+                    </tr>
+                  ) : (
+                    groupesRetributions.map((g) => (
+                      <Fragment key={g.mission_id}>
+                        <tr className="bg-zinc-50/80">
+                          <td colSpan={4} className="px-4 py-2.5">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              {g.etude_id ? (
+                                <Link href={`/etudes/${g.etude_id}`} className="text-[#00236f] hover:underline font-semibold">
+                                  {g.etude_numero ?? "—"}
+                                </Link>
+                              ) : (
+                                <span className="text-zinc-400 font-semibold">—</span>
+                              )}
+                              <span className="text-zinc-300">·</span>
+                              <Link href={`/missions/${g.mission_id}`} className="text-zinc-700 font-medium hover:underline">
+                                {g.mission_nom}
+                              </Link>
+                              <span className="text-xs text-zinc-400">
+                                {g.rows.length} intervenant{g.rows.length > 1 ? "s" : ""}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-semibold text-[#00236f] tabular-nums">{fmtEUR(g.total)}</td>
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center justify-end gap-1">
+                              {g.restant > 0 && (
+                                <button
+                                  onClick={async () => {
+                                    if (!confirm(`Marquer payés tous les intervenants restants de "${g.mission_nom}" ?`)) return
+                                    setPayingMission(g.mission_id)
+                                    const today = new Date().toISOString().slice(0, 10)
+                                    const res = await marquerMissionRetributionsPayees(g.mission_id, today)
+                                    setPayingMission(null)
+                                    if ((res as any).error) { alert((res as any).error); return }
+                                    reload()
+                                  }}
+                                  disabled={payingMission === g.mission_id}
+                                  className="px-2.5 py-1 rounded-md text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                                >
+                                  Tout marquer payé
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        {g.rows.map((r) => (
+                          <tr key={r.key} className="group hover:bg-zinc-50 transition-colors">
+                            <td className="px-4 py-3 pl-8">
+                              {r.personne_id ? (
+                                <span className="text-zinc-700">
+                                  {r.intervenant_nom ?? "—"}
+                                  {r.orphelin && (
+                                    <span className="ml-2 text-xs text-amber-600">n&apos;est plus sur la mission</span>
+                                  )}
+                                </span>
+                              ) : (
+                                <span className="inline-block px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-xs font-medium border border-amber-200">
+                                  {r.manquants} intervenant·e·s non sélectionné·e·s
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-zinc-600">
+                              {r.numero_bv ? (
+                                <span className="font-mono">{r.numero_bv}</span>
+                              ) : (
+                                <span className="text-xs text-zinc-400">Pas de BV émis</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-zinc-600 text-xs">
+                              {r.date_debut || r.date_fin ? (
+                                <>
+                                  du {fmtDate(r.date_debut)}
+                                  <br />
+                                  au {fmtDate(r.date_fin)}
+                                </>
+                              ) : (
+                                <span className="text-red-500 font-medium">Dates mal renseignées</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              {r.paye ? (
+                                <span className="text-emerald-600 font-medium">{fmtDate(r.date_paiement)}</span>
+                              ) : (
+                                <span className="inline-block px-2 py-0.5 rounded-md bg-red-50 text-red-700 text-xs font-medium border border-red-200">
+                                  non payé
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-right font-semibold text-[#00236f] tabular-nums">{fmtEUR(r.montant)}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-end gap-1">
+                                {!r.personne_id && !r.paye && g.rows.some((x) => x.personne_id) ? (
+                                  // Payer cette ligne écrirait `missions.date_paiement`, que le
+                                  // suivi rattacherait ensuite à l'intervenant unique déjà
+                                  // sélectionné : on marquerait donc la mauvaise personne payée.
+                                  // Tant que la mission mélange identifiés et non identifiés, la
+                                  // seule sortie propre est de compléter la sélection.
+                                  <span className="text-xs text-zinc-400">
+                                    À sélectionner sur la mission
+                                  </span>
+                                ) : !r.paye ? (
+                                  <button
+                                    onClick={() => setShowPayRetribution(r)}
+                                    className="px-2.5 py-1 rounded-md text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                  >
+                                    Marquer payé
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={async () => {
+                                      const cible = r.intervenant_nom ?? r.mission_nom
+                                      if (!confirm(`Annuler le paiement de "${cible}" ?`)) return
+                                      // Ligne d'alerte : aucune personne à qui rattacher
+                                      // le versement, il vit au niveau mission.
+                                      const res = r.personne_id
+                                        ? await annulerRetributionPaiement(r.mission_id, r.personne_id)
+                                        : await marquerMissionPaiement(r.mission_id, null)
+                                      if ((res as any).error) { alert((res as any).error); return }
+                                      reload()
+                                    }}
+                                    className="px-2.5 py-1 rounded-md text-xs font-medium text-zinc-500 bg-zinc-50 border border-zinc-200 hover:bg-zinc-100 transition-colors"
+                                  >
+                                    Annuler paiement
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </Fragment>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Rétributions par intervenant ──────────────────── */}
+      {activeTab === "personnes" && (
         <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
-          <div className="relative p-3 border-b border-zinc-100">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-            <input
-              type="search"
-              placeholder="Rechercher une mission (nom, intervenant, BV, étude)…"
-              value={searchMission}
-              onChange={(e) => setSearchMission(e.target.value)}
-              className="w-full h-10 pl-9 pr-4 rounded-lg bg-zinc-50 border border-zinc-100 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
-            />
+          <div className="px-5 py-4 border-b border-zinc-100">
+            <h2 className="font-manrope font-bold text-[#00236f] text-base">Rétributions par intervenant</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Total dû et déjà versé pour chaque intervenant, toutes missions confondues. Clique sur une ligne pour voir le détail.
+            </p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                  <th className="px-4 py-3">Étude</th>
-                  <th className="px-4 py-3">BV</th>
-                  <th className="px-4 py-3">Mission</th>
                   <th className="px-4 py-3">Intervenant</th>
-                  <th className="px-4 py-3">Dates</th>
-                  <th className="px-4 py-3">Paiement</th>
-                  <th className="px-4 py-3 text-right">Montant</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3 text-right">Missions</th>
+                  <th className="px-4 py-3 text-right">BV émis</th>
+                  <th className="px-4 py-3 text-right">Reste à verser</th>
+                  <th className="px-4 py-3 text-right">Déjà versé</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {missionsFiltrees.length === 0 ? (
+                {data.retributionsParPersonne.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-zinc-400 text-sm">
-                      {searchMission ? "Aucune mission correspondante." : "Aucune mission."}
+                    <td colSpan={5} className="px-4 py-10 text-center text-zinc-400 text-sm">
+                      Aucun intervenant sélectionné sur les missions en cours.
                     </td>
                   </tr>
                 ) : (
-                  missionsFiltrees.map((m) => (
-                    <tr key={m.id} className="group hover:bg-zinc-50 transition-colors">
-                      <td className="px-4 py-3">
-                        {m.etude_id ? (
-                          <Link href={`/etudes/${m.etude_id}`} className="text-[#00236f] hover:underline font-medium">
-                            {m.etude_numero ?? "—"}
-                          </Link>
-                        ) : (
-                          <span className="text-zinc-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-600">
-                        {m.numero_bv ? (
-                          <span className="font-mono">{m.numero_bv}</span>
-                        ) : (
-                          <span className="text-xs text-zinc-400">Pas de BV émis</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700">
-                        <Link href={`/missions/${m.id}`} className="hover:underline">{m.nom}</Link>
-                      </td>
-                      <td className="px-4 py-3">
-                        {m.intervenant_nom ? (
-                          <span className="text-zinc-700">{m.intervenant_nom}</span>
-                        ) : (
-                          <span className="inline-block px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-xs font-medium border border-amber-200">
-                            pas d&apos;intervenant
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-600 text-xs">
-                        {m.date_debut || m.date_fin ? (
-                          <>
-                            du {fmtDate(m.date_debut)}
-                            <br />
-                            au {fmtDate(m.date_fin)}
-                          </>
-                        ) : (
-                          <span className="text-red-500 font-medium">Dates mal renseignées</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {m.paye ? (
-                          <span className="text-emerald-600 font-medium">{fmtDate(m.date_paiement)}</span>
-                        ) : (
-                          <span className="inline-block px-2 py-0.5 rounded-md bg-red-50 text-red-700 text-xs font-medium border border-red-200">
-                            non payé
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold text-[#00236f] tabular-nums">{fmtEUR(m.montant)}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          {!m.paye ? (
-                            <button
-                              onClick={() => setShowPayMission(m)}
-                              className="px-2.5 py-1 rounded-md text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors"
-                            >
-                              Marquer payé
-                            </button>
-                          ) : (
-                            <button
-                              onClick={async () => {
-                                if (!confirm(`Annuler le paiement de "${m.nom}" ?`)) return
-                                const res = await marquerMissionPaiement(m.id, null)
-                                if ((res as any).error) { alert((res as any).error); return }
-                                reload()
-                              }}
-                              className="px-2.5 py-1 rounded-md text-xs font-medium text-zinc-500 bg-zinc-50 border border-zinc-200 hover:bg-zinc-100 transition-colors"
-                            >
-                              Annuler paiement
-                            </button>
-                          )}
-                        </div>
-                      </td>
+                  data.retributionsParPersonne.map((p) => (
+                    <tr
+                      key={p.personne_id}
+                      onClick={() => { setSearchRetribution(p.intervenant_nom); setActiveTab("retributions") }}
+                      className="hover:bg-zinc-50 transition-colors cursor-pointer"
+                    >
+                      <td className="px-4 py-3 text-zinc-700 font-medium">{p.intervenant_nom}</td>
+                      <td className="px-4 py-3 text-right text-zinc-600 tabular-nums">{p.nbMissions}</td>
+                      <td className="px-4 py-3 text-right text-zinc-600 tabular-nums">{p.nbBv}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-[#00236f] tabular-nums">{fmtEUR(p.totalDu)}</td>
+                      <td className="px-4 py-3 text-right text-emerald-600 tabular-nums">{fmtEUR(p.totalVerse)}</td>
                     </tr>
                   ))
                 )}
@@ -958,12 +1121,12 @@ export default function TresoreriePage() {
         />
       )}
 
-      {/* ── Modale paiement mission ── */}
-      {showPayMission && (
-        <PayMissionModal
-          mission={showPayMission}
-          onClose={() => setShowPayMission(null)}
-          onSaved={() => { setShowPayMission(null); reload() }}
+      {/* ── Modale paiement d'une rétribution ── */}
+      {showPayRetribution && (
+        <PayRetributionModal
+          row={showPayRetribution}
+          onClose={() => setShowPayRetribution(null)}
+          onSaved={() => { setShowPayRetribution(null); reload() }}
         />
       )}
     </div>
@@ -1340,21 +1503,36 @@ function RejectBudgetModal({
 }
 
 /* ────────────────────────────────────────────────────────── */
-/*  Pay mission modal                                          */
+/*  Pay retribution modal                                      */
 /* ────────────────────────────────────────────────────────── */
-function PayMissionModal({
-  mission,
+function PayRetributionModal({
+  row,
   onClose,
   onSaved,
 }: {
-  mission: MissionPayRow
+  row: RetributionRow
   onClose: () => void
   onSaved: () => void
 }) {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
-  const [numeroBv, setNumeroBv] = useState(mission.numero_bv ?? "")
+  const [numeroBv, setNumeroBv] = useState(row.numero_bv ?? "")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Un bulletin déjà émis garde son numéro ; sinon on propose le suivant de
+  // l'année. La proposition n'écrase jamais une saisie du trésorier.
+  useEffect(() => {
+    if (row.numero_bv) return
+    let actif = true
+    getProchainNumeroBV().then((res) => {
+      if (!actif) return
+      const propose = (res as any).data
+      if (propose) setNumeroBv((actuel) => actuel || propose)
+    })
+    return () => {
+      actif = false
+    }
+  }, [row.numero_bv])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
@@ -1370,7 +1548,17 @@ function PayMissionModal({
             e.preventDefault()
             setSubmitting(true)
             setError(null)
-            const res = await marquerMissionPaiement(mission.id, date, numeroBv || null)
+            // Ligne d'alerte : aucune personne identifiée, le versement ne peut
+            // être enregistré qu'au niveau de la mission.
+            const res = row.personne_id
+              ? await marquerRetributionPaiement({
+                  mission_id: row.mission_id,
+                  personne_id: row.personne_id,
+                  date_paiement: date,
+                  numero_bv: numeroBv || null,
+                  montant: row.montant,
+                })
+              : await marquerMissionPaiement(row.mission_id, date, numeroBv || null)
             setSubmitting(false)
             if ((res as any).error) { setError((res as any).error); return }
             onSaved()
@@ -1378,10 +1566,24 @@ function PayMissionModal({
           className="p-6 space-y-4"
         >
           <div className="p-3 rounded-lg bg-zinc-50 border border-zinc-100 text-xs space-y-1">
-            <p><span className="text-zinc-500">Mission :</span> <span className="font-medium text-zinc-800">{mission.nom}</span></p>
-            <p><span className="text-zinc-500">Intervenant :</span> <span className="font-medium text-zinc-800">{mission.intervenant_nom ?? "—"}</span></p>
-            <p><span className="text-zinc-500">Montant :</span> <span className="font-bold text-[#00236f]">{fmtEUR(mission.montant)}</span></p>
+            <p><span className="text-zinc-500">Mission :</span> <span className="font-medium text-zinc-800">{row.mission_nom}</span></p>
+            <p>
+              <span className="text-zinc-500">Intervenant :</span>{" "}
+              <span className="font-medium text-zinc-800">
+                {row.personne_id
+                  ? row.intervenant_nom ?? "—"
+                  : `${row.manquants} intervenant·e·s non sélectionné·e·s`}
+              </span>
+            </p>
+            <p><span className="text-zinc-500">Montant :</span> <span className="font-bold text-[#00236f]">{fmtEUR(row.montant)}</span></p>
           </div>
+          {!row.personne_id && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              Aucun intervenant n&apos;est sélectionné sur cette mission : le paiement sera
+              enregistré au niveau de la mission, sans détail par personne. Sélectionne les
+              intervenants sur la mission pour un suivi individuel.
+            </div>
+          )}
           <div>
             <label className="block text-xs font-semibold text-zinc-600 mb-1">Date de paiement *</label>
             <input
