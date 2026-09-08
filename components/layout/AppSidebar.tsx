@@ -50,11 +50,6 @@ interface NavEntry {
   icon: IconType
   permission: keyof Permissions
   adminOnly?: boolean
-  // Exclut cette entrée du bypass "l'admin voit tout" : la permission réelle
-  // est exigée même pour un administrateur. Cas actuel : Trésorerie ne doit
-  // être visible qu'au poste Trésorier·ère / Pôle Trésorerie (demande
-  // explicite, 2026-09-08) — cf. la même exception dans lib/auth/permissions.ts.
-  requireRealPermission?: boolean
 }
 
 const NAV: NavEntry[] = [
@@ -64,7 +59,7 @@ const NAV: NavEntry[] = [
   { label: "Mes documents", href: "/documents", icon: FolderOpen, permission: "documents" },
   { label: "Études", href: "/etudes", icon: GraduationCap, permission: "etudes" },
   { label: "Prospection", href: "/prospection", icon: TrendingUp, permission: "prospection" },
-  { label: "Trésorerie", href: "/tresorerie", icon: Wallet, permission: "voir_factures", requireRealPermission: true },
+  { label: "Trésorerie", href: "/tresorerie", icon: Wallet, permission: "voir_factures" },
   { label: "Signatures", href: "/signatures", icon: FileSignature, permission: "etudes" },
   { label: "Statistiques", href: "/statistiques", icon: BarChart3, permission: "statistiques" },
   { label: "Administration", href: "/administration", icon: Shield, permission: "administration", adminOnly: true },
@@ -113,7 +108,7 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
 
   const items = NAV.filter((item) => {
     if (item.adminOnly) return !!isAdmin
-    if (isAdmin && !item.requireRealPermission) return true
+    if (isAdmin) return true
     return permissions?.[item.permission] === true
   })
 

@@ -37,19 +37,9 @@ export function resolveEffectivePermissions(profile: PersonneWithRole | null): P
   return perms
 }
 
-// Permissions exclues du bypass administrateur : l'accès reste conditionné au
-// rôle/poste réel même pour un compte administrateur. Cas actuel : la
-// Trésorerie (factures, RIB de la structure) ne doit être visible qu'aux
-// personnes tenant effectivement le poste Trésorier·ère ou Pôle Trésorerie —
-// un administrateur système n'y a pas accès de facto (demande explicite,
-// 2026-09-08).
-const PERMISSIONS_SANS_BYPASS_ADMIN: ReadonlySet<PermissionKey> = new Set(["voir_factures"])
-
-/** L'administrateur a tout, sauf les clés de PERMISSIONS_SANS_BYPASS_ADMIN. */
+/** L'administrateur a tout ; sinon on lit les permissions effectives. */
 export function hasPermission(profile: PersonneWithRole | null, key: PermissionKey): boolean {
-  if (profile?.profils_types?.slug === "administrateur" && !PERMISSIONS_SANS_BYPASS_ADMIN.has(key)) {
-    return true
-  }
+  if (profile?.profils_types?.slug === "administrateur") return true
   return resolveEffectivePermissions(profile)[key] === true
 }
 
