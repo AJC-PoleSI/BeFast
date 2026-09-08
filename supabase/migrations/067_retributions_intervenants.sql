@@ -113,6 +113,31 @@ CREATE POLICY "retributions update" ON public.retributions FOR UPDATE TO authent
 CREATE POLICY "retributions delete" ON public.retributions FOR DELETE TO authenticated
   USING (public.is_admin(auth.uid()));
 
+-- ── candidatures : ouvrir la lecture à la trésorerie ───────────────────────
+-- Asymétrie RLS refermée ici. La policy "candidatures read" (migration 050)
+-- exigeait `is_membre_interne`, qui n'accepte que les profils de base
+-- 'administrateur' | 'membre_ajc' | 'chef_de_projet'. Or `has_permission`
+-- (migration 055) accorde aussi `voir_factures` via les postes cumulés
+-- (personne_postes — le poste « Pôle Trésorerie » de la migration 064, par
+-- exemple). Un·e trésorier·ère dont le profil de base n'est aucun des trois
+-- passait donc la garde applicative requireVoirFactures, lisait toutes les
+-- rétributions… et ZÉRO candidature : sans erreur, tout le tableau de suivi
+-- basculait en « intervenants non sélectionnés » et les personnes déjà payées
+-- apparaissaient orphelines.
+--
+-- La trésorerie a besoin des candidatures acceptées parce qu'elles SONT la
+-- liste des personnes à payer sur chaque mission (lib/tresorerie/retributions.ts).
+-- Les deux branches historiques sont conservées telles quelles.
+-- Rejouable : DROP IF EXISTS puis CREATE.
+DROP POLICY IF EXISTS "candidatures read" ON public.candidatures;
+
+CREATE POLICY "candidatures read" ON public.candidatures FOR SELECT TO authenticated
+  USING (
+    personne_id = auth.uid()
+    OR public.is_membre_interne(auth.uid())
+    OR public.has_permission(auth.uid(), 'voir_factures')
+  );
+
 -- ── updated_at ─────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.set_retributions_updated_at()
 RETURNS TRIGGER AS $$

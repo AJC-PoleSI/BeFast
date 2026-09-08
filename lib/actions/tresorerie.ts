@@ -81,6 +81,158 @@ function joursRetard(date_emission: string | null, date_paiement: string | null)
   return diff > 0 ? diff : null
 }
 
+/** Taille de page PostgREST (`db-max-rows`, 1000 par défaut sur Supabase). */
+const TAILLE_PAGE = 1000
+
+/**
+ * Lit TOUTES les lignes d'une requête en la paginant via `.range()`.
+ *
+ * PostgREST plafonne silencieusement le nombre de lignes renvoyées : au-delà
+ * du plafond la réponse est tronquée SANS erreur. Pour le suivi des
+ * rétributions c'est un contresens financier, pas un détail d'affichage :
+ * une page `candidatures` tronquée transforme de vrais intervenants en lignes
+ * d'alerte « intervenants non sélectionnés », et une page `retributions`
+ * tronquée fait réapparaître comme impayées des personnes déjà réglées (voire
+ * les marque orphelines). On boucle donc jusqu'à recevoir une page incomplète.
+ *
+ * L'appelant DOIT fournir un tri déterministe (`.order("id")`), sinon Postgres
+ * peut renvoyer les lignes dans un ordre différent d'une page à l'autre et
+ * produire des doublons ou des oublis.
+ */
+async function chargerToutesLesPages(
+  requete: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>
+): Promise<{ data: any[]; error: any }> {
+  const lignes: any[] = []
+  for (let page = 0; ; page++) {
+    const from = page * TAILLE_PAGE
+    const { data, error } = await requete(from, from + TAILLE_PAGE - 1)
+    if (error) return { data: [], error }
+    const lot = data ?? []
+    lignes.push(...lot)
+    if (lot.length < TAILLE_PAGE) return { data: lignes, error: null }
+  }
+}
+
+const nomComplet = (p: { prenom?: string | null; nom?: string | null } | null | undefined) =>
+  p ? [p.prenom, p.nom].filter(Boolean).join(" ").trim() || null : null
+
+/**
+ * Charge les deux sources nécessaires au calcul des rétributions :
+ * - les intervenants de chaque mission (candidatures acceptées + intervenant
+ *   assigné directement, embarqué dans la requête missions) ;
+ * - les lignes déjà écrites dans `retributions`.
+ *
+ * Renvoie `error` quand la lecture des candidatures échoue (sans elle, tout le
+ * tableau basculerait à tort en « intervenants non sélectionnés »).
+ */
+async function chargerSourcesRetributions(
+  supabase: ReturnType<typeof createClient>,
+  missionsData: any[]
+): Promise<{
+  intervenantSources: IntervenantSource[]
+  retributionRecords: RetributionRecord[]
+  retributionsIndisponibles: boolean
+  error?: string
+}> {
+  // Pas de filtre `.in("mission_id", …)` : la requête missions de l'appelant
+  // n'est elle-même pas filtrée, donc toutes les candidatures acceptées et
+  // toutes les rétributions concernent forcément une mission déjà chargée. Le
+  // filtre ne restreindrait rien et ferait grossir l'URL GET d'un UUID par
+  // mission (414 Request-URI Too Large passé quelques centaines de missions).
+  const aDesMissions = missionsData.length > 0
+
+  const [candidaturesRes, retributionsRes] = await Promise.all([
+    // `candidatures` et `retributions` ont chacune deux clés étrangères vers
+    // `personnes` (personne_id et created_by) : sans l'indice explicite de
+    // contrainte, PostgREST refuse la jointure (PGRST201, embed ambigu).
+    aDesMissions
+      ? chargerToutesLesPages((from, to) =>
+          supabase
+            .from("candidatures")
+            .select("mission_id, personne_id, personnes!candidatures_personne_id_fkey(id, prenom, nom)")
+            .eq("statut", "acceptee")
+            .order("id", { ascending: true })
+            .range(from, to)
+        )
+      : Promise.resolve({ data: [] as any[], error: null }),
+    aDesMissions
+      ? chargerToutesLesPages((from, to) =>
+          supabase
+            .from("retributions")
+            .select(
+              "mission_id, personne_id, numero_bv, date_paiement, montant, personnes!retributions_personne_id_fkey(id, prenom, nom)"
+            )
+            .order("id", { ascending: true })
+            .range(from, to)
+        )
+      : Promise.resolve({ data: [] as any[], error: null }),
+  ])
+
+  // Table absente (migration 067 pas encore appliquée) : on continue en mode
+  // dégradé — les lignes s'affichent, seul l'enregistrement des paiements
+  // individuels est indisponible. PostgREST renvoie PGRST205 quand la table
+  // manque dans son cache de schéma, 42P01 quand l'erreur remonte de Postgres.
+  let retributionsIndisponibles = false
+  let retributionsData: any[] = []
+  if (retributionsRes.error) {
+    const code = (retributionsRes.error as any).code
+    if (code === "42P01" || code === "PGRST205") {
+      retributionsIndisponibles = true
+    } else {
+      return {
+        intervenantSources: [],
+        retributionRecords: [],
+        retributionsIndisponibles: false,
+        error: retributionsRes.error.message,
+      }
+    }
+  } else {
+    retributionsData = retributionsRes.data ?? []
+  }
+
+  if (candidaturesRes.error) {
+    return {
+      intervenantSources: [],
+      retributionRecords: [],
+      retributionsIndisponibles,
+      error: candidaturesRes.error.message,
+    }
+  }
+
+  // Intervenants d'une mission = candidatures acceptées + intervenant assigné
+  // directement (missions de suivi d'étude). Même règle que
+  // listMissionIntervenants dans lib/actions/documents.ts. La personne assignée
+  // est embarquée dans la requête missions (`intervenant:personnes!…`) plutôt
+  // que relue via un `.in("id", …)` : ce dernier faisait exploser la taille de
+  // l'URL GET passé ~220 UUID et avalait son erreur, dégradant silencieusement
+  // tous les noms en « Intervenant·e ».
+  const intervenantSources: IntervenantSource[] = [
+    ...(candidaturesRes.data ?? []).map((c: any) => ({
+      mission_id: c.mission_id,
+      personne_id: c.personne_id,
+      nom: nomComplet(c.personnes) ?? "Intervenant·e",
+    })),
+    ...missionsData
+      .filter((m: any) => m.intervenant_id)
+      .map((m: any) => ({
+        mission_id: m.id,
+        personne_id: m.intervenant_id,
+        nom: nomComplet(m.intervenant) ?? "Intervenant·e",
+      })),
+  ]
+
+  const retributionRecords: RetributionRecord[] = retributionsData.map((r: any) => ({
+    mission_id: r.mission_id,
+    personne_id: r.personne_id,
+    personne_nom: nomComplet(r.personnes),
+    numero_bv: r.numero_bv ?? null,
+    date_paiement: r.date_paiement ?? null,
+    montant: Number(r.montant ?? 0),
+  }))
+
+  return { intervenantSources, retributionRecords, retributionsIndisponibles }
+}
+
 export async function getTresorerieData() {
   noStore()
   const supabase = createClient()
@@ -91,11 +243,19 @@ export async function getTresorerieData() {
   const permErr = await requireVoirFactures(user.id)
   if (permErr) return { error: permErr }
 
+  // `migrationMissing` = migration 024 (factures) absente ou partielle. La page
+  // s'en sert pour désactiver « Nouvelle facture » et pointer vers
+  // 024_factures_tresorerie.sql : ne JAMAIS le réutiliser pour un autre défaut
+  // de schéma, sous peine d'envoyer le trésorier vers le mauvais fichier SQL et
+  // de lui retirer la création de factures sans raison. L'absence de la table
+  // `retributions` (migration 067) a son propre drapeau,
+  // `retributionsIndisponibles`.
   let migrationMissing = false
 
-  // Factures et missions sont indépendantes → on lance les deux requêtes en parallèle
-  // (gros gain de latence par rapport à un enchaînement séquentiel).
-  const [facturesRes, missionsRes0] = await Promise.all([
+  // Factures, missions et notes de frais sont indépendantes → on lance les trois
+  // requêtes en parallèle (gros gain de latence par rapport à un enchaînement
+  // séquentiel).
+  const [facturesRes, missionsRes0, notesRes] = await Promise.all([
     supabase
       .from("factures")
       // ⚠️ `etudes.budget` n'existe pas dans ce schéma (la colonne s'appelle
@@ -106,10 +266,21 @@ export async function getTresorerieData() {
       .order("date_emission", { ascending: false, nullsFirst: false }),
     supabase
       .from("missions")
+      // `missions` a deux FK vers `personnes` (intervenant_id et created_by) :
+      // l'indice de contrainte est obligatoire, sinon PGRST201 (embed ambigu).
       .select(
-        "id, nom, etude_id, date_debut, date_fin, date_paiement, numero_bv, intervenant_id, remuneration, nb_jeh, nb_intervenants, etudes(id, numero, nom)"
+        "id, nom, etude_id, date_debut, date_fin, date_paiement, numero_bv, intervenant_id, remuneration, nb_jeh, nb_intervenants, etudes(id, numero, nom), intervenant:personnes!missions_intervenant_id_fkey(id, prenom, nom)"
       )
       .order("date_fin", { ascending: false, nullsFirst: false }),
+    supabase
+      .from("notes_de_frais")
+      .select(`
+        id, numero_note_de_frais, montant_total, description, fichiers_justificatifs, statut, submitted_at, validated_at,
+        intervenant:intervenant_id(prenom, nom),
+        mission:mission_id(nom, etudes(numero))
+      `)
+      .neq("statut", "brouillon")
+      .order("submitted_at", { ascending: false }),
   ])
 
   let facturesData: any[] = []
@@ -137,7 +308,7 @@ export async function getTresorerieData() {
       const fallback = await supabase
         .from("missions")
         .select(
-          "id, nom, etude_id, date_debut, date_fin, intervenant_id, remuneration, nb_jeh, nb_intervenants, etudes(id, numero, nom)"
+          "id, nom, etude_id, date_debut, date_fin, intervenant_id, remuneration, nb_jeh, nb_intervenants, etudes(id, numero, nom), intervenant:personnes!missions_intervenant_id_fkey(id, prenom, nom)"
         )
         .order("date_fin", { ascending: false, nullsFirst: false })
       if (fallback.error) return { error: fallback.error.message }
@@ -147,70 +318,13 @@ export async function getTresorerieData() {
     }
   }
 
-  // Intervenants d'une mission = candidatures acceptées + intervenant assigné
-  // directement (missions de suivi d'étude). Même règle que
-  // listMissionIntervenants dans lib/actions/documents.ts.
-  //
-  // Pas de filtre `.in("mission_id", …)` : la requête missions ci-dessus n'est
-  // elle-même pas filtrée, donc toutes les candidatures acceptées et toutes
-  // les rétributions concernent forcément une mission déjà chargée. Le filtre
-  // ne restreindrait rien et ferait grossir l'URL GET d'un UUID par mission
-  // (414 Request-URI Too Large passé quelques centaines de missions).
-  const aDesMissions = (missionsRes.data ?? []).length > 0
+  const missionsData: any[] = missionsRes.data ?? []
 
-  const [candidaturesRes, retributionsRes] = await Promise.all([
-    // `candidatures` et `retributions` ont chacune deux clés étrangères vers
-    // `personnes` (personne_id et created_by) : sans l'indice explicite de
-    // contrainte, PostgREST refuse la jointure (PGRST201, embed ambigu).
-    aDesMissions
-      ? supabase
-          .from("candidatures")
-          .select("mission_id, personne_id, personnes!candidatures_personne_id_fkey(id, prenom, nom)")
-          .eq("statut", "acceptee")
-      : Promise.resolve({ data: [] as any[], error: null }),
-    aDesMissions
-      ? supabase
-          .from("retributions")
-          .select(
-            "mission_id, personne_id, numero_bv, date_paiement, montant, personnes!retributions_personne_id_fkey(id, prenom, nom)"
-          )
-      : Promise.resolve({ data: [] as any[], error: null }),
-  ])
+  const { intervenantSources, retributionRecords, retributionsIndisponibles, error: sourcesErr } =
+    await chargerSourcesRetributions(supabase, missionsData)
+  if (sourcesErr) return { error: sourcesErr }
 
-  // Table absente (migration 067 pas encore appliquée) : on continue en mode
-  // dégradé — les lignes s'affichent, seul l'enregistrement des paiements
-  // individuels est indisponible. PostgREST renvoie PGRST205 quand la table
-  // manque dans son cache de schéma, 42P01 quand l'erreur remonte de Postgres.
-  let retributionsData: any[] = []
-  if (retributionsRes.error) {
-    const code = (retributionsRes.error as any).code
-    if (code === "42P01" || code === "PGRST205") {
-      migrationMissing = true
-    } else {
-      return { error: retributionsRes.error.message }
-    }
-  } else {
-    retributionsData = retributionsRes.data ?? []
-  }
-  if (candidaturesRes.error) return { error: candidaturesRes.error.message }
-
-  // Personnes assignées directement (hors candidatures) : un seul aller-retour.
-  const intervenantIds = Array.from(
-    new Set((missionsRes.data ?? []).map((m: any) => m.intervenant_id).filter(Boolean))
-  ) as string[]
-  const personnesById = new Map<string, { id: string; prenom: string | null; nom: string | null }>()
-  if (intervenantIds.length > 0) {
-    const personnesRes = await supabase
-      .from("personnes")
-      .select("id, prenom, nom")
-      .in("id", intervenantIds)
-    for (const p of personnesRes.data ?? []) personnesById.set(p.id, p)
-  }
-
-  const nomComplet = (p: { prenom?: string | null; nom?: string | null } | null | undefined) =>
-    p ? [p.prenom, p.nom].filter(Boolean).join(" ").trim() || null : null
-
-  const missionSources: MissionSource[] = (missionsRes.data ?? []).map((m: any) => ({
+  const missionSources: MissionSource[] = missionsData.map((m: any) => ({
     id: m.id,
     nom: m.nom,
     etude_id: m.etude_id,
@@ -223,30 +337,6 @@ export async function getTresorerieData() {
     nb_intervenants: Number(m.nb_intervenants ?? 1),
     date_paiement: m.date_paiement ?? null,
     numero_bv: m.numero_bv ?? null,
-  }))
-
-  const intervenantSources: IntervenantSource[] = [
-    ...(candidaturesRes.data ?? []).map((c: any) => ({
-      mission_id: c.mission_id,
-      personne_id: c.personne_id,
-      nom: nomComplet(c.personnes) ?? "Intervenant·e",
-    })),
-    ...(missionsRes.data ?? [])
-      .filter((m: any) => m.intervenant_id)
-      .map((m: any) => ({
-        mission_id: m.id,
-        personne_id: m.intervenant_id,
-        nom: nomComplet(personnesById.get(m.intervenant_id)) ?? "Intervenant·e",
-      })),
-  ]
-
-  const retributionRecords: RetributionRecord[] = retributionsData.map((r: any) => ({
-    mission_id: r.mission_id,
-    personne_id: r.personne_id,
-    personne_nom: nomComplet(r.personnes),
-    numero_bv: r.numero_bv ?? null,
-    date_paiement: r.date_paiement ?? null,
-    montant: Number(r.montant ?? 0),
   }))
 
   const retributions = buildRetributionRows(missionSources, intervenantSources, retributionRecords)
@@ -313,16 +403,6 @@ export async function getTresorerieData() {
   const { totalRetributionDue, totalRetributionVersee, nbRetributionsAPayer } =
     kpisRetributions(retributions)
 
-  const notesRes = await supabase
-    .from("notes_de_frais")
-    .select(`
-      id, numero_note_de_frais, montant_total, description, fichiers_justificatifs, statut, submitted_at, validated_at,
-      intervenant:intervenant_id(prenom, nom),
-      mission:mission_id(nom, etudes(numero))
-    `)
-    .neq("statut", "brouillon")
-    .order("submitted_at", { ascending: false })
-
   const notes_de_frais = notesRes.data ?? []
 
   return {
@@ -333,6 +413,11 @@ export async function getTresorerieData() {
       notes_de_frais,
       caParEtude,
       migrationMissing,
+      // Distinct de `migrationMissing` (migration 024, factures) : ce drapeau
+      // ne signale QUE l'absence de la table `retributions` (migration 067).
+      // Le suivi reste affiché, seul l'enregistrement d'un paiement individuel
+      // est impossible — la création de factures, elle, n'est pas concernée.
+      retributionsIndisponibles,
       kpis: {
         totalFacture,
         totalEncaisse,
