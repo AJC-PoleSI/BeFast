@@ -952,6 +952,7 @@ export default function TresoreriePage() {
         <FactureModal
           facture={editingFacture}
           etudes={etudes}
+          factures={data?.factures ?? []}
           onClose={() => { setShowModal(false); setEditingFacture(null) }}
           onSaved={() => { setShowModal(false); setEditingFacture(null); reload() }}
         />
@@ -975,11 +976,13 @@ export default function TresoreriePage() {
 function FactureModal({
   facture,
   etudes,
+  factures,
   onClose,
   onSaved,
 }: {
   facture: FactureRow | null
   etudes: { id: string; numero: string; nom: string; total_ht?: number }[]
+  factures: FactureRow[]
   onClose: () => void
   onSaved: () => void
 }) {
@@ -999,8 +1002,25 @@ function FactureModal({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Une fois le Montant HT tapé à la main (hors calcul via le %), il ne doit
+  // plus jamais être écrasé silencieusement par un changement d'étude/type —
+  // c'est ce qui a produit une facture avec accompte_pct=60 et montant_ht
+  // resté à une valeur qui ne correspond pas à 60% de l'étude. Une facture
+  // existante (édition) est considérée comme déjà "figée".
+  const [montantTouched, setMontantTouched] = useState(!!facture)
+
   // Total HT de l'étude sélectionnée = assiette du % d'acompte.
   const totalEtude = etudes.find((e) => e.id === form.etude_id)?.total_ht ?? 0
+
+  // Déjà facturé sur cette étude par les AUTRES factures (exclut la facture en
+  // cours d'édition) : sert de base au solde restant à facturer.
+  const dejaFacture = (etudeId: string) =>
+    factures
+      .filter((f) => f.etude_id === etudeId && f.id !== facture?.id)
+      .reduce((sum, f) => sum + (Number(f.montant_ht) || 0), 0)
+
+  const soldeEtude = (etudeId: string, total: number) =>
+    Math.max(0, Math.round((total - dejaFacture(etudeId)) * 100) / 100)
 
   // Saisir un % remplit le montant, et saisir un montant recalcule le % :
   // le trésorier arbitre dans le sens qui l'arrange sans jamais sortir du
@@ -1015,12 +1035,49 @@ function FactureModal({
     })
   }
   const setMontant = (montant: string) => {
+    setMontantTouched(true)
     setForm((f) => {
       const pct =
         totalEtude > 0 && montant !== "" && f.type === "acompte"
           ? (Math.round((Number(montant) / totalEtude) * 10000) / 100).toString()
           : f.accompte_pct
       return { ...f, montant_ht: montant, accompte_pct: pct }
+    })
+  }
+
+  // Sélectionner une étude pré-remplit le montant HT : le montant calculé
+  // depuis le % d'acompte si le type "Acompte" est déjà choisi, sinon le
+  // solde restant à facturer sur l'étude (cas normal d'une facture unique
+  // ou d'un solde). Si le trésorier a déjà tapé un montant à la main, on ne
+  // le touche plus — sauf si un % d'acompte est saisi, qui reste prioritaire
+  // et doit se recalculer pour la nouvelle étude.
+  const applyEtude = (etudeId: string) => {
+    setForm((f) => {
+      const total = etudes.find((e) => e.id === etudeId)?.total_ht ?? 0
+      if (f.type === "acompte" && f.accompte_pct) {
+        const montant = Math.round(total * (Number(f.accompte_pct) / 100) * 100) / 100
+        return { ...f, etude_id: etudeId, montant_ht: total > 0 ? montant.toString() : f.montant_ht }
+      }
+      if (montantTouched) return { ...f, etude_id: etudeId }
+      const montant = soldeEtude(etudeId, total)
+      return { ...f, etude_id: etudeId, montant_ht: total > 0 ? montant.toString() : f.montant_ht }
+    })
+  }
+
+  // Changer le type recalcule aussi le montant si une étude est déjà choisie :
+  // repasser en "Acompte" applique le % déjà saisi, les autres types
+  // proposent le solde restant — sauf si le montant a déjà été saisi à la
+  // main, qu'on ne doit alors plus jamais écraser silencieusement.
+  const applyType = (type: string) => {
+    setForm((f) => {
+      if (!f.etude_id || totalEtude <= 0) return { ...f, type }
+      if (type === "acompte" && f.accompte_pct) {
+        const montant = Math.round(totalEtude * (Number(f.accompte_pct) / 100) * 100) / 100
+        return { ...f, type, montant_ht: montant.toString() }
+      }
+      if (montantTouched) return { ...f, type }
+      const montant = soldeEtude(f.etude_id, totalEtude)
+      return { ...f, type, montant_ht: montant.toString() }
     })
   }
 
@@ -1103,7 +1160,7 @@ function FactureModal({
               <label className="block text-xs font-semibold text-zinc-600 mb-1">Étude</label>
               <select
                 value={form.etude_id}
-                onChange={(e) => setForm((f) => ({ ...f, etude_id: e.target.value }))}
+                onChange={(e) => applyEtude(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               >
                 <option value="">— Aucune —</option>
@@ -1113,12 +1170,18 @@ function FactureModal({
                   </option>
                 ))}
               </select>
+              {totalEtude > 0 && (
+                <p className="text-xs text-zinc-400 mt-1">
+                  Déjà facturé : {fmtEUR(dejaFacture(form.etude_id))} · Solde restant :{" "}
+                  {fmtEUR(soldeEtude(form.etude_id, totalEtude))}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-semibold text-zinc-600 mb-1">Type de facture</label>
               <select
                 value={form.type}
-                onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+                onChange={(e) => applyType(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00236f]/20"
               >
                 <option value="">— Non précisé —</option>

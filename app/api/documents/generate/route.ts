@@ -8,7 +8,7 @@ import { buildTemplateContext } from "@/lib/actions/documents"
 import { requireApiAdmin } from "@/lib/auth/api-guards"
 import { numeroEtudeCourt, segmentRdmParent } from "@/lib/document-numbering"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
-import { canEditEtude } from "@/lib/auth/permissions"
+import { canEditEtude, hasPermission } from "@/lib/auth/permissions"
 
 
 // Allow up to 30 seconds for DOCX rendering
@@ -79,6 +79,17 @@ export async function POST(req: NextRequest) {
     if (!guard.ok) return guard.response
   }
 
+  // Génération d'une facture : réservée aux profils ayant accès à la
+  // Trésorerie (même permission que la page /tresorerie et les server
+  // actions de lib/actions/tresorerie.ts — sans ce garde, n'importe quel
+  // compte authentifié pouvait télécharger n'importe quelle facture).
+  if (scope === "facture") {
+    const profile = await getCachedProfile(user.id)
+    if (!hasPermission(profile, "voir_factures")) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
+    }
+  }
+
   // Génération de documents liés à une étude/mission : réservée au créateur
   // de l'étude, au Pôle SI et aux admins — même règle que la modification de
   // l'étude (canEditEtude). On lit via le client admin pour ne pas dépendre
@@ -141,92 +152,152 @@ export async function POST(req: NextRequest) {
     ? segmentRdmParent((context as any).mission?.reference_recap_mission)
     : ""
 
-  // Counter: pour un avenant, le compteur repart de 1 à chaque RDM parent
-  // ("AV01" du RDM08, "AV01" à nouveau du RDM09) — pas partagé avec le reste
-  // de l'étude. Pour les autres catégories numérotées, on compte across
-  // l'étude entière (étude-scoped + mission-scoped de cette étude).
-  let counter = 1
-  if (codeInfo.numbered && codeInfo.parentRdm) {
-    const { data: docs } = await sb
-      .from("generated_documents")
-      .select("file_name")
-      .eq("template_id", template_id)
-      .eq("scope", "mission")
-      .eq("entity_id", entity_id)
-    counter = (docs || []).filter((d: any) => segmentRdmParent(d.file_name) === rdmParent).length + 1
-  } else if (codeInfo.numbered && etudeId) {
-    const { data: missionsOfEtude } = await sb
-      .from("missions")
-      .select("id")
-      .eq("etude_id", etudeId)
-    const missionIds = (missionsOfEtude || []).map((x: any) => x.id)
-    const orFilters: string[] = [`and(scope.eq.etude,entity_id.eq.${etudeId})`]
-    if (missionIds.length) {
-      orFilters.push(`and(scope.eq.mission,entity_id.in.(${missionIds.join(",")}))`)
-    }
-    const { count } = await sb
-      .from("generated_documents")
-      .select("*", { count: "exact", head: true })
-      .eq("template_id", template_id)
-      .or(orFilters.join(","))
-    counter = (count || 0) + 1
-  }
-
   const isPptx = tpl.file_path.endsWith(".pptx")
   const ext = isPptx ? ".pptx" : ".docx"
   const mimeType = isPptx
     ? "application/vnd.openxmlformats-officedocument.presentationml.presentation"
     : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
-  // Build name: AA CODE[NN] [RDM_PARENT] NUMERO_ETUDE.ext
-  // Examples: "26 CE 07.docx", "26 RDM08 07.pptx", "26 AV01 RDM08 07.docx"
-  // Les factures utilisent directement leur propre numéro (Trésorerie), pas ce format.
-  const codePart = codeInfo.numbered ? `${codeInfo.code}${pad2(counter)}` : codeInfo.code
-  const baseName =
-    scope === "facture" && factureNumero
-      ? sanitize(factureNumero)
-      : [aa, codePart, rdmParent, numEtude].filter(Boolean).join(" ")
-  const outName = `${baseName}${ext}`
-  const outPath = `${scope}/${entity_id}/${Date.now()}_${outName}`
+  // Compteur + insertion en base sous forme de boucle de retry : deux
+  // générations concurrentes pour la même étude peuvent lire le même
+  // compteur avant que l'une des deux n'ait inséré sa ligne (condition de
+  // course confirmée par l'audit du 2026-09-07, deux documents avec la même
+  // référence "26 RDM01 18"). La contrainte UNIQUE (scope, entity_id,
+  // file_name) — migration 063 — fait échouer la 2ᵉ insertion avec le même
+  // nom : on recalcule alors le compteur et on retente.
+  let row: any = null
+  let lastErr: string | null = null
+  for (let attempt = 0; attempt < 5 && !row; attempt++) {
+    // Counter: pour un avenant, le compteur repart de 1 à chaque RDM parent
+    // ("AV01" du RDM08, "AV01" à nouveau du RDM09) — pas partagé avec le
+    // reste de l'étude. Pour les autres catégories numérotées, on compte
+    // across l'étude entière (étude-scoped + mission-scoped de cette étude).
+    let counter = 1
+    if (codeInfo.numbered && codeInfo.parentRdm) {
+      const { data: docs } = await sb
+        .from("generated_documents")
+        .select("file_name")
+        .eq("template_id", template_id)
+        .eq("scope", "mission")
+        .eq("entity_id", entity_id)
+      counter = (docs || []).filter((d: any) => segmentRdmParent(d.file_name) === rdmParent).length + 1
+    } else if (codeInfo.numbered && etudeId) {
+      const { data: missionsOfEtude } = await sb
+        .from("missions")
+        .select("id")
+        .eq("etude_id", etudeId)
+      const missionIds = (missionsOfEtude || []).map((x: any) => x.id)
+      const orFilters: string[] = [`and(scope.eq.etude,entity_id.eq.${etudeId})`]
+      if (missionIds.length) {
+        orFilters.push(`and(scope.eq.mission,entity_id.in.(${missionIds.join(",")}))`)
+      }
+      const { count } = await sb
+        .from("generated_documents")
+        .select("*", { count: "exact", head: true })
+        .eq("template_id", template_id)
+        .or(orFilters.join(","))
+      counter = (count || 0) + 1
+    }
+    counter += attempt // en cas de retry, on saute la valeur qui vient d'entrer en conflit
 
-  // Exposé aux templates ({numero_document}) au format "01", "02"…
-  context.numero_document = pad2(counter)
-  // Référence complète du document, identique au nom du fichier ("26 RDM01 18") :
-  // le document imprime ainsi exactement son propre nom, sans réassemblage manuel
-  // dans le template (source des décalages nom-interne / nom-de-fichier).
-  context.reference_document = baseName
+    // Build name: AA CODE[NN] [RDM_PARENT] NUMERO_ETUDE.ext
+    // Examples: "26 CE 07.docx", "26 RDM08 07.pptx", "26 AV01 RDM08 07.docx"
+    // Les factures utilisent directement leur propre numéro (Trésorerie), pas ce format.
+    const codePart = codeInfo.numbered ? `${codeInfo.code}${pad2(counter)}` : codeInfo.code
+    const baseName =
+      scope === "facture" && factureNumero
+        ? sanitize(factureNumero)
+        : [aa, codePart, rdmParent, numEtude].filter(Boolean).join(" ")
+    const outName = `${baseName}${ext}`
+    const outPath = `${scope}/${entity_id}/${Date.now()}_${attempt}_${outName}`
 
-  let rendered: Buffer
-  try {
-    rendered = renderTemplate(templateBuf, context, isPptx)
-  } catch (e: any) {
-    console.error("[DOC-GEN] Template rendering failed:", e?.message)
-    return NextResponse.json(
-      { error: "Erreur génération: " + (e?.message || "render error") },
-      { status: 500 }
-    )
-  }
+    // Exposé aux templates ({numero_document}) au format "01", "02"…
+    context.numero_document = pad2(counter)
+    // Référence complète du document, identique au nom du fichier ("26 RDM01 18") :
+    // le document imprime ainsi exactement son propre nom, sans réassemblage manuel
+    // dans le template (source des décalages nom-interne / nom-de-fichier).
+    context.reference_document = baseName
 
-  const { error: upErr } = await sb.storage.from("documents").upload(outPath, rendered, {
-    contentType: mimeType,
-    upsert: false,
-  })
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 })
+    let rendered: Buffer
+    try {
+      rendered = renderTemplate(templateBuf, context, isPptx)
+    } catch (e: any) {
+      console.error("[DOC-GEN] Template rendering failed:", e?.message)
+      return NextResponse.json(
+        { error: "Erreur génération: " + (e?.message || "render error") },
+        { status: 500 }
+      )
+    }
 
-  const { data: row, error: insErr } = await sb
-    .from("generated_documents")
-    .insert({
-      template_id,
-      scope,
-      entity_id,
-      name: tpl.name,
-      file_path: outPath,
-      file_name: outName,
-      created_by: user.id,
+    const { error: upErr } = await sb.storage.from("documents").upload(outPath, rendered, {
+      contentType: mimeType,
+      upsert: false,
     })
-    .select()
-    .single()
-  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 })
+    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 })
+
+    const { data: inserted, error: insErr } = await sb
+      .from("generated_documents")
+      .insert({
+        template_id,
+        scope,
+        entity_id,
+        name: tpl.name,
+        file_path: outPath,
+        file_name: outName,
+        created_by: user.id,
+      })
+      .select()
+      .single()
+
+    if (!insErr) {
+      row = inserted
+      break
+    }
+
+    // Catégorie non numérotée (facture, convention, bon de commande…) : le nom
+    // de fichier ne dépend jamais du compteur, donc retenter avec un nouveau
+    // compteur ne changerait rien — la collision n'est pas une course entre
+    // deux générations concurrentes mais une RÉGÉNÉRATION normale du même
+    // document (correction, mise à jour). On remplace la ligne existante et
+    // son fichier au lieu d'échouer.
+    if ((insErr as { code?: string }).code === "23505" && !codeInfo.numbered) {
+      const { data: existing } = await sb
+        .from("generated_documents")
+        .select("id, file_path")
+        .eq("scope", scope)
+        .eq("entity_id", entity_id)
+        .eq("file_name", outName)
+        .maybeSingle()
+      if (existing) {
+        const { data: updated, error: updErr } = await sb
+          .from("generated_documents")
+          .update({
+            template_id,
+            name: tpl.name,
+            file_path: outPath,
+            created_by: user.id,
+            created_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id)
+          .select()
+          .single()
+        if (!updErr) {
+          await sb.storage.from("documents").remove([existing.file_path])
+          row = updated
+          break
+        }
+        lastErr = updErr.message
+        await sb.storage.from("documents").remove([outPath])
+        break
+      }
+    }
+
+    // Nettoie le fichier orphelin de la tentative ratée avant de retenter.
+    await sb.storage.from("documents").remove([outPath])
+    lastErr = insErr.message
+    if ((insErr as { code?: string }).code !== "23505") break
+  }
+  if (!row) return NextResponse.json({ error: lastErr || "Erreur génération" }, { status: 500 })
 
   return NextResponse.json({ data: row })
 }
