@@ -9,6 +9,10 @@
  * Précondition à charge de l'appelant : `missions` doit contenir toutes les
  * missions référencées par `intervenants` et par `records`. Un enregistrement
  * dont la mission est absente de la liste est silencieusement ignoré.
+ * `agregerParPersonne` et `kpisRetributions` supposent en plus au plus une
+ * ligne par couple (mission, personne) — invariant garanti par la contrainte
+ * unique `retributions_mission_personne_unique` de la migration 067 — sans
+ * quoi les totaux compteraient des montants en double.
  */
 
 /** Arrondi au centime, pour ne pas traîner de flottants dans les totaux. */
@@ -248,6 +252,12 @@ export function agregerParPersonne(rows: RetributionRow[]): RetributionParPerson
       }
       parPersonne.set(row.personne_id, agg)
     }
+    // Une ligne orpheline sans nom stocké peut être rencontrée avant une autre
+    // ligne de la même personne qui, elle, porte un nom : on complète dès que
+    // possible plutôt que de rester bloqué sur le placeholder "—".
+    if (agg.intervenant_nom === "—" && row.intervenant_nom) {
+      agg.intervenant_nom = row.intervenant_nom
+    }
     agg.nbMissions += 1
     if (row.numero_bv) agg.nbBv += 1
     if (row.paye) agg.totalVerse = round2(agg.totalVerse + row.montant)
@@ -258,8 +268,15 @@ export function agregerParPersonne(rows: RetributionRow[]): RetributionParPerson
   )
 }
 
+/** KPI de l'en-tête trésorerie. */
+export type RetributionKpis = {
+  totalRetributionDue: number
+  totalRetributionVersee: number
+  nbRetributionsAPayer: number
+}
+
 /** KPI de l'en-tête trésorerie, calculés sur les lignes de rétribution. */
-export function kpisRetributions(rows: RetributionRow[]) {
+export function kpisRetributions(rows: RetributionRow[]): RetributionKpis {
   let totalRetributionDue = 0
   let totalRetributionVersee = 0
   let nbRetributionsAPayer = 0

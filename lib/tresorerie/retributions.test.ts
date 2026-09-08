@@ -246,6 +246,46 @@ describe("agregerParPersonne", () => {
     const agg = agregerParPersonne(rows)
     expect(agg.map((a) => a.personne_id)).toEqual(["p1", "p2"])
   })
+
+  it("récupère le nom de la personne même si la première ligne rencontrée n'en porte pas", () => {
+    const rows = buildRetributionRows(
+      [
+        mission({ id: "m1", nb_intervenants: 1 }),
+        mission({ id: "m2", nom: "Focus group", nb_intervenants: 1 }),
+      ],
+      [inter("p2", "Bob Durand", "m1"), inter("p1", "Alice Martin", "m2")],
+      [record({ mission_id: "m1", personne_id: "p1", personne_nom: null })]
+    )
+    const alice = agregerParPersonne(rows).find((a) => a.personne_id === "p1")!
+    expect(alice.intervenant_nom).toBe("Alice Martin")
+  })
+
+  it("renvoie des totaux vides quand il n'y a aucune ligne", () => {
+    expect(agregerParPersonne([])).toEqual([])
+    expect(kpisRetributions([])).toEqual({
+      totalRetributionDue: 0,
+      totalRetributionVersee: 0,
+      nbRetributionsAPayer: 0,
+    })
+  })
+
+  it("n'accumule pas de dérive flottante sur des montants à décimales", () => {
+    const rows = buildRetributionRows(
+      [
+        mission({ id: "m1", nb_intervenants: 1, remuneration: 33.33, nb_jeh: 1 }),
+        mission({ id: "m2", nb_intervenants: 1, remuneration: 33.33, nb_jeh: 1 }),
+        mission({ id: "m3", nb_intervenants: 1, remuneration: 33.33, nb_jeh: 1 }),
+      ],
+      [
+        inter("p1", "Alice Martin", "m1"),
+        inter("p1", "Alice Martin", "m2"),
+        inter("p1", "Alice Martin", "m3"),
+      ],
+      []
+    )
+    expect(agregerParPersonne(rows)[0].totalDu).toBe(99.99)
+    expect(kpisRetributions(rows).totalRetributionDue).toBe(99.99)
+  })
 })
 
 describe("kpisRetributions", () => {
