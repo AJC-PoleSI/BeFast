@@ -11,6 +11,7 @@ import {
   kpisRetributions,
   montantParIntervenant,
   nextNumeroBV,
+  round2,
   type MissionSource,
   type IntervenantSource,
   type RetributionRecord,
@@ -172,13 +173,12 @@ async function chargerSourcesRetributions(
 
   // Table absente (migration 067 pas encore appliquée) : on continue en mode
   // dégradé — les lignes s'affichent, seul l'enregistrement des paiements
-  // individuels est indisponible. PostgREST renvoie PGRST205 quand la table
-  // manque dans son cache de schéma, 42P01 quand l'erreur remonte de Postgres.
+  // individuels est indisponible. La détection des deux codes possibles vit
+  // dans `tableRetributionsAbsente` (une seule définition pour tout le module).
   let retributionsIndisponibles = false
   let retributionsData: any[] = []
   if (retributionsRes.error) {
-    const code = (retributionsRes.error as any).code
-    if (code === "42P01" || code === "PGRST205") {
+    if (tableRetributionsAbsente(retributionsRes.error)) {
       retributionsIndisponibles = true
     } else {
       return {
@@ -615,6 +615,12 @@ function tableRetributionsAbsente(error: any): boolean {
  */
 function messageErreurRetribution(error: any, numero: string | null): string {
   if (tableRetributionsAbsente(error)) return ERREUR_MIGRATION_067
+  // 42501 = violation de RLS. La garde applicative `requireVoirFactures` ne
+  // vérifie pas l'état du compte, là où les policies d'écriture de la migration
+  // 067 exigent `is_compte_actif` : un·e trésorier·ère suspendu·e ou supprimé·e
+  // passe la garde et se fait refuser par la base. Message explicite plutôt que
+  // le jargon Postgres.
+  if (error?.code === "42501") return "Droits insuffisants pour enregistrer ce versement."
   // 23505 = violation d'unicité. L'upsert absorbe déjà le conflit sur
   // (mission_id, personne_id) : il ne reste que l'index partiel
   // `retributions_numero_bv_genere_unique`, perdu par le second trésorier
@@ -707,42 +713,63 @@ export async function getProchainNumeroBV() {
   if (permErr) return { error: permErr }
 
   const { numeros, error } = await chargerNumerosBVUtilises(supabase)
-  if (error) return { error: error.message }
+  if (error) return { error: messageErreurRetribution(error, null) }
   return { data: nextNumeroBV(numeros, new Date().getFullYear()) }
 }
 
-/** Vérifie qu'un numéro de BV n'est pas déjà porté par une autre rétribution. */
+/**
+ * Vérifie qu'un numéro de BV n'est pas déjà utilisé : ni par une AUTRE
+ * rétribution, ni par une AUTRE mission (`missions.numero_bv` garde la trace
+ * des bulletins émis avant le suivi par intervenant, et ces numéros comptent
+ * tout autant pour le trésorier). La mission courante est volontairement
+ * exclue du contrôle côté `missions` : reprendre sur la ligne de rétribution
+ * le numéro hérité de sa propre mission est légitime, pas un doublon.
+ */
 async function numeroBVLibre(
   supabase: ReturnType<typeof createClient>,
   numero: string,
   missionId: string,
   personneId: string
 ): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("retributions")
-    .select("mission_id, personne_id")
-    .eq("numero_bv", numero)
+  const [retributionsRes, missionsRes] = await Promise.all([
+    supabase.from("retributions").select("mission_id, personne_id").eq("numero_bv", numero),
+    supabase.from("missions").select("id").eq("numero_bv", numero).neq("id", missionId),
+  ])
   // Simple confort d'affichage : le vrai garde-fou est l'index unique partiel
-  // `retributions_numero_bv_genere_unique`. Si la lecture échoue (table
+  // `retributions_numero_bv_genere_unique`. Si une lecture échoue (table
   // absente, RLS…), on laisse l'écriture parler — elle remontera l'erreur
   // traduite plutôt qu'un refus prématuré et inexpliqué.
-  if (error) return true
-  return !(data ?? []).some(
+  if (retributionsRes.error || missionsRes.error) return true
+  const prisAilleurs = (retributionsRes.data ?? []).some(
     (r: any) => r.mission_id !== missionId || r.personne_id !== personneId
   )
+  return !prisAilleurs && (missionsRes.data ?? []).length === 0
 }
 
 /**
  * Enregistre (ou met à jour) le versement dû à UNE personne pour UNE mission.
- * Le montant est figé à l'écriture : le suivi comptable ne bouge plus si le
- * barème de la mission change ensuite.
+ *
+ * Deux valeurs sont PRÉSERVÉES quand l'appelant ne les fournit pas explicitement
+ * (clé absente de l'objet), parce qu'elles constituent la trace comptable :
+ * - `numero_bv` : un bulletin déjà émis et transmis ne doit jamais être effacé
+ *   par une simple mise à jour de la date de paiement (même règle que
+ *   `marquerMissionPaiement` et que le lot `marquerMissionRetributionsPayees`) ;
+ * - `montant` : figé à la première écriture, pour que le suivi ne bouge plus si
+ *   le barème de la mission change ensuite.
+ *
+ * L'`upsert` réécrivant la ligne entière, la ligne existante est relue d'abord
+ * et ses valeurs servent de repli. Limite assumée : entre cette lecture et
+ * l'écriture, une saisie concurrente sur le même couple serait écrasée — même
+ * fenêtre que la version précédente (dernier écrivain gagnant), à ceci près
+ * qu'on ne perd plus rien en l'absence de concurrence.
  */
 export async function marquerRetributionPaiement(input: {
   mission_id: string
   personne_id: string
   date_paiement: string | null
   numero_bv?: string | null
-  montant: number
+  /** Absent = on conserve le montant figé de la ligne existante. */
+  montant?: number
 }) {
   const supabase = createClient()
   const {
@@ -755,14 +782,38 @@ export async function marquerRetributionPaiement(input: {
   // Le montant vient de la ligne affichée côté client : on ne lui fait pas
   // confiance. La colonne porte un CHECK (montant >= 0), mais un message clair
   // vaut mieux qu'une violation de contrainte.
+  const montantFourni = input.montant !== undefined
   const montant = Number(input.montant)
-  if (!Number.isFinite(montant) || montant < 0) {
+  if (montantFourni && (!Number.isFinite(montant) || montant < 0)) {
     return { error: "Montant invalide : la rétribution doit être un nombre positif." }
   }
 
-  const numero = input.numero_bv?.trim() ? input.numero_bv.trim() : null
-  if (numero && !(await numeroBVLibre(supabase, numero, input.mission_id, input.personne_id))) {
-    return { error: numeroDejaUtilise(numero) }
+  const { data: existante, error: lectureErr } = await supabase
+    .from("retributions")
+    .select("numero_bv, montant")
+    .eq("mission_id", input.mission_id)
+    .eq("personne_id", input.personne_id)
+    .maybeSingle()
+  if (lectureErr) return { error: messageErreurRetribution(lectureErr, null) }
+
+  const numeroFourni = input.numero_bv !== undefined
+  const numeroSaisi = input.numero_bv?.trim() ? input.numero_bv.trim() : null
+  const numero = numeroFourni ? numeroSaisi : (existante as any)?.numero_bv ?? null
+
+  // Le contrôle d'unicité ne porte que sur un numéro réellement saisi : un
+  // numéro simplement reconduit depuis la ligne existante est, par
+  // construction, déjà le sien.
+  if (
+    numeroFourni &&
+    numeroSaisi &&
+    !(await numeroBVLibre(supabase, numeroSaisi, input.mission_id, input.personne_id))
+  ) {
+    return { error: numeroDejaUtilise(numeroSaisi) }
+  }
+
+  const montantFige = (existante as any)?.montant
+  if (!montantFourni && montantFige == null) {
+    return { error: "Montant manquant : impossible d'enregistrer cette rétribution." }
   }
 
   const { error } = await supabase.from("retributions").upsert(
@@ -771,7 +822,7 @@ export async function marquerRetributionPaiement(input: {
       personne_id: input.personne_id,
       date_paiement: input.date_paiement,
       numero_bv: numero,
-      montant: Math.round(montant * 100) / 100,
+      montant: round2(montantFourni ? montant : Number(montantFige)),
       // L'upsert réécrit la ligne : `created_by` porte donc le·la dernier·ère
       // trésorier·ère ayant enregistré le paiement, pas l'auteur d'origine.
       // Comportement documenté tel quel dans la migration 067.
@@ -779,7 +830,7 @@ export async function marquerRetributionPaiement(input: {
     },
     { onConflict: "mission_id,personne_id" }
   )
-  if (error) return { error: messageErreurRetribution(error, numero) }
+  if (error) return { error: messageErreurRetribution(error, numeroFourni ? numeroSaisi : null) }
 
   revalidateTag(MISSIONS_TAG)
   revalidatePath("/tresorerie")
@@ -817,11 +868,21 @@ async function annulerPaiementHerite(
   // rien ne dit qui a été payé, donc rien à annuler ici.
   if (ids.length !== 1 || ids[0] !== personneId) return null
 
-  const { error: updateErr } = await supabase
+  // `.select()` obligatoire : la policy "missions write" (migration 050) exige
+  // `is_membre_interne`, que ne possède pas un·e trésorier·ère dont le droit
+  // `voir_factures` vient d'un poste cumulé. Sans lecture du résultat, l'UPDATE
+  // filtré par RLS renvoie zéro ligne SANS erreur et l'annulation serait
+  // annoncée comme réussie alors que rien n'a bougé.
+  const { data, error: updateErr } = await supabase
     .from("missions")
     .update({ date_paiement: null })
     .eq("id", missionId)
-  return updateErr ? updateErr.message : null
+    .select("id")
+  if (updateErr) return updateErr.message
+  if ((data ?? []).length === 0) {
+    return "Paiement non annulé : droits insuffisants ou mission déjà modifiée."
+  }
+  return null
 }
 
 /** Annule le versement d'une rétribution ; le numéro de BV émis est conservé. */
@@ -834,15 +895,31 @@ export async function annulerRetributionPaiement(missionId: string, personneId: 
   const permErr = await requireVoirFactures(user.id)
   if (permErr) return { error: permErr }
 
-  const { data, error } = await supabase
+  // Un UPDATE écarté par RLS renvoie zéro ligne SANS erreur : « aucune ligne
+  // modifiée » ne prouve donc PAS qu'il n'existe pas de rétribution. On lit
+  // explicitement le couple avant de conclure — sinon un·e trésorier·ère
+  // suspendu·e (refusé·e par la policy "retributions update", qui exige
+  // `is_compte_actif`) basculerait sur le repli hérité et effacerait
+  // `missions.date_paiement` pendant que la vraie ligne reste payée.
+  const { data: existante, error: lectureErr } = await supabase
     .from("retributions")
-    .update({ date_paiement: null })
+    .select("id")
     .eq("mission_id", missionId)
     .eq("personne_id", personneId)
-    .select("id")
-  if (error) return { error: messageErreurRetribution(error, null) }
+    .maybeSingle()
+  if (lectureErr) return { error: messageErreurRetribution(lectureErr, null) }
 
-  if ((data ?? []).length === 0) {
+  if (existante) {
+    const { data, error } = await supabase
+      .from("retributions")
+      .update({ date_paiement: null })
+      .eq("id", (existante as any).id)
+      .select("id")
+    if (error) return { error: messageErreurRetribution(error, null) }
+    if ((data ?? []).length === 0) {
+      return { error: "Versement non annulé : droits insuffisants ou ligne déjà modifiée." }
+    }
+  } else {
     const heriteErr = await annulerPaiementHerite(supabase, missionId, personneId)
     if (heriteErr) return { error: heriteErr }
   }
@@ -877,7 +954,7 @@ export async function marquerMissionRetributionsPayees(missionId: string, date_p
     chargerIntervenantsMission(supabase, missionId, (mission as any).intervenant_id ?? null),
     supabase
       .from("retributions")
-      .select("personne_id, numero_bv, date_paiement")
+      .select("personne_id, numero_bv, date_paiement, montant")
       .eq("mission_id", missionId),
     chargerNumerosBVUtilises(supabase),
   ])
@@ -885,7 +962,7 @@ export async function marquerMissionRetributionsPayees(missionId: string, date_p
   if (retributionsRes.error) {
     return { error: messageErreurRetribution(retributionsRes.error, null) }
   }
-  if (numerosRes.error) return { error: numerosRes.error.message }
+  if (numerosRes.error) return { error: messageErreurRetribution(numerosRes.error, null) }
 
   const existantes = new Map<string, any>(
     ((retributionsRes.data ?? []) as any[]).map((r) => [r.personne_id, r])
@@ -903,25 +980,33 @@ export async function marquerMissionRetributionsPayees(missionId: string, date_p
 
   // `montantParIntervenant` ne lit que `remuneration` et `nb_jeh` : inutile de
   // charger le reste de MissionSource (nom, étude, dates…) pour ce calcul.
-  const montant = montantParIntervenant({
+  const montantCourant = montantParIntervenant({
     remuneration: Number((mission as any).remuneration ?? 0),
     nb_jeh: Number((mission as any).nb_jeh ?? 0),
-  } as MissionSource)
+  })
 
   const numeros = [...numerosRes.numeros]
   const annee = new Date().getFullYear()
   const lignes = aPayer.map((personne_id) => {
+    const existante = existantes.get(personne_id)
     // Un BV déjà émis (ligne créée sans paiement) est réutilisé plutôt que
     // remplacé : on ne brûle pas un numéro et on ne casse pas le bulletin
     // déjà transmis. Sinon on en attribue un neuf, ajouté aussitôt à la liste
     // des numéros pris pour que deux personnes du même lot ne collisionnent
     // pas.
-    const dejaEmis = existantes.get(personne_id)?.numero_bv?.trim()
+    const dejaEmis = existante?.numero_bv?.trim()
     let numero: string = dejaEmis || ""
     if (!numero) {
       numero = nextNumeroBV(numeros, annee)
       numeros.push(numero)
     }
+    // Même logique pour le montant : une ligne existante porte un montant FIGÉ
+    // à sa création, c'est lui que le tableau affiche au trésorier. Le
+    // recalculer ici ferait diverger le montant enregistré de celui validé à
+    // l'écran dès que le barème de la mission a changé entre-temps. Seules les
+    // personnes sans ligne prennent le montant courant.
+    const montant =
+      existante?.montant != null ? round2(Number(existante.montant)) : montantCourant
     return {
       mission_id: missionId,
       personne_id,

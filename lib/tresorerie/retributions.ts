@@ -16,7 +16,7 @@
  */
 
 /** Arrondi au centime, pour ne pas traîner de flottants dans les totaux. */
-function round2(n: number): number {
+export function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
@@ -78,8 +78,13 @@ export type RetributionRow = {
   manquants: number
 }
 
-/** Montant dû à UN intervenant : remuneration × nb_jeh. */
-export function montantParIntervenant(m: MissionSource): number {
+/**
+ * Montant dû à UN intervenant : remuneration × nb_jeh.
+ * Le paramètre est volontairement réduit aux deux champs réellement lus, pour
+ * que l'appelant qui ne dispose que du barème d'une mission n'ait pas à
+ * fabriquer (ni à caster) une `MissionSource` complète.
+ */
+export function montantParIntervenant(m: Pick<MissionSource, "remuneration" | "nb_jeh">): number {
   return round2(Number(m.remuneration ?? 0) * Number(m.nb_jeh ?? 0))
 }
 
