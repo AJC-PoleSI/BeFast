@@ -163,4 +163,51 @@ describe("buildRetributionRows", () => {
       date_fin: "2026-11-29",
     })
   })
+
+  it("ne fabrique aucune ligne d'alerte quand la mission déclare zéro intervenant", () => {
+    const rows = buildRetributionRows([mission({ nb_intervenants: 0 })], [], [])
+    expect(rows).toHaveLength(0)
+  })
+
+  it("traite un nb_intervenants absent comme un intervenant unique", () => {
+    const rows = buildRetributionRows(
+      [mission({ nb_intervenants: null as unknown as number })],
+      [],
+      []
+    )
+    expect(rows).toHaveLength(1)
+    expect(rows[0].manquants).toBe(1)
+  })
+
+  it("traite plusieurs missions dans le même appel sans mélanger les lignes", () => {
+    const rows = buildRetributionRows(
+      [mission({ id: "m1", nb_intervenants: 1 }), mission({ id: "m2", nb_intervenants: 1 })],
+      [inter("p1", "Alice Martin", "m1"), inter("p2", "Bob Durand", "m2")],
+      []
+    )
+    expect(rows.map((r) => [r.mission_id, r.personne_id])).toEqual([
+      ["m1", "p1"],
+      ["m2", "p2"],
+    ])
+  })
+
+  it("affiche un BV émis mais pas encore payé comme non payé", () => {
+    const rows = buildRetributionRows(
+      [mission({ nb_intervenants: 1 })],
+      [inter("p1", "Alice Martin")],
+      [record({ date_paiement: null })]
+    )
+    expect(rows[0].numero_bv).toBe("BV-2026-001")
+    expect(rows[0].paye).toBe(false)
+  })
+
+  it("n'ajoute pas de ligne d'alerte quand plus d'intervenants sont sélectionnés que déclarés", () => {
+    const rows = buildRetributionRows(
+      [mission({ nb_intervenants: 1 })],
+      [inter("p1", "Alice Martin"), inter("p2", "Bob Durand")],
+      []
+    )
+    expect(rows).toHaveLength(2)
+    expect(rows.some((r) => r.personne_id === null)).toBe(false)
+  })
 })

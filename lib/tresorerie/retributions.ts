@@ -5,6 +5,10 @@
  * La table `retributions` ne stocke que les lignes déjà traitées (BV émis ou
  * paiement enregistré) : les lignes affichées sont recomposées ici à partir des
  * missions, des intervenants sélectionnés et des lignes déjà écrites.
+ *
+ * Précondition à charge de l'appelant : `missions` doit contenir toutes les
+ * missions référencées par `intervenants` et par `records`. Un enregistrement
+ * dont la mission est absente de la liste est silencieusement ignoré.
  */
 
 /** Arrondi au centime, pour ne pas traîner de flottants dans les totaux. */
@@ -75,9 +79,18 @@ export function montantParIntervenant(m: MissionSource): number {
   return round2(Number(m.remuneration ?? 0) * Number(m.nb_jeh ?? 0))
 }
 
-/** Nombre d'intervenants déclarés sur la mission (au moins 1). */
+/**
+ * Nombre d'intervenants déclarés sur la mission : null/undefined vaut 1 (au
+ * moins un intervenant implicite), une valeur non finie (NaN) vaut aussi 1,
+ * mais un 0 explicite reste 0 — même convention que `lib/actions/missions.ts`
+ * et `lib/actions/tresorerie.ts` (`Number(m.nb_intervenants ?? 1)`). Sans ce
+ * garde, une mission déclarant explicitement 0 intervenant fabriquait une
+ * ligne d'alerte et un montant dû fictifs.
+ */
 function effectifDeclare(m: MissionSource): number {
-  return Math.max(Number(m.nb_intervenants ?? 1) || 1, 1)
+  const n = Number(m.nb_intervenants ?? 1)
+  if (!Number.isFinite(n)) return 1
+  return Math.max(n, 0)
 }
 
 /**
@@ -126,6 +139,13 @@ export function buildRetributionRows(
       const rec = recParPersonne.get(i.personne_id)
       // Mission mono-intervenant payée avant la migration : le paiement vit
       // encore sur la ligne mission, on le rattache à son unique intervenant.
+      // Limite assumée : ce rattachement ne fonctionne que si la mission a
+      // exactement un intervenant sélectionné. Sur une mission à 2+
+      // intervenants, rien ne permet de savoir lequel a été payé — ces lignes
+      // restent donc affichées comme non payées. La migration 067 a rétabli
+      // l'intervenant sur les missions qui portaient un `intervenant_id`,
+      // donc en pratique ce cas ne concerne que les missions payées sans
+      // aucun intervenant identifié.
       const herite = !rec && liste.length === 1
       const date_paiement = rec ? rec.date_paiement : herite ? m.date_paiement : null
       const numero_bv = rec ? rec.numero_bv : herite ? m.numero_bv : null
@@ -163,15 +183,15 @@ export function buildRetributionRows(
     if (manquants > 0) {
       // Le paiement mission n'est repris ici que si personne n'est sélectionné,
       // sinon il a déjà été rattaché à l'intervenant unique ci-dessus.
-      const orphelinDePaiement = liste.length === 0
+      const paiementMissionRepris = liste.length === 0
       rows.push({
         ...commun,
         key: `${m.id}:_reste`,
         personne_id: null,
         intervenant_nom: null,
-        numero_bv: orphelinDePaiement ? m.numero_bv : null,
-        date_paiement: orphelinDePaiement ? m.date_paiement : null,
-        paye: orphelinDePaiement ? !!m.date_paiement : false,
+        numero_bv: paiementMissionRepris ? m.numero_bv : null,
+        date_paiement: paiementMissionRepris ? m.date_paiement : null,
+        paye: paiementMissionRepris ? !!m.date_paiement : false,
         montant: round2(unitaire * manquants),
         orphelin: false,
         manquants,
