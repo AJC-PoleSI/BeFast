@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { hasPermission } from "@/lib/auth/permissions"
+import { chargerToutesLesPages, tableRetributionsAbsente } from "@/lib/supabase/pagination"
 
 export const dynamic = "force-dynamic"
 
@@ -13,50 +14,29 @@ export const dynamic = "force-dynamic"
  * - csv  : un seul jeu de données (`sheet` requis), séparateur ";" + BOM (Excel FR)
  * Filtres : factures sur date_emission, BV sur la date de paiement.
  *
- * L'onglet « Bulletins de versement » liste UNE LIGNE PAR INTERVENANT PAYÉ :
+ * L'onglet « Bulletins de versement » liste UNE LIGNE PAR PAIEMENT, à partir de
+ * DEUX sources :
  * - source principale : `retributions` (migration 067), le versement y est
- *   attribué nominativement ;
- * - repli : les missions payées SANS `intervenant_id`, que la migration 067 n'a
- *   volontairement pas reprises (rien en base ne dit qui a été payé). Les
- *   missions AVEC intervenant sont exclues du repli : elles sont déjà dans
- *   `retributions`, les lister ici doublerait les montants.
- */
-
-/** Taille de page PostgREST (plafond serveur usuel). */
-const TAILLE_PAGE = 1000
-
-/**
- * Lit TOUTES les lignes d'une requête en la paginant via `.range()`.
+ *   attribué nominativement (montant figé à la date du paiement) ;
+ * - repli : TOUTES les missions payées (`missions.date_paiement`), qu'elles
+ *   aient ou non un `intervenant_id` — la migration 067 n'a repris dans
+ *   `retributions` que les missions dotées d'un `intervenant_id`, jamais les
+ *   missions payées sans intervenant identifié (voir le reliquat documenté en
+ *   fin de 067_retributions_intervenants.sql). Tant que 067 n'est pas
+ *   appliquée, `retributions` n'existe pas du tout : ce repli est alors la
+ *   SEULE source, y compris pour les paiements mono-intervenant.
  *
- * PostgREST tronque silencieusement au-delà de son plafond : sur un export
- * comptable, cela produirait un fichier amputé de paiements sans le moindre
- * message. L'appelant DOIT fournir un tri déterministe (une colonne unique en
- * dernier critère), sinon deux pages peuvent se recouvrir ou s'oublier.
+ * Anti-doublon : une ligne de repli n'est exclue que si SA PROPRE date
+ * (`missions.date_paiement`) figure déjà, pour cette mission, parmi les dates
+ * de paiement enregistrées dans `retributions`. Le but est d'éviter de compter
+ * deux fois LE MÊME versement, pas de masquer une mission qui a par ailleurs
+ * une rétribution payée à une autre date (versement distinct, également réel).
+ *
+ * Colonne « Provenance » : le montant d'une ligne `retributions` a été
+ * réellement versé (figé à l'époque, même si le barème mission a changé
+ * depuis) ; le montant d'une ligne de repli est reconstitué à la volée
+ * (rémunération × nb JEH courants de la mission) faute d'enregistrement figé.
  */
-async function chargerToutesLesPages(
-  requete: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>
-): Promise<{ data: any[]; error: any }> {
-  const lignes: any[] = []
-  for (let page = 0; ; page++) {
-    const from = page * TAILLE_PAGE
-    const { data, error } = await requete(from, from + TAILLE_PAGE - 1)
-    if (error) return { data: [], error }
-    const lot = data ?? []
-    lignes.push(...lot)
-    if (lot.length < TAILLE_PAGE) return { data: lignes, error: null }
-  }
-}
-
-/**
- * Table `retributions` absente : 42P01 vient de Postgres, PGRST205 du cache de
- * schéma PostgREST (même cause, deux codes selon la couche qui refuse). Tant
- * que la migration 067 n'est pas appliquée, l'export doit continuer à sortir
- * les paiements historiques plutôt que de renvoyer une 500.
- */
-function tableRetributionsAbsente(error: any): boolean {
-  const code = error?.code
-  return code === "42P01" || code === "PGRST205"
-}
 
 const nomComplet = (p: { prenom?: string | null; nom?: string | null } | null | undefined) =>
   p ? [p.prenom, p.nom].filter(Boolean).join(" ").trim() : ""
@@ -67,7 +47,7 @@ const libelleEtude = (e: { numero?: string | null; nom?: string | null } | null 
 /** Arrondi comptable au centime (évite le bruit flottant de rémunération × JEH). */
 const auCentime = (n: number) => Math.round(n * 100) / 100
 
-/** Repli : mission payée sans intervenant identifié. */
+/** Repli : mission payée dont l'intervenant n'a pas pu être déterminé. */
 const INTERVENANT_INCONNU = "(intervenant non renseigné)"
 
 export async function GET(request: Request) {
@@ -101,7 +81,7 @@ export async function GET(request: Request) {
   // L'étude est embarquée dans chaque requête plutôt que relue via un second
   // `.in("id", …)` : passé ~220 UUID, ce filtre fait déborder l'URI GET (8 Ko)
   // et l'export perdait silencieusement toutes les colonnes « Étude ».
-  const [facturesRes, retributionsRes, missionsRes, missionsRetribueesRes] = await Promise.all([
+  const [facturesRes, retributionsRes, missionsRes, datesRetribueesRes] = await Promise.all([
     // ── Factures ────────────────────────────────────────────────────────────
     chargerToutesLesPages((f, t) => {
       let q = sb
@@ -134,13 +114,19 @@ export async function GET(request: Request) {
         .order("id", { ascending: true })
         .range(f, t)
     }),
-    // ── BV : repli sur les missions payées sans intervenant identifié ────────
+    // ── BV : repli sur les missions payées (toutes, avec ou sans intervenant) ─
+    // Pas de `.is("intervenant_id", null)` ici : avant la migration 067,
+    // `retributions` n'existe pas et cette requête est la SEULE source — la
+    // filtrer sur `intervenant_id` ferait disparaître tous les paiements
+    // mono-intervenant. L'exclusion des missions déjà couvertes par une
+    // rétribution nominative se fait plus bas, ligne par date (anti-doublon).
     chargerToutesLesPages((f, t) => {
       let q = sb
         .from("missions")
-        .select("id, nom, numero_bv, remuneration, date_paiement, nb_jeh, etudes(id, numero, nom)")
+        .select(
+          "id, nom, numero_bv, remuneration, date_paiement, nb_jeh, etudes(id, numero, nom), intervenant:personnes!missions_intervenant_id_fkey(id, prenom, nom)"
+        )
         .not("date_paiement", "is", null)
-        .is("intervenant_id", null)
       if (from) q = q.gte("date_paiement", from)
       if (to) q = q.lte("date_paiement", to)
       return q
@@ -148,18 +134,20 @@ export async function GET(request: Request) {
         .order("id", { ascending: true })
         .range(f, t)
     }),
-    // ── Missions déjà couvertes par une rétribution (anti-doublon) ───────────
-    // Une mission sans `intervenant_id` mais portée par plusieurs intervenants
-    // via des candidatures acceptées peut cumuler un `missions.date_paiement`
-    // historique ET des rétributions nominatives : `marquerMissionRetributionsPayees`
-    // n'applique l'héritage qu'aux missions mono-intervenant. Sans ce garde-fou,
-    // le même versement sortirait deux fois. Aucun filtre de date ni de
-    // paiement : dès qu'une mission est suivie nominativement, sa ligne de
-    // repli n'a plus lieu d'être.
+    // ── Dates déjà couvertes par une rétribution nominative (anti-doublon) ───
+    // Une mission peut cumuler un `missions.date_paiement` historique ET une
+    // ou plusieurs rétributions nominatives payées à D'AUTRES dates (ex. solde
+    // réglé après annulation d'un premier versement via
+    // `annulerRetributionPaiement`, qui remet `date_paiement` à null sans
+    // supprimer la ligne). On ne doit exclure du repli que LE MÊME paiement,
+    // pas toute la mission : d'où un filtre sur `date_paiement IS NOT NULL` et
+    // une comparaison par (mission_id, date) plus bas, jamais par mission_id
+    // seul.
     chargerToutesLesPages((f, t) =>
       sb
         .from("retributions")
-        .select("id, mission_id")
+        .select("mission_id, date_paiement")
+        .not("date_paiement", "is", null)
         .order("id", { ascending: true })
         .range(f, t)
     ),
@@ -174,15 +162,19 @@ export async function GET(request: Request) {
   // Migration 067 pas encore appliquée : mode dégradé, l'onglet ne contient que
   // les paiements historiques. Toute autre erreur reste une 500.
   let retributionsData: any[] = []
-  const missionsRetribuees = new Set<string>()
-  for (const res of [retributionsRes, missionsRetribueesRes]) {
+  const datesDejaRetribuees = new Map<string, Set<string>>()
+  for (const res of [retributionsRes, datesRetribueesRes]) {
     if (res.error && !tableRetributionsAbsente(res.error)) {
       return NextResponse.json({ error: res.error.message }, { status: 500 })
     }
   }
   if (!retributionsRes.error) retributionsData = retributionsRes.data
-  if (!missionsRetribueesRes.error) {
-    for (const r of missionsRetribueesRes.data) missionsRetribuees.add((r as any).mission_id)
+  if (!datesRetribueesRes.error) {
+    for (const r of datesRetribueesRes.data as any[]) {
+      const dates = datesDejaRetribuees.get(r.mission_id) ?? new Set<string>()
+      dates.add(r.date_paiement)
+      datesDejaRetribuees.set(r.mission_id, dates)
+    }
   }
 
   const factureRows = facturesRes.data.map((f: any) => ({
@@ -206,19 +198,28 @@ export async function GET(request: Request) {
       nb_jeh: Number(r.missions?.nb_jeh ?? 0),
       montant: auCentime(Number(r.montant ?? 0)),
       date_paiement: r.date_paiement ?? "",
+      provenance: "Rétribution enregistrée",
     })),
     ...missionsRes.data
-      .filter((m: any) => !missionsRetribuees.has(m.id))
+      // Anti-doublon date-aware : on n'exclut cette ligne de repli que si SA
+      // PROPRE date de paiement est déjà représentée par une rétribution
+      // nominative sur la même mission — même paiement, pas juste même
+      // mission (cf. commentaire de la requête ci-dessus).
+      .filter((m: any) => !datesDejaRetribuees.get(m.id)?.has(m.date_paiement))
       .map((m: any) => ({
         numero_bv: m.numero_bv ?? "",
-        intervenant: INTERVENANT_INCONNU,
+        intervenant: nomComplet(m.intervenant) || INTERVENANT_INCONNU,
         etude: libelleEtude(m.etudes),
         mission: m.nom ?? "",
         nb_jeh: Number(m.nb_jeh ?? 0),
-        // Pas de montant enregistré sur la mission : on le reconstitue comme la
-        // reprise d'historique de la migration 067 (rémunération × nb JEH).
+        // Pas de montant figé pour ce paiement : on le reconstitue à partir du
+        // barème COURANT de la mission (rémunération × nb JEH), comme la
+        // reprise d'historique de la migration 067. Si le barème a changé
+        // depuis le paiement, ce montant n'est pas celui réellement versé —
+        // d'où la colonne « Provenance » qui le signale.
         montant: auCentime(Number(m.remuneration ?? 0) * Number(m.nb_jeh ?? 0)),
         date_paiement: m.date_paiement ?? "",
+        provenance: "Paiement mission (montant reconstitué)",
       })),
   ].sort((a, b) => String(a.date_paiement).localeCompare(String(b.date_paiement)))
 
@@ -270,6 +271,7 @@ export async function GET(request: Request) {
     { header: "Nb JEH", key: "nb_jeh", width: 10 },
     { header: "Montant (€)", key: "montant", width: 16, style: { numFmt: "#,##0.00" } },
     { header: "Date de paiement", key: "date_paiement", width: 16 },
+    { header: "Provenance", key: "provenance", width: 32 },
   ]
   wsB.addRows(bulletinRows)
 

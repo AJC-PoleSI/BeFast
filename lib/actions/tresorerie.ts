@@ -5,6 +5,7 @@ import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next
 import { FACTURES_TAG, MISSIONS_TAG } from "@/lib/cache-tags"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { hasPermission } from "@/lib/auth/permissions"
+import { chargerToutesLesPages, tableRetributionsAbsente } from "@/lib/supabase/pagination"
 import {
   buildRetributionRows,
   agregerParPersonne,
@@ -84,37 +85,9 @@ function joursRetard(date_emission: string | null, date_paiement: string | null)
   return diff > 0 ? diff : null
 }
 
-/** Taille de page PostgREST (`db-max-rows`, 1000 par défaut sur Supabase). */
-const TAILLE_PAGE = 1000
-
-/**
- * Lit TOUTES les lignes d'une requête en la paginant via `.range()`.
- *
- * PostgREST plafonne silencieusement le nombre de lignes renvoyées : au-delà
- * du plafond la réponse est tronquée SANS erreur. Pour le suivi des
- * rétributions c'est un contresens financier, pas un détail d'affichage :
- * une page `candidatures` tronquée transforme de vrais intervenants en lignes
- * d'alerte « intervenants non sélectionnés », et une page `retributions`
- * tronquée fait réapparaître comme impayées des personnes déjà réglées (voire
- * les marque orphelines). On boucle donc jusqu'à recevoir une page incomplète.
- *
- * L'appelant DOIT fournir un tri déterministe (`.order("id")`), sinon Postgres
- * peut renvoyer les lignes dans un ordre différent d'une page à l'autre et
- * produire des doublons ou des oublis.
- */
-async function chargerToutesLesPages(
-  requete: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>
-): Promise<{ data: any[]; error: any }> {
-  const lignes: any[] = []
-  for (let page = 0; ; page++) {
-    const from = page * TAILLE_PAGE
-    const { data, error } = await requete(from, from + TAILLE_PAGE - 1)
-    if (error) return { data: [], error }
-    const lot = data ?? []
-    lignes.push(...lot)
-    if (lot.length < TAILLE_PAGE) return { data: lignes, error: null }
-  }
-}
+// `chargerToutesLesPages` et `tableRetributionsAbsente` vivent désormais dans
+// `lib/supabase/pagination.ts`, partagé avec `app/api/tresorerie/export/route.ts`
+// (client-agnostiques : elles prennent un callback, jamais un client Supabase).
 
 const nomComplet = (p: { prenom?: string | null; nom?: string | null } | null | undefined) =>
   p ? [p.prenom, p.nom].filter(Boolean).join(" ").trim() || null : null
@@ -596,15 +569,6 @@ const ERREUR_MIGRATION_067 =
 
 const numeroDejaUtilise = (numero: string) =>
   `Le numéro ${numero} est déjà utilisé par un autre bulletin.`
-
-/**
- * Table `retributions` absente : 42P01 vient de Postgres, PGRST205 du cache de
- * schéma PostgREST (même cause, deux codes selon la couche qui refuse).
- */
-function tableRetributionsAbsente(error: any): boolean {
-  const code = error?.code
-  return code === "42P01" || code === "PGRST205"
-}
 
 /**
  * Traduit une erreur Postgres en message lisible pour le trésorier.
