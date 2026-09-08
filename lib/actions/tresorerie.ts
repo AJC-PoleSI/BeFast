@@ -9,6 +9,8 @@ import {
   buildRetributionRows,
   agregerParPersonne,
   kpisRetributions,
+  montantParIntervenant,
+  nextNumeroBV,
   type MissionSource,
   type IntervenantSource,
   type RetributionRecord,
@@ -581,6 +583,360 @@ export async function marquerMissionPaiement(
 
   const { error } = await supabase.from("missions").update(updates).eq("id", missionId)
   if (error) return { error: error.message }
+  revalidateTag(MISSIONS_TAG)
+  revalidatePath("/tresorerie")
+  return { success: true }
+}
+
+// ── Rétributions : versements intervenant par intervenant ───────────────────
+
+/** Message affiché tant que la migration 067 n'a pas été appliquée. */
+const ERREUR_MIGRATION_067 =
+  "Migration 067 non appliquée : le suivi par intervenant n'est pas encore actif."
+
+const numeroDejaUtilise = (numero: string) =>
+  `Le numéro ${numero} est déjà utilisé par un autre bulletin.`
+
+/**
+ * Table `retributions` absente : 42P01 vient de Postgres, PGRST205 du cache de
+ * schéma PostgREST (même cause, deux codes selon la couche qui refuse).
+ */
+function tableRetributionsAbsente(error: any): boolean {
+  const code = error?.code
+  return code === "42P01" || code === "PGRST205"
+}
+
+/**
+ * Traduit une erreur Postgres en message lisible pour le trésorier.
+ *
+ * `numero` = le numéro de BV que l'écriture tentait de poser, quand il est
+ * unique et connu (saisie unitaire) ; null pour un lot, où plusieurs numéros
+ * sont écrits d'un coup.
+ */
+function messageErreurRetribution(error: any, numero: string | null): string {
+  if (tableRetributionsAbsente(error)) return ERREUR_MIGRATION_067
+  // 23505 = violation d'unicité. L'upsert absorbe déjà le conflit sur
+  // (mission_id, personne_id) : il ne reste que l'index partiel
+  // `retributions_numero_bv_genere_unique`, perdu par le second trésorier
+  // quand deux saisies simultanées calculent le même max + 1.
+  if (error?.code === "23505") {
+    return numero
+      ? numeroDejaUtilise(numero)
+      : "Un numéro de bulletin vient d'être attribué à quelqu'un d'autre : réessayez."
+  }
+  return error?.message ?? "Erreur inconnue"
+}
+
+/**
+ * Tous les numéros de BV déjà utilisés : côté `retributions` ET côté `missions`
+ * (numéros historiques saisis avant le suivi par intervenant). La pagination
+ * est indispensable ici : une page tronquée ferait rendre un numéro déjà pris.
+ * Si la table `retributions` n'existe pas encore, on se rabat sur les seuls
+ * numéros des missions plutôt que d'échouer.
+ */
+async function chargerNumerosBVUtilises(
+  supabase: ReturnType<typeof createClient>
+): Promise<{ numeros: string[]; error?: any }> {
+  const [retributionsRes, missionsRes] = await Promise.all([
+    chargerToutesLesPages((from, to) =>
+      supabase
+        .from("retributions")
+        .select("id, numero_bv")
+        .not("numero_bv", "is", null)
+        .order("id", { ascending: true })
+        .range(from, to)
+    ),
+    chargerToutesLesPages((from, to) =>
+      supabase
+        .from("missions")
+        .select("id, numero_bv")
+        .not("numero_bv", "is", null)
+        .order("id", { ascending: true })
+        .range(from, to)
+    ),
+  ])
+
+  if (missionsRes.error) return { numeros: [], error: missionsRes.error }
+  if (retributionsRes.error && !tableRetributionsAbsente(retributionsRes.error)) {
+    return { numeros: [], error: retributionsRes.error }
+  }
+
+  const numeros = [...retributionsRes.data, ...missionsRes.data]
+    .map((r: any) => r.numero_bv)
+    .filter((n: any): n is string => typeof n === "string" && n.trim() !== "")
+  return { numeros }
+}
+
+/**
+ * Intervenants d'une mission = candidatures acceptées + intervenant assigné
+ * directement, dédoublonnés. Même règle que `chargerSourcesRetributions`.
+ * Pas de pagination : on ne lit ici qu'une seule mission, très loin du plafond
+ * PostgREST.
+ */
+async function chargerIntervenantsMission(
+  supabase: ReturnType<typeof createClient>,
+  missionId: string,
+  intervenantId: string | null
+): Promise<{ ids: string[]; error?: any }> {
+  const { data, error } = await supabase
+    .from("candidatures")
+    .select("personne_id")
+    .eq("mission_id", missionId)
+    .eq("statut", "acceptee")
+  if (error) return { ids: [], error }
+
+  const ids: string[] = []
+  for (const c of (data ?? []) as any[]) {
+    if (c.personne_id && !ids.includes(c.personne_id)) ids.push(c.personne_id)
+  }
+  if (intervenantId && !ids.includes(intervenantId)) ids.push(intervenantId)
+  return { ids }
+}
+
+/**
+ * Numéro de BV proposé par défaut : suite de l'année en cours, en tenant compte
+ * des numéros déjà utilisés côté rétributions ET côté missions (historique).
+ */
+export async function getProchainNumeroBV() {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+  const permErr = await requireVoirFactures(user.id)
+  if (permErr) return { error: permErr }
+
+  const { numeros, error } = await chargerNumerosBVUtilises(supabase)
+  if (error) return { error: error.message }
+  return { data: nextNumeroBV(numeros, new Date().getFullYear()) }
+}
+
+/** Vérifie qu'un numéro de BV n'est pas déjà porté par une autre rétribution. */
+async function numeroBVLibre(
+  supabase: ReturnType<typeof createClient>,
+  numero: string,
+  missionId: string,
+  personneId: string
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("retributions")
+    .select("mission_id, personne_id")
+    .eq("numero_bv", numero)
+  // Simple confort d'affichage : le vrai garde-fou est l'index unique partiel
+  // `retributions_numero_bv_genere_unique`. Si la lecture échoue (table
+  // absente, RLS…), on laisse l'écriture parler — elle remontera l'erreur
+  // traduite plutôt qu'un refus prématuré et inexpliqué.
+  if (error) return true
+  return !(data ?? []).some(
+    (r: any) => r.mission_id !== missionId || r.personne_id !== personneId
+  )
+}
+
+/**
+ * Enregistre (ou met à jour) le versement dû à UNE personne pour UNE mission.
+ * Le montant est figé à l'écriture : le suivi comptable ne bouge plus si le
+ * barème de la mission change ensuite.
+ */
+export async function marquerRetributionPaiement(input: {
+  mission_id: string
+  personne_id: string
+  date_paiement: string | null
+  numero_bv?: string | null
+  montant: number
+}) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+  const permErr = await requireVoirFactures(user.id)
+  if (permErr) return { error: permErr }
+
+  // Le montant vient de la ligne affichée côté client : on ne lui fait pas
+  // confiance. La colonne porte un CHECK (montant >= 0), mais un message clair
+  // vaut mieux qu'une violation de contrainte.
+  const montant = Number(input.montant)
+  if (!Number.isFinite(montant) || montant < 0) {
+    return { error: "Montant invalide : la rétribution doit être un nombre positif." }
+  }
+
+  const numero = input.numero_bv?.trim() ? input.numero_bv.trim() : null
+  if (numero && !(await numeroBVLibre(supabase, numero, input.mission_id, input.personne_id))) {
+    return { error: numeroDejaUtilise(numero) }
+  }
+
+  const { error } = await supabase.from("retributions").upsert(
+    {
+      mission_id: input.mission_id,
+      personne_id: input.personne_id,
+      date_paiement: input.date_paiement,
+      numero_bv: numero,
+      montant: Math.round(montant * 100) / 100,
+      // L'upsert réécrit la ligne : `created_by` porte donc le·la dernier·ère
+      // trésorier·ère ayant enregistré le paiement, pas l'auteur d'origine.
+      // Comportement documenté tel quel dans la migration 067.
+      created_by: user.id,
+    },
+    { onConflict: "mission_id,personne_id" }
+  )
+  if (error) return { error: messageErreurRetribution(error, numero) }
+
+  revalidateTag(MISSIONS_TAG)
+  revalidatePath("/tresorerie")
+  return { success: true }
+}
+
+/**
+ * Paiement hérité : mission mono-intervenant réglée AVANT la migration 067, le
+ * paiement vit encore sur la ligne `missions` (cf. `buildRetributionRows`).
+ * Sans ce repli, annuler une telle ligne ne toucherait aucune rétribution et
+ * le tableau continuerait de l'afficher payée. Le numéro de BV de la mission
+ * est conservé, seule la date de paiement est effacée.
+ * Renvoie un message d'erreur, ou null (repli effectué ou sans objet).
+ */
+async function annulerPaiementHerite(
+  supabase: ReturnType<typeof createClient>,
+  missionId: string,
+  personneId: string
+): Promise<string | null> {
+  const { data: mission, error } = await supabase
+    .from("missions")
+    .select("id, date_paiement, intervenant_id")
+    .eq("id", missionId)
+    .maybeSingle()
+  if (error) return error.message
+  if (!mission?.date_paiement) return null
+
+  const { ids, error: intervenantsErr } = await chargerIntervenantsMission(
+    supabase,
+    missionId,
+    (mission as any).intervenant_id ?? null
+  )
+  if (intervenantsErr) return intervenantsErr.message
+  // L'héritage ne vaut que pour une mission à intervenant unique : au-delà,
+  // rien ne dit qui a été payé, donc rien à annuler ici.
+  if (ids.length !== 1 || ids[0] !== personneId) return null
+
+  const { error: updateErr } = await supabase
+    .from("missions")
+    .update({ date_paiement: null })
+    .eq("id", missionId)
+  return updateErr ? updateErr.message : null
+}
+
+/** Annule le versement d'une rétribution ; le numéro de BV émis est conservé. */
+export async function annulerRetributionPaiement(missionId: string, personneId: string) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+  const permErr = await requireVoirFactures(user.id)
+  if (permErr) return { error: permErr }
+
+  const { data, error } = await supabase
+    .from("retributions")
+    .update({ date_paiement: null })
+    .eq("mission_id", missionId)
+    .eq("personne_id", personneId)
+    .select("id")
+  if (error) return { error: messageErreurRetribution(error, null) }
+
+  if ((data ?? []).length === 0) {
+    const heriteErr = await annulerPaiementHerite(supabase, missionId, personneId)
+    if (heriteErr) return { error: heriteErr }
+  }
+
+  revalidateTag(MISSIONS_TAG)
+  revalidatePath("/tresorerie")
+  return { success: true }
+}
+
+/**
+ * Marque payés tous les intervenants encore dus d'une mission, un numéro de BV
+ * attribué à chacun.
+ */
+export async function marquerMissionRetributionsPayees(missionId: string, date_paiement: string) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+  const permErr = await requireVoirFactures(user.id)
+  if (permErr) return { error: permErr }
+
+  const { data: mission, error: missionErr } = await supabase
+    .from("missions")
+    .select("id, remuneration, nb_jeh, intervenant_id, date_paiement")
+    .eq("id", missionId)
+    .maybeSingle()
+  if (missionErr) return { error: missionErr.message }
+  if (!mission) return { error: "Mission introuvable." }
+
+  const [intervenantsRes, retributionsRes, numerosRes] = await Promise.all([
+    chargerIntervenantsMission(supabase, missionId, (mission as any).intervenant_id ?? null),
+    supabase
+      .from("retributions")
+      .select("personne_id, numero_bv, date_paiement")
+      .eq("mission_id", missionId),
+    chargerNumerosBVUtilises(supabase),
+  ])
+  if (intervenantsRes.error) return { error: intervenantsRes.error.message }
+  if (retributionsRes.error) {
+    return { error: messageErreurRetribution(retributionsRes.error, null) }
+  }
+  if (numerosRes.error) return { error: numerosRes.error.message }
+
+  const existantes = new Map<string, any>(
+    ((retributionsRes.data ?? []) as any[]).map((r) => [r.personne_id, r])
+  )
+  // Même règle d'héritage que `buildRetributionRows` : sur une mission
+  // mono-intervenant payée avant la migration 067, la personne est déjà
+  // affichée comme payée — le lot ne doit pas la repayer.
+  const herite = (id: string) =>
+    intervenantsRes.ids.length === 1 && !!(mission as any).date_paiement && !existantes.has(id)
+
+  const aPayer = intervenantsRes.ids.filter(
+    (id) => !existantes.get(id)?.date_paiement && !herite(id)
+  )
+  if (aPayer.length === 0) return { success: true }
+
+  // `montantParIntervenant` ne lit que `remuneration` et `nb_jeh` : inutile de
+  // charger le reste de MissionSource (nom, étude, dates…) pour ce calcul.
+  const montant = montantParIntervenant({
+    remuneration: Number((mission as any).remuneration ?? 0),
+    nb_jeh: Number((mission as any).nb_jeh ?? 0),
+  } as MissionSource)
+
+  const numeros = [...numerosRes.numeros]
+  const annee = new Date().getFullYear()
+  const lignes = aPayer.map((personne_id) => {
+    // Un BV déjà émis (ligne créée sans paiement) est réutilisé plutôt que
+    // remplacé : on ne brûle pas un numéro et on ne casse pas le bulletin
+    // déjà transmis. Sinon on en attribue un neuf, ajouté aussitôt à la liste
+    // des numéros pris pour que deux personnes du même lot ne collisionnent
+    // pas.
+    const dejaEmis = existantes.get(personne_id)?.numero_bv?.trim()
+    let numero: string = dejaEmis || ""
+    if (!numero) {
+      numero = nextNumeroBV(numeros, annee)
+      numeros.push(numero)
+    }
+    return {
+      mission_id: missionId,
+      personne_id,
+      date_paiement,
+      numero_bv: numero,
+      montant,
+      created_by: user.id,
+    }
+  })
+
+  const { error } = await supabase
+    .from("retributions")
+    .upsert(lignes, { onConflict: "mission_id,personne_id" })
+  if (error) return { error: messageErreurRetribution(error, null) }
+
   revalidateTag(MISSIONS_TAG)
   revalidatePath("/tresorerie")
   return { success: true }
