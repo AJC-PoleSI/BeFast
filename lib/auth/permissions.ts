@@ -22,8 +22,11 @@ export function emptyPermissions(): Permissions {
  * est ignorée sans erreur.
  */
 export function resolveEffectivePermissions(profile: PersonneWithRole | null): Permissions {
+  if (!profile) return emptyPermissions()
+  if (profile.profils_types?.slug === "administrateur") {
+    return Object.fromEntries(ALL_PERMISSION_KEYS.map((k) => [k, true])) as Permissions
+  }
   const perms = emptyPermissions()
-  if (!profile) return perms
   const sources: Array<Partial<Permissions> | null | undefined> = [
     profile.profils_types?.permissions,
     ...(profile.personne_postes ?? []).map((pp) => pp.profils_types?.permissions),

@@ -38,6 +38,13 @@ describe("resolveEffectivePermissions", () => {
     const p = make({ profil: true }, [{ profils_types: null }])
     expect(resolveEffectivePermissions(p).profil).toBe(true)
   })
+
+  it("l'administrateur a toutes les permissions même si le rôle en base ne les liste pas", () => {
+    const p = make({}, [], "administrateur")
+    const e = resolveEffectivePermissions(p)
+    expect(e.membres).toBe(true)
+    expect(e.voir_factures).toBe(true)
+  })
 })
 
 describe("hasPermission", () => {
