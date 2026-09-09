@@ -51,59 +51,78 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly, isAdmin }: Profil
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [poles, setPoles] = useState<string[]>(DEFAULT_POLES)
+  const [loadingDecrypted, setLoadingDecrypted] = useState(true)
 
   useEffect(() => {
     getParametre("poles_liste").then((raw) => setPoles(parsePoles(raw as string | null)))
   }, [])
-  const [values, setValues] = useState<ProfileFormValues>({
-    prenom: profile.prenom || "",
-    nom: profile.nom || "",
-    portable: profile.portable || "",
-    promo: profile.promo || "",
-    adresse: profile.adresse || "",
-    ville: profile.ville || "",
-    code_postal: profile.code_postal || "",
-    pole: profile.pole || "",
-    etablissement: (profile.etablissement as any) || "",
-    scolarite: (profile.scolarite as any) || "",
-    date_naissance: (profile.date_naissance as any) || "",
+
+  const buildValues = (p: PersonneWithRole): ProfileFormValues => ({
+    prenom: p.prenom || "",
+    nom: p.nom || "",
+    portable: p.portable || "",
+    promo: p.promo || "",
+    adresse: p.adresse || "",
+    ville: p.ville || "",
+    code_postal: p.code_postal || "",
+    pole: p.pole || "",
+    etablissement: (p.etablissement as any) || "",
+    scolarite: (p.scolarite as any) || "",
+    date_naissance: (p.date_naissance as any) || "",
   })
 
-  // Synchroniser les valeurs locales si le profil parent change (ex: après un refresh ou mise à jour externe)
+  const [values, setValues] = useState<ProfileFormValues>(buildValues(profile))
+
+  // Charger le profil décrypté depuis l'API (le profil du layout/cache
+  // ne contient pas les champs chiffrés décryptés comme date_naissance)
   useEffect(() => {
-    setValues({
+    let cancelled = false
+    fetch("/api/profil")
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelled || !json.data) return
+        const decrypted = json.data as PersonneWithRole
+        setValues(buildValues(decrypted))
+        setLoadingDecrypted(false)
+      })
+      .catch(() => setLoadingDecrypted(false))
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Synchroniser les champs NON chiffrés si le profil parent change.
+  // On ne touche PAS aux champs chiffrés (date_naissance, adresse, ville,
+  // code_postal) car le profil parent vient du cache serveur non décrypté.
+  useEffect(() => {
+    setValues((prev) => ({
+      ...prev,
       prenom: profile.prenom || "",
       nom: profile.nom || "",
       portable: profile.portable || "",
       promo: profile.promo || "",
-      adresse: profile.adresse || "",
-      ville: profile.ville || "",
-      code_postal: profile.code_postal || "",
       pole: profile.pole || "",
-      etablissement: (profile.etablissement as any) || "",
-      scolarite: (profile.scolarite as any) || "",
-      date_naissance: (profile.date_naissance as any) || "",
-    })
+      etablissement: (profile.etablissement as any) || prev.etablissement || "",
+      scolarite: (profile.scolarite as any) || prev.scolarite || "",
+    }))
   }, [profile])
 
   const handleChange = (field: keyof ProfileFormValues, val: string) => {
     setValues((prev) => ({ ...prev, [field]: val }))
   }
 
+  // Snapshot des dernières valeurs sauvegardées (issues de l'API décryptée)
+  const [savedValues, setSavedValues] = useState<ProfileFormValues>(buildValues(profile))
+
+  // Mettre à jour le snapshot quand on charge le profil décrypté
+  useEffect(() => {
+    if (!loadingDecrypted) {
+      setSavedValues({ ...values })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingDecrypted])
+
   const handleCancel = () => {
-    setValues({
-      prenom: profile.prenom || "",
-      nom: profile.nom || "",
-      portable: profile.portable || "",
-      promo: profile.promo || "",
-      adresse: profile.adresse || "",
-      ville: profile.ville || "",
-      code_postal: profile.code_postal || "",
-      pole: profile.pole || "",
-      etablissement: (profile.etablissement as any) || "",
-      scolarite: (profile.scolarite as any) || "",
-      date_naissance: (profile.date_naissance as any) || "",
-    })
+    setValues({ ...savedValues })
     setEditing(false)
   }
 
@@ -119,18 +138,25 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly, isAdmin }: Profil
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       })
-      const data = await res.json()
+      const json = await res.json()
       if (!res.ok) {
-        toast.error(data.error || "Erreur lors de la mise à jour")
+        toast.error(json.error || "Erreur lors de la mise à jour")
         return
       }
       toast.success("Profil mis à jour avec succès.")
+
+      // Utiliser la réponse décryptée de l'API pour mettre à jour
+      const updatedProfile = json.data as PersonneWithRole
+      const newValues = buildValues(updatedProfile)
+      setValues(newValues)
+      setSavedValues(newValues)
+
       onUpdate({
         ...profile,
-        ...values,
-        etablissement: (values.etablissement || null) as any,
-        scolarite: (values.scolarite || null) as any,
-        date_naissance: values.date_naissance || null,
+        ...updatedProfile,
+        etablissement: (updatedProfile.etablissement || null) as any,
+        scolarite: (updatedProfile.scolarite || null) as any,
+        date_naissance: updatedProfile.date_naissance || null,
       })
       setEditing(false)
     } catch {

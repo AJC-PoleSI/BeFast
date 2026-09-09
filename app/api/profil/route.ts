@@ -184,7 +184,39 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Aucun champ modifiable fourni" }, { status: 400 })
     }
 
+    // --- Chiffrement côté serveur pour les champs sensibles ---
+    // Le GET décrypte depuis les colonnes *_encrypted : si on écrit
+    // uniquement dans la colonne en clair, le GET retourne l'ancienne
+    // valeur chiffrée (ou null) → la donnée semble disparaître.
+    const MASTER_KEY = getMasterKey()
     const admin = createAdminClient()
+
+    const { data: existingProfile } = await admin
+      .from("personnes")
+      .select("encryption_salt")
+      .eq("id", targetUserId)
+      .single()
+
+    const salt = existingProfile?.encryption_salt || generateEncryptionSalt()
+    if (!existingProfile?.encryption_salt) {
+      updates.encryption_salt = salt
+    }
+
+    const ENCRYPT_FIELDS = ["date_naissance", "adresse", "ville", "code_postal"] as const
+    for (const field of ENCRYPT_FIELDS) {
+      if (updates[field]) {
+        const enc = encryptData(updates[field], MASTER_KEY, salt)
+        updates[`${field}_encrypted`] = enc.encrypted
+        updates[`${field}_iv`] = enc.iv
+        updates[`${field}_auth_tag`] = enc.authTag
+      } else if (updates[field] === null) {
+        // Champ explicitement vidé → supprimer aussi la version chiffrée
+        updates[`${field}_encrypted`] = null
+        updates[`${field}_iv`] = null
+        updates[`${field}_auth_tag`] = null
+      }
+    }
+
     const { data: updated, error } = await admin
       .from("personnes")
       .update(updates)
@@ -202,7 +234,20 @@ export async function PATCH(req: NextRequest) {
     // Log profile updates
     await logAudit(sb, 'personnes', 'UPDATE', targetUserId, { fields: Object.keys(updates) })
 
-    return NextResponse.json({ data: updated })
+    // Retourner le profil avec les champs décryptés pour que le frontend
+    // puisse mettre à jour son état immédiatement sans re-fetch.
+    const decryptedResponse: Record<string, unknown> = { ...updated }
+    for (const field of ENCRYPT_FIELDS) {
+      const encField = `${field}_encrypted`
+      if (updated[encField]) {
+        decryptedResponse[field] = decryptData(
+          updated[encField], updated[`${field}_iv`],
+          updated[`${field}_auth_tag`], MASTER_KEY, salt
+        )
+      }
+    }
+
+    return NextResponse.json({ data: decryptedResponse })
   } catch (error: any) {
     console.error("[PATCH /api/profil]", error.message)
     return NextResponse.json({ error: error.message }, { status: error.status || 500 })
