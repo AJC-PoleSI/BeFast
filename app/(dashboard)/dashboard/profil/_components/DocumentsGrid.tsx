@@ -402,6 +402,38 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
         })}
       </div>
 
+      {/* Info — visible uniquement pour l'utilisateur sur son propre profil */}
+      {!readOnly && !isAdminView && (
+        <div className="px-4 pb-4">
+          <details className="group">
+            <summary className="flex items-center gap-1.5 cursor-pointer text-xs text-zinc-400 hover:text-zinc-600 transition-colors select-none">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <span className="font-medium">Informations importantes</span>
+            </summary>
+            <div className="mt-2 p-3 rounded-lg bg-blue-50/60 border border-blue-100 text-xs text-zinc-600 space-y-2">
+              <p>
+                <span className="font-semibold text-[#00236f]">Bulletin d'adhésion :</span>{" "}
+                il vous sera envoyé automatiquement une fois tous vos documents soumis et validés par la RH
+                <span className="text-zinc-500"> (délai de 24 à 48h)</span>.
+              </p>
+              <p>
+                <span className="font-semibold text-[#00236f]">Cotisation Lydia :</span>{" "}
+                le virement s'effectue sur{" "}
+                <a
+                  href="https://pots.lydia.me/collect/cotisation-audencia-junior-conseil-908174/fr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-0.5 text-[#00236f] font-medium underline underline-offset-2 hover:text-[#1e3a8a] transition-colors"
+                >
+                  cette page Lydia
+                  <ExternalLink className="h-3 w-3 shrink-0" />
+                </a>.
+              </p>
+            </div>
+          </details>
+        </div>
+      )}
+
     </div>
   )
 }
