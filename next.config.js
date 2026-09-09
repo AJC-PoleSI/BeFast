@@ -13,6 +13,14 @@ const nextConfig = {
       bodySizeLimit: "8mb",
     },
   },
+  async redirects() {
+    // La page d'accueil du dashboard a été déplacée de /dashboard vers / ; des
+    // emails déjà envoyés et des favoris pointent encore vers l'ancienne URL.
+    // (/dashboard/profil reste une route réelle : `source` ne matche que le
+    // chemin exact.)
+    return [{ source: "/dashboard", destination: "/", permanent: false }]
+  },
+
   async headers() {
     // En-têtes de sécurité appliqués à toutes les réponses. On évite volontairement
     // une CSP stricte de scripts (risque de casser les scripts inline de Next sans

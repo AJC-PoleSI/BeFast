@@ -163,7 +163,7 @@ export async function signIn(formData: FormData) {
     }
   }
 
-  redirect("/dashboard")
+  redirect("/")
 }
 
 export async function signUp(formData: FormData) {

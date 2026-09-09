@@ -9,8 +9,8 @@ import { siteUrl } from "@/lib/auth/verification"
 export async function GET(req: NextRequest) {
   const base = siteUrl()
   const code = req.nextUrl.searchParams.get("code")
-  const nextParam = req.nextUrl.searchParams.get("next") || "/dashboard"
-  const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/dashboard"
+  const nextParam = req.nextUrl.searchParams.get("next") || "/"
+  const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/"
 
   if (code) {
     const supabase = createClient()

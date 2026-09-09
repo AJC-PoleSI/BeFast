@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Rocket } from "lucide-react"
@@ -11,12 +11,41 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 
+// Annoncer « le lien a expiré » quel que soit l'échec envoyait les membres
+// redemander un lien alors que le lien était valide et que c'est le mot de
+// passe qui était refusé. On restitue la vraie raison.
+function messageErreur(error: { code?: string; status?: number; message: string }): string {
+  switch (error.code) {
+    case "same_password":
+      return "Ce mot de passe est identique à votre mot de passe actuel. Choisissez-en un autre."
+    case "weak_password":
+      return "Mot de passe trop faible. Choisissez-en un plus long ou moins courant."
+    case "over_request_rate_limit":
+      return "Trop de tentatives. Patientez quelques minutes avant de réessayer."
+  }
+  if (error.status === 401 || error.status === 403) {
+    return "Ce lien n'est plus valide. Demandez-en un nouveau depuis « Mot de passe oublié »."
+  }
+  if (!error.status) {
+    return "Connexion interrompue. Vérifiez votre réseau et réessayez."
+  }
+  return `Impossible de définir le mot de passe : ${error.message}`
+}
+
 export default function ResetPasswordPage() {
   const router = useRouter()
   // "loading" tant qu'on n'a pas déterminé si une session de récupération existe.
   const [state, setState] = useState<"loading" | "ready" | "invalid">("loading")
   const [expired, setExpired] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  // Le token de récupération (token_hash/code) est à usage unique : si cet
+  // effet s'exécute deux fois pour le même chargement (double-invocation
+  // React Strict Mode en dev, remount, retour en arrière...), le deuxième
+  // verifyOtp/exchangeCodeForSession casse la session que le premier venait
+  // d'établir. Ce ref (contrairement à une variable locale à l'effet)
+  // survit à un cleanup+remount et garantit qu'on ne consomme le token
+  // qu'une seule fois.
+  const tokenConsumedRef = useRef(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -36,6 +65,19 @@ export default function ResetPasswordPage() {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session && active) setState("ready")
     })
+
+    if (tokenConsumedRef.current) {
+      // Deuxième passage de l'effet : le token a déjà été échangé par le
+      // premier, on relit juste la session qu'il a établie.
+      supabase.auth.getSession().then(({ data }) => {
+        if (active) setState(data.session ? "ready" : "invalid")
+      })
+      return () => {
+        active = false
+        sub.subscription.unsubscribe()
+      }
+    }
+    tokenConsumedRef.current = true
 
     ;(async () => {
       // Flux PKCE arrivé directement ici (?code=) : on échange explicitement.
@@ -85,9 +127,15 @@ export default function ResetPasswordPage() {
     setSubmitting(false)
 
     if (error) {
-      toast.error("Impossible de définir le mot de passe. Le lien a peut-être expiré.", {
-        position: "top-right",
+      // Trace l'erreur brute : elle n'est visible nulle part côté serveur
+      // (updateUser tape directement l'API Supabase), donc sans ce log il est
+      // impossible de savoir pourquoi un membre bloque.
+      console.error("[reset-password] updateUser", {
+        code: (error as { code?: string }).code,
+        status: error.status,
+        message: error.message,
       })
+      toast.error(messageErreur(error), { position: "top-right" })
       return
     }
 

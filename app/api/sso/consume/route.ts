@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email,
-    options: { redirectTo: `${base}/dashboard` },
+    options: { redirectTo: `${base}/` },
   })
 
   const actionLink = data?.properties?.action_link
