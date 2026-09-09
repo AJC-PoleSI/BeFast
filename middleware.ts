@@ -35,6 +35,18 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  // Un prefetch (survol/apparition d'un <Link>) ne doit jamais déclencher de
+  // refresh réseau : la sidebar affiche ~10 liens en permanence, tous
+  // prefetchés en parallèle. S'ils rafraîchissaient tous le token en même
+  // temps avec le même refresh token (encore en cookie côté navigateur, non
+  // mis à jour tant qu'aucune réponse n'est revenue), Supabase rejette les
+  // tentatives concurrentes ("Invalid Refresh Token") et peut invalider toute
+  // la session. La navigation réelle qui suit repasse par ce middleware et
+  // rafraîchit normalement.
+  if (request.headers.get("next-router-prefetch")) {
+    return response
+  }
+
   // Token encore valide pour > 60 s : inutile de rafraîchir, on économise un
   // aller-retour Supabase (~100-300 ms) sur la quasi-totalité des navigations.
   const expiresAt = readSessionExpiry(request)

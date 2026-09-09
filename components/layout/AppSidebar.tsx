@@ -141,6 +141,7 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
             key={item.href}
             href={item.href}
             onClick={onNavigate}
+            prefetch={false}
             className={cn(
               "flex h-9 w-full flex-row items-center rounded-md px-2.5 transition-colors hover:bg-accent hover:text-foreground",
               active
@@ -221,7 +222,7 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link href="/profil" onClick={onNavigate}>
+            <Link href="/profil" onClick={onNavigate} prefetch={false}>
               <UserCircle className="h-4 w-4" /> Mon profil
             </Link>
           </DropdownMenuItem>
