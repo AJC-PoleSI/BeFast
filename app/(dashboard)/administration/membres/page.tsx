@@ -3,6 +3,7 @@
 import { Suspense } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Users, ShieldCheck, KeyRound, ListPlus, Loader } from "lucide-react"
+import { useUser } from "@/hooks/useUser"
 import { MembresTab } from "./_components/MembresTab"
 import { RolesTab } from "./_components/RolesTab"
 import { CampagneTab } from "./_components/CampagneTab"
@@ -18,10 +19,10 @@ import { ChampsTab } from "./_components/ChampsTab"
 
 type TabKey = "membres" | "roles" | "campagne" | "champs"
 
-const TABS: { key: TabKey; label: string; icon: any }[] = [
+const ALL_TABS: { key: TabKey; label: string; icon: any; adminOnly?: boolean }[] = [
   { key: "membres", label: "Membres", icon: Users },
-  { key: "roles", label: "Rôles & permissions", icon: ShieldCheck },
-  { key: "campagne", label: "Campagne mot de passe", icon: KeyRound },
+  { key: "roles", label: "Rôles & permissions", icon: ShieldCheck, adminOnly: true },
+  { key: "campagne", label: "Campagne mot de passe", icon: KeyRound, adminOnly: true },
   { key: "champs", label: "Champs personnalisés", icon: ListPlus },
 ]
 
@@ -29,6 +30,8 @@ function MembresDroitsShell() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const { isAdmin } = useUser()
+  const TABS = ALL_TABS.filter((t) => !t.adminOnly || isAdmin)
   const raw = searchParams.get("tab")
   const activeTab: TabKey = TABS.some((t) => t.key === raw) ? (raw as TabKey) : "membres"
 
@@ -64,8 +67,8 @@ function MembresDroitsShell() {
 
       <div className="flex-1 min-h-0 overflow-y-auto">
         {activeTab === "membres" && <MembresTab />}
-        {activeTab === "roles" && <RolesTab />}
-        {activeTab === "campagne" && <CampagneTab />}
+        {activeTab === "roles" && isAdmin && <RolesTab />}
+        {activeTab === "campagne" && isAdmin && <CampagneTab />}
         {activeTab === "champs" && <ChampsTab />}
       </div>
     </div>
