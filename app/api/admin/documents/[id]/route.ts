@@ -4,7 +4,7 @@ import "server-only"
 
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { requireApiAdmin } from "@/lib/auth/api-guards"
+import { requireApiPermission } from "@/lib/auth/api-guards"
 
 
 export async function PATCH(
@@ -12,7 +12,10 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const guard = await requireApiAdmin()
+    // Valider/refuser un document est accessible à l'administrateur ET aux
+    // postes (ex. Pôle RH) disposant de la permission voir_documents_membres,
+    // au même titre que la consultation (cf. /api/profil/documents).
+    const guard = await requireApiPermission("voir_documents_membres")
     if (!guard.ok) return guard.response
 
     const body = await request.json()

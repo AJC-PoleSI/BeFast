@@ -79,6 +79,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
   const [uploading, setUploading] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [downloadingAll, setDownloadingAll] = useState(false)
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -226,6 +227,36 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
     document.body.removeChild(a)
   }
 
+  const handleDownloadAll = async () => {
+    setDownloadingAll(true)
+    try {
+      const url = targetUserId
+        ? `/api/profil/documents/download-all?targetUserId=${targetUserId}`
+        : "/api/profil/documents/download-all"
+      const res = await fetch(url)
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        toast.error(data?.error || "Erreur lors du téléchargement")
+        return
+      }
+      const blob = await res.blob()
+      const disposition = res.headers.get("Content-Disposition") || ""
+      const match = disposition.match(/filename="(.+)"/)
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = blobUrl
+      a.download = match?.[1] || "documents.zip"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch {
+      toast.error("Erreur réseau")
+    } finally {
+      setDownloadingAll(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-2 p-3">
@@ -249,6 +280,20 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
         <h2 className="font-manrope font-bold text-[#00236f] text-base">
           {isAdminView ? "Documents soumis" : readOnly ? "Documents" : "Mes documents"}
         </h2>
+        {isAdminView && documents.length > 0 && (
+          <button
+            onClick={handleDownloadAll}
+            disabled={downloadingAll}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#00236f] text-white text-xs font-semibold hover:bg-[#1e3a8a] transition-colors disabled:opacity-50"
+          >
+            {downloadingAll ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            Tout télécharger
+          </button>
+        )}
         {!readOnly && !isAdminView && (
           <a
             href="https://filigrane.beta.gouv.fr/"
