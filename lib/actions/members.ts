@@ -3,6 +3,8 @@
 import { revalidateTag } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { hasPermission } from "@/lib/auth/permissions"
 import type { PersonneWithRole, ProfilType, PersonnePoste } from "@/types/database.types"
 
 async function getCallerRole(): Promise<string | null> {
@@ -26,10 +28,23 @@ async function getCallerRole(): Promise<string | null> {
   }
 }
 
+// Lecture de la liste des membres : ouverte à quiconque a la permission
+// applicative "membres" (admin, mais aussi Pôle RH / Pôle Trésorerie…), pas
+// seulement au rôle de base "administrateur". Les actions de modification
+// (rôle, postes, création/suppression de rôle) restent réservées à
+// getCallerRole() === "administrateur" ci-dessous.
+async function callerHasMembresAccess(): Promise<boolean> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+  const profile = await getCachedProfile(user.id)
+  return hasPermission(profile, "membres")
+}
+
 export async function getAllMembers(): Promise<{ data: PersonneWithRole[] | null; error: string | null }> {
   try {
-    const role = await getCallerRole()
-    if (role !== "administrateur") return { data: null, error: "Non autorisé" }
+    const allowed = await callerHasMembresAccess()
+    if (!allowed) return { data: null, error: "Non autorisé" }
 
     const admin = createAdminClient()
     const { data, error } = await admin
