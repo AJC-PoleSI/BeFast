@@ -412,6 +412,11 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
             </summary>
             <div className="mt-2 p-3 rounded-lg bg-blue-50/60 border border-blue-100 text-xs text-zinc-600 space-y-2">
               <p>
+                <span className="font-semibold text-[#00236f]">Format :</span>{" "}
+                préférez un PDF à une photo. Les photos prises au smartphone sont souvent
+                très lourdes et mettent plus de temps à s'afficher.
+              </p>
+              <p>
                 <span className="font-semibold text-[#00236f]">Bulletin d'adhésion :</span>{" "}
                 il vous sera envoyé automatiquement une fois tous vos documents soumis et validés par la RH
                 <span className="text-zinc-500"> (délai de 24 à 48h)</span>.

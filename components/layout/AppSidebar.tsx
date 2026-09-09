@@ -53,7 +53,7 @@ interface NavEntry {
 }
 
 const NAV: NavEntry[] = [
-  { label: "Accueil", href: "/dashboard", icon: LayoutDashboard, permission: "dashboard" },
+  { label: "Accueil", href: "/", icon: LayoutDashboard, permission: "dashboard" },
   { label: "Mon profil", href: "/profil", icon: UserCircle, permission: "profil" },
   { label: "Missions", href: "/missions", icon: Briefcase, permission: "missions" },
   { label: "Mes documents", href: "/documents", icon: FolderOpen, permission: "documents" },
@@ -62,7 +62,7 @@ const NAV: NavEntry[] = [
   { label: "Trésorerie", href: "/tresorerie", icon: Wallet, permission: "voir_factures" },
   { label: "Signatures", href: "/signatures", icon: FileSignature, permission: "etudes" },
   { label: "Statistiques", href: "/statistiques", icon: BarChart3, permission: "statistiques" },
-  { label: "Administration", href: "/administration", icon: Shield, permission: "administration", adminOnly: true },
+  { label: "Administration", href: "/administration", icon: Shield, permission: "membres" },
 ]
 
 const sidebarVariants = {
