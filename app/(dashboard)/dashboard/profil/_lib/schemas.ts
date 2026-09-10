@@ -67,8 +67,41 @@ export const ACCEPTED_FILE_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
+  "image/heic",
+  "image/heif",
   "application/pdf",
 ]
+
+const ACCEPTED_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "heic", "heif", "pdf"]
+
+/**
+ * Valide le type d'un fichier uploadé. Les photos prises depuis un iPhone
+ * sont en HEIC et leur `file.type` est souvent vide ou non standard selon le
+ * navigateur/OS (Chrome/Firefox/Android en particulier) : on retombe alors
+ * sur l'extension du nom de fichier plutôt que de rejeter à tort.
+ */
+export function isAcceptedFileType(file: { type: string; name: string }): boolean {
+  if (ACCEPTED_FILE_TYPES.includes(file.type)) return true
+  const ext = file.name.split(".").pop()?.toLowerCase()
+  return !!ext && ACCEPTED_EXTENSIONS.includes(ext)
+}
+
+const EXT_TO_MIME: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  heic: "image/heic",
+  heif: "image/heif",
+  pdf: "application/pdf",
+}
+
+/** Type MIME à stocker : celui du fichier, ou déduit de l'extension si absent (cas HEIC courant). */
+export function resolveMimeType(file: { type: string; name: string }): string {
+  if (file.type) return file.type
+  const ext = file.name.split(".").pop()?.toLowerCase()
+  return (ext && EXT_TO_MIME[ext]) || "application/octet-stream"
+}
 
 export const DOC_TYPE_LABELS: Record<string, string> = {
   carte_identite: "Carte d'identité",

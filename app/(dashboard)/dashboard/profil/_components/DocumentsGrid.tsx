@@ -25,7 +25,7 @@ import {
   VALID_DOC_TYPES,
   DOC_TYPE_LABELS,
   MAX_FILE_SIZE,
-  ACCEPTED_FILE_TYPES,
+  isAcceptedFileType,
 } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 import type { LucideIcon } from "lucide-react"
 
@@ -132,8 +132,8 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
       toast.error("Le fichier ne doit pas dépasser 10 Mo")
       return
     }
-    if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
-      toast.error("Format accepté : JPEG, PNG, WebP, PDF")
+    if (!isAcceptedFileType(file)) {
+      toast.error("Format accepté : JPEG, PNG, WebP, HEIC, PDF")
       return
     }
 
@@ -430,7 +430,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
                     )}
                     <input
                       type="file"
-                      accept=".jpg,.jpeg,.png,.webp,.pdf"
+                      accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.pdf"
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0]

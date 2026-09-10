@@ -7,10 +7,10 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { hasPermission } from "@/lib/auth/permissions"
 import {
-
   VALID_DOC_TYPES,
   MAX_FILE_SIZE,
-  ACCEPTED_FILE_TYPES,
+  isAcceptedFileType,
+  resolveMimeType,
 } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
 import { buildPersonneDocPath } from "@/lib/scaleway/paths"
@@ -117,9 +117,9 @@ export async function POST(request: Request) {
       )
     }
 
-    if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+    if (!isAcceptedFileType(file)) {
       return NextResponse.json(
-        { error: "Type de fichier non accepté (JPEG, PNG, WebP, PDF)" },
+        { error: "Type de fichier non accepté (JPEG, PNG, WebP, HEIC, PDF)" },
         { status: 400 }
       )
     }
@@ -141,6 +141,7 @@ export async function POST(request: Request) {
 
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
+    const mimeType = resolveMimeType(file)
 
     try {
       await scalewayS3.send(
@@ -148,8 +149,12 @@ export async function POST(request: Request) {
           Bucket: SCALEWAY_BUCKET,
           Key: filePath,
           Body: buffer,
-          ContentType: file.type,
-          Metadata: { "original-name": file.name },
+          ContentType: mimeType,
+          // Les en-têtes S3 (x-amz-meta-*) doivent être US-ASCII : un nom de
+          // fichier avec accents/apostrophe typographique/emoji (courant pour
+          // "carte d'identité.pdf" exporté depuis macOS) fait planter l'appel
+          // SDK avec une erreur "Invalid character in header content" sinon.
+          Metadata: { "original-name": encodeURIComponent(file.name) },
         })
       )
     } catch (uploadErr) {
@@ -170,7 +175,7 @@ export async function POST(request: Request) {
           file_path: filePath,
           file_name: file.name,
           file_size: file.size,
-          mime_type: file.type,
+          mime_type: mimeType,
         },
         { onConflict: "personne_id,type" }
       )
