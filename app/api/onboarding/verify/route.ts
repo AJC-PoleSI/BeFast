@@ -69,11 +69,18 @@ export async function POST(req: NextRequest) {
 
   const exp = personne.verification_token_expires_at
   if (!exp || new Date(exp).getTime() < Date.now()) {
-    return NextResponse.json({ ok: false, status: "expired" }, { status: 400 })
+    // On renvoie l'email : détenir le token expiré prouve qu'il s'agit bien
+    // du destinataire, et le hub peut ainsi proposer un renvoi en un clic
+    // au lieu du « recommencez l'inscription » qui ne mène nulle part.
+    return NextResponse.json(
+      { ok: false, status: "expired", email },
+      { status: 400 }
+    )
   }
 
-  // Marque vérifié + purge le token.
-  await admin
+  // Marque vérifié + purge le token. Le retour est lu : une vérification
+  // annoncée mais non persistée renverrait le candidat sur un lien mort.
+  const { error: verifyErr } = await admin
     .from("personnes")
     .update({
       email_verified: true,
@@ -82,8 +89,27 @@ export async function POST(req: NextRequest) {
     })
     .eq("id", personne.id)
 
+  if (verifyErr) {
+    console.error("[onboarding/verify] update failed", {
+      email,
+      message: verifyErr.message,
+    })
+    return NextResponse.json(
+      { ok: false, status: "error", error: verifyErr.message },
+      { status: 500 }
+    )
+  }
+
   // Confirme le compte Supabase Auth (login mot de passe possible).
-  await admin.auth.admin.updateUserById(personne.id, { email_confirm: true })
+  const { error: authErr } = await admin.auth.admin.updateUserById(personne.id, {
+    email_confirm: true,
+  })
+  if (authErr) {
+    console.error("[onboarding/verify] auth confirm failed", {
+      email,
+      message: authErr.message,
+    })
+  }
 
   // Provisionne / lie le miroir RH.
   await ensureRhLinked()

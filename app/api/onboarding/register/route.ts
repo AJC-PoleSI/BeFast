@@ -2,20 +2,21 @@ export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import {
-  generateVerificationToken,
-  verificationEmailHtml,
-} from "@/lib/auth/verification"
-import { sendEmail } from "@/lib/email/send"
-import { verifySignedRequest, ONBOARDING_BASE_URL } from "@/lib/integration/token"
+import { issueAndSendVerification } from "@/lib/auth/issue-verification"
+import { verifySignedRequest } from "@/lib/integration/token"
 
 const ALLOWED_EMAIL_DOMAIN = "audencia.com"
-const VERIFICATION_SUBJECT = "Vérifiez votre adresse email — BeFast"
 
 // POST /api/onboarding/register  (signé HMAC — appelé par le hub onboarding
 // ou par RH lors d'une inscription directe). Crée le compte candidat BeFast
 // (rôle `candidat`, cloisonné) et envoie UN email de vérification dont le
 // lien pointe vers le hub d'onboarding. Idempotent, keyé sur l'email.
+//
+// `sendVerification: false` (inscription miroir venue de RH) crée le compte
+// sans email : RH a déjà envoyé le sien, et sa validation est propagée ici
+// par /api/onboarding/mark-verified. Deux emails concurrents pour une seule
+// inscription, c'est exactement ce qui a piégé les candidats jusqu'au
+// 13/09/2026 — celui qu'ils ne cliquaient pas expirait en silence.
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
   if (!verifySignedRequest(req, rawBody)) {
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
     password?: string
     dateOfBirth?: string
     source?: string
+    sendVerification?: boolean
   }
   try {
     body = JSON.parse(rawBody || "{}")
@@ -42,6 +44,7 @@ export async function POST(req: NextRequest) {
   const password = String(body.password ?? "")
   const dateOfBirth = body.dateOfBirth ?? null
   const source = body.source ?? "onboarding"
+  const sendVerification = body.sendVerification !== false
 
   if (!email || !prenom || !nom || password.length < 8) {
     return NextResponse.json(
@@ -74,25 +77,6 @@ export async function POST(req: NextRequest) {
       .limit(1)
     const existing = existingRows?.[0]
 
-    // Émission + envoi du token (facteur commun).
-    const issueAndSend = async (personId: string) => {
-      const { token, tokenHash, expiresAt } = generateVerificationToken()
-      await admin
-        .from("personnes")
-        .update({
-          verification_token_hash: tokenHash,
-          verification_token_expires_at: expiresAt,
-          email_verified: false,
-        })
-        .eq("id", personId)
-      const link = `${ONBOARDING_BASE_URL}/verifier?token=${token}`
-      await sendEmail({
-        to: email,
-        subject: VERIFICATION_SUBJECT,
-        html: verificationEmailHtml({ prenom, link }),
-      })
-    }
-
     // Upsert du lien (Befast = maître).
     const upsertLink = async (personId: string) => {
       await admin
@@ -103,14 +87,35 @@ export async function POST(req: NextRequest) {
         )
     }
 
+    // Émission du token + envoi. Une erreur ici n'est plus avalée : mieux
+    // vaut une 502 explicite qu'un « pending » qui laisse croire au renvoi.
+    const issue = async (personId: string) => {
+      const res = await issueAndSendVerification(admin, {
+        id: personId,
+        email,
+        prenom,
+      })
+      if (!res.ok) {
+        return NextResponse.json(
+          { error: "Envoi du lien de vérification échoué.", status: res.status },
+          { status: 502 }
+        )
+      }
+      return null
+    }
+
     if (existing) {
       await upsertLink(existing.id)
       if (existing.email_verified) {
         // Déjà vérifié : rien à renvoyer (anti double-email).
         return NextResponse.json({ status: "exists_verified" })
       }
-      await issueAndSend(existing.id)
-      return NextResponse.json({ status: "pending" })
+      if (!sendVerification) {
+        return NextResponse.json({ status: "exists_pending", emailSent: false })
+      }
+      const failed = await issue(existing.id)
+      if (failed) return failed
+      return NextResponse.json({ status: "pending", emailSent: true })
     }
 
     // Création du compte Supabase Auth (email non confirmé).
@@ -123,6 +128,13 @@ export async function POST(req: NextRequest) {
       })
 
     if (createErr || !created?.user?.id) {
+      console.error("[onboarding/register] createUser failed", {
+        email,
+        status: createErr?.status,
+        code: (createErr as any)?.code,
+        message: createErr?.message,
+        existingRowsCount: existingRows?.length ?? 0,
+      })
       return NextResponse.json(
         { error: "Création du compte échouée.", details: createErr?.message },
         { status: 500 }
@@ -133,7 +145,7 @@ export async function POST(req: NextRequest) {
 
     // Le trigger handle_new_user a créé la ligne personnes ; on la spécialise
     // en candidat cloisonné.
-    await admin
+    const { error: specializeErr } = await admin
       .from("personnes")
       .update({
         prenom,
@@ -144,10 +156,27 @@ export async function POST(req: NextRequest) {
       })
       .eq("id", personId)
 
-    await upsertLink(personId)
-    await issueAndSend(personId)
+    if (specializeErr) {
+      console.error("[onboarding/register] specialize personne failed", {
+        email,
+        message: specializeErr.message,
+      })
+      return NextResponse.json(
+        { error: "Création du profil candidat échouée.", details: specializeErr.message },
+        { status: 500 }
+      )
+    }
 
-    return NextResponse.json({ status: "pending", source })
+    await upsertLink(personId)
+
+    if (!sendVerification) {
+      return NextResponse.json({ status: "created_pending", emailSent: false, source })
+    }
+
+    const failed = await issue(personId)
+    if (failed) return failed
+
+    return NextResponse.json({ status: "pending", emailSent: true, source })
   } catch (e) {
     return NextResponse.json(
       { error: "Erreur register.", details: String(e) },

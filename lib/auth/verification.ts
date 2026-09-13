@@ -1,8 +1,13 @@
 import "server-only"
 import { randomBytes, createHash } from "crypto"
 
-/** Verification token lifetime: 24 hours. */
-export const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000
+/**
+ * Verification token lifetime: 72 hours.
+ * Was 24h until the 13/09/2026 incident: a candidate who signed up in the
+ * morning and opened the mail the next day hit a dead link, with no way to
+ * ask for a fresh one. 72h matches the password-reset window below.
+ */
+export const VERIFICATION_TTL_MS = 72 * 60 * 60 * 1000
 
 /**
  * Password-reset token lifetime: 72 hours.
@@ -66,7 +71,7 @@ export function verificationEmailHtml(opts: { prenom?: string | null; link: stri
             <tr><td style="font-size:24px;font-weight:bold;color:#caa64b;padding-bottom:24px;">BeFast</td></tr>
             <tr><td style="font-size:16px;color:#1f2937;padding-bottom:12px;">${hello}</td></tr>
             <tr><td style="font-size:14px;color:#374151;line-height:22px;padding-bottom:24px;">
-              Merci de cr&eacute;er un compte sur BeFast. Confirmez votre adresse email en cliquant sur le bouton ci-dessous. Ce lien est valable 24&nbsp;heures.
+              Merci de cr&eacute;er un compte sur BeFast. Confirmez votre adresse email en cliquant sur le bouton ci-dessous. Ce lien est valable 72&nbsp;heures.
             </td></tr>
             <tr><td align="center" style="padding-bottom:24px;">
               <a href="${opts.link}" style="display:inline-block;background:#caa64b;color:#0b1437;font-weight:bold;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:15px;">
