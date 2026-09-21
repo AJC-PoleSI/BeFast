@@ -50,6 +50,15 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Trace : `rejected_by` dit qui, jamais quand ni quoi pour les autres
+    // statuts. Sans ce journal, un balayage de la file de validation (160
+    // comptes les 17-18/09/2026) ne laisse aucune trace exploitable.
+    await logAudit(createClient(), "personnes", "UPDATE", id, {
+      account_status,
+      is_candidate: data?.is_candidate ?? null,
+      rejection_reason: account_status === "rejected" ? (rejection_reason?.trim() || null) : null,
+    })
+
     // Notification best-effort : un échec d'email ne doit pas faire échouer la validation.
     if (account_status === "validated" && data?.email) {
       const tpl = accountValidatedEmail(data.prenom ?? null)

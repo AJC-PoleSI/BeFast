@@ -174,6 +174,12 @@ export function MembresTab() {
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState("Tous")
   const [statusFilter, setStatusFilter] = useState("Tous")
+  // Les candidats du recrutement (is_candidate) partagent la table `personnes`
+  // avec les membres, mais pas le même cycle de vie : ils arrivent en
+  // `pending_validation` par défaut et leur sort se joue dans RH Manager.
+  // Les mélanger à la file de validation a coûté cher — le 17/09/2026,
+  // 137 candidats ont été rejetés en bloc en descendant cette liste.
+  const [population, setPopulation] = useState<"membres" | "candidats">("membres")
   const [updating, setUpdating] = useState<string | null>(null)
   const [rejectTarget, setRejectTarget] = useState<PersonneWithRole | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<PersonneWithRole | null>(null)
@@ -219,7 +225,9 @@ export function MembresTab() {
   useEffect(() => { loadMembers() }, [])
 
   useEffect(() => {
-    let f = members
+    let f = members.filter(m =>
+      population === "candidats" ? m.is_candidate : !m.is_candidate
+    )
     if (roleFilter !== "Tous") {
       // Le filtre porte soit sur le rôle de base (profils_types), soit sur un
       // poste bureau/pôle (personne_postes, appariement par id — getAllMembers
@@ -239,7 +247,7 @@ export function MembresTab() {
       `${m.prenom} ${m.nom} ${m.email}`.toLowerCase().includes(search.toLowerCase())
     )
     setFilteredMembers(f)
-  }, [members, allRoles, roleFilter, statusFilter, search])
+  }, [members, allRoles, population, roleFilter, statusFilter, search])
 
   async function handleRoleChange(personneId: string, newRole: string) {
     setUpdating(personneId)
@@ -249,7 +257,13 @@ export function MembresTab() {
     setUpdating(null)
   }
 
-  const pendingCount = members.filter(m => m.account_status === "pending_validation").length
+  // Un candidat en attente n'attend pas une validation de compte : il attend
+  // une décision de recrutement. Le compter ici transformait la bannière en
+  // invitation à vider la file.
+  const pendingCount = members.filter(
+    m => m.account_status === "pending_validation" && !m.is_candidate
+  ).length
+  const candidatsCount = members.filter(m => m.is_candidate).length
 
   return (
     <div className="h-full flex flex-col space-y-4">
@@ -260,11 +274,40 @@ export function MembresTab() {
         </div>
       )}
 
+      {population === "candidats" && (
+        <div className="self-start flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl border border-blue-200 text-sm">
+          <ShieldAlert className="w-4 h-4 shrink-0" />
+          Candidats en cours de recrutement. Leur sélection se décide dans RH
+          Manager&nbsp;: ne rejetez un compte ici que pour écarter une
+          inscription parasite.
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-sm flex-1 flex flex-col">
         
         {/* TOOLBAR */}
         <div className="p-4 border-b border-zinc-100 flex flex-col lg:flex-row justify-between gap-4 bg-zinc-50">
           <div className="flex flex-wrap gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 px-1">Population</label>
+              <div className="flex bg-white border border-zinc-200 rounded-lg p-1 gap-1">
+                {([
+                  { value: "membres", label: "Membres" },
+                  { value: "candidats", label: `Candidats${candidatsCount ? ` (${candidatsCount})` : ""}` },
+                ] as const).map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => setPopulation(s.value)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                      population === s.value ? "bg-[#00236f] text-white" : "text-zinc-500 hover:text-zinc-700"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 px-1">Rôle</label>
               <div className="flex bg-white border border-zinc-200 rounded-lg p-1 flex-wrap gap-1">
@@ -467,7 +510,9 @@ export function MembresTab() {
         </div>
 
         <div className="px-6 py-3 border-t border-zinc-100 bg-zinc-50 text-xs text-zinc-400">
-          {filteredMembers.length} membre{filteredMembers.length > 1 ? "s" : ""} affiché{filteredMembers.length > 1 ? "s" : ""}
+          {filteredMembers.length}{" "}
+          {population === "candidats" ? "candidat" : "membre"}
+          {filteredMembers.length > 1 ? "s" : ""} affiché{filteredMembers.length > 1 ? "s" : ""}
         </div>
       </div>
 
@@ -519,6 +564,16 @@ function RejectModal({ member, submitting, onClose, onConfirm }: {
             Vous êtes sur le point de rejeter le compte de{" "}
             <span className="font-semibold text-zinc-800">{member.prenom} {member.nom}</span>.
           </p>
+          {member.is_candidate && (
+            <div className="flex gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                Ce compte est un <strong>candidat en cours de recrutement</strong>.
+                Le rejeter ne l'écarte pas de la campagne — cela se décide dans
+                RH Manager — mais le sort de la file de validation.
+              </span>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-semibold text-zinc-600 mb-1">
               Commentaire (optionnel)

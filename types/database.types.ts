@@ -63,6 +63,10 @@ export interface Personne {
   // "deleted" : compte supprimé par un administrateur — la ligne subsiste,
   // anonymisée (migration 059).
   account_status: "pending_validation" | "validated" | "rejected" | "deleted"
+  // Candidat du recrutement (créé par /api/onboarding/register, migration 044).
+  // Son compte n'a rien à faire dans la file de validation des membres : son
+  // sort se décide dans RH Manager, pas ici.
+  is_candidate: boolean
   rejection_reason: string | null
   rejected_at: string | null
   rejected_by: string | null
