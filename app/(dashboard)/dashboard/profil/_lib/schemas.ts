@@ -73,7 +73,16 @@ export const ACCEPTED_FILE_TYPES = [
   "application/pdf",
 ]
 
-const ACCEPTED_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "heic", "heif", "pdf"]
+export const ACCEPTED_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "heic", "heif", "pdf"]
+
+/**
+ * Taille maximale réellement acceptée par une route Next.js déployée sur
+ * Vercel : au-delà de ~4,5 Mo de corps de requête, la plateforme répond 413
+ * `FUNCTION_PAYLOAD_TOO_LARGE` avant même que la fonction ne s'exécute. Les
+ * fichiers plus gros passent par une URL présignée (upload direct vers
+ * Scaleway), qui ne traverse pas la fonction.
+ */
+export const MAX_PROXY_UPLOAD_SIZE = 4 * 1024 * 1024 // 4 Mo
 
 /**
  * Valide le type d'un fichier uploadé. Les photos prises depuis un iPhone
@@ -97,11 +106,45 @@ const EXT_TO_MIME: Record<string, string> = {
   pdf: "application/pdf",
 }
 
-/** Type MIME à stocker : celui du fichier, ou déduit de l'extension si absent (cas HEIC courant). */
+/**
+ * Type MIME à stocker : celui du fichier, ou déduit de l'extension quand le
+ * navigateur n'en donne pas (`""`) ou donne le type générique
+ * `application/octet-stream` — cas courant des .heic/.heif, et de tout envoi
+ * multipart dont la part n'a pas de Content-Type.
+ */
 export function resolveMimeType(file: { type: string; name: string }): string {
-  if (file.type) return file.type
   const ext = file.name.split(".").pop()?.toLowerCase()
-  return (ext && EXT_TO_MIME[ext]) || "application/octet-stream"
+  const fromExt = ext ? EXT_TO_MIME[ext] : undefined
+  if (!file.type || file.type === "application/octet-stream") {
+    return fromExt || "application/octet-stream"
+  }
+  return file.type
+}
+
+const MIME_TO_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/heic": "heic",
+  "image/heif": "heif",
+  "application/pdf": "pdf",
+}
+
+/**
+ * Extension utilisée dans la clé Scaleway. Déterministe : la route qui signe
+ * l'URL d'upload et celle qui enregistre la ligne en base doivent calculer
+ * exactement la même clé à partir du seul nom de fichier.
+ *
+ * On ne reprend jamais l'extension brute (un fichier « scan » sans extension
+ * donnait la clé `document.scan`, un « carte.PDF » la clé `document.PDF`) :
+ * elle est normalisée, et remplacée par celle du type MIME si elle ne fait
+ * pas partie des formats acceptés.
+ */
+export function fileExtension(file: { type: string; name: string }): string {
+  const raw = file.name.includes(".") ? file.name.split(".").pop()! : ""
+  const clean = raw.toLowerCase().replace(/[^a-z0-9]/g, "")
+  if (ACCEPTED_EXTENSIONS.includes(clean)) return clean
+  return MIME_TO_EXT[resolveMimeType(file)] || "bin"
 }
 
 export const DOC_TYPE_LABELS: Record<string, string> = {

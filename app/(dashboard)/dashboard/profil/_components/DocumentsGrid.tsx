@@ -25,6 +25,7 @@ import {
   VALID_DOC_TYPES,
   DOC_TYPE_LABELS,
   MAX_FILE_SIZE,
+  MAX_PROXY_UPLOAD_SIZE,
   isAcceptedFileType,
 } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 import type { LucideIcon } from "lucide-react"
@@ -66,6 +67,94 @@ function StatusBadge({ status }: StatusBadgeProps) {
       En attente
     </span>
   )
+}
+
+/**
+ * Lit une réponse JSON sans planter si le serveur a répondu autre chose :
+ * au-delà de ~4,5 Mo de corps de requête, Vercel renvoie un 413 en texte brut
+ * (`FUNCTION_PAYLOAD_TOO_LARGE`) et `res.json()` levait une exception, que le
+ * composant affichait à tort comme « Erreur réseau ».
+ */
+async function safeJson(res: Response): Promise<any> {
+  try {
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Envoie un justificatif. Le fichier va DIRECTEMENT sur Scaleway via une URL
+ * présignée (aucune limite de 4,5 Mo), puis la route enregistre la ligne.
+ * Si la signature ou l'envoi direct échoue (CORS, réseau d'entreprise…), on
+ * retombe sur l'envoi à travers la route, possible jusqu'à ~4 Mo.
+ */
+async function uploadDocument(docType: string, file: File): Promise<any | null> {
+  const descriptor = {
+    docType,
+    fileName: file.name,
+    fileType: file.type,
+    fileSize: file.size,
+  }
+
+  try {
+    const signRes = await fetch("/api/profil/documents/upload-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(descriptor),
+    })
+    const signed = await safeJson(signRes)
+
+    if (signRes.ok && signed?.uploadUrl) {
+      const put = await fetch(signed.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": signed.mimeType },
+        body: file,
+      })
+      if (put.ok) {
+        const confirmRes = await fetch("/api/profil/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(descriptor),
+        })
+        const confirmed = await safeJson(confirmRes)
+        if (confirmRes.ok && confirmed?.success) return confirmed
+        toast.error(confirmed?.error || "Erreur lors de l'enregistrement du document")
+        return null
+      }
+      console.error("Upload direct refusé par le stockage", put.status)
+    } else if (signRes.status === 400 || signRes.status === 401) {
+      // Refus métier (format, taille, session) : inutile de réessayer.
+      toast.error(signed?.error || "Erreur lors de l'upload")
+      return null
+    }
+  } catch (err) {
+    console.error("Upload direct impossible, repli sur la route", err)
+  }
+
+  // Repli
+  if (file.size > MAX_PROXY_UPLOAD_SIZE) {
+    toast.error(
+      "Envoi impossible pour ce fichier de plus de 4 Mo. Réessayez, ou réduisez sa taille."
+    )
+    return null
+  }
+
+  const formData = new FormData()
+  formData.append("file", file)
+  formData.append("docType", docType)
+  const res = await fetch("/api/profil/documents", { method: "POST", body: formData })
+  const data = await safeJson(res)
+  if (!res.ok || !data?.success) {
+    toast.error(
+      data?.error ||
+        (res.status === 413
+          ? "Fichier trop volumineux pour l'envoi. Réduisez sa taille."
+          : "Erreur lors de l'upload")
+    )
+    return null
+  }
+  return data
 }
 
 interface DocumentsGridProps {
@@ -140,20 +229,8 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
 
     setUploading(docType)
     try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("docType", docType)
-
-      const res = await fetch("/api/profil/documents", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || "Erreur lors de l'upload")
-        return
-      }
+      const data = await uploadDocument(docType, file)
+      if (!data) return
 
       toast.success(`${DOC_TYPE_LABELS[docType]} uploadé(e) — en attente de validation`)
 

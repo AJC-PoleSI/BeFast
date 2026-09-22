@@ -1,6 +1,6 @@
 import "server-only"
 
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3"
+import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 const region = process.env.NEXT_PUBLIC_SCALEWAY_REGION ?? "fr-par"
@@ -43,6 +43,29 @@ export async function getSignedDownloadUrl(value: string, expiresIn = 300): Prom
   return getSignedUrl(
     scalewayS3,
     new GetObjectCommand({ Bucket: SCALEWAY_BUCKET, Key: key }),
+    { expiresIn }
+  )
+}
+
+/**
+ * URL présignée permettant au navigateur d'envoyer le fichier DIRECTEMENT à
+ * Scaleway, sans passer par une fonction Vercel.
+ *
+ * Indispensable au-delà de ~4,5 Mo : Vercel refuse les corps de requête plus
+ * gros avec un 413 `FUNCTION_PAYLOAD_TOO_LARGE` renvoyé en texte brut, avant
+ * l'exécution de la route (l'utilisateur ne voyait qu'« Erreur réseau »).
+ *
+ * Le navigateur doit envoyer exactement le même `Content-Type` que celui
+ * signé ici, sinon Scaleway rejette la signature.
+ */
+export async function getSignedUploadUrl(
+  key: string,
+  contentType: string,
+  expiresIn = 600
+): Promise<string> {
+  return getSignedUrl(
+    scalewayS3,
+    new PutObjectCommand({ Bucket: SCALEWAY_BUCKET, Key: key, ContentType: contentType }),
     { expiresIn }
   )
 }
