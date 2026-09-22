@@ -84,7 +84,8 @@ export interface PersonneWithRole extends Personne {
 }
 
 export type DocumentType =
-  | "carte_identite"
+  | "carte_identite_recto"
+  | "carte_identite_verso"
   | "carte_etudiante"
   | "carte_vitale"
   | "preuve_lydia"

@@ -30,7 +30,8 @@ import {
 import type { LucideIcon } from "lucide-react"
 
 const DOC_ICONS: Record<string, LucideIcon> = {
-  carte_identite: IdCard,
+  carte_identite_recto: IdCard,
+  carte_identite_verso: IdCard,
   carte_etudiante: GraduationCap,
   carte_vitale: HeartPulse,
   preuve_lydia: Wallet,

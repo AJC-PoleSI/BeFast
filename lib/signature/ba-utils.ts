@@ -19,7 +19,11 @@ export const BA_REQUIRED_PROFILE_FIELDS = [
 ] as const
 
 /** Types de justificatifs requis (les autres ne sont pas bloquants). */
-export const BA_REQUIRED_DOC_TYPES = ["carte_identite", "carte_etudiante"] as const
+export const BA_REQUIRED_DOC_TYPES = [
+  "carte_identite_recto",
+  "carte_identite_verso",
+  "carte_etudiante",
+] as const
 
 export interface MemberData {
   id: string

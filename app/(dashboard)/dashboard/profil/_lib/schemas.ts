@@ -54,7 +54,8 @@ export const ibanSchema = z
   )
 
 export const VALID_DOC_TYPES = [
-  "carte_identite",
+  "carte_identite_recto",
+  "carte_identite_verso",
   "carte_etudiante",
   "carte_vitale",
   "preuve_lydia",
@@ -104,7 +105,8 @@ export function resolveMimeType(file: { type: string; name: string }): string {
 }
 
 export const DOC_TYPE_LABELS: Record<string, string> = {
-  carte_identite: "Carte d'identité",
+  carte_identite_recto: "Carte d'identité (recto)",
+  carte_identite_verso: "Carte d'identité (verso)",
   carte_etudiante: "Carte étudiante",
   carte_vitale: "Carte vitale",
   preuve_lydia: "Preuve Lydia",
@@ -112,7 +114,8 @@ export const DOC_TYPE_LABELS: Record<string, string> = {
 }
 
 export const DOC_TYPE_ICONS: Record<string, string> = {
-  carte_identite: "IdCard",
+  carte_identite_recto: "IdCard",
+  carte_identite_verso: "IdCard",
   carte_etudiante: "GraduationCap",
   carte_vitale: "HeartPulse",
   preuve_lydia: "Wallet",
