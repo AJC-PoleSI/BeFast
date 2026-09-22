@@ -18,10 +18,17 @@ export const BA_REQUIRED_PROFILE_FIELDS = [
   "scolarite",
 ] as const
 
-/** Types de justificatifs requis (les autres ne sont pas bloquants). */
+/**
+ * Types de justificatifs requis (les autres ne sont pas bloquants).
+ *
+ * Le verso de la carte d'identité en est volontairement exclu : l'emplacement
+ * n'existe que depuis le 21/09/2026 et les membres déjà inscrits n'ont déposé
+ * que le recto. L'exiger bloquerait l'envoi automatique du Bulletin
+ * d'Adhésion pour la soixantaine de membres concernés. Il reste demandé dans
+ * l'interface, simplement sans bloquer le BA.
+ */
 export const BA_REQUIRED_DOC_TYPES = [
   "carte_identite_recto",
-  "carte_identite_verso",
   "carte_etudiante",
 ] as const
 
