@@ -72,7 +72,7 @@ const STRUCTURE_SECTIONS: SectionDef[] = [
       { key: "tresorier_nom", label: "Trésorier(e)", type: "text", genreKey: "tresorier_genre" },
       { key: "sg_nom", label: "Secrétaire général(e)", type: "text", genreKey: "sg_genre" },
       { key: "rh_nom", label: "Responsable RH", type: "text", genreKey: "rh_genre" },
-      { key: "responsable_localite_nom", label: "Responsable localité", type: "text", genreKey: "responsable_localite_genre" },
+      { key: "responsable_localite_nom", label: "Responsable Audit Qualité", type: "text", genreKey: "responsable_localite_genre" },
       { key: "devco_nom", label: "Responsable DEVCO", type: "text", genreKey: "devco_genre" },
       { key: "si_nom", label: "Responsable SI", type: "text", genreKey: "si_genre" },
     ],
