@@ -95,7 +95,15 @@ export default function InscriptionPage() {
 
       <p className="mt-4 text-center text-xs text-muted-foreground">
         Un email de vérification vous sera envoyé. Après confirmation, votre
-        compte sera activé par un administrateur.
+        compte sera activé par un administrateur. Vos données sont traitées
+        conformément à notre{" "}
+        <Link
+          href="/politique-confidentialite"
+          className="underline hover:text-primary"
+        >
+          politique de confidentialité
+        </Link>
+        .
       </p>
 
       <p className="mt-4 text-center text-sm text-muted-foreground">

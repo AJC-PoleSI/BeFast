@@ -96,6 +96,12 @@ export default function LoginPage() {
             S&apos;inscrire
           </Link>
         </p>
+        <Link
+          href="/politique-confidentialite"
+          className="mt-2 text-xs text-muted-foreground hover:text-primary hover:underline"
+        >
+          Politique de confidentialité
+        </Link>
       </div>
     </div>
   )
