@@ -36,6 +36,8 @@ import {
   CheckCircle2,
   XCircle,
   Mail,
+  Eye,
+  EyeOff,
   UserPlus,
 } from "lucide-react"
 import Link from "next/link"
@@ -45,7 +47,7 @@ import type {
   Mission,
   EcheancierBloc,
 } from "@/types/database.types"
-import { getMembers } from "@/lib/actions/etudes"
+import { getMembers, toggleMissionPublished } from "@/lib/actions/etudes"
 import {
   repondreCandidature,
   rechercherIntervenantsAffectables,
@@ -134,6 +136,11 @@ export default function EtudeDetailPage() {
   // Créer/modifier une mission = créateur de l'étude, Pôle SI, admin — même
   // règle que la modification de l'étude elle-même (canEditEtude).
   const canEditMissions = !!etude && canEditEtude(profile, etude)
+  // Publication mission par mission (œil) : même droit que l'action serveur
+  // `toggleMissionPublished`. Une mission n'est ouverte aux intervenants que si
+  // elle ET l'étude sont publiées (cf. estMissionPubliee).
+  const canPublishMissions = hasPermission(profile, "publier_missions")
+  const [publishingMissionId, setPublishingMissionId] = useState<string | null>(null)
   // Suppression d'une mission : même droit que la modifier (canEditMissions).
   const [missionToDelete, setMissionToDelete] = useState<any | null>(null)
   const [deletingMission, setDeletingMission] = useState(false)
@@ -325,6 +332,18 @@ export default function EtudeDetailPage() {
       suiveur_id: "",
     })
     setShowMissionModal(true)
+  }
+
+  const handleToggleMissionPublished = async (m: any) => {
+    const newPublished = !m.published
+    setPublishingMissionId(m.id)
+    const res = await toggleMissionPublished(m.id, newPublished)
+    setPublishingMissionId(null)
+    if ((res as any).error) { toast.error((res as any).error); return }
+    setMissions(prev => prev.map(x => x.id === m.id ? { ...x, published: newPublished } as any : x))
+    if (!newPublished) toast.success("Mission masquée aux intervenants")
+    else if ((etude as any)?.published) toast.success("Mission visible par les intervenants")
+    else toast.success("Mission publiée — elle sera visible dès que l'étude sera publiée")
   }
 
   const handleConfirmDeleteMission = async () => {
@@ -643,6 +662,11 @@ export default function EtudeDetailPage() {
                           <Badge variant="outline" className={`text-xs ${MISSION_STATUT_COLORS[m.statut]}`}>
                             {MISSION_STATUT_LABELS[m.statut]}
                           </Badge>
+                          {!m.published && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">
+                              BROUILLON
+                            </span>
+                          )}
                           <span className="text-xs text-muted-foreground">
                             Intervenant
                           </span>
@@ -668,6 +692,25 @@ export default function EtudeDetailPage() {
                             </span>
                           )}
                         </span>
+                        {canPublishMissions && m.type !== "chef_projet" && (
+                          <button
+                            type="button"
+                            disabled={publishingMissionId === m.id}
+                            onClick={() => handleToggleMissionPublished(m)}
+                            className={`p-1.5 rounded-md transition-all shrink-0 disabled:opacity-50 ${m.published ? "text-emerald-600 hover:bg-emerald-50" : "text-amber-600 hover:bg-amber-50"}`}
+                            title={
+                              m.published
+                                ? ((etude as any)?.published
+                                    ? "Dépublier la mission"
+                                    : "Dépublier la mission (publiée, mais l'étude ne l'est pas encore)")
+                                : "Publier la mission"
+                            }
+                          >
+                            {publishingMissionId === m.id
+                              ? <Loader2 className="w-4 h-4 animate-spin" />
+                              : m.published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                          </button>
+                        )}
                         {canEditMissions && (
                           <Button
                             variant="outline"

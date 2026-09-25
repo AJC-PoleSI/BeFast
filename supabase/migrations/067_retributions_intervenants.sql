@@ -145,18 +145,23 @@ CREATE POLICY "candidatures read" ON public.candidatures FOR SELECT TO authentic
 -- interne, ne lit donc AUCUNE mission — la page trésorerie lui renverrait un
 -- tableau vide avant même d'atteindre les candidatures. Ouvrir candidatures
 -- sans ouvrir missions ne servirait à rien.
--- Les quatre branches de la migration 053 sont reprises à l'identique, une
--- cinquième est ajoutée. Rejouable : DROP IF EXISTS puis CREATE.
+-- Les branches de la migration 074 (publication mission par mission : mission
+-- publiée ET étude publiée) sont reprises à l'identique, une branche
+-- `voir_factures` est ajoutée. Rejouable : DROP IF EXISTS puis CREATE.
+-- ⚠ Ne pas revenir à la forme de la 053 (`published = true OR étude publiée`) :
+-- elle rouvrirait d'un coup toutes les missions d'une étude publiée.
 DROP POLICY IF EXISTS "missions read" ON public.missions;
 
 CREATE POLICY "missions read" ON public.missions FOR SELECT TO authenticated
   USING (
     public.is_membre_interne(auth.uid())
     OR public.is_mission_intervenant(id, auth.uid())
-    OR published = true
-    OR EXISTS (
-      SELECT 1 FROM public.etudes e
-      WHERE e.id = missions.etude_id AND e.published = true
+    OR (
+      published = true
+      AND EXISTS (
+        SELECT 1 FROM public.etudes e
+        WHERE e.id = missions.etude_id AND e.published = true
+      )
     )
     OR public.has_permission(auth.uid(), 'voir_factures')
   );

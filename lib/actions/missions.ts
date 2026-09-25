@@ -12,6 +12,7 @@ import {
 } from "@/lib/email/templates"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { hasPermission, canEditEtude } from "@/lib/auth/permissions"
+import { estMissionPubliee } from "@/lib/mission-visibilite"
 import { motifRefusAffectation } from "@/lib/missions/affectation"
 
 // Liste des missions — PAS de cache. Les utilisateurs créent/modifient
@@ -31,7 +32,7 @@ export async function getMissions(filters?: {
 
   let query = supabase
     .from("missions")
-    .select("id, nom, description, type, voie, classe, statut, nb_jeh, nb_intervenants, remuneration, etude_id, created_at, etudes(id, nom, numero, published)")
+    .select("id, nom, description, type, voie, classe, statut, nb_jeh, nb_intervenants, remuneration, etude_id, created_at, published, etudes(id, nom, numero, published)")
     .neq("type", "chef_projet")
     .order("created_at", { ascending: false })
 
@@ -42,7 +43,8 @@ export async function getMissions(filters?: {
 
   const { data, error } = await query
   if (error) return { error: error.message }
-  const filtered = (data ?? []).filter((m: any) => m.etudes?.published === true)
+  // Étude publiée ET mission publiée (publication mission par mission).
+  const filtered = (data ?? []).filter((m: any) => estMissionPubliee(m))
   return { data: filtered }
 }
 
@@ -174,6 +176,11 @@ export async function candidaterMission(formData: {
   if (error) {
     if (error.code === "23505") {
       return { error: "Vous avez déjà candidaté à cette mission." }
+    }
+    // RLS "candidatures insert own" (migration 074) : hors membres internes,
+    // on ne candidate qu'à une mission publiée sous une étude publiée.
+    if (error.code === "42501") {
+      return { error: "Cette mission n'est pas encore ouverte à la candidature." }
     }
     return { error: error.message }
   }

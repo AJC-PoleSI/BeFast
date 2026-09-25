@@ -6,6 +6,7 @@ import { useUser } from "@/hooks/useUser"
 import { createClient } from "@/lib/supabase/client"
 import { repondreCandidature } from "@/lib/actions/missions"
 import { hasPermission } from "@/lib/auth/permissions"
+import { estMissionPubliee } from "@/lib/mission-visibilite"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -97,7 +98,7 @@ export default function MissionDetailPage() {
   const slug = profile?.profils_types?.slug
   // isAGC = membres avec accès "staff" (voient toutes les candidatures, peuvent
   // accéder aux missions non publiées/SDP). Les membres AJC de base n'en font
-  // PAS partie : ils doivent passer par le filtre (!isSDP && etudePublished).
+  // PAS partie : ils doivent passer par le filtre (!isSDP && estMissionPubliee).
   const isAGC =
     slug === "membre_ajc" ||
     slug === "administrateur" ||
@@ -175,7 +176,9 @@ export default function MissionDetailPage() {
       toast.error(
         error.code === "23505"
           ? "Vous avez déjà candidaté"
-          : `Erreur lors de la candidature (${error.message})`
+          : error.code === "42501"
+            ? "Cette mission n'est pas encore ouverte à la candidature."
+            : `Erreur lors de la candidature (${error.message})`
       )
     } else {
       toast.success("Candidature envoyée !")
@@ -224,10 +227,9 @@ export default function MissionDetailPage() {
   }
 
   // Visibilité : les non-admins ne peuvent pas voir les missions SDP (chef_projet)
-  // ni les missions dont l'étude parente n'est pas publiée.
+  // ni les missions non publiées (mission ET étude parente, cf. estMissionPubliee).
   const isSDP = mission.type === "chef_projet"
-  const etudePublished = (mission as any).etudes?.published === true
-  const canView = isAdmin || isAGC || (!isSDP && etudePublished)
+  const canView = isAdmin || isAGC || (!isSDP && estMissionPubliee(mission as any))
 
   if (!canView) {
     return (
@@ -311,7 +313,7 @@ export default function MissionDetailPage() {
               )}
             </div>
 
-            {profile && mission.statut === "ouverte" && !myCandidature && !isSDP && etudePublished && (
+            {profile && mission.statut === "ouverte" && !myCandidature && !isSDP && estMissionPubliee(mission as any) && (
               <Button
                 onClick={() => setShowCandidateModal(true)}
                 className="bg-gold text-navy font-semibold hover:bg-gold/90"

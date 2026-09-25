@@ -498,9 +498,20 @@ export async function toggleMissionPublished(id: string, published: boolean) {
     return { error: "Vous n'êtes pas autorisé à publier ou dépublier une mission." }
   }
 
-  const { error } = await supabase.from("missions").update({ published }).eq("id", id)
+  // `.select()` : sans ligne renvoyée, la RLS a filtré l'UPDATE en silence —
+  // on le signale plutôt que d'afficher un œil ouvert qui ne l'est pas en base.
+  const { data, error } = await supabase
+    .from("missions")
+    .update({ published })
+    .eq("id", id)
+    .select("id, etude_id")
   if (error) return { error: error.message }
+  if (!data || data.length === 0) {
+    return { error: "Mission introuvable ou modification refusée." }
+  }
   revalidatePath("/missions")
+  revalidatePath(`/missions/${id}`)
+  if (data[0].etude_id) revalidatePath(`/etudes/${data[0].etude_id}`)
   return { success: true }
 }
 
