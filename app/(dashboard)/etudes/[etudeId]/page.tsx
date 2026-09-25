@@ -50,6 +50,7 @@ import {
   repondreCandidature,
   rechercherIntervenantsAffectables,
   affecterIntervenant,
+  deleteMission,
 } from "@/lib/actions/missions"
 import { estAffectationDirecte } from "@/lib/missions/affectation"
 import { hasPermission, canEditEtude } from "@/lib/auth/permissions"
@@ -112,6 +113,9 @@ export default function EtudeDetailPage() {
   // Créer/modifier une mission = créateur de l'étude, Pôle SI, admin — même
   // règle que la modification de l'étude elle-même (canEditEtude).
   const canEditMissions = !!etude && canEditEtude(profile, etude)
+  // Suppression d'une mission : même droit que la modifier (canEditMissions).
+  const [missionToDelete, setMissionToDelete] = useState<any | null>(null)
+  const [deletingMission, setDeletingMission] = useState(false)
   const [missions, setMissions] = useState<Mission[]>([])
   const [blocs, setBlocs] = useState<EcheancierBloc[]>([])
   const [candidatures, setCandidatures] = useState<any[]>([])
@@ -300,6 +304,17 @@ export default function EtudeDetailPage() {
       suiveur_id: "",
     })
     setShowMissionModal(true)
+  }
+
+  const handleConfirmDeleteMission = async () => {
+    if (!missionToDelete) return
+    setDeletingMission(true)
+    const res = await deleteMission(missionToDelete.id)
+    setDeletingMission(false)
+    if ((res as any).error) { toast.error((res as any).error); return }
+    toast.success("Mission supprimée")
+    setMissionToDelete(null)
+    fetchData()
   }
 
   const handleSaveBloc = async () => {
@@ -633,6 +648,17 @@ export default function EtudeDetailPage() {
                             onClick={() => handleEditMission(m)}
                           >
                             <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {canEditMissions && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            title="Supprimer la mission"
+                            onClick={() => setMissionToDelete(m)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         )}
                       </div>
@@ -1136,6 +1162,45 @@ export default function EtudeDetailPage() {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAffectMission(null)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation : suppression d'une mission */}
+      <Dialog
+        open={!!missionToDelete}
+        onOpenChange={(open) => { if (!open) setMissionToDelete(null) }}
+      >
+        <DialogContent>
+          <DialogClose onClose={() => setMissionToDelete(null)} />
+          <DialogHeader>
+            <DialogTitle>Supprimer cette mission ?</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-2 text-sm text-muted-foreground space-y-3">
+            <p>
+              Êtes-vous sûr de vouloir supprimer la mission{" "}
+              <strong className="text-foreground">{missionToDelete?.nom}</strong> ?
+            </p>
+            {(() => {
+              const nb = candidatures.filter((c) => c.mission_id === missionToDelete?.id).length
+              return (
+                <p className="p-3 bg-red-50 rounded-lg border border-red-200 text-xs text-red-700 font-medium">
+                  ⚠️ Cette action est irréversible : {nb > 0 ? `ses ${nb} candidature${nb > 1 ? "s" : ""}, ` : "ses candidatures, "}
+                  notes de frais et son bloc d&apos;échéancier seront supprimés avec elle.
+                </p>
+              )
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setMissionToDelete(null)}>Annuler</Button>
+            <Button
+              onClick={handleConfirmDeleteMission}
+              disabled={deletingMission}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {deletingMission && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Supprimer définitivement
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

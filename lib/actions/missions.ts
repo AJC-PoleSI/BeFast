@@ -11,7 +11,7 @@ import {
   intervenantAffecteEmail,
 } from "@/lib/email/templates"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
-import { hasPermission } from "@/lib/auth/permissions"
+import { hasPermission, canEditEtude } from "@/lib/auth/permissions"
 import { motifRefusAffectation } from "@/lib/missions/affectation"
 
 // Liste des missions — PAS de cache. Les utilisateurs créent/modifient
@@ -468,5 +468,71 @@ export async function affecterIntervenant(
     await sendEmail({ to: personne.email, subject: tpl.subject, html: tpl.html })
   }
 
+  return { success: true }
+}
+
+/**
+ * Supprime une mission. Même droit que la créer/modifier sur son étude
+ * (canEditEtude : admin, créateur de l'étude, suiveur, `modifier_etudes`),
+ * aligné sur la policy RLS "missions delete" (migration 070). Candidatures,
+ * notes de frais, suivi intervenant et bloc d'échéancier partent en cascade.
+ */
+export async function deleteMission(id: string) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Non authentifié" }
+
+  const { data: mission } = await supabase
+    .from("missions")
+    .select("etude_id")
+    .eq("id", id)
+    .single()
+  if (!mission) return { error: "Mission introuvable" }
+
+  const { data: etude } = mission.etude_id
+    ? await supabase
+        .from("etudes")
+        .select("created_by, etude_suiveurs(personne_id)")
+        .eq("id", mission.etude_id)
+        .single()
+    : { data: null }
+
+  const profile = await getCachedProfile(user.id)
+  const acces = {
+    created_by: etude?.created_by ?? null,
+    suiveurs: (etude?.etude_suiveurs ?? []).map((s: { personne_id: string }) => ({
+      id: s.personne_id,
+    })),
+  }
+  if (!canEditEtude(profile, acces)) {
+    return { error: "Vous n'êtes pas autorisé à supprimer cette mission." }
+  }
+
+  // Candidats à prévenir côté cache avant que la cascade n'efface leurs lignes.
+  const { data: cands } = await supabase
+    .from("candidatures")
+    .select("personne_id")
+    .eq("mission_id", id)
+
+  // `.select()` : sans ligne renvoyée, la RLS a filtré le DELETE en silence.
+  const { data, error } = await supabase
+    .from("missions")
+    .delete()
+    .eq("id", id)
+    .select("id")
+  if (error) return { error: error.message }
+  if (!data || data.length === 0) {
+    return { error: "Mission introuvable ou suppression refusée." }
+  }
+
+  for (const c of cands ?? []) {
+    if (c.personne_id) revalidateTag(CANDIDATURES_TAG(c.personne_id))
+  }
+  revalidateTag(MISSIONS_TAG)
+  revalidateTag(MISSION_DETAIL_TAG(id))
+  revalidatePath("/missions")
+  if (mission.etude_id) revalidatePath(`/etudes/${mission.etude_id}`)
   return { success: true }
 }
