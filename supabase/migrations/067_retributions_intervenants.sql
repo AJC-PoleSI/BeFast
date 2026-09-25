@@ -190,7 +190,9 @@ SELECT
   m.intervenant_id,
   m.numero_bv,
   m.date_paiement,
-  ROUND(COALESCE(m.remuneration, 0) * COALESCE(m.nb_jeh, 0), 2)
+  -- missions.remuneration = montant versé à chaque intervenant pour tous ses
+  -- JEH (pas un tarif par JEH) : on ne le multiplie pas par nb_jeh.
+  ROUND(COALESCE(m.remuneration, 0), 2)
 FROM public.missions m
 WHERE m.intervenant_id IS NOT NULL
   AND (m.date_paiement IS NOT NULL OR m.numero_bv IS NOT NULL)

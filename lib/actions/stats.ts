@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { jehTotalMission, montantTotalMission } from "@/lib/missions/remuneration"
 
 export async function getStats() {
   const supabase = createClient()
@@ -14,7 +15,7 @@ export async function getStats() {
 
   const [etudesRes, missionsRes, candidaturesRes] = await Promise.all([
     supabase.from("etudes").select("id, type, budget_ht, budget, statut, created_at"),
-    supabase.from("missions").select("id, nb_jeh, remuneration, nb_intervenants, statut, created_at"),
+    supabase.from("missions").select("id, nb_jeh, remuneration, taux_jour, nb_intervenants, statut, created_at"),
     supabase.from("candidatures").select("id, personne_id, statut, created_at"),
   ])
 
@@ -36,11 +37,8 @@ export async function getStats() {
     .filter(e => ["signee", "en_cours", "en_cours_prospection"].includes(e.statut))
     .reduce((sum, e) => sum + Number(e.budget_ht ?? e.budget ?? 0), 0)
 
-  const totalJeh = missions.reduce((sum, m) => sum + Number(m.nb_jeh ?? 0) * Number(m.nb_intervenants ?? 1), 0)
-  const retributionTotal = missions.reduce(
-    (sum, m) => sum + Number(m.nb_jeh ?? 0) * Number(m.nb_intervenants ?? 1) * Number(m.remuneration ?? 0),
-    0
-  )
+  const totalJeh = missions.reduce((sum, m) => sum + jehTotalMission(m), 0)
+  const retributionTotal = missions.reduce((sum, m) => sum + montantTotalMission(m), 0)
 
   const candidaturesAcceptees = candidatures.filter(c => c.statut === "acceptee")
   

@@ -55,6 +55,13 @@ import {
   deleteMission,
 } from "@/lib/actions/missions"
 import { estAffectationDirecte } from "@/lib/missions/affectation"
+import {
+  formatEuros,
+  jehTotalMission,
+  montantTotalMission,
+  remunerationParIntervenant,
+  remunerationParJeh,
+} from "@/lib/missions/remuneration"
 import { hasPermission, canEditEtude } from "@/lib/auth/permissions"
 
 const STATUT_COLORS: Record<string, string> = {
@@ -101,6 +108,26 @@ function nbJehFromRemuneration(coutAvecMargeInclus: number): number {
   if (coutAvecMargeInclus < 900) return 2
   if (coutAvecMargeInclus < 1350) return 3
   return 4
+}
+
+// Récap sous le champ Rémunération : les JEH et la rémunération saisis sont
+// ceux de CHAQUE intervenant, la mission en compte autant de fois qu'il y a
+// d'intervenants (2 JEH pour 311 € × 26 = 52 JEH, 8 086 €).
+function RecapBaremeMission({ form }: { form: { nb_jeh: string; nb_intervenants: string; remuneration: string } }) {
+  // Même lecture des champs que l'enregistrement (handleSaveMission).
+  const bareme = {
+    nb_jeh: parseInt(form.nb_jeh) || 0,
+    nb_intervenants: parseInt(form.nb_intervenants) || 1,
+    remuneration: parseFloat(form.remuneration) || 0,
+  }
+  const parJeh = remunerationParJeh(bareme)
+  if (parJeh == null) return null
+  return (
+    <p className="text-xs text-muted-foreground">
+      Chaque intervenant : {bareme.nb_jeh} JEH pour {formatEuros(remunerationParIntervenant(bareme))} ({formatEuros(parJeh)}/JEH)
+      {" · "}Mission : <span className="font-semibold text-[#00236f]">{jehTotalMission(bareme)} JEH, {formatEuros(montantTotalMission(bareme))}</span>
+    </p>
+  )
 }
 
 export default function EtudeDetailPage() {
@@ -246,7 +273,7 @@ export default function EtudeDetailPage() {
         // Le bloc de l'échéancier garde sa propre copie du JEH (calculée à la
         // création) : sans cette synchro, "Total JEH" en tête de page reste
         // sur l'ancienne valeur après une modification.
-        const jehTotal = (parseInt(missionForm.nb_jeh) || 0) * (parseInt(missionForm.nb_intervenants) || 1)
+        const jehTotal = jehTotalMission(payload)
         await supabase
           .from("echeancier_blocs")
           .update({ nom: missionForm.nom, jeh: jehTotal || null })
@@ -275,7 +302,7 @@ export default function EtudeDetailPage() {
           (max, b) => Math.max(max, (b.semaine_debut ?? 1) + (b.duree_semaines ?? 1) - 1),
           0
         )
-        const jehTotal = (parseInt(missionForm.nb_jeh) || 0) * (parseInt(missionForm.nb_intervenants) || 1)
+        const jehTotal = jehTotalMission(payload)
         await supabase.from("echeancier_blocs").insert({
           etude_id: etudeId,
           mission_id: newMission.id,
@@ -449,21 +476,15 @@ export default function EtudeDetailPage() {
     )
   }
 
-  const totalJehMissions = missions.reduce((sum, m) => sum + ((m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)), 0)
+  const totalJehMissions = missions.reduce((sum, m: any) => sum + jehTotalMission(m), 0)
   // Les missions sont la source de vérité du JEH ; le bloc de l'échéancier n'en
   // garde qu'une copie qui peut dater d'avant une modification de la mission
   // (cf. sync dans handleSaveMission). On ne retombe sur les blocs que si
   // l'étude n'a aucune mission mais un échéancier renseigné (cas legacy).
   const totalJeh = totalJehMissions || blocs.reduce((sum, b) => sum + (b.jeh || 0), 0)
-  // Somme réelle des montants affichés sur chaque ligne de mission (JEH ×
-  // rémunération propre à la mission), pas un taux moyen générique — pour que
-  // ce total corresponde exactement à l'addition des lignes visibles en dessous.
-  const totalMontantMissions = Math.round(
-    missions.reduce((sum, m: any) => {
-      const tarif = Number(m.remuneration ?? m.taux_jour) || 0
-      return sum + (m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1) * tarif
-    }, 0)
-  )
+  // Somme exacte des montants affichés sur chaque ligne de mission, pour que
+  // ce total corresponde à l'addition des lignes visibles en dessous.
+  const totalMontantMissions = missions.reduce((sum, m: any) => sum + montantTotalMission(m), 0)
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -554,7 +575,7 @@ export default function EtudeDetailPage() {
               {totalJeh}
               {totalMontantMissions > 0 && (
                 <span className="ml-2 text-sm font-semibold text-[#00236f]/70">
-                  ({totalMontantMissions.toLocaleString("fr-FR")} €)
+                  ({formatEuros(totalMontantMissions)})
                 </span>
               )}
             </p>
@@ -614,7 +635,9 @@ export default function EtudeDetailPage() {
               missions
                 .filter((m: any) => isAdmin || canSelectCandidates || m.type !== "chef_projet")
                 .map((m: any) => {
-                const tarif = m.remuneration ?? m.taux_jour
+                const remuneration = remunerationParIntervenant(m)
+                const parJeh = remunerationParJeh(m)
+                const montantMission = montantTotalMission(m)
                 return (
                   <div key={m.id} className="group bg-white rounded-xl border border-border shadow-sm p-4 hover:shadow-md hover:border-gold/30 transition-all">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -653,15 +676,17 @@ export default function EtudeDetailPage() {
                         </div>
                       )}
                       <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
-                        {tarif != null && (
-                          <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />{tarif}€/JEH</span>
+                        {remuneration > 0 && (
+                          <span className="flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />
+                            {formatEuros(remuneration)}/intervenant
+                            {parJeh != null && <span className="text-zinc-400">({formatEuros(parJeh)}/JEH)</span>}
+                          </span>
                         )}
                         <span>
-                          {m.nb_jeh} × {m.nb_intervenants} = <span className="font-semibold text-[#00236f]">{(m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)} JEH</span>
-                          {tarif != null && (
-                            <span className="ml-1 text-zinc-500">
-                              ({(((m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)) * (Number(tarif) || 0)).toLocaleString("fr-FR")} €)
-                            </span>
+                          {Number(m.nb_jeh ?? 0)} JEH × {m.nb_intervenants ?? 1} interv. = <span className="font-semibold text-[#00236f]">{jehTotalMission(m)} JEH</span>
+                          {montantMission > 0 && (
+                            <span className="ml-1 text-zinc-500">({formatEuros(montantMission)})</span>
                           )}
                         </span>
                         {canPublishMissions && m.type !== "chef_projet" && (
@@ -1044,7 +1069,7 @@ export default function EtudeDetailPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>JEH</Label>
+                <Label>JEH par intervenant</Label>
                 <Input type="number" value={missionForm.nb_jeh} onChange={(e) => setMissionForm({ ...missionForm, nb_jeh: e.target.value })} />
               </div>
               <div className="space-y-2">
@@ -1063,7 +1088,7 @@ export default function EtudeDetailPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Rémunération (€)</Label>
+              <Label>Rémunération par intervenant (€)</Label>
               <Input
                 type="number"
                 value={missionForm.remuneration}
@@ -1081,6 +1106,7 @@ export default function EtudeDetailPage() {
                 }}
                 placeholder="0"
               />
+              <RecapBaremeMission form={missionForm} />
             </div>
           </div>
           <DialogFooter>

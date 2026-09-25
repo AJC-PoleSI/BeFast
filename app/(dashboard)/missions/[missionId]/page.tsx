@@ -354,14 +354,14 @@ export default function MissionDetailPage() {
             {mission.remuneration && (
               <InfoCard
                 icon={<DollarSign className="h-4 w-4" />}
-                label="Rémunération"
+                label="Rémunération / intervenant"
                 value={`${mission.remuneration}€`}
               />
             )}
             {mission.nb_jeh > 0 && (
               <InfoCard
                 icon={<Calendar className="h-4 w-4" />}
-                label="JEH"
+                label="JEH / intervenant"
                 value={String(mission.nb_jeh)}
               />
             )}

@@ -8,6 +8,7 @@ import { decryptData } from "@/lib/crypto"
 import { getMasterKey } from "@/lib/crypto-key"
 import { decryptFromString } from "@/lib/encryption"
 import { numeroEtudeCourt, codeClasseurEtude } from "@/lib/document-numbering"
+import { remunerationParIntervenant } from "@/lib/missions/remuneration"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { canAccessEntityDocuments, isMembreInterne } from "@/lib/auth/document-access"
 
@@ -715,12 +716,11 @@ export async function buildTemplateContext(
     }
 
     // nb_jeh/remuneration (migrations 013/014) sont le modèle actuel ;
-    // nb_jours/taux_jour est l'ancien modèle, gardé en repli.
+    // nb_jours/taux_jour est l'ancien modèle, gardé en repli. Rétribution d'UN
+    // intervenant pour tous ses JEH (2 JEH pour 311 € ⇒ 311 € brut, 155,50 €
+    // par JEH sur le BV) — cf. lib/missions/remuneration.ts.
     const missionNbJeh = Number(m.nb_jeh) || Number(m.nb_jours) || 0
-    const missionRemuneration =
-      Number(m.nb_jeh) && Number(m.remuneration)
-        ? Number(m.nb_jeh) * Number(m.remuneration)
-        : (Number(m.nb_jours) || 0) * (Number(m.taux_jour) || 0)
+    const missionRemuneration = remunerationParIntervenant({ ...m, nb_jeh: missionNbJeh })
     const missionDureeJours = computeDureeJours(m.date_debut, m.date_fin) || Number(m.nb_jours) || 0
 
     return {

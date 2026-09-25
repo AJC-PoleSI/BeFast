@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { hasPermission } from "@/lib/auth/permissions"
 import { chargerToutesLesPages, tableRetributionsAbsente } from "@/lib/supabase/pagination"
+import { remunerationParIntervenant } from "@/lib/missions/remuneration"
 
 export const dynamic = "force-dynamic"
 
@@ -35,7 +36,8 @@ export const dynamic = "force-dynamic"
  * Colonne « Provenance » : le montant d'une ligne `retributions` a été
  * réellement versé (figé à l'époque, même si le barème mission a changé
  * depuis) ; le montant d'une ligne de repli est reconstitué à la volée
- * (rémunération × nb JEH courants de la mission) faute d'enregistrement figé.
+ * (rémunération courante de la mission, montant par intervenant) faute
+ * d'enregistrement figé.
  */
 
 const nomComplet = (p: { prenom?: string | null; nom?: string | null } | null | undefined) =>
@@ -213,11 +215,10 @@ export async function GET(request: Request) {
         mission: m.nom ?? "",
         nb_jeh: Number(m.nb_jeh ?? 0),
         // Pas de montant figé pour ce paiement : on le reconstitue à partir du
-        // barème COURANT de la mission (rémunération × nb JEH), comme la
-        // reprise d'historique de la migration 067. Si le barème a changé
-        // depuis le paiement, ce montant n'est pas celui réellement versé —
-        // d'où la colonne « Provenance » qui le signale.
-        montant: auCentime(Number(m.remuneration ?? 0) * Number(m.nb_jeh ?? 0)),
+        // barème COURANT de la mission, comme la reprise d'historique de la
+        // migration 067. Si le barème a changé depuis le paiement, ce montant
+        // n'est pas celui réellement versé — d'où la colonne « Provenance ».
+        montant: remunerationParIntervenant(m),
         date_paiement: m.date_paiement ?? "",
         provenance: "Paiement mission (montant reconstitué)",
       })),

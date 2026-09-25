@@ -10,13 +10,13 @@ import {
   buildRetributionRows,
   agregerParPersonne,
   kpisRetributions,
-  montantParIntervenant,
   nextNumeroBV,
   round2,
   type MissionSource,
   type IntervenantSource,
   type RetributionRecord,
 } from "@/lib/tresorerie/retributions"
+import { remunerationParIntervenant } from "@/lib/missions/remuneration"
 
 // Suivi de trésorerie (factures, paiements) : réservé aux profils disposant de
 // la permission `voir_factures` (Présidente, Trésorier·ère, Pôle Trésorerie…).
@@ -931,7 +931,7 @@ export async function marquerMissionRetributionsPayees(missionId: string, date_p
 
   const { data: mission, error: missionErr } = await supabase
     .from("missions")
-    .select("id, remuneration, nb_jeh, intervenant_id, date_paiement")
+    .select("id, remuneration, intervenant_id, date_paiement")
     .eq("id", missionId)
     .maybeSingle()
   if (missionErr) return { error: missionErr.message }
@@ -973,12 +973,7 @@ export async function marquerMissionRetributionsPayees(missionId: string, date_p
   )
   if (aPayer.length === 0) return { success: true }
 
-  // `montantParIntervenant` ne lit que `remuneration` et `nb_jeh` : inutile de
-  // charger le reste de MissionSource (nom, étude, dates…) pour ce calcul.
-  const montantCourant = montantParIntervenant({
-    remuneration: Number((mission as any).remuneration ?? 0),
-    nb_jeh: Number((mission as any).nb_jeh ?? 0),
-  })
+  const montantCourant = remunerationParIntervenant(mission as any)
 
   const numeros = [...numerosRes.numeros]
   const annee = new Date().getFullYear()

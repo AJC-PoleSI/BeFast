@@ -15,6 +15,8 @@
  * quoi les totaux compteraient des montants en double.
  */
 
+import { remunerationParIntervenant } from "../missions/remuneration"
+
 /** Arrondi au centime, pour ne pas traîner de flottants dans les totaux. */
 export function round2(n: number): number {
   return Math.round(n * 100) / 100
@@ -95,16 +97,6 @@ export type RetributionRow = {
 }
 
 /**
- * Montant dû à UN intervenant : remuneration × nb_jeh.
- * Le paramètre est volontairement réduit aux deux champs réellement lus, pour
- * que l'appelant qui ne dispose que du barème d'une mission n'ait pas à
- * fabriquer (ni à caster) une `MissionSource` complète.
- */
-export function montantParIntervenant(m: Pick<MissionSource, "remuneration" | "nb_jeh">): number {
-  return round2(Number(m.remuneration ?? 0) * Number(m.nb_jeh ?? 0))
-}
-
-/**
  * Nombre d'intervenants déclarés sur la mission : null/undefined vaut 1 (au
  * moins un intervenant implicite), une valeur non finie (NaN) vaut aussi 1,
  * mais un 0 explicite reste 0 — même convention que `lib/actions/missions.ts`
@@ -148,7 +140,9 @@ export function buildRetributionRows(
     const liste = intervenantsParMission.get(m.id) ?? []
     const recs = recordsParMission.get(m.id) ?? []
     const recParPersonne = new Map(recs.map((r) => [r.personne_id, r]))
-    const unitaire = montantParIntervenant(m)
+    // Rémunération saisie = montant versé à CHAQUE intervenant pour tous ses
+    // JEH, pas un tarif par JEH (cf. lib/missions/remuneration.ts).
+    const unitaire = remunerationParIntervenant(m)
 
     const commun = {
       mission_id: m.id,
