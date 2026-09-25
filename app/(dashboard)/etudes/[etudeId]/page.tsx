@@ -55,7 +55,6 @@ import {
   deleteMission,
 } from "@/lib/actions/missions"
 import { estAffectationDirecte } from "@/lib/missions/affectation"
-import { jehTotalMission, montantTotalMission, remunerationParJeh } from "@/lib/missions/remuneration"
 import { hasPermission, canEditEtude } from "@/lib/auth/permissions"
 
 const STATUT_COLORS: Record<string, string> = {
@@ -102,26 +101,6 @@ function nbJehFromRemuneration(coutAvecMargeInclus: number): number {
   if (coutAvecMargeInclus < 900) return 2
   if (coutAvecMargeInclus < 1350) return 3
   return 4
-}
-
-// Récap sous le champ Rémunération : les JEH et la rémunération saisis sont
-// ceux de CHAQUE intervenant, la mission en compte autant de fois qu'il y a
-// d'intervenants (2 JEH pour 311 € × 26 = 52 JEH, 8 086 €).
-function RecapBaremeMission({ form }: { form: { nb_jeh: string; nb_intervenants: string; remuneration: string } }) {
-  const bareme = {
-    nb_jeh: parseFloat(form.nb_jeh) || 0,
-    nb_intervenants: parseInt(form.nb_intervenants) || 1,
-    remuneration: parseFloat(form.remuneration) || 0,
-  }
-  if (bareme.remuneration <= 0 || bareme.nb_jeh <= 0) return null
-  const parJeh = remunerationParJeh(bareme)
-  return (
-    <p className="text-xs text-muted-foreground">
-      Chaque intervenant : {bareme.nb_jeh} JEH pour {bareme.remuneration.toLocaleString("fr-FR")} €
-      {parJeh != null && <> ({parJeh.toLocaleString("fr-FR")} €/JEH)</>}
-      {" · "}Mission : <span className="font-semibold text-[#00236f]">{jehTotalMission(bareme)} JEH, {montantTotalMission(bareme).toLocaleString("fr-FR")} €</span>
-    </p>
-  )
 }
 
 export default function EtudeDetailPage() {
@@ -470,18 +449,20 @@ export default function EtudeDetailPage() {
     )
   }
 
-  const totalJehMissions = missions.reduce((sum, m: any) => sum + jehTotalMission(m), 0)
+  const totalJehMissions = missions.reduce((sum, m) => sum + ((m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)), 0)
   // Les missions sont la source de vérité du JEH ; le bloc de l'échéancier n'en
   // garde qu'une copie qui peut dater d'avant une modification de la mission
   // (cf. sync dans handleSaveMission). On ne retombe sur les blocs que si
   // l'étude n'a aucune mission mais un échéancier renseigné (cas legacy).
   const totalJeh = totalJehMissions || blocs.reduce((sum, b) => sum + (b.jeh || 0), 0)
-  // Somme réelle des montants affichés sur chaque ligne de mission
-  // (rémunération par intervenant × intervenants), pas un taux moyen générique
-  // — pour que ce total corresponde exactement à l'addition des lignes visibles
-  // en dessous.
+  // Somme réelle des montants affichés sur chaque ligne de mission (JEH ×
+  // rémunération propre à la mission), pas un taux moyen générique — pour que
+  // ce total corresponde exactement à l'addition des lignes visibles en dessous.
   const totalMontantMissions = Math.round(
-    missions.reduce((sum, m: any) => sum + montantTotalMission(m), 0)
+    missions.reduce((sum, m: any) => {
+      const tarif = Number(m.remuneration ?? m.taux_jour) || 0
+      return sum + (m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1) * tarif
+    }, 0)
   )
 
   return (
@@ -633,11 +614,7 @@ export default function EtudeDetailPage() {
               missions
                 .filter((m: any) => isAdmin || canSelectCandidates || m.type !== "chef_projet")
                 .map((m: any) => {
-                // `remuneration` = montant versé à chaque intervenant pour ses
-                // `nb_jeh` JEH (cf. lib/missions/remuneration.ts).
-                const remunerationIntervenant = Number(m.remuneration) || 0
-                const parJeh = remunerationParJeh(m)
-                const montantMission = montantTotalMission(m)
+                const tarif = m.remuneration ?? m.taux_jour
                 return (
                   <div key={m.id} className="group bg-white rounded-xl border border-border shadow-sm p-4 hover:shadow-md hover:border-gold/30 transition-all">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -676,19 +653,14 @@ export default function EtudeDetailPage() {
                         </div>
                       )}
                       <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
-                        {(remunerationIntervenant > 0 || parJeh != null) && (
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />
-                            {remunerationIntervenant > 0
-                              ? <>{remunerationIntervenant.toLocaleString("fr-FR")} €/intervenant{parJeh != null && <span className="text-zinc-400">&nbsp;({parJeh.toLocaleString("fr-FR")} €/JEH)</span>}</>
-                              : <>{parJeh!.toLocaleString("fr-FR")} €/JEH</>}
-                          </span>
+                        {tarif != null && (
+                          <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />{tarif}€/JEH</span>
                         )}
                         <span>
-                          {Number(m.nb_jeh ?? 0)} JEH × {m.nb_intervenants ?? 1} interv. = <span className="font-semibold text-[#00236f]">{jehTotalMission(m)} JEH</span>
-                          {montantMission > 0 && (
+                          {m.nb_jeh} × {m.nb_intervenants} = <span className="font-semibold text-[#00236f]">{(m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)} JEH</span>
+                          {tarif != null && (
                             <span className="ml-1 text-zinc-500">
-                              ({montantMission.toLocaleString("fr-FR")} €)
+                              ({(((m.nb_jeh ?? 0) * (m.nb_intervenants ?? 1)) * (Number(tarif) || 0)).toLocaleString("fr-FR")} €)
                             </span>
                           )}
                         </span>
@@ -1072,7 +1044,7 @@ export default function EtudeDetailPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>JEH par intervenant</Label>
+                <Label>JEH</Label>
                 <Input type="number" value={missionForm.nb_jeh} onChange={(e) => setMissionForm({ ...missionForm, nb_jeh: e.target.value })} />
               </div>
               <div className="space-y-2">
@@ -1091,7 +1063,7 @@ export default function EtudeDetailPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Rémunération par intervenant (€)</Label>
+              <Label>Rémunération (€)</Label>
               <Input
                 type="number"
                 value={missionForm.remuneration}
@@ -1109,7 +1081,6 @@ export default function EtudeDetailPage() {
                 }}
                 placeholder="0"
               />
-              <RecapBaremeMission form={missionForm} />
             </div>
           </div>
           <DialogFooter>

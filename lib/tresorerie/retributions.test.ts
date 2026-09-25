@@ -17,9 +17,7 @@ const mission = (over: Partial<MissionSource> = {}): MissionSource => ({
   etude_nom: "Étude contenus",
   date_debut: "2026-10-05",
   date_fin: "2026-11-29",
-  // Rémunération = montant versé à CHAQUE intervenant pour l'ensemble de ses
-  // JEH (ici 2 JEH à 100 € chacun), pas un tarif par JEH.
-  remuneration: 200,
+  remuneration: 100,
   nb_jeh: 2,
   nb_intervenants: 3,
   date_paiement: null,
@@ -67,7 +65,7 @@ describe("nextNumeroBV", () => {
 })
 
 describe("buildRetributionRows", () => {
-  it("crée une ligne par intervenant sélectionné, au montant de la rémunération par intervenant", () => {
+  it("crée une ligne par intervenant sélectionné, au montant unitaire remuneration × nb_jeh", () => {
     const rows = buildRetributionRows(
       [mission({ nb_intervenants: 2 })],
       [inter("p1", "Alice Martin"), inter("p2", "Bob Durand")],
@@ -77,17 +75,6 @@ describe("buildRetributionRows", () => {
     expect(rows.map((r) => r.intervenant_nom)).toEqual(["Alice Martin", "Bob Durand"])
     expect(rows.every((r) => r.montant === 200)).toBe(true)
     expect(rows.every((r) => r.paye === false)).toBe(true)
-  })
-
-  it("ne multiplie pas la rémunération par le nombre de JEH (2 JEH pour 311 € = 311 € dus)", () => {
-    const rows = buildRetributionRows(
-      [mission({ nb_intervenants: 26, remuneration: 311, nb_jeh: 2 })],
-      [inter("p1", "Alice Martin")],
-      []
-    )
-    expect(rows.find((r) => r.personne_id === "p1")!.montant).toBe(311)
-    // 25 intervenants déclarés non sélectionnés : 25 × 311, pas 25 × 2 × 311.
-    expect(rows.find((r) => r.personne_id === null)!.montant).toBe(7775)
   })
 
   it("marque payée la seule ligne qui a une rétribution enregistrée", () => {

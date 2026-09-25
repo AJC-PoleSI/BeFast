@@ -53,7 +53,7 @@ export const DOCUMENT_FIELDS: FieldDef[] = [
   { placeholder: "mission.numero_etude", label: "Numéro de l'étude liée (2 chiffres)", source: "etudes.numero", example: "18" },
   { placeholder: "mission.numero_etude_complet", label: "Code classeur de l'étude liée (4 chiffres)", source: "etudes.numero", example: "2618" },
   { placeholder: "mission.nombre_jeh", label: "Nombre de JEH (alias nb_jours)", source: "missions.nb_jours" },
-  { placeholder: "mission.montant_remuneration", label: "Rémunération d'un intervenant pour l'ensemble de ses JEH", source: "missions.remuneration (repli : JEH × taux/jour)" },
+  { placeholder: "mission.montant_remuneration", label: "Rémunération totale (JEH × taux/jour)", source: "calculé" },
   { placeholder: "mission.duree", label: "Durée en semaines (alias duree_semaines)", source: "calculé depuis date_debut/date_fin" },
   { placeholder: "mission.duree_semaines", label: "Durée en semaines", source: "calculé depuis date_debut/date_fin" },
   { placeholder: "mission.duree_jours", label: "Durée en jours calendaires", source: "calculé depuis date_debut/date_fin" },
