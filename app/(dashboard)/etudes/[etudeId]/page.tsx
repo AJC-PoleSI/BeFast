@@ -36,6 +36,7 @@ import {
   CheckCircle2,
   XCircle,
   Mail,
+  UserPlus,
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -45,7 +46,12 @@ import type {
   EcheancierBloc,
 } from "@/types/database.types"
 import { getMembers } from "@/lib/actions/etudes"
-import { repondreCandidature } from "@/lib/actions/missions"
+import {
+  repondreCandidature,
+  rechercherIntervenantsAffectables,
+  affecterIntervenant,
+} from "@/lib/actions/missions"
+import { estAffectationDirecte } from "@/lib/missions/affectation"
 import { hasPermission, canEditEtude } from "@/lib/auth/permissions"
 
 const STATUT_COLORS: Record<string, string> = {
@@ -114,6 +120,16 @@ export default function EtudeDetailPage() {
     statut: "acceptee" | "refusee"
   } | null>(null)
   const [decisionSubmitting, setDecisionSubmitting] = useState(false)
+
+  // Affectation directe d'un intervenant qui n'a pas postulé
+  const [affectMission, setAffectMission] = useState<any | null>(null)
+  const [affectRecherche, setAffectRecherche] = useState("")
+  const [affectResultats, setAffectResultats] = useState<
+    { id: string; prenom: string | null; nom: string | null; email: string | null; role: string | null }[]
+  >([])
+  const [affectRecherchant, setAffectRecherchant] = useState(false)
+  const [affectNotifier, setAffectNotifier] = useState(true)
+  const [affectEnCours, setAffectEnCours] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Mission creation / editing modal
@@ -331,6 +347,47 @@ export default function EtudeDetailPage() {
         : "Candidature refusée — le candidat a été notifié par email"
     )
     setPendingDecision(null)
+    fetchData()
+  }
+
+  // Recherche des comptes affectables, déclenchée après une courte pause de
+  // frappe pour ne pas interroger le serveur à chaque lettre.
+  useEffect(() => {
+    if (!affectMission) return
+    const terme = affectRecherche.trim()
+    if (terme.length < 2) {
+      setAffectResultats([])
+      return
+    }
+    let annule = false
+    setAffectRecherchant(true)
+    const t = setTimeout(async () => {
+      const res = await rechercherIntervenantsAffectables(affectMission.id, terme)
+      if (annule) return
+      setAffectRecherchant(false)
+      if ((res as any).error) { toast.error((res as any).error); return }
+      setAffectResultats((res as any).data ?? [])
+    }, 300)
+    return () => { annule = true; clearTimeout(t) }
+  }, [affectMission, affectRecherche])
+
+  const ouvrirAffectation = (m: any) => {
+    setAffectMission(m)
+    setAffectRecherche("")
+    setAffectResultats([])
+    setAffectNotifier(true)
+  }
+
+  const handleAffecter = async (p: { id: string; prenom: string | null; nom: string | null }) => {
+    if (!affectMission) return
+    setAffectEnCours(p.id)
+    const res = await affecterIntervenant(affectMission.id, p.id, { notifier: affectNotifier })
+    setAffectEnCours(null)
+    if ((res as any).error) { toast.error((res as any).error); return }
+    toast.success(
+      `${p.prenom ?? ""} ${p.nom ?? ""} affecté·e à la mission${affectNotifier ? " — email envoyé" : ""}`.trim()
+    )
+    setAffectMission(null)
     fetchData()
   }
 
@@ -754,6 +811,19 @@ export default function EtudeDetailPage() {
                           <span className="text-xs text-muted-foreground">
                             {missionCands.length} candidature{missionCands.length > 1 ? "s" : ""}
                           </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => ouvrirAffectation(m)}
+                            disabled={full}
+                            title={
+                              full
+                                ? "Nombre max d'intervenants atteint"
+                                : "Affecter un intervenant qui n'a pas postulé"
+                            }
+                          >
+                            <UserPlus className="h-4 w-4 mr-1" /> Affecter
+                          </Button>
                         </div>
                       </div>
 
@@ -783,6 +853,11 @@ export default function EtudeDetailPage() {
                                     {c.statut === "acceptee" && (
                                       <Badge className="text-[10px] bg-emerald-100 text-emerald-700 border-emerald-200">
                                         Acceptée
+                                      </Badge>
+                                    )}
+                                    {estAffectationDirecte(c) && (
+                                      <Badge variant="outline" className="text-[10px] bg-[#00236f]/5 text-[#00236f] border-[#00236f]/20">
+                                        Affectation directe
                                       </Badge>
                                     )}
                                     {c.statut === "refusee" && (
@@ -982,6 +1057,85 @@ export default function EtudeDetailPage() {
               {creatingBloc && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingBlocId ? "Enregistrer" : "Ajouter"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Affectation directe d'un intervenant */}
+      <Dialog
+        open={!!affectMission}
+        onOpenChange={(open) => { if (!open) setAffectMission(null) }}
+      >
+        <DialogContent>
+          <DialogClose onClose={() => setAffectMission(null)} />
+          <DialogHeader>
+            <DialogTitle>Affecter un intervenant</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-2 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Mission <strong className="text-foreground">{affectMission?.nom}</strong>. La personne
+              est ajoutée directement comme acceptée, sans avoir postulé. Seuls les comptes validés
+              apparaissent ; ceux qui ont déjà postulé se gèrent depuis leur candidature.
+            </p>
+            <Input
+              autoFocus
+              placeholder="Rechercher par nom, prénom ou email…"
+              value={affectRecherche}
+              onChange={(e) => setAffectRecherche(e.target.value)}
+            />
+            <div className="max-h-72 overflow-y-auto rounded-md border border-border divide-y divide-border">
+              {affectRecherche.trim().length < 2 ? (
+                <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+                  Tapez au moins 2 caractères.
+                </p>
+              ) : affectRecherchant ? (
+                <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+                  <Loader2 className="inline h-3 w-3 mr-1 animate-spin" /> Recherche…
+                </p>
+              ) : affectResultats.length === 0 ? (
+                <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+                  Aucun compte validé ne correspond.
+                </p>
+              ) : (
+                affectResultats.map((p) => (
+                  <div key={p.id} className="px-3 py-2 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">
+                        {p.prenom} {p.nom}
+                        {p.role && (
+                          <span className="ml-2 text-[10px] font-normal text-muted-foreground">{p.role}</span>
+                        )}
+                      </div>
+                      {p.email && <div className="text-xs text-muted-foreground truncate">{p.email}</div>}
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleAffecter(p)}
+                      disabled={!!affectEnCours}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
+                    >
+                      {affectEnCours === p.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Affecter"
+                      )}
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={affectNotifier}
+                onChange={(e) => setAffectNotifier(e.target.checked)}
+                className="w-4 h-4 rounded border-zinc-300 text-[#00236f]"
+              />
+              Prévenir l&apos;intervenant par email
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAffectMission(null)}>Fermer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

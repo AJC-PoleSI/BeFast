@@ -177,6 +177,37 @@ export function candidatureAccepteeEmail(opts: {
   }
 }
 
+/**
+ * Affectation directe par l'administration : l'intervenant n'a pas postulé,
+ * on lui annonce donc une sélection et non une candidature acceptée.
+ */
+export function intervenantAffecteEmail(opts: {
+  prenom: string | null
+  missionNom: string
+  chefsDeProjet: string[]
+}) {
+  const chefs = opts.chefsDeProjet.filter(Boolean)
+  const pluriel = chefs.length > 1
+  const contact = chefs.length
+    ? `${pluriel ? "Les chefs de projet" : "Le chef de projet"} <strong>${esc(
+        chefs.join(", ")
+      )}</strong> ${pluriel ? "vont" : "va"} chercher à vous contacter.`
+    : "Le chef de projet de la mission va chercher à vous contacter."
+
+  return {
+    subject: `Vous avez été sélectionné·e — ${opts.missionNom}`,
+    html: brandedEmail({
+      title: `Bonjour${opts.prenom ? ` ${esc(opts.prenom)}` : ""},`,
+      intro: `Vous avez été sélectionné·e pour la mission « ${esc(
+        opts.missionNom
+      )} ». Veillez à bien surveiller votre messagerie : ${contact}`,
+      details: [`Mission : <strong>${esc(opts.missionNom)}</strong>`],
+      ctaLabel: "Voir mes missions",
+      ctaUrl: `${SITE_URL}/missions`,
+    }),
+  }
+}
+
 /** Candidature refusée : message de refus, invitation à postuler ailleurs. */
 export function candidatureRefuseeEmail(opts: {
   prenom: string | null
