@@ -11,7 +11,7 @@ import {
   ETUDE_DETAIL_TAG,
 } from "@/lib/cache-tags"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
-import { hasPermission, canEditEtude } from "@/lib/auth/permissions"
+import { hasPermission, canEditEtude, canDeleteEtude } from "@/lib/auth/permissions"
 
 // Cached version of getClients — clients rarely change.
 // Uses admin client (bypasses RLS) so unstable_cache works across requests.
@@ -180,12 +180,18 @@ export async function createEtude(formData: {
   if (!user) return { error: "Non authentifié" }
 
   const { suiveur_ids, ...rest } = formData
+
+  // Le créateur est suiveur (chef de projet) de son étude par défaut : sans
+  // ça, il créait une étude sur laquelle il n'avait ensuite aucun droit dès
+  // qu'il oubliait de se cocher dans la liste « Suiveur(s) ».
+  const suiveursFinaux = Array.from(new Set([...(suiveur_ids ?? []), user.id]))
+
   console.log("[createEtude] Creating étude:", formData.numero, formData.nom)
   const { data, error } = await supabase
     .from("etudes")
     .insert({
       ...rest,
-      suiveur_id: suiveur_ids?.[0] ?? null,
+      suiveur_id: suiveursFinaux[0] ?? null,
       created_by: user.id,
     })
     .select()
@@ -199,10 +205,10 @@ export async function createEtude(formData: {
     return { error: error.message }
   }
 
-  if (data && suiveur_ids && suiveur_ids.length > 0) {
+  if (data && suiveursFinaux.length > 0) {
     const { error: suiveursError } = await supabase
       .from("etude_suiveurs")
-      .insert(suiveur_ids.map((personne_id) => ({ etude_id: data.id, personne_id })))
+      .insert(suiveursFinaux.map((personne_id) => ({ etude_id: data.id, personne_id })))
     if (suiveursError) console.error("[createEtude] Suiveurs insert error:", suiveursError.message)
   }
 
@@ -234,11 +240,23 @@ export async function updateEtude(
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
-  const { data: existing } = await supabase.from("etudes").select("created_by").eq("id", id).single()
+  // Les suiveurs sont chargés avec l'étude : ce sont les chefs de projet, ils
+  // ont le droit de modifier l'étude qu'ils suivent (cf. canEditEtude).
+  const { data: existing } = await supabase
+    .from("etudes")
+    .select("created_by, etude_suiveurs(personne_id)")
+    .eq("id", id)
+    .single()
   if (!existing) return { error: "Étude introuvable" }
 
   const profile = await getCachedProfile(user.id)
-  if (!canEditEtude(profile, existing)) {
+  const acces = {
+    created_by: existing.created_by,
+    suiveurs: (existing.etude_suiveurs ?? []).map((s: { personne_id: string }) => ({
+      id: s.personne_id,
+    })),
+  }
+  if (!canEditEtude(profile, acces)) {
     return { error: "Vous n'êtes pas autorisé à modifier cette étude." }
   }
 
@@ -497,7 +515,8 @@ export async function deleteEtude(id: string) {
   if (!existing) return { error: "Étude introuvable" }
 
   const profile = await getCachedProfile(user.id)
-  if (!canEditEtude(profile, existing)) {
+  // Suppression : le suiveur en est exclu (cf. canDeleteEtude / migration 056).
+  if (!canDeleteEtude(profile, existing)) {
     return { error: "Vous n'êtes pas autorisé à supprimer cette étude." }
   }
 

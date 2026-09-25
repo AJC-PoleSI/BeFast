@@ -81,10 +81,13 @@ export default function EtudeDocumentsPage() {
   const [missions, setMissions] = useState<any[]>([])
   const [generating, setGenerating] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [etudeCreatedBy, setEtudeCreatedBy] = useState<string | null>(null)
-  // Générer un document = créateur de l'étude, Pôle SI, admin — même règle
-  // que la modification de l'étude (canEditEtude).
-  const canGenerate = canEditEtude(profile, { created_by: etudeCreatedBy })
+  const [etudeAcces, setEtudeAcces] = useState<{
+    created_by: string | null
+    suiveurs: { id: string }[]
+  }>({ created_by: null, suiveurs: [] })
+  // Générer un document = créateur de l'étude, ses suiveurs (chefs de projet),
+  // Pôle SI, admin — même règle que la modification de l'étude (canEditEtude).
+  const canGenerate = canEditEtude(profile, etudeAcces)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -97,7 +100,10 @@ export default function EtudeDocumentsPage() {
     setTemplates((tRes as any).data || [])
     setDocs((dRes as any).data || [])
     setMissions((mRes as any).data || [])
-    setEtudeCreatedBy((eRes as any).data?.created_by ?? null)
+    setEtudeAcces({
+      created_by: (eRes as any).data?.created_by ?? null,
+      suiveurs: (eRes as any).data?.suiveurs ?? [],
+    })
     setLoading(false)
   }, [etudeId])
 

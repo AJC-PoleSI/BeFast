@@ -46,13 +46,55 @@ export function hasPermission(profile: PersonneWithRole | null, key: PermissionK
   return resolveEffectivePermissions(profile)[key] === true
 }
 
+/** Étude telle qu'attendue par les gardes ci-dessous. */
+type EtudeAcces = {
+  created_by: string | null
+  /** Suiveurs (= chefs de projet) rattachés à l'étude, si la liste est connue. */
+  suiveurs?: { id: string }[] | null
+}
+
+/** `true` si la personne est suiveur (chef de projet) de l'étude. */
+export function estSuiveurEtude(
+  profile: PersonneWithRole | null,
+  etude: EtudeAcces
+): boolean {
+  if (!profile) return false
+  return (etude.suiveurs ?? []).some((s) => s.id === profile.id)
+}
+
 /**
- * Modification d'une étude : l'administrateur, le créateur de l'étude, et
- * les postes disposant de la permission `modifier_etudes` (ex. Pôle SI).
+ * Modification d'une étude : l'administrateur, le créateur de l'étude, ses
+ * suiveurs (chefs de projet), et les postes disposant de la permission
+ * `modifier_etudes` (ex. Pôle SI).
+ *
+ * Le suiveur est inclus parce que gérer l'étude EST le travail du chef de
+ * projet : créer les missions intervenants, générer les documents. Sans lui,
+ * être désigné chef de projet ne donnait aucun droit sur l'étude suivie.
+ *
+ * `etude.suiveurs` est optionnel : un appelant qui ne charge pas la liste
+ * retombe sur l'ancien comportement (créateur / permission) au lieu de
+ * planter — mais il refusera alors un suiveur légitime.
  */
 export function canEditEtude(
   profile: PersonneWithRole | null,
-  etude: { created_by: string | null }
+  etude: EtudeAcces
+): boolean {
+  if (!profile) return false
+  if (profile.profils_types?.slug === "administrateur") return true
+  if (etude.created_by && etude.created_by === profile.id) return true
+  if (estSuiveurEtude(profile, etude)) return true
+  return hasPermission(profile, "modifier_etudes")
+}
+
+/**
+ * Suppression d'une étude : plus restrictif que la modification — le suiveur
+ * n'en fait PAS partie. Reprend exactement la policy RLS `etudes delete`
+ * (migration 056) : admin, créateur, `modifier_etudes`. Sans cette distinction,
+ * l'UI afficherait au chef de projet un bouton Supprimer que Postgres refuse.
+ */
+export function canDeleteEtude(
+  profile: PersonneWithRole | null,
+  etude: EtudeAcces
 ): boolean {
   if (!profile) return false
   if (profile.profils_types?.slug === "administrateur") return true

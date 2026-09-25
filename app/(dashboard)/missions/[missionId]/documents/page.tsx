@@ -42,10 +42,13 @@ export default function MissionDocumentsPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
   const [showGenerateModal, setShowGenerateModal] = useState(false)
   const [initialLoadDone, setInitialLoadDone] = useState(false)
-  const [etudeCreatedBy, setEtudeCreatedBy] = useState<string | null>(null)
-  // Générer un document = créateur de l'étude, Pôle SI, admin — même règle
-  // que la modification de l'étude (canEditEtude).
-  const canGenerate = canEditEtude(profile, { created_by: etudeCreatedBy })
+  const [etudeAcces, setEtudeAcces] = useState<{
+    created_by: string | null
+    suiveurs: { id: string }[]
+  }>({ created_by: null, suiveurs: [] })
+  // Générer un document = créateur de l'étude, ses suiveurs (chefs de projet),
+  // Pôle SI, admin — même règle que la modification de l'étude (canEditEtude).
+  const canGenerate = canEditEtude(profile, etudeAcces)
 
   const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null)
 
@@ -69,7 +72,10 @@ export default function MissionDocumentsPage() {
     const etudeId = (mRes as any).data?.etude_id ?? null
     if (etudeId) {
       const eRes = await getEtude(etudeId)
-      setEtudeCreatedBy((eRes as any).data?.created_by ?? null)
+      setEtudeAcces({
+        created_by: (eRes as any).data?.created_by ?? null,
+        suiveurs: (eRes as any).data?.suiveurs ?? [],
+      })
     }
 
     setLoading(false)

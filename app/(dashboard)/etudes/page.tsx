@@ -8,7 +8,7 @@ import Link from "next/link"
 import { X, Loader2, Trash2, Pencil, Eye, EyeOff, AlertTriangle } from "lucide-react"
 import type { EtudeWithRelations, Client } from "@/types/database.types"
 import { useUser } from "@/hooks/useUser"
-import { canEditEtude, hasPermission } from "@/lib/auth/permissions"
+import { canEditEtude, canDeleteEtude, hasPermission } from "@/lib/auth/permissions"
 
 const STATUT_CONFIG: Record<string, { label: string; chipClass: string; dotClass: string }> = {
   prospection: {
@@ -400,7 +400,7 @@ export default function EtudesPage() {
                           <Pencil className="w-4 h-4" />
                         </button>
                         )}
-                        {canEditEtude(profile, etude) && (
+                        {canDeleteEtude(profile, etude) && (
                         <button
                           onClick={(e) => {
                             e.preventDefault(); e.stopPropagation()

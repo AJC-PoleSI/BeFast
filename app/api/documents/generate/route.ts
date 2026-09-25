@@ -91,29 +91,44 @@ export async function POST(req: NextRequest) {
   }
 
   // Génération de documents liés à une étude/mission : réservée au créateur
-  // de l'étude, au Pôle SI et aux admins — même règle que la modification de
-  // l'étude (canEditEtude). On lit via le client admin pour ne pas dépendre
-  // de la RLS "etudes read" (un non-interne, non-créateur ne verrait même
-  // pas la ligne, et le check tomberait toujours en échec sans distinction).
+  // de l'étude, à ses suiveurs (chefs de projet), au Pôle SI et aux admins —
+  // même règle que la modification de l'étude (canEditEtude). On lit via le
+  // client admin pour ne pas dépendre de la RLS "etudes read" (un non-interne,
+  // non-créateur ne verrait même pas la ligne, et le check tomberait toujours
+  // en échec sans distinction).
   if (scope === "etude" || scope === "mission") {
     const admin = createAdminClient()
-    let etudeCreatedBy: string | null = null
+    let etudeId: string | null = null
 
     if (scope === "etude") {
-      const { data: e } = await admin.from("etudes").select("created_by").eq("id", entity_id).single()
-      etudeCreatedBy = e?.created_by ?? null
+      etudeId = entity_id
     } else {
       const { data: m } = await admin.from("missions").select("etude_id").eq("id", entity_id).single()
-      if (m?.etude_id) {
-        const { data: e } = await admin.from("etudes").select("created_by").eq("id", m.etude_id).single()
-        etudeCreatedBy = e?.created_by ?? null
+      etudeId = m?.etude_id ?? null
+    }
+
+    let acces: { created_by: string | null; suiveurs: { id: string }[] } = {
+      created_by: null,
+      suiveurs: [],
+    }
+    if (etudeId) {
+      const { data: e } = await admin
+        .from("etudes")
+        .select("created_by, etude_suiveurs(personne_id)")
+        .eq("id", etudeId)
+        .single()
+      acces = {
+        created_by: e?.created_by ?? null,
+        suiveurs: (e?.etude_suiveurs ?? []).map((s: { personne_id: string }) => ({
+          id: s.personne_id,
+        })),
       }
     }
 
     const profile = await getCachedProfile(user.id)
-    if (!canEditEtude(profile, { created_by: etudeCreatedBy })) {
+    if (!canEditEtude(profile, acces)) {
       return NextResponse.json(
-        { error: "Seuls le créateur de l'étude, le Pôle SI et les administrateurs peuvent générer ce document." },
+        { error: "Seuls le créateur de l'étude, ses chefs de projet, le Pôle SI et les administrateurs peuvent générer ce document." },
         { status: 403 }
       )
     }

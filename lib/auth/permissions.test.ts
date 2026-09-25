@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest"
-import { resolveEffectivePermissions, hasPermission, canEditEtude } from "./permissions"
+import {
+  resolveEffectivePermissions,
+  hasPermission,
+  canEditEtude,
+  canDeleteEtude,
+} from "./permissions"
 import type { PersonneWithRole } from "@/types/database.types"
 
 function make(basePerms: any, postes: any[] = [], slug = "membre_ajc"): PersonneWithRole {
@@ -80,5 +85,48 @@ describe("canEditEtude", () => {
 
   it("un profil null ne peut rien modifier", () => {
     expect(canEditEtude(null, { created_by: "u1" })).toBe(false)
+  })
+
+  it("le suiveur (chef de projet) peut modifier l'étude qu'il suit", () => {
+    const p = make({ dashboard: true })
+    expect(
+      canEditEtude(p, { created_by: "autre-id", suiveurs: [{ id: "u1" }] })
+    ).toBe(true)
+  })
+
+  it("un membre qui n'est pas suiveur de l'étude ne peut pas la modifier", () => {
+    const p = make({ dashboard: true })
+    expect(
+      canEditEtude(p, { created_by: "autre-id", suiveurs: [{ id: "autre-id" }] })
+    ).toBe(false)
+  })
+
+  it("une liste de suiveurs absente ne donne aucun droit supplémentaire", () => {
+    const p = make({ dashboard: true })
+    expect(canEditEtude(p, { created_by: "autre-id" })).toBe(false)
+  })
+})
+
+describe("canDeleteEtude", () => {
+  it("le suiveur ne peut PAS supprimer l'étude qu'il suit (cf. migration 056)", () => {
+    const p = make({ dashboard: true })
+    expect(
+      canDeleteEtude(p, { created_by: "autre-id", suiveurs: [{ id: "u1" }] })
+    ).toBe(false)
+  })
+
+  it("le créateur peut supprimer son étude", () => {
+    const p = make({ dashboard: true })
+    expect(canDeleteEtude(p, { created_by: "u1" })).toBe(true)
+  })
+
+  it("un poste avec modifier_etudes peut supprimer une étude qu'il n'a pas créée", () => {
+    const p = make({}, [{ profils_types: { permissions: { modifier_etudes: true } } }])
+    expect(canDeleteEtude(p, { created_by: "autre-id" })).toBe(true)
+  })
+
+  it("l'administrateur peut supprimer n'importe quelle étude", () => {
+    const p = make({}, [], "administrateur")
+    expect(canDeleteEtude(p, { created_by: "autre-id" })).toBe(true)
   })
 })
