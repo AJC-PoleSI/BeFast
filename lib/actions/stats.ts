@@ -37,8 +37,11 @@ export async function getStats() {
     .reduce((sum, e) => sum + Number(e.budget_ht ?? e.budget ?? 0), 0)
 
   const totalJeh = missions.reduce((sum, m) => sum + Number(m.nb_jeh ?? 0) * Number(m.nb_intervenants ?? 1), 0)
+  // `remuneration` = montant versé à CHAQUE intervenant pour l'ensemble de ses
+  // JEH (nb_jeh = JEH par intervenant) : le total d'une mission est donc
+  // rémunération × intervenants, sans repasser par le nombre de JEH.
   const retributionTotal = missions.reduce(
-    (sum, m) => sum + Number(m.nb_jeh ?? 0) * Number(m.nb_intervenants ?? 1) * Number(m.remuneration ?? 0),
+    (sum, m) => sum + Number(m.nb_intervenants ?? 1) * Number(m.remuneration ?? 0),
     0
   )
 

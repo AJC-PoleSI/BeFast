@@ -716,11 +716,14 @@ export async function buildTemplateContext(
 
     // nb_jeh/remuneration (migrations 013/014) sont le modèle actuel ;
     // nb_jours/taux_jour est l'ancien modèle, gardé en repli.
+    // `remuneration` est le montant versé à UN intervenant pour l'ensemble de
+    // ses JEH (nb_jeh = JEH par intervenant) : 2 JEH pour 311 € ⇒ 311 € de
+    // rétribution brute, 155,50 € par JEH — on ne le multiplie pas par nb_jeh.
+    // `taux_jour` (missions issues d'une proposition), lui, est un tarif par JEH.
     const missionNbJeh = Number(m.nb_jeh) || Number(m.nb_jours) || 0
-    const missionRemuneration =
-      Number(m.nb_jeh) && Number(m.remuneration)
-        ? Number(m.nb_jeh) * Number(m.remuneration)
-        : (Number(m.nb_jours) || 0) * (Number(m.taux_jour) || 0)
+    const missionRemuneration = Number(m.remuneration)
+      ? Number(m.remuneration)
+      : missionNbJeh * (Number(m.taux_jour) || 0)
     const missionDureeJours = computeDureeJours(m.date_debut, m.date_fin) || Number(m.nb_jours) || 0
 
     return {

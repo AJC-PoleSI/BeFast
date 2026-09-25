@@ -95,13 +95,16 @@ export type RetributionRow = {
 }
 
 /**
- * Montant dû à UN intervenant : remuneration × nb_jeh.
- * Le paramètre est volontairement réduit aux deux champs réellement lus, pour
- * que l'appelant qui ne dispose que du barème d'une mission n'ait pas à
- * fabriquer (ni à caster) une `MissionSource` complète.
+ * Montant dû à UN intervenant : `missions.remuneration`, tel quel.
+ * La rémunération saisie sur la mission est le montant versé à chaque
+ * intervenant pour l'ensemble de ses JEH (`nb_jeh` = JEH PAR intervenant) —
+ * ce n'est pas un tarif par JEH : 2 JEH pour 311 € ⇒ 311 € dus, pas 622 €.
+ * Le paramètre est volontairement réduit au seul champ lu, pour que l'appelant
+ * qui ne dispose que du barème d'une mission n'ait pas à fabriquer (ni à
+ * caster) une `MissionSource` complète.
  */
-export function montantParIntervenant(m: Pick<MissionSource, "remuneration" | "nb_jeh">): number {
-  return round2(Number(m.remuneration ?? 0) * Number(m.nb_jeh ?? 0))
+export function montantParIntervenant(m: Pick<MissionSource, "remuneration">): number {
+  return round2(Number(m.remuneration ?? 0))
 }
 
 /**
