@@ -265,9 +265,6 @@ export default function EtudesPage() {
                 <div className="flex items-start justify-between gap-4 mb-5">
                   <div className="flex-1">
                     <div className="flex flex-wrap gap-2 mb-3">
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600 uppercase tracking-wide">
-                        Priorité haute
-                      </span>
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUT_CONFIG[activeStudy.statut]?.chipClass}`}>
                         {STATUT_CONFIG[activeStudy.statut]?.label}
                       </span>
@@ -275,10 +272,12 @@ export default function EtudesPage() {
                     <h2 className="text-xl font-manrope font-black text-[#00236f] mb-1">{activeStudy.nom}</h2>
                     <p className="text-sm text-zinc-400 font-mono">{activeStudy.numero}</p>
                   </div>
-                  {activeStudy.budget && (
-                    <div className="text-right">
+                  {(activeStudy.budget_ht ?? activeStudy.budget) != null && (
+                    <div className="text-right shrink-0">
                       <p className="text-xs text-zinc-400">Budget</p>
-                      <p className="text-2xl font-manrope font-black text-[#00236f]">€{activeStudy.budget.toLocaleString()}</p>
+                      <p className="text-2xl font-manrope font-black text-[#00236f] tabular-nums whitespace-nowrap">
+                        {Number(activeStudy.budget_ht ?? activeStudy.budget).toLocaleString("fr-FR")} € HT
+                      </p>
                     </div>
                   )}
                 </div>
