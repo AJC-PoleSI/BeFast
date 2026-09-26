@@ -38,12 +38,26 @@ const STATUT_CONFIG: Record<string, { label: string; chipClass: string; dotClass
   },
 }
 
+// Statuts affichés mais absents des filtres : « prospect » (historique, migration 005) et « annulee »
+const STATUT_EXTRA: Record<string, { label: string; chipClass: string; dotClass: string }> = {
+  prospect: STATUT_CONFIG.prospection,
+  annulee: {
+    label: "Annulée",
+    chipClass: "bg-red-50 text-red-600",
+    dotClass: "bg-red-400",
+  },
+}
+
+const getStatutConfig = (statut: string) => STATUT_CONFIG[statut] ?? STATUT_EXTRA[statut]
+
 const STATUT_ORDER: Record<string, number> = {
+  prospect: 0,
   prospection: 0,
   en_cours_prospection: 1,
   signee: 2,
   en_cours: 3,
   terminee: 4,
+  annulee: 5,
 }
 
 export default function EtudesPage() {
@@ -62,7 +76,7 @@ export default function EtudesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_ids: [] as string[] })
+  const [form, setForm] = useState({ nom: "", numero: "", statut: "prospection", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_ids: [] as string[] })
   const [tvaRate, setTvaRate] = useState(20)
   const [clients, setClients] = useState<Client[]>([])
   const [membres, setMembres] = useState<{ id: string; prenom: string | null; nom: string | null }[]>([])
@@ -190,7 +204,7 @@ export default function EtudesPage() {
           <p className="text-sm text-zinc-500 mt-0.5">Gestion des études et projets clients</p>
         </div>
         <button
-          onClick={() => { setEditingId(null); setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_ids: [] as string[] }); setShowModal(true); setFormError(null) }}
+          onClick={() => { setEditingId(null); setForm({ nom: "", numero: "", statut: "prospection", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_ids: [] as string[] }); setShowModal(true); setFormError(null) }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors"
         >
           <span className="material-symbols-outlined text-lg">add_circle</span>
@@ -327,37 +341,41 @@ export default function EtudesPage() {
               <div className="divide-y divide-zinc-100 max-h-[600px] overflow-y-auto">
                 {filteredEtudes.length > 0 ? (
                   filteredEtudes.map((etude) => {
-                    const sc = STATUT_CONFIG[etude.statut as keyof typeof STATUT_CONFIG]
+                    const sc = getStatutConfig(etude.statut)
+                    const suiveursLabel = (etude.suiveurs && etude.suiveurs.length > 0)
+                      ? `Suiveur${etude.suiveurs.length > 1 ? "s" : ""} : ${etude.suiveurs.map(s => `${s.prenom} ${s.nom}`).join(", ")}`
+                      : (etude as any).suiveur ? `Suiveur : ${(etude as any).suiveur.prenom} ${(etude as any).suiveur.nom}` : null
+                    const meta = [etude.numero, etude.clients?.nom, suiveursLabel].filter(Boolean).join(" · ")
+                    const montant = etude.budget_ht ?? etude.budget
                     return (
-                      <div key={etude.id} className="group flex items-center gap-3 px-5 py-4 hover:bg-zinc-50 transition-colors">
-                        <Link href={`/etudes/${etude.id}`} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
-                          <div className={`w-2 h-2 rounded-full shrink-0 ${sc?.dotClass || "bg-zinc-300"}`} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-zinc-800 truncate">{etude.nom}</p>
-                            <p className="text-xs text-zinc-400 truncate">
-                              {etude.numero}
-                              {etude.clients ? ` · ${etude.clients.nom}` : ""}
-                              {(etude.suiveurs && etude.suiveurs.length > 0)
-                                ? ` · Suiveur${etude.suiveurs.length > 1 ? "s" : ""} : ${etude.suiveurs.map(s => `${s.prenom} ${s.nom}`).join(", ")}`
-                                : (etude as any).suiveur ? ` · Suiveur : ${(etude as any).suiveur.prenom} ${(etude as any).suiveur.nom}` : ""}
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end gap-1 shrink-0">
-                            <div className="flex items-center gap-1.5">
-                              {!(etude as any).published && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">
-                                  BROUILLON
+                      <div key={etude.id} className="group relative flex items-start gap-2 px-5 py-3.5 hover:bg-zinc-50 transition-colors">
+                        <Link href={`/etudes/${etude.id}`} className="flex items-start gap-3 flex-1 min-w-0 cursor-pointer">
+                          <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${sc?.dotClass || "bg-zinc-300"}`} />
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-start justify-between gap-3">
+                              <p className="min-w-0 text-sm font-semibold text-zinc-800 leading-snug line-clamp-2 break-words" title={etude.nom || undefined}>
+                                {etude.nom?.trim() || <span className="italic font-normal text-zinc-400">Sans nom</span>}
+                              </p>
+                              {montant != null && (
+                                <span className="shrink-0 text-xs font-bold leading-5 text-[#00236f] tabular-nums whitespace-nowrap">
+                                  {Number(montant).toLocaleString("fr-FR")} € HT
                                 </span>
                               )}
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sc?.chipClass || "bg-zinc-100 text-zinc-600"}`}>
+                            </div>
+                            {meta && (
+                              <p className="text-xs text-zinc-400 truncate" title={meta}>{meta}</p>
+                            )}
+                            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                              {!(etude as any).published && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                  <EyeOff className="w-3 h-3" />
+                                  Brouillon
+                                </span>
+                              )}
+                              <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${sc?.chipClass || "bg-zinc-100 text-zinc-600"}`}>
                                 {sc?.label || etude.statut}
                               </span>
                             </div>
-                            {(etude.budget_ht ?? etude.budget) != null && (
-                              <span className="text-xs font-bold text-[#00236f]">
-                                {Number(etude.budget_ht ?? etude.budget).toLocaleString("fr-FR")} € HT
-                              </span>
-                            )}
                           </div>
                         </Link>
                         {canPublish && (
@@ -372,6 +390,8 @@ export default function EtudesPage() {
                             {(etude as any).published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                           </button>
                         )}
+                        {(canEditEtude(profile, etude) || canDeleteEtude(profile, etude)) && (
+                        <div className="absolute right-3 bottom-2.5 flex items-center gap-0.5 p-0.5 rounded-lg bg-white border border-zinc-200 shadow-sm opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                         {canEditEtude(profile, etude) && (
                         <button
                           onClick={(e) => {
@@ -394,7 +414,7 @@ export default function EtudesPage() {
                             })
                             setShowModal(true)
                           }}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-zinc-400 hover:text-[#00236f] hover:bg-[#d0d8ff] transition-all shrink-0"
+                          className="p-1.5 rounded-md text-zinc-400 hover:text-[#00236f] hover:bg-[#d0d8ff] transition-colors"
                           title="Modifier l'étude"
                         >
                           <Pencil className="w-4 h-4" />
@@ -406,11 +426,13 @@ export default function EtudesPage() {
                             e.preventDefault(); e.stopPropagation()
                             setDeleteConfirmEtude(etude)
                           }}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-all shrink-0"
+                          className="p-1.5 rounded-md text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                           title="Supprimer l'étude"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                        )}
+                        </div>
                         )}
                       </div>
                     )
@@ -471,7 +493,7 @@ export default function EtudesPage() {
                 if ((result as any).error) { setFormError((result as any).error); return }
                 setShowModal(false)
                 setEditingId(null)
-                setForm({ nom: "", numero: "", statut: "prospect", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_ids: [] as string[] })
+                setForm({ nom: "", numero: "", statut: "prospection", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_ids: [] as string[] })
                 // Refresh list
                 const fresh = await getEtudes()
                 if ((fresh as any).data) setEtudes((fresh as any).data)
