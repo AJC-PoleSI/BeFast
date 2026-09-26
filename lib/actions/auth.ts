@@ -8,6 +8,7 @@ import {
   verificationEmailHtml,
   siteUrl,
 } from "@/lib/auth/verification"
+import { issuedWithinCooldown } from "@/lib/auth/issue-verification"
 import { sendEmail } from "@/lib/email/send"
 import {
   accountCreatedUserEmail,
@@ -207,13 +208,50 @@ export async function signUp(formData: FormData) {
     return { error: "Une erreur est survenue. Veuillez réessayer." }
   }
 
+  // Adresse déjà prise : avec la confirmation d'email activée, Supabase ne
+  // renvoie AUCUNE erreur — il retourne un utilisateur factice (id aléatoire,
+  // `identities` vide) pour ne pas révéler l'existence du compte. Sans ce
+  // test, chaque nouvelle tentative rejouait tout le flux « nouveau compte » :
+  // un email de vérification au jeton orphelin (l'update est keyé sur l'id
+  // factice, donc aucune ligne touchée → lien mort), un « compte créé » au
+  // candidat, et l'alerte « Nouveau compte créé » à tous les admins. Une
+  // candidate bloquée a ainsi réessayé 5 fois le 21/09/2026 : 5 liens morts
+  // pour elle, 5 alertes pour le bureau, et aucune piste vers la vraie issue.
+  const alreadyRegistered =
+    Array.isArray(data.user?.identities) && data.user!.identities!.length === 0
+
+  if (!data.user?.id || alreadyRegistered) {
+    const admin = createAdminClient()
+    const { data: rows } = await admin
+      .from("personnes")
+      .select("id, prenom, email_verified, verification_token_expires_at")
+      .eq("email", email)
+      .limit(1)
+    const personne = rows?.[0]
+
+    // Compte existant jamais vérifié : renvoyer le lien est la seule action
+    // utile. Le cooldown évite qu'un second essai invalide un lien tout juste
+    // émis (le nouveau jeton écrase l'ancien).
+    if (personne && personne.email_verified === false) {
+      if (!issuedWithinCooldown(personne.verification_token_expires_at)) {
+        await issueVerification(personne.id, email, personne.prenom)
+      }
+      redirect("/verifier-email")
+    }
+
+    // Compte existant et déjà vérifié : aucun email, aucune alerte — on oriente
+    // vers la connexion ou la réinitialisation du mot de passe.
+    return {
+      error:
+        "Un compte existe déjà avec cette adresse email. Connectez-vous, ou utilisez « Mot de passe oublié » si vous ne vous en souvenez plus.",
+    }
+  }
+
   // The handle_new_user trigger has created the matching `personnes` row.
   // Attach a verification token and send the email (best-effort).
-  if (data.user?.id) {
-    await issueVerification(data.user.id, email, prenom)
-    // Notifie l'ouverture du compte : nouveau membre + admins + Responsable RH.
-    await notifyAccountOpened({ email, prenom, nom })
-  }
+  await issueVerification(data.user.id, email, prenom)
+  // Notifie l'ouverture du compte : nouveau membre + admins + Responsable RH.
+  await notifyAccountOpened({ email, prenom, nom })
 
   redirect("/verifier-email")
 }
