@@ -18,7 +18,7 @@ n'est donc pas utilisé : le dépôt du BA signé est le vrai chemin.
 | Question | Décision |
 |---|---|
 | Qui dépose ? | La personne elle-même, depuis « Mes documents ». L'admin consulte et valide. |
-| Comment le BA est-il obtenu ? | Par mail, en amont. Pas de bouton de téléchargement du BA pré-rempli. |
+| Comment le BA est-il obtenu ? | ~~Par mail, en amont.~~ Révisé le 26/09 : téléchargé pré-rempli depuis la case BA (voir la dernière section). |
 | Pour qui ? | Tout le monde (candidats et membres). |
 | Approche | Nouveau type `bulletin_adhesion` dans le circuit existant `documents_personnes`. |
 
@@ -95,4 +95,89 @@ l'enregistrement échoue sur la contrainte (code `23514`), les deux chemins de
 - Si l'envoi électronique automatique des BA est activé un jour, une personne qui a
   déjà déposé un BA signé en recevrait quand même un par LiveConsent. Le cron
   `/api/cron/ba` ne regarde pas `documents_personnes`.
-- Aucun bouton de téléchargement du BA pré-rempli.
+- ~~Aucun bouton de téléchargement du BA pré-rempli.~~ Révisé le 26/09.
+
+## Ajout du 24/09 : modèle de BA téléchargeable (remplacé le 26/09, jamais livré)
+
+Demande de Felix : pouvoir déposer à l'avance un modèle de BA dans les templates
+de Be Fast, que chacun télécharge depuis sa case BA. Felix déposera le fichier
+lui-même.
+
+- **Nouvel emplacement de template** `bulletin_adhesion_vierge`, « Bulletin
+  d'adhésion à télécharger », dans Administration → Documents, section
+  « Adhésion / Membre ». Format `pdf_libre` : un PDF quelconque, sans champ
+  AcroForm exigé. Il ne remplace pas l'emplacement `bulletin_adhesion` existant
+  (PDF à champs pour LiveConsent), qui est renommé « Bulletin d'adhésion
+  (signature électronique) » pour lever l'ambiguïté.
+- **Route** `GET /api/profil/documents/ba-template`, gardée par la permission
+  `documents` (celle de « Mes documents », que candidats et membres possèdent).
+  La catégorie est fixée côté serveur : le client ne choisit jamais le modèle.
+  - Sans paramètre, elle renvoie `{ available, fileName }`.
+  - Avec `?download=1`, elle renvoie une URL signée de 60 s (bucket Supabase
+    `templates`, téléchargement forcé), ou une 404 lisible si aucun modèle n'est
+    déposé.
+
+  La route est déclarée dans `lib/auth/access-map.ts`.
+- **Case BA** de « Mes documents » : un lien « Télécharger le modèle » apparaît
+  sous le libellé quand un modèle est disponible (vue personnelle uniquement,
+  pas en vue admin). Le texte d'aide mentionne le modèle.
+
+## Révision du 26/09 : BA pré-rempli, téléchargeable sans attendre la validation
+
+Demande de Felix : le texte « il vous sera envoyé automatiquement une fois tous
+vos documents soumis et validés par la RH (délai de 24 à 48h) » ne correspond
+plus au circuit. Chacun doit pouvoir télécharger son BA directement, **même si
+son compte n'est pas validé**, et le BA doit se compléter tout seul avec les
+informations du profil.
+
+- **Plus de modèle vierge** : l'emplacement `bulletin_adhesion_vierge` et la
+  route `ba-template` du 24/09 (jamais livrés) sont supprimés. Un seul modèle,
+  la catégorie `bulletin_adhesion` (PDF à champs AcroForm), sert au
+  téléchargement et, si un jour il est activé, à LiveConsent.
+- **Route** `GET /api/profil/documents/bulletin-adhesion`, garde
+  `requireApiPermission("documents")`, clé que `resolveEffectivePermissions`
+  laisse aux comptes non validés. L'identifiant vient de la session : chacun
+  n'obtient que son propre BA. Le profil est relu à chaque appel (pas le cache
+  de 5 min) et seules les colonnes utiles sont lues (ni NSS ni IBAN).
+  - sans paramètre : `{ available, missing }`, `missing` = libellés des infos
+    du profil absentes (téléphone, promo, adresse…) ;
+  - `?download=1` : le PDF, `Cache-Control: private, no-store`, nommé
+    `Bulletin_adhesion_Nom_Prenom.pdf`.
+- **Champs laissés modifiables** dans le PDF téléchargé (`fillBaPdf(…, { flatten:
+  false })`) : la personne complète les cases vides ou corrige avant de signer.
+  L'envoi LiveConsent continue d'aplatir.
+- **Robustesse du remplissage** (profite aussi à LiveConsent) : texte ramené au
+  jeu WinAnsi de la police Helvetica (`toWinAnsi`, sinon pdf-lib échouait sur
+  « Şahin », « Łukasz »…), police réduite quand le texte déborde de sa case,
+  e-mail Audencia rempli seulement pour une adresse `@audencia.com` (le PDF
+  imprime déjà « @audencia.com » après la case).
+- **Case BA de « Mes documents »** : lien « Télécharger mon bulletin
+  pré-rempli ». Après le téléchargement, un message liste ce qui manque au
+  profil. Le texte d'aide remplace celui des 24-48 h.
+
+### Modèle enrichi en production (26/09)
+
+Le PDF `BA-2025-template-champs.pdf` avait 5 champs (encadré page 1). La
+version `BA-2025-template-champs-v2.pdf` en ajoute 6 :
+
+| Champ | Emplacement | Rempli avec |
+|---|---|---|
+| `etudiant` | « lie Audencia Junior Conseil et l'étudiant …… » (p. 1) | Prénom Nom |
+| `etudiant_signature` | « Pour l'Étudiant, …… » (p. 3) | Prénom Nom |
+| `numero_etudiant`, `majeure` | encadré p. 1 | vide, à compléter |
+| `fait_a`, `date_signature` | « Fait à …… le …… » (p. 3) | vide, à compléter |
+
+La phrase « Le présent document lie… » était une annotation FreeText dessinée
+au-dessus de la page : une fois le formulaire aplati, ses pointillés
+repassaient sur le nom. Elle a été fondue dans le contenu de la page (même
+rendu). Les deux champs « nom » ont un fond blanc qui masque les pointillés ;
+les autres les laissent visibles pour l'écriture à la main.
+
+- Objet : `templates/1790451368856_BA-2025-template-champs-v2.pdf` (bucket
+  `templates`) ; ligne `document_templates` `c8c3d256-…` mise à jour
+  (`file_path`, `file_name`, `placeholders`).
+- **Retour arrière** : remettre `file_path =
+  'templates/1782779956828_BA-2025-template-champs.pdf'` et `file_name =
+  'BA-2025-template-champs.pdf'`. L'ancien objet est conservé.
+- Si le bureau dépose un nouveau BA, il doit porter des champs AcroForm nommés
+  comme ci-dessus (liste affichée dans Administration → Documents).

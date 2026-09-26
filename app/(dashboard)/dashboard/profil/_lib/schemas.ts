@@ -60,6 +60,7 @@ export const VALID_DOC_TYPES = [
   "carte_vitale",
   "preuve_lydia",
   "rib",
+  "bulletin_adhesion",
 ] as const
 
 export const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 Mo
@@ -154,6 +155,7 @@ export const DOC_TYPE_LABELS: Record<string, string> = {
   carte_vitale: "Carte vitale",
   preuve_lydia: "Preuve Lydia",
   rib: "RIB",
+  bulletin_adhesion: "Bulletin d'adhésion signé",
 }
 
 export const DOC_TYPE_ICONS: Record<string, string> = {
@@ -163,6 +165,7 @@ export const DOC_TYPE_ICONS: Record<string, string> = {
   carte_vitale: "HeartPulse",
   preuve_lydia: "Wallet",
   rib: "Landmark",
+  bulletin_adhesion: "FileSignature",
 }
 
 // Custom fields schemas

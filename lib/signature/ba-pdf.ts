@@ -1,7 +1,8 @@
 import "server-only"
 
-import { PDFDocument } from "pdf-lib"
+import { PDFDocument, StandardFonts, type PDFFont, type PDFTextField } from "pdf-lib"
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { toWinAnsi } from "./ba-utils"
 
 /**
  * Remplissage du Bulletin d'adhésion (BA) à partir d'un template PDF.
@@ -19,8 +20,10 @@ import type { SupabaseClient } from "@supabase/supabase-js"
  * Calés sur le formulaire officiel BA-2025 (encadré page 1) : « Nom Prénom »,
  * « Téléphone », « E-mail Audencia » (la partie avant @audencia.com, déjà
  * imprimé sur le PDF), « Promo », « Adresse du foyer fiscal complète ».
- * Les cases « Numéro étudiant Audencia » et « Majeure (si 3A/4A) » n'ont pas
- * de source de données → laissées vides (le membre les complète à la main).
+ * Les cases « Numéro étudiant Audencia », « Majeure (si 3A/4A) », « Fait à » et
+ * « le » n'ont pas de source de données : le template les porte comme champs
+ * libres (`numero_etudiant`, `majeure`, `fait_a`, `date_signature`), que le
+ * membre complète dans le BA téléchargé ou à la main.
  */
 export const BA_FIELD_NAMES: Record<string, string> = {
   nom_complet: "Nom Prénom",
@@ -28,6 +31,8 @@ export const BA_FIELD_NAMES: Record<string, string> = {
   email_audencia: "E-mail Audencia (partie avant @audencia.com)",
   promo: "Promo",
   adresse_complete: "Adresse du foyer fiscal complète (adresse, CP ville)",
+  etudiant: "Nom Prénom dans « lie Audencia Junior Conseil et l'étudiant … »",
+  etudiant_signature: "Nom Prénom sous « Pour l'Étudiant, »",
 }
 
 export type BaFieldValues = Partial<Record<keyof typeof BA_FIELD_NAMES, string>>
@@ -50,30 +55,57 @@ export async function loadBaTemplate(
   }
 }
 
+/** Taille de police par défaut des champs du template, et plancher de réduction. */
+const TAILLE_DEFAUT = 10
+const TAILLE_MIN = 6
+
 /**
- * Remplit le template avec les valeurs fournies, aplatit, renvoie le PDF.
+ * Réduit la police d'un champ dont le texte déborderait de sa case (nom
+ * composé, longue adresse…) : sans cela, la fin du texte est coupée à
+ * l'impression. Les cases à taille fixe du template sont calées sur 10 pt.
+ */
+function ajusterTaille(field: PDFTextField, texte: string, police: PDFFont) {
+  const largeur = field.acroField.getWidgets()[0]?.getRectangle().width
+  if (!largeur || !texte) return
+  const da = field.acroField.getDefaultAppearance() ?? ""
+  const taille = Number(/([\d.]+)\s+Tf/.exec(da)?.[1]) || TAILLE_DEFAUT
+  const utile = largeur - 4 // marges intérieures de la case
+  const besoin = police.widthOfTextAtSize(texte, taille)
+  if (besoin <= utile) return
+  field.setFontSize(Math.max(TAILLE_MIN, Math.floor(((taille * utile) / besoin) * 10) / 10))
+}
+
+/**
+ * Remplit le template avec les valeurs fournies et renvoie le PDF.
  * Robuste : un champ manquant dans le template n'interrompt pas le remplissage.
+ *
+ * `flatten` (par défaut) fige les valeurs, comme il se doit pour l'envoi en
+ * signature. Le BA que la personne télécharge elle-même garde ses champs
+ * modifiables : elle peut compléter les cases vides ou corriger avant de signer.
  */
 export async function fillBaPdf(
   templateBytes: Uint8Array,
-  values: BaFieldValues
+  values: BaFieldValues,
+  { flatten = true }: { flatten?: boolean } = {}
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.load(templateBytes)
   const form = pdf.getForm()
+  const police = await pdf.embedFont(StandardFonts.Helvetica)
 
   for (const key of Object.keys(BA_FIELD_NAMES)) {
     const value = values[key as keyof BaFieldValues]
     if (value == null) continue
     try {
       const field = form.getTextField(key)
-      field.setText(String(value))
+      const texte = toWinAnsi(String(value))
+      field.setText(texte)
+      ajusterTaille(field, texte, police)
     } catch {
       // Champ absent du template ou non textuel : on ignore silencieusement.
     }
   }
 
-  // Aplatit le formulaire (les valeurs deviennent du contenu fixe, non éditable).
-  form.flatten()
+  if (flatten) form.flatten()
   return pdf.save()
 }
 

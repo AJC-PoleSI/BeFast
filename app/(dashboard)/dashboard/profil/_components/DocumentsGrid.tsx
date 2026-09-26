@@ -13,6 +13,7 @@ import {
   HeartPulse,
   Wallet,
   Landmark,
+  FileSignature,
   Eye,
   Clock,
   CheckCircle2,
@@ -37,6 +38,7 @@ const DOC_ICONS: Record<string, LucideIcon> = {
   carte_vitale: HeartPulse,
   preuve_lydia: Wallet,
   rib: Landmark,
+  bulletin_adhesion: FileSignature,
 }
 
 interface StatusBadgeProps {
@@ -170,6 +172,9 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
   const [deleting, setDeleting] = useState<string | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
   const [downloadingAll, setDownloadingAll] = useState(false)
+  // BA pré-rempli : `missing` = infos du profil qui manqueront sur le bulletin.
+  const [ba, setBa] = useState<{ available: boolean; missing: string[] } | null>(null)
+  const [downloadingBa, setDownloadingBa] = useState(false)
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -191,6 +196,66 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
   useEffect(() => {
     fetchDocuments()
   }, [fetchDocuments])
+
+  // Bulletin d'adhésion pré-rempli : proposé seulement sur son propre profil,
+  // y compris quand le compte n'est pas encore validé.
+  const fetchBa = useCallback(async () => {
+    try {
+      const res = await fetch("/api/profil/documents/bulletin-adhesion", { cache: "no-store" })
+      const data = await safeJson(res)
+      const info = res.ok && data
+        ? { available: !!data.available, missing: (data.missing as string[]) || [] }
+        : null
+      setBa(info)
+      return info
+    } catch {
+      setBa(null)
+      return null
+    }
+  }, [])
+
+  useEffect(() => {
+    if (readOnly || isAdminView) return
+    fetchBa()
+  }, [readOnly, isAdminView, fetchBa])
+
+  const handleDownloadBa = async () => {
+    setDownloadingBa(true)
+    try {
+      // Le profil a pu changer depuis l'ouverture de la page : on relit ce qui
+      // manque en même temps que l'on génère le bulletin.
+      const [res, info] = await Promise.all([
+        fetch("/api/profil/documents/bulletin-adhesion?download=1", { cache: "no-store" }),
+        fetchBa(),
+      ])
+      if (!res.ok) {
+        const data = await safeJson(res)
+        toast.error(data?.error || "Téléchargement impossible")
+        return
+      }
+      const blob = await res.blob()
+      const disposition = res.headers.get("Content-Disposition") || ""
+      const match = disposition.match(/filename="(.+)"/)
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = blobUrl
+      a.download = match?.[1] || "Bulletin_adhesion.pdf"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+      if (info?.missing.length) {
+        toast.info(
+          `Bulletin téléchargé. Votre profil ne renseigne pas encore : ${info.missing.join(", ")}. ` +
+            "Complétez ces cases sur le bulletin, ou complétez votre profil puis téléchargez-le à nouveau."
+        )
+      }
+    } catch {
+      toast.error("Erreur réseau")
+    } finally {
+      setDownloadingBa(false)
+    }
+  }
 
   const handleUpdateStatus = async (docId: string, status: "approved" | "rejected") => {
     setUpdating(docId)
@@ -425,7 +490,7 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
                   <p className="text-xs font-semibold text-zinc-700 truncate">
                     {DOC_TYPE_LABELS[docType]}
                   </p>
-                  <div className="flex items-center gap-1 mt-0.5">
+                  <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 mt-0.5">
                     {existing ? (
                       <StatusBadge status={existing.status} />
                     ) : (
@@ -434,6 +499,24 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
                         Manquant
                       </span>
                     )}
+                    {docType === "bulletin_adhesion" &&
+                      ba?.available &&
+                      !readOnly &&
+                      !isAdminView && (
+                        <button
+                          type="button"
+                          onClick={handleDownloadBa}
+                          disabled={downloadingBa}
+                          className="ml-1.5 inline-flex items-center gap-1 text-[10px] font-semibold text-[#00236f] underline underline-offset-2 hover:text-[#1e3a8a] disabled:opacity-50"
+                        >
+                          {downloadingBa ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Download className="h-3 w-3" />
+                          )}
+                          Télécharger mon bulletin pré-rempli
+                        </button>
+                      )}
                   </div>
                 </div>
               </div>
@@ -541,8 +624,9 @@ export function DocumentsGrid({ targetUserId, readOnly = false, isAdminView = fa
               </p>
               <p>
                 <span className="font-semibold text-[#00236f]">Bulletin d'adhésion :</span>{" "}
-                il vous sera envoyé automatiquement une fois tous vos documents soumis et validés par la RH
-                <span className="text-zinc-500"> (délai de 24 à 48h)</span>.
+                {ba?.available
+                  ? "téléchargez-le dès maintenant dans la case « Bulletin d'adhésion signé » ci-dessus, sans attendre la validation de votre compte. Il est pré-rempli avec les informations de votre profil : complétez les cases restantes, signez-le, puis déposez-le dans cette même case, de préférence en PDF."
+                  : "il sera bientôt téléchargeable dans la case « Bulletin d'adhésion signé » ci-dessus. Une fois signé, déposez-le dans cette même case, de préférence en PDF."}
               </p>
               <p>
                 <span className="font-semibold text-[#00236f]">Cotisation Lydia :</span>{" "}

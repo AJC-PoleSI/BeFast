@@ -30,10 +30,11 @@ const CATEGORY_ETUDE = "etude_mission"
 const CATEGORY_INTERVENANT = "intervenant_rdm"
 const CATEGORY_MEMBRE = "membre_adhesion"
 
-// Champs AcroForm attendus dans le PDF du bulletin d'adhésion (remplis puis aplatis).
-// Calés sur le formulaire officiel BA-2025 (encadré page 1).
+// Champs AcroForm attendus dans le PDF du bulletin d'adhésion, remplis avec le profil.
+// Calés sur le formulaire officiel BA-2025 (encadré page 1, phrase d'engagement, signature).
 const BA_PDF_FIELDS = [
   "nom_complet", "portable", "email_audencia", "promo", "adresse_complete",
+  "etudiant", "etudiant_signature",
 ]
 
 const DOCUMENT_TYPES: {
@@ -60,7 +61,8 @@ const DOCUMENT_TYPES: {
   { key: "bulletin_versement", label: "Bulletin de Versement", category: CATEGORY_INTERVENANT },
   { key: "questionnaire_satisfaction", label: "Questionnaire de satisfaction", category: CATEGORY_INTERVENANT },
   { key: "rapport_pedagogique", label: "Rapport pédagogique", category: CATEGORY_INTERVENANT },
-  // Cat 3 — Adhésion / Membre (PDF à champs, envoyé en signature LiveConsent)
+  // Cat 3 — Adhésion / Membre (PDF à champs : téléchargé pré-rempli depuis Mes documents,
+  // et envoyé en signature LiveConsent si ce circuit est activé)
   { key: "bulletin_adhesion", label: "Bulletin d'adhésion", category: CATEGORY_MEMBRE, format: "pdf" },
 ]
 
@@ -630,7 +632,7 @@ export default function DocumentTemplatesPage() {
 
             {renderCategory(
               "Adhésion / Membre",
-              "Bulletin d'adhésion envoyé en signature aux nouveaux membres via LiveConsent. Format PDF à champs de formulaire (AcroForm) remplis automatiquement, pas un .docx.",
+              "Bulletin d'adhésion que chaque membre et candidat télécharge depuis Mes documents, pré-rempli avec son profil (et envoyé en signature LiveConsent si ce circuit est activé). Format PDF à champs de formulaire (AcroForm), pas un .docx.",
               <FileText className="w-5 h-5 text-[#C9A84C]" />,
               filteredMembre,
               collapsedMembre,
@@ -718,8 +720,10 @@ export default function DocumentTemplatesPage() {
                 </span>
                 <br />
                 Place un champ là où chaque info doit apparaître (et une zone de signature
-                visible). Les champs sont remplis automatiquement avec les infos du membre puis
-                aplatis. Les champs non listés sont ignorés.
+                visible). Les champs sont remplis automatiquement avec les infos du membre :
+                ils restent modifiables dans le BA téléchargé depuis Mes documents, et sont
+                figés pour la signature électronique. Les autres champs restent à compléter par
+                le membre.
               </div>
             ) : (
               <div className="rounded-lg bg-zinc-50 border border-zinc-200 p-3 text-xs text-zinc-600">

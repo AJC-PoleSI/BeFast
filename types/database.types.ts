@@ -90,6 +90,7 @@ export type DocumentType =
   | "carte_vitale"
   | "preuve_lydia"
   | "rib"
+  | "bulletin_adhesion"
 
 export type DocumentStatus = "pending" | "approved" | "rejected"
 

@@ -162,6 +162,45 @@ async function saveDocumentRow(
 }
 
 /**
+ * La contrainte CHECK de `documents_personnes.type` refuse un type que le code
+ * propose déjà : la migration correspondante n'a pas été appliquée. Sans ce
+ * cas, la personne lisait « Erreur DB: new row … violates check constraint »
+ * (incident 071 du 21/09/2026).
+ */
+function isTypeCheckViolation(
+  error: { code?: string; message?: string } | null | undefined
+): boolean {
+  return (
+    error?.code === "23514" &&
+    (error.message ?? "").includes("documents_personnes_type_check")
+  )
+}
+
+/**
+ * Réponse au refus de la contrainte. L'objet vient d'être déposé sous une clé
+ * propre à ce type : aucune ligne de ce type ne peut exister (la contrainte
+ * l'aurait refusée), on ne supprime donc jamais un justificatif valide.
+ */
+async function typeNotMigratedResponse(filePath: string, docType: string, error: unknown) {
+  console.error(
+    `[profil/documents] Type « ${docType} » refusé par documents_personnes_type_check — migration non appliquée ?`,
+    error
+  )
+  try {
+    await scalewayS3.send(new DeleteObjectCommand({ Bucket: SCALEWAY_BUCKET, Key: filePath }))
+  } catch (err) {
+    console.error("Scaleway cleanup error:", err)
+  }
+  return NextResponse.json(
+    {
+      error:
+        "Ce type de document n'est pas encore disponible. Réessayez plus tard ou contactez le bureau.",
+    },
+    { status: 503 }
+  )
+}
+
+/**
  * POST /api/profil/documents
  *
  * Deux formes :
@@ -251,6 +290,9 @@ export async function POST(request: Request) {
       })
 
       if (saved.error || !saved.document) {
+        if (isTypeCheckViolation(saved.error)) {
+          return typeNotMigratedResponse(filePath, docType, saved.error)
+        }
         console.error("Database error (upsert):", saved.error)
         return NextResponse.json(
           { error: `Erreur DB: ${saved.error?.message ?? "inconnue"}` },
@@ -330,6 +372,9 @@ export async function POST(request: Request) {
     })
 
     if (saved.error || !saved.document) {
+      if (isTypeCheckViolation(saved.error)) {
+        return typeNotMigratedResponse(filePath, docType, saved.error)
+      }
       console.error("Database error (upsert):", saved.error)
       return NextResponse.json(
         { error: `Erreur DB: ${saved.error?.message ?? "inconnue"}` },

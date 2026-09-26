@@ -3,6 +3,10 @@ import {
   toE164FR,
   frDate,
   missingProfileFields,
+  emailLocalPart,
+  missingBaPrefillFields,
+  baFileName,
+  toWinAnsi,
   buildBaFieldValues,
   type MemberData,
 } from "./ba-utils"
@@ -68,13 +72,61 @@ describe("missingProfileFields", () => {
   })
 })
 
+describe("emailLocalPart", () => {
+  it("garde la partie avant @ d'une adresse Audencia", () => {
+    expect(emailLocalPart("jean.dupont@audencia.com")).toBe("jean.dupont")
+    expect(emailLocalPart(" Jean.Dupont@Audencia.COM ")).toBe("Jean.Dupont")
+  })
+  it("laisse la case vide pour une autre adresse (le PDF imprime @audencia.com)", () => {
+    expect(emailLocalPart("jean@gmail.com")).toBe("")
+    expect(emailLocalPart("jean@ajc-mail.com")).toBe("")
+    expect(emailLocalPart(null)).toBe("")
+  })
+})
+
+describe("missingBaPrefillFields", () => {
+  it("ne signale rien quand le profil remplit tout le BA", () => {
+    expect(missingBaPrefillFields(complete)).toEqual([])
+  })
+  it("liste en clair ce qui manquera sur le BA", () => {
+    const m = { ...complete, portable: " ", promo: null, ville: null }
+    expect(missingBaPrefillFields(m)).toEqual(["téléphone", "promo", "ville"])
+  })
+})
+
+describe("baFileName", () => {
+  it("nomme le fichier d'après la personne, en ASCII", () => {
+    expect(baFileName({ prenom: "Hélène", nom: "Le Bœuf-Dupré" })).toBe(
+      "Bulletin_adhesion_Le_Boeuf_Dupre_Helene.pdf"
+    )
+  })
+  it("reste valable sans nom", () => {
+    expect(baFileName({ prenom: null, nom: null })).toBe("Bulletin_adhesion.pdf")
+  })
+})
+
+describe("toWinAnsi", () => {
+  it("laisse intacts les accents français et la ponctuation typographique", () => {
+    expect(toWinAnsi("Hélène Çà œuvre – l’été « 44 »")).toBe("Hélène Çà œuvre – l’été « 44 »")
+  })
+  it("retire les accents hors WinAnsi au lieu de faire échouer le PDF", () => {
+    expect(toWinAnsi("Şahin Łukasz Nguyễn")).toBe("Sahin Lukasz Nguyen")
+  })
+  it("remplace sauts de ligne et caractères inconnus", () => {
+    expect(toWinAnsi("1 rue\nX 王")).toBe("1 rue X ?")
+  })
+})
+
 describe("buildBaFieldValues", () => {
-  it("mappe les champs membre vers les 5 champs du template BA-2025", () => {
-    const v = buildBaFieldValues(complete)
+  it("mappe les champs membre vers les champs du template BA-2025", () => {
+    const v = buildBaFieldValues({ ...complete, email: "jean.dupont@audencia.com" })
     expect(v.nom_complet).toBe("Jean Dupont")
+    // Le nom figure aussi dans la phrase d'engagement et sous la signature.
+    expect(v.etudiant).toBe("Jean Dupont")
+    expect(v.etudiant_signature).toBe("Jean Dupont")
     expect(v.portable).toBe("0612345678")
     // E-mail : partie locale seule (le PDF imprime déjà @audencia.com).
-    expect(v.email_audencia).toBe("jean")
+    expect(v.email_audencia).toBe("jean.dupont")
     expect(v.promo).toBe("2026")
     // Adresse foyer fiscal = adresse + « CP Ville » sur une ligne.
     expect(v.adresse_complete).toBe("1 rue des Lilas, 44000 Nantes")
