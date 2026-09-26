@@ -8,7 +8,7 @@ import { decryptData } from "@/lib/crypto"
 import { getMasterKey } from "@/lib/crypto-key"
 import { decryptFromString } from "@/lib/encryption"
 import { numeroEtudeCourt, codeClasseurEtude } from "@/lib/document-numbering"
-import { remunerationParIntervenant } from "@/lib/missions/remuneration"
+import { remunerationParIntervenant, remunerationParJeh } from "@/lib/missions/remuneration"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { canAccessEntityDocuments, isMembreInterne } from "@/lib/auth/document-access"
 
@@ -720,7 +720,8 @@ export async function buildTemplateContext(
     // intervenant pour tous ses JEH (2 JEH pour 311 € ⇒ 311 € brut, 155,50 €
     // par JEH sur le BV) — cf. lib/missions/remuneration.ts.
     const missionNbJeh = Number(m.nb_jeh) || Number(m.nb_jours) || 0
-    const missionRemuneration = remunerationParIntervenant({ ...m, nb_jeh: missionNbJeh })
+    const missionBareme = { ...m, nb_jeh: missionNbJeh }
+    const missionRemuneration = remunerationParIntervenant(missionBareme)
     const missionDureeJours = computeDureeJours(m.date_debut, m.date_fin) || Number(m.nb_jours) || 0
 
     return {
@@ -740,6 +741,7 @@ export async function buildTemplateContext(
         numero_etude_complet: codeClasseurEtude(etude.numero),
         nombre_jeh: missionNbJeh,
         montant_remuneration: missionRemuneration,
+        remuneration_par_jeh: remunerationParJeh(missionBareme) ?? 0,
         // Le RDM exprime la durée en semaines ("d'une durée de X semaines")
         duree: Math.ceil(missionDureeJours / 7),
         duree_jours: missionDureeJours,
