@@ -26,10 +26,11 @@ const ROLE_MAP: Record<string, { label: string; color: string }> = {
   ancien_membre_agc: { label: "Ancien membre",     color: "bg-zinc-100 text-zinc-600 border-zinc-200" },
 }
 
-function RoleDropdown({ member, roles, onRoleChange, updating }: {
+function RoleDropdown({ member, roles, onRoleChange, onPostesSaved, updating }: {
   member: PersonneWithRole
   roles: ProfilType[]
   onRoleChange: (id: string, role: string) => void
+  onPostesSaved: () => Promise<void>
   updating: string | null
 }) {
   const [open, setOpen] = useState(false)
@@ -85,6 +86,7 @@ function RoleDropdown({ member, roles, onRoleChange, updating }: {
               initialPosteIds={(member.personne_postes ?? [])
                 .map((pp) => pp.profils_types?.id)
                 .filter((id): id is string => Boolean(id))}
+              onSaved={onPostesSaved}
             />
           </div>
         </div>
@@ -497,6 +499,7 @@ export function MembresTab() {
                             member={m}
                             roles={allRoles}
                             onRoleChange={handleRoleChange}
+                            onPostesSaved={loadMembers}
                             updating={updating}
                           />
                         </div>

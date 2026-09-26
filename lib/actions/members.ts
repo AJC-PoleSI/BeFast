@@ -283,8 +283,13 @@ export async function setPersonnePostes(personneId: string, posteIds: string[]) 
       validIds = (valid ?? []).map((r: { id: string }) => r.id)
     }
 
-    // Remplacement complet des postes de la personne.
-    await admin.from("personne_postes").delete().eq("personne_id", personneId)
+    // Remplacement complet des postes de la personne. Un échec de la
+    // suppression ne doit pas être maquillé en succès : l'ancien poste resterait.
+    const { error: deleteError } = await admin
+      .from("personne_postes")
+      .delete()
+      .eq("personne_id", personneId)
+    if (deleteError) return { success: false, error: deleteError.message }
     if (validIds.length) {
       const rows = validIds.map((poste_id) => ({ personne_id: personneId, poste_id }))
       const { error } = await admin.from("personne_postes").insert(rows)

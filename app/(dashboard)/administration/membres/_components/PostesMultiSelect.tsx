@@ -11,22 +11,31 @@ import type { ProfilType } from "@/types/database.types"
  *
  * Le catalogue `postes` est fourni par la page (déjà chargé via getAllRoles) —
  * pas de fetch réseau par ouverture de menu.
+ *
+ * `onSaved` doit rafraîchir la liste du parent : ce composant est démonté à la
+ * fermeture du menu et remonté depuis `initialPosteIds`. Sans rafraîchissement,
+ * un poste retiré (et bien supprimé en base) réapparaissait coché à la
+ * réouverture, et son badge restait affiché dans le tableau.
  */
 export function PostesMultiSelect({
   personneId,
   postes,
   initialPosteIds,
+  onSaved,
 }: {
   personneId: string
   postes: ProfilType[]
   initialPosteIds: string[]
+  onSaved?: () => void | Promise<void>
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set(initialPosteIds))
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   function toggle(id: string) {
     setSaved(false)
+    setError(null)
     setSelected((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -37,9 +46,15 @@ export function PostesMultiSelect({
 
   async function save() {
     setSaving(true)
+    setError(null)
     const r = await setPersonnePostes(personneId, Array.from(selected))
+    if (r.success) {
+      await onSaved?.()
+      setSaved(true)
+    } else {
+      setError(r.error ?? "Les postes n'ont pas pu être enregistrés.")
+    }
     setSaving(false)
-    if (r.success) setSaved(true)
   }
 
   const bureau = postes.filter((p) => p.categorie === "bureau")
@@ -82,6 +97,7 @@ export function PostesMultiSelect({
         {saving ? <Loader className="w-3.5 h-3.5 animate-spin" /> : saved ? <Check className="w-3.5 h-3.5" /> : null}
         {saved ? "Postes enregistrés" : "Enregistrer les postes"}
       </button>
+      {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   )
 }
