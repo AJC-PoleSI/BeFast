@@ -24,11 +24,19 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   if (dlErr || !blob) return NextResponse.json({ error: dlErr?.message || "DL error" }, { status: 500 })
 
   const buf = Buffer.from(await blob.arrayBuffer())
+  // Les modèles du bulletin d'adhésion sont des PDF : servis en type Word,
+  // Safari les enregistrait sous « BA.pdf.docx ».
+  const fileName = tpl.file_name || "modele"
+  const isPdf = fileName.toLowerCase().endsWith(".pdf")
+  // En-tête HTTP = Latin-1 : une apostrophe typographique dans le nom faisait
+  // planter la réponse. Repli ASCII + nom exact en UTF-8 (RFC 5987).
+  const asciiName = fileName.normalize("NFD").replace(/[^\x20-\x7e]/g, "").replace(/"/g, "")
   return new NextResponse(buf, {
     headers: {
-      "Content-Type":
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "Content-Disposition": `attachment; filename="${tpl.file_name}"`,
+      "Content-Type": isPdf
+        ? "application/pdf"
+        : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "Content-Disposition": `attachment; filename="${asciiName || "modele"}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
     },
   })
 }
