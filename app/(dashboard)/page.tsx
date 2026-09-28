@@ -4,6 +4,8 @@ import { getEtudes } from "@/lib/actions/etudes"
 import Link from "next/link"
 import type { MissionWithEtude, CandidatureWithMission } from "@/types/database.types"
 import { MemberSignatureBanner } from "./_components/MemberSignatureBanner"
+import { IntervenantDashboard } from "./_components/IntervenantDashboard"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
 
 const STATUT_BADGE: Record<string, { label: string; className: string }> = {
   ouverte: { label: "Ouverte", className: "bg-blue-100 text-blue-700" },
@@ -16,6 +18,14 @@ const STATUT_BADGE: Record<string, { label: string; className: string }> = {
 export default async function DashboardPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  // Intervenant : accueil dédié dont les cartes ne comptent que ce qui le
+  // concerne (rétributions, missions, études, candidatures). Les autres rôles
+  // gardent l'accueil ci-dessous.
+  const profile = user ? await getCachedProfile(user.id) : null
+  if (user && profile?.profils_types?.slug === "intervenant") {
+    return <IntervenantDashboard userId={user.id} profile={profile} />
+  }
 
   const [
     personneResult,
