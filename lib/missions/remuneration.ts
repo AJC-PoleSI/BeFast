@@ -49,6 +49,27 @@ export function montantTotalMission(m: BaremeMission): number {
   return round2(remunerationParIntervenant(m) * nbIntervenants(m))
 }
 
+/**
+ * Coût facturé au client pour UN intervenant, marge comprise — règle du
+ * template Excel Budget Audencia : ROUNDUP(rémunération / (1 − marge %)).
+ * Ex. 600 € à 34 % de marge ⇒ 910 €. La rémunération versée ne change pas.
+ */
+export function coutClientParIntervenant(m: BaremeMission, margePct: Nombre): number {
+  const remuneration = remunerationParIntervenant(m)
+  // Même plafond que lib/budget/compute.ts : à 100 %, le prix serait infini.
+  const marge = Math.min(Number(margePct) || 0, 99)
+  if (marge <= 0) return remuneration
+  // Calcul en centièmes puis arrondi à 1e-6 avant le ROUNDUP : 660 / 0,66 vaut
+  // 1000.0000000000002 en flottant et donnerait 1 001 €.
+  const brut = (remuneration * 100) / (100 - marge)
+  return Math.ceil(Math.round(brut * 1e6) / 1e6)
+}
+
+/** Coût client de toute la mission, marge comprise, tous intervenants confondus. */
+export function coutClientMission(m: BaremeMission, margePct: Nombre): number {
+  return round2(coutClientParIntervenant(m, margePct) * nbIntervenants(m))
+}
+
 /** « 311 € », « 8 086 € », « 155,50 € » : décimales seulement s'il y a des centimes. */
 export function formatEuros(n: number): string {
   const centimes = !Number.isInteger(round2(n))

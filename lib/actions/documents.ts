@@ -1,6 +1,7 @@
 "use server"
 
 import { totalDejaFacture as calculerDejaFacture } from "@/lib/facture/reconciliation"
+import { lignesFacture } from "@/lib/facture/lignes"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noStore } from "next/cache"
@@ -283,12 +284,16 @@ function fmtDate(value: any): string {
   return formatDateFR(d)
 }
 
+// Ordre d'affichage des blocs de l'échéancier (tableau des phases, facture).
+const ordreBlocs = (a: any, b: any) =>
+  (a.ordre || 0) - (b.ordre || 0) || a.semaine_debut - b.semaine_debut
+
 // Construit le tableau de phases + le nombre total de JEH + une table XML de planning.
 // Fonction pure (réutilisée par buildTemplateContext et buildFactureContext).
 function buildPhasesContext(blocs: any[] | undefined) {
   if (!blocs || !Array.isArray(blocs)) return { phases: [], nb_jeh: 0, nb_phases: 0, planning: "" }
 
-  const sortedBlocs = [...blocs].sort((a, b) => (a.ordre || 0) - (b.ordre || 0) || a.semaine_debut - b.semaine_debut)
+  const sortedBlocs = [...blocs].sort(ordreBlocs)
 
   let totalJeh = 0
   const phases = sortedBlocs.map((b, i) => {
@@ -945,7 +950,7 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
   ])
   if (fErr || !facture) return base
 
-  const [etudeRes, autresFacturesRes, blocsRes] = await Promise.all([
+  const [etudeRes, autresFacturesRes, blocsRes, missionsRes] = await Promise.all([
     facture.etude_id
       ? sb.from("etudes").select("*").eq("id", facture.etude_id).single()
       : Promise.resolve({ data: null, error: null }),
@@ -958,6 +963,12 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
       : Promise.resolve({ data: [], error: null }),
     facture.etude_id
       ? sb.from("echeancier_blocs").select("*").eq("etude_id", facture.etude_id)
+      : Promise.resolve({ data: [], error: null }),
+    facture.etude_id
+      ? sb
+          .from("missions")
+          .select("id, nb_jeh, nb_intervenants, remuneration, taux_jour")
+          .eq("etude_id", facture.etude_id)
       : Promise.resolve({ data: [], error: null }),
   ])
 
@@ -980,6 +991,7 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
   const etude: any = (etudeRes as any).data || {}
   const autresFactures: any[] = (autresFacturesRes as any).data || []
   const allBlocs: any[] = (blocsRes as any).data || []
+  const allMissions: any[] = (missionsRes as any).data || []
 
   const clientRes = etude.client_id
     ? await sb.from("clients").select("*").eq("id", etude.client_id).single()
@@ -988,10 +1000,19 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
 
   // Si la facture est liée à une phase précise, ne montrer que celle-ci dans {#phases} ;
   // sinon, montrer l'intégralité de l'échéancier de l'étude.
-  const relevantBlocs = facture.bloc_id ? allBlocs.filter((b) => b.id === facture.bloc_id) : allBlocs
+  const relevantBlocs = (
+    facture.bloc_id ? allBlocs.filter((b) => b.id === facture.bloc_id) : [...allBlocs]
+  ).sort(ordreBlocs)
   const blocsCtx = buildPhasesContext(relevantBlocs)
   const { planning } = blocsCtx
   let { phases, nb_jeh, nb_phases } = blocsCtx
+
+  // budget_ht est saisi TTC-marge-comprise (la marge est déjà dedans) : on ne
+  // l'ajoute pas une seconde fois, marge_euros n'est qu'informatif.
+  const budget_ht = Number(etude.budget_ht) || 0
+  const frais = Number(etude.frais_dossier) || 0
+  const margePct = Number(etude.marge_pct) || 0
+  const totalHtEtude = budget_ht + frais
 
   // Le suivi de l'étude est une ligne de facture au même titre qu'une phase,
   // mais il ne vit pas dans l'échéancier (ce n'est pas un bloc de Gantt) : on
@@ -999,7 +1020,23 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
   // facture ne porte que sur une phase précise (bloc_id).
   const suiviJeh = Number(etude.suivi_jeh) || 0
   const suiviPrixJeh = Number(etude.suivi_prix_jeh) || 0
-  if (!facture.bloc_id && suiviJeh > 0) {
+  const avecSuivi = !facture.bloc_id && suiviJeh > 0
+  const suiviMontant = avecSuivi ? Math.round(suiviJeh * suiviPrixJeh * 100) / 100 : 0
+
+  // Prix des lignes : les blocs d'une étude saisie à la main n'ont pas de prix
+  // (seule une proposition en écrit) — ils sont repris du coût client de leur
+  // mission, et le tableau se recale sur le Total prestation (lib/facture/lignes.ts).
+  const lignes = lignesFacture(relevantBlocs, allMissions, {
+    margePct,
+    totalPrestation: facture.bloc_id ? null : budget_ht - suiviMontant,
+  })
+  phases = phases.map((p, i) => ({
+    ...p,
+    prix_jeh: lignes[i].prix_jeh,
+    montant_ht: lignes[i].montant_ht,
+  }))
+
+  if (avecSuivi) {
     phases = [
       ...phases,
       {
@@ -1009,7 +1046,7 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
         description: "",
         prix_jeh: suiviPrixJeh,
         nombre_jeh: suiviJeh,
-        montant_ht: Math.round(suiviJeh * suiviPrixJeh * 100) / 100,
+        montant_ht: suiviMontant,
         semaine_debut: 0,
         semaine_fin: 0,
       },
@@ -1017,13 +1054,6 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
     nb_jeh += suiviJeh
     nb_phases += 1
   }
-
-  // budget_ht est saisi TTC-marge-comprise (la marge est déjà dedans) : on ne
-  // l'ajoute pas une seconde fois, marge_euros n'est qu'informatif.
-  const budget_ht = Number(etude.budget_ht) || 0
-  const frais = Number(etude.frais_dossier) || 0
-  const margePct = Number(etude.marge_pct) || 0
-  const totalHtEtude = budget_ht + frais
 
   // « Déjà facturé » = somme des factures qui PRÉCÈDENT celle-ci dans l'étude
   // (cf. lib/facture/reconciliation.ts, testé) : c'est ce qui garantit que

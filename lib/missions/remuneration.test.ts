@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest"
 import {
+  coutClientMission,
+  coutClientParIntervenant,
   formatEuros,
   jehTotalMission,
   montantTotalMission,
@@ -68,6 +70,32 @@ describe("barème d'une mission", () => {
 
   it("arrondit au centime", () => {
     expect(remunerationParJeh({ nb_jeh: 3, remuneration: 100 })).toBe(33.33)
+  })
+})
+
+describe("coût client d'une mission (marge comprise)", () => {
+  // Cas réel (étude 2618.2, marge 34 %) : Σ des trois missions = 10 070 €,
+  // le budget HT saisi sur l'étude.
+  it("grossit la rémunération d'un intervenant de la marge, arrondi à l'euro supérieur", () => {
+    expect(coutClientParIntervenant({ nb_jeh: 3, remuneration: 600 }, 34)).toBe(910)
+    expect(coutClientParIntervenant({ nb_jeh: 1, remuneration: 300 }, "34.00")).toBe(455)
+  })
+
+  it("multiplie par le nombre d'intervenants", () => {
+    expect(coutClientMission({ nb_jeh: 3, nb_intervenants: 2, remuneration: 600 }, 34)).toBe(1820)
+    expect(coutClientMission({ nb_jeh: 1, nb_intervenants: 16, remuneration: 300 }, 34)).toBe(7280)
+    expect(coutClientMission({ nb_jeh: 2, nb_intervenants: 2, remuneration: 320 }, 34)).toBe(970)
+  })
+
+  it("ne subit pas l'erreur de virgule flottante sur un quotient rond", () => {
+    // 660 / (1 - 0,34) vaut 1000.0000000000002 en flottant : sans garde,
+    // l'arrondi supérieur donnerait 1 001 €.
+    expect(coutClientParIntervenant({ nb_jeh: 2, remuneration: 660 }, 34)).toBe(1000)
+  })
+
+  it("rend la rémunération telle quelle sans marge", () => {
+    expect(coutClientParIntervenant({ nb_jeh: 2, remuneration: 311.5 }, 0)).toBe(311.5)
+    expect(coutClientParIntervenant({ nb_jeh: 2, remuneration: 311.5 }, null)).toBe(311.5)
   })
 })
 
