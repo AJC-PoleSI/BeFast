@@ -154,6 +154,10 @@ export async function POST(req: NextRequest) {
     scope === "etude" ? entity_id : (context as any).etude?.id || null
   const etudeNumero: string = (context as any).reference || ""
   const factureNumero: string = scope === "facture" ? (context as any).facturation?.numero || "" : ""
+  // Intervenant réellement utilisé pour remplir le document (sélection explicite
+  // ou, à défaut, missions.intervenant_id) : affiché dans les listes pour savoir
+  // qui le document concerne, sans l'ajouter au nom du fichier.
+  const intervenantConcerneId: string | null = (context as any).intervenant?.id || null
 
   // Year (last 2 digits) + étude number (toujours 2 chiffres — cf. nomenclature SDP)
   const aa = String(new Date().getFullYear()).slice(-2)
@@ -259,6 +263,7 @@ export async function POST(req: NextRequest) {
         name: tpl.name,
         file_path: outPath,
         file_name: outName,
+        intervenant_id: intervenantConcerneId,
         created_by: user.id,
       })
       .select()
@@ -290,6 +295,7 @@ export async function POST(req: NextRequest) {
             template_id,
             name: tpl.name,
             file_path: outPath,
+            intervenant_id: intervenantConcerneId,
             created_by: user.id,
             created_at: new Date().toISOString(),
           })

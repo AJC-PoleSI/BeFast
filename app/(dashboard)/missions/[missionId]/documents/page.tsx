@@ -28,6 +28,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { DocumentViewer } from "@/components/documents/DocumentViewer"
+import { IntervenantConcerne } from "@/components/documents/IntervenantConcerne"
 
 export default function MissionDocumentsPage() {
   const params = useParams()
@@ -211,7 +212,10 @@ export default function MissionDocumentsPage() {
                 <div className="flex items-center gap-2 min-w-0">
                   <FileText className="h-4 w-4 text-[#00236f] shrink-0" />
                   <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{d.name}</div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-medium truncate">{d.name}</span>
+                      <IntervenantConcerne personne={d.intervenant} />
+                    </div>
                     <div className="text-xs text-zinc-500 truncate">
                       {d.file_name} · {new Date(d.created_at).toLocaleString("fr-FR")}
                     </div>

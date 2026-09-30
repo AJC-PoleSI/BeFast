@@ -17,6 +17,7 @@ import {
 import { getEtude } from "@/lib/actions/etudes"
 import { useUser } from "@/hooks/useUser"
 import { canEditEtude } from "@/lib/auth/permissions"
+import { IntervenantConcerne } from "@/components/documents/IntervenantConcerne"
 import {
   Dialog,
   DialogContent,
@@ -33,15 +34,21 @@ type FormState = {
   selectedIntervenantId: string
   showGenerateModal: boolean
   intervenants: any[]
+  // Référence du document dont la sélection a été reprise (null = formulaire vierge)
+  reprisDe: string | null
 }
 
 type FormAction =
   | { type: "SET_TEMPLATE"; payload: string }
   | { type: "SET_MISSION"; payload: string }
   | { type: "SET_INTERVENANT"; payload: string }
-  | { type: "SET_INTERVENANTS"; payload: any[] }
+  | { type: "INTERVENANTS_LOADED"; payload: any[] }
   | { type: "TOGGLE_MODAL"; payload: boolean }
-  | { type: "RESET_FORM" }
+  | {
+      type: "OPEN_MODAL"
+      payload: { templateId: string; missionId: string; intervenantId: string; reprisDe: string | null }
+    }
+  | { type: "CLEAR_SELECTION" }
 
 const initialFormState: FormState = {
   selectedTemplateId: "",
@@ -49,6 +56,14 @@ const initialFormState: FormState = {
   selectedIntervenantId: "",
   showGenerateModal: false,
   intervenants: [],
+  reprisDe: null,
+}
+
+// Garde l'intervenant voulu s'il est bien sur la mission ; sinon, s'il n'y en
+// a qu'un, on le sélectionne d'office.
+function choisirIntervenant(list: any[], souhaite: string): string {
+  if (souhaite && list.some((p) => p.id === souhaite)) return souhaite
+  return list.length === 1 ? list[0].id : ""
 }
 
 function formReducer(state: FormState, action: FormAction): FormState {
@@ -56,15 +71,35 @@ function formReducer(state: FormState, action: FormAction): FormState {
     case "SET_TEMPLATE":
       return { ...state, selectedTemplateId: action.payload }
     case "SET_MISSION":
-      return { ...state, selectedMissionId: action.payload, selectedIntervenantId: "" }
+      return { ...state, selectedMissionId: action.payload, selectedIntervenantId: "", intervenants: [] }
     case "SET_INTERVENANT":
       return { ...state, selectedIntervenantId: action.payload }
-    case "SET_INTERVENANTS":
-      return { ...state, intervenants: action.payload }
+    case "INTERVENANTS_LOADED":
+      return {
+        ...state,
+        intervenants: action.payload,
+        selectedIntervenantId: choisirIntervenant(action.payload, state.selectedIntervenantId),
+      }
     case "TOGGLE_MODAL":
       return { ...state, showGenerateModal: action.payload }
-    case "RESET_FORM":
-      return { ...initialFormState, intervenants: state.intervenants }
+    case "OPEN_MODAL": {
+      const { templateId, missionId, intervenantId, reprisDe } = action.payload
+      // Même mission : sa liste d'intervenants est déjà chargée (l'effet ne
+      // repassera pas). Autre mission : l'effet recharge la liste puis valide
+      // l'intervenant via INTERVENANTS_LOADED.
+      const memeMission = missionId === state.selectedMissionId
+      return {
+        ...state,
+        showGenerateModal: true,
+        selectedTemplateId: templateId,
+        selectedMissionId: missionId,
+        intervenants: memeMission ? state.intervenants : [],
+        selectedIntervenantId: memeMission ? choisirIntervenant(state.intervenants, intervenantId) : intervenantId,
+        reprisDe,
+      }
+    }
+    case "CLEAR_SELECTION":
+      return { ...initialFormState, showGenerateModal: state.showGenerateModal }
     default:
       return state
   }
@@ -113,15 +148,34 @@ export default function EtudeDocumentsPage() {
 
   // When mission changes, load its intervenants
   useEffect(() => {
-    dispatch({ type: "SET_INTERVENANT", payload: "" })
-    dispatch({ type: "SET_INTERVENANTS", payload: [] })
     if (!formState.selectedMissionId) return
+    let annule = false
     listMissionIntervenants(formState.selectedMissionId).then((res) => {
-      const list = (res as any).data || []
-      dispatch({ type: "SET_INTERVENANTS", payload: list })
-      if (list.length === 1) dispatch({ type: "SET_INTERVENANT", payload: list[0].id })
+      if (!annule) dispatch({ type: "INTERVENANTS_LOADED", payload: (res as any).data || [] })
     })
+    return () => {
+      annule = true
+    }
   }, [formState.selectedMissionId])
+
+  // « Nouveau document » reprend la dernière génération de l'étude (modèle,
+  // mission, intervenant) : enchaîner RDM, avenant, BV… sans tout resélectionner.
+  const openGenerateModal = () => {
+    const dernier = docs[0]
+    const templateId =
+      dernier && templates.some((t) => t.id === dernier.template_id) ? dernier.template_id : ""
+    const missionId =
+      dernier?.scope === "mission" && missions.some((m) => m.id === dernier.entity_id) ? dernier.entity_id : ""
+    dispatch({
+      type: "OPEN_MODAL",
+      payload: {
+        templateId,
+        missionId,
+        intervenantId: missionId ? dernier.intervenant_id || "" : "",
+        reprisDe: templateId || missionId ? String(dernier.file_name).replace(/\.(docx|pptx|pdf)$/i, "") : null,
+      },
+    })
+  }
 
   const handleGenerate = async () => {
     if (!formState.selectedTemplateId) {
@@ -149,7 +203,7 @@ export default function EtudeDocumentsPage() {
     else {
       toast.success("Document généré")
       window.open(`/api/documents/${json.data.id}/download`, "_blank")
-      dispatch({ type: "RESET_FORM" })
+      dispatch({ type: "TOGGLE_MODAL", payload: false })
       refresh()
     }
     setGenerating(false)
@@ -183,7 +237,7 @@ export default function EtudeDocumentsPage() {
           </h2>
           {canGenerate && (
             <Button
-              onClick={() => dispatch({ type: "TOGGLE_MODAL", payload: true })}
+              onClick={openGenerateModal}
               size="sm"
               className="bg-[#00236f] text-white hover:bg-[#1e3a8a]"
               disabled={loading}
@@ -232,7 +286,10 @@ export default function EtudeDocumentsPage() {
                 <div className="flex items-center gap-2 min-w-0">
                   <FileText className="h-4 w-4 text-[#00236f] shrink-0" />
                   <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{d.name}</div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-medium truncate">{d.name}</span>
+                      <IntervenantConcerne personne={d.intervenant} />
+                    </div>
                     <div className="text-xs text-zinc-500 truncate">
                       {d.file_name} · {new Date(d.created_at).toLocaleString("fr-FR")}
                     </div>
@@ -267,6 +324,19 @@ export default function EtudeDocumentsPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {formState.reprisDe && (
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-[#00236f]/5 border border-[#00236f]/10 px-3 py-2 text-xs text-[#00236f]">
+                <span>Sélection reprise de la dernière génération ({formState.reprisDe}).</span>
+                <button
+                  type="button"
+                  className="shrink-0 underline hover:no-underline"
+                  onClick={() => dispatch({ type: "CLEAR_SELECTION" })}
+                >
+                  Tout effacer
+                </button>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Modèle de document *</Label>
               <select

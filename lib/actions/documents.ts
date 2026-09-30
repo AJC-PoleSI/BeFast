@@ -14,6 +14,11 @@ import { canAccessEntityDocuments, isMembreInterne } from "@/lib/auth/document-a
 
 const TEMPLATES_TAG = "document_templates"
 
+// Listes de documents générés : l'intervenant concerné est affiché à côté du
+// document (il n'apparaît pas dans le nom du fichier).
+const GENERATED_DOCS_SELECT =
+  "*, document_templates(id, name), intervenant:personnes!generated_documents_intervenant_id_fkey(id, prenom, nom)"
+
 // Uses admin client (no cookies) so unstable_cache works across requests.
 // Templates are global admin resources — bypassing RLS is safe here.
 const _listTemplatesCached = unstable_cache(
@@ -95,7 +100,7 @@ export async function listEntityDocuments(scope: string, entityId: string) {
 
   const { data, error } = await sb
     .from("generated_documents")
-    .select("*, document_templates(id, name)")
+    .select(GENERATED_DOCS_SELECT)
     .eq("scope", scope)
     .eq("entity_id", entityId)
     .order("created_at", { ascending: false })
@@ -131,7 +136,7 @@ export async function listEtudeAllDocuments(etudeId: string) {
   const queries: any[] = [
     sb
       .from("generated_documents")
-      .select("*, document_templates(id, name)")
+      .select(GENERATED_DOCS_SELECT)
       .eq("scope", "etude")
       .eq("entity_id", etudeId)
       .then((r: any) => r),
@@ -140,7 +145,7 @@ export async function listEtudeAllDocuments(etudeId: string) {
     queries.push(
       sb
         .from("generated_documents")
-        .select("*, document_templates(id, name)")
+        .select(GENERATED_DOCS_SELECT)
         .eq("scope", "mission")
         .in("entity_id", missionIds)
         .then((r: any) => r)
