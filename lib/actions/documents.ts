@@ -8,7 +8,7 @@ import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noSt
 import { decryptData } from "@/lib/crypto"
 import { getMasterKey } from "@/lib/crypto-key"
 import { decryptFromString } from "@/lib/encryption"
-import { numeroEtudeCourt, codeClasseurEtude } from "@/lib/document-numbering"
+import { numeroEtudeCourt, codeClasseurEtude, referenceConventionEtude } from "@/lib/document-numbering"
 import { remunerationParIntervenant, remunerationParJeh } from "@/lib/missions/remuneration"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { canAccessEntityDocuments, isMembreInterne } from "@/lib/auth/document-access"
@@ -1078,7 +1078,10 @@ async function buildFactureContext(factureId: string): Promise<Record<string, an
   const organigramme = buildOrganigramme(params)
 
   const codeClasseur = codeClasseurEtude(etude.numero)
-  const refConvention = String(etude.reference_convention_etude || "").trim()
+  // Aucun écran ne renseigne reference_convention_etude : à défaut, la
+  // référence se déduit du numéro d'étude (une seule convention par étude).
+  const refConvention =
+    String(etude.reference_convention_etude || "").trim() || referenceConventionEtude(etude.numero)
   const pvrfDoc: any = (pvrfRes as any)?.data
   const refPvrf = pvrfDoc?.file_name
     ? String(pvrfDoc.file_name).replace(/\.(docx|pdf|pptx)$/i, "")

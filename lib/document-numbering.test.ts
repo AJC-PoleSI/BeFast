@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest"
-import { numeroEtudeCourt, codeClasseurEtude, segmentRdmParent } from "./document-numbering"
+import {
+  numeroEtudeCourt,
+  codeClasseurEtude,
+  segmentRdmParent,
+  referenceConventionEtude,
+} from "./document-numbering"
 
 describe("numeroEtudeCourt", () => {
   it("raccourcit le code classeur stocké en base à 2 chiffres", () => {
@@ -56,5 +61,18 @@ describe("segmentRdmParent", () => {
     expect(segmentRdmParent("26 CE 18")).toBe("")
     expect(segmentRdmParent("")).toBe("")
     expect(segmentRdmParent(null)).toBe("")
+  })
+})
+
+describe("referenceConventionEtude", () => {
+  it("compose la référence de la convention d'étude citée dans l'objet des factures", () => {
+    expect(referenceConventionEtude("2620")).toBe("26CE20")
+    expect(referenceConventionEtude("2618")).toBe("26CE18")
+    expect(referenceConventionEtude("2026-22")).toBe("26CE22")
+  })
+
+  it("renvoie une chaîne vide sans numéro", () => {
+    expect(referenceConventionEtude("")).toBe("")
+    expect(referenceConventionEtude(null)).toBe("")
   })
 })

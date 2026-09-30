@@ -52,3 +52,15 @@ export function codeClasseurEtude(
   const aa = prefixe ? prefixe.slice(-2).padStart(2, "0") : String(annee).slice(-2)
   return `${aa}${numeroEtudeCourt(d)}`
 }
+
+/**
+ * Référence de la convention d'étude telle que citée dans l'objet des
+ * factures : AA + "CE" + NUMERO_ETUDE, sans espace ("2620" → "26CE20").
+ * Une seule convention par étude (catégorie non numérotée), d'où une
+ * référence déterministe.
+ */
+export function referenceConventionEtude(numero?: string | null): string {
+  const code = codeClasseurEtude(numero)
+  if (!code) return ""
+  return `${code.slice(0, 2)}CE${code.slice(2)}`
+}
