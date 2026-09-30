@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import fs from "node:fs"
 import { PDFDocument } from "pdf-lib"
-import { renderFacturePdf } from "./pdf"
+import { renderFacturePdf, PAGE_H, type TexteTrace } from "./pdf"
 
 const acompte = {
   nb_jeh: 12,
@@ -60,6 +60,37 @@ async function pageCount(bytes: Uint8Array): Promise<number> {
   return (await PDFDocument.load(bytes)).getPageCount()
 }
 
+// Désignations réelles de l'étude 2620 : bien plus larges que la colonne.
+const ambassadeurs = {
+  ...acompte,
+  phases: [
+    "Ambassadeurs digitaux - Création de contenus stratégiques. 05/10/2026 → 29/11/2027",
+    "Ambassadeurs digitaux - Création de contenus stratégiques. 01/02/2027 → 27/06/2027",
+    "Suivi d'étude",
+    "Ambassadeurs digitaux - Création de contenus stratégiques.30/11/2026 → 31/01/2027",
+    "Création de contenus stratégiques par 26 intervenants - 29/03/2027 → 27/06/2027",
+  ].map((nom) => ({ nom, nombre_jeh: 26, prix_jeh: 227, montant_ht: 5902 })),
+}
+
+async function tracer(ctx: Record<string, any>): Promise<TexteTrace[]> {
+  const textes: TexteTrace[] = []
+  await renderFacturePdf(ctx, { trace: (t) => textes.push(t) })
+  return textes
+}
+
+function chevauchements(textes: TexteTrace[]): string[] {
+  const conflits: string[] = []
+  textes.forEach((a, i) =>
+    textes.slice(i + 1).forEach((b) => {
+      const memePage = a.page === b.page
+      const x = a.x0 < b.x1 - 0.5 && b.x0 < a.x1 - 0.5
+      const y = a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5
+      if (memePage && x && y) conflits.push(`« ${a.texte} » / « ${b.texte} »`)
+    })
+  )
+  return conflits
+}
+
 describe("renderFacturePdf", () => {
   it("rend une facture d'acompte sur une page", async () => {
     const bytes = await renderFacturePdf(acompte)
@@ -84,6 +115,41 @@ describe("renderFacturePdf", () => {
       entreprise: { nom: "Клиент 🚀 — Ünïcode", ville: "Nantes" },
     })
     expect(await pageCount(bytes)).toBe(1)
+  })
+
+  it("ne superpose aucun texte sur une facture courte", async () => {
+    expect(chevauchements(await tracer(solde))).toEqual([])
+  })
+
+  it("replie les désignations longues au lieu de déborder sur la colonne JEH (étude 2620)", async () => {
+    const textes = await tracer(ambassadeurs)
+    expect(chevauchements(textes)).toEqual([])
+    const jeh = textes.find((t) => t.texte === "Nombre de JEH")!
+    for (const t of textes.filter((t) => t.texte.includes("Ambassadeurs"))) {
+      expect(t.x1).toBeLessThan(jeh.x0)
+    }
+  })
+
+  it("garde la flèche des périodes lisible (hors WinAnsi)", async () => {
+    const texte = (await tracer(ambassadeurs)).map((t) => t.texte).join(" ")
+    expect(texte).toContain("05/10/2026 – 29/11/2027")
+  })
+
+  it("passe sur une seconde page plutôt que de couper le bas de la facture", async () => {
+    const phases = Array.from({ length: 14 }, (_, i) => ({ ...ambassadeurs.phases[0], nom: `${ambassadeurs.phases[0].nom} (${i + 1})` }))
+    const ctx = { ...ambassadeurs, phases }
+    const textes = await tracer(ctx)
+    expect(await pageCount(await renderFacturePdf(ctx))).toBeGreaterThan(1)
+    expect(chevauchements(textes)).toEqual([])
+    for (const t of textes) expect(t.bottom).toBeLessThanOrEqual(PAGE_H - 15)
+    // Le récapitulatif de fin (« Net à payer ») est bien imprimé.
+    expect(textes.some((t) => t.texte.includes("Net à payer"))).toBe(true)
+  })
+
+  it("tient la facture 2620 (5 lignes sur deux lignes chacune) sans rien couper", async () => {
+    const textes = await tracer(ambassadeurs)
+    for (const t of textes) expect(t.bottom).toBeLessThanOrEqual(PAGE_H - 15)
+    expect(textes.some((t) => t.texte.includes("Net à payer"))).toBe(true)
   })
 
   // Échantillon visuel à la demande : FACTURE_PDF_OUT=/chemin/x.pdf npm run test

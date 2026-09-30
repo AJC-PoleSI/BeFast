@@ -23,7 +23,9 @@ import { LOGO_AJC_PNG_BASE64, LOGO_AJC_RATIO } from "./logo"
 
 // ── Gabarit A4 ────────────────────────────────────────────────────────────
 const PAGE_W = 595.28
-const PAGE_H = 841.89
+export const PAGE_H = 841.89
+const MARGE_HAUT = 50 // haut des pages de suite
+const MARGE_BAS = 15 // rien ne s'imprime plus bas
 const M_LEFT = 50
 const M_RIGHT = 566
 const COL_RIGHT = 318 // colonne de droite de l'en-tête (n° de facture, client)
@@ -35,6 +37,16 @@ const GRIS_LIGNE = rgb(0.72, 0.72, 0.74)
 const ZEBRE = rgb(0.957, 0.957, 0.961)
 
 export type FactureRenderContext = Record<string, any>
+
+/** Texte imprimé et sa boîte (en coordonnées « depuis le haut »), pour les tests de mise en page. */
+export type TexteTrace = {
+  page: number
+  texte: string
+  x0: number
+  x1: number
+  top: number
+  bottom: number
+}
 
 const fmtMontant = (n: unknown): string => {
   const v = Number(n ?? 0)
@@ -60,19 +72,31 @@ function winAnsi(input: unknown): string {
     .replace(/[“”]/g, '"')
     .replace(/[‐‑‒]/g, "-")
     .replace(/…/g, "...")
+    // Périodes saisies « 05/10/2026 → 29/11/2027 » : la flèche n'existe pas en
+    // WinAnsi et disparaissait, laissant deux dates collées.
+    .replace(/[→⇒➔➜]/g, "–")
     .replace(/ /g, " ")
     .replace(/[^\x20-\x7E -ÿ€–—]/g, "")
 }
 
 class Sheet {
-  readonly page: PDFPage
+  page: PDFPage
+  numeroPage = 0
+  /** Mesure à blanc : les positions sont calculées, rien n'est dessiné. */
+  dry = false
   constructor(
-    page: PDFPage,
+    readonly doc: PDFDocument,
     readonly regular: PDFFont,
     readonly bold: PDFFont,
-    readonly italic: PDFFont
+    readonly italic: PDFFont,
+    readonly trace?: (t: TexteTrace) => void
   ) {
-    this.page = page
+    this.page = doc.addPage([PAGE_W, PAGE_H])
+  }
+
+  nouvellePage(): void {
+    this.page = this.doc.addPage([PAGE_W, PAGE_H])
+    this.numeroPage += 1
   }
 
   /** Convertit une ordonnée « depuis le haut » en ordonnée PDF. */
@@ -97,12 +121,15 @@ class Sheet {
     if (!t) return
     const size = opts.size ?? 10
     const font = opts.bold ? this.bold : opts.italic ? this.italic : this.regular
+    const largeur = font.widthOfTextAtSize(t, size)
     let x0 = x
     if (opts.align === "right") {
-      x0 = x - font.widthOfTextAtSize(t, size)
+      x0 = x - largeur
     } else if (opts.align === "center") {
-      x0 = x - font.widthOfTextAtSize(t, size) / 2
+      x0 = x - largeur / 2
     }
+    if (this.dry) return
+    this.trace?.({ page: this.numeroPage, texte: t, x0, x1: x0 + largeur, top, bottom: top + size })
     this.page.drawText(t, {
       x: x0,
       y: this.y(top) - size,
@@ -143,6 +170,7 @@ class Sheet {
   }
 
   line(x1: number, top: number, x2: number, opts: { color?: RGB; width?: number } = {}): void {
+    if (this.dry) return
     this.page.drawLine({
       start: { x: x1, y: this.y(top) },
       end: { x: x2, y: this.y(top) },
@@ -151,11 +179,23 @@ class Sheet {
     })
   }
 
+  vline(x: number, top: number, bottom: number): void {
+    if (this.dry) return
+    this.page.drawLine({
+      start: { x, y: this.y(top) },
+      end: { x, y: this.y(bottom) },
+      thickness: 0.7,
+      color: GRIS_LIGNE,
+    })
+  }
+
   rect(x: number, top: number, w: number, h: number, color: RGB): void {
+    if (this.dry) return
     this.page.drawRectangle({ x, y: this.y(top + h), width: w, height: h, color })
   }
 
   border(x: number, top: number, w: number, h: number, color: RGB = GRIS_LIGNE): void {
+    if (this.dry) return
     this.page.drawRectangle({
       x,
       y: this.y(top + h),
@@ -171,15 +211,19 @@ class Sheet {
  * Produit le PDF de la facture à partir du contexte de `buildFactureContext`.
  * Renvoie les octets du fichier.
  */
-export async function renderFacturePdf(ctx: FactureRenderContext): Promise<Uint8Array> {
+export async function renderFacturePdf(
+  ctx: FactureRenderContext,
+  opts: { trace?: (t: TexteTrace) => void } = {}
+): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
-  const page = doc.addPage([PAGE_W, PAGE_H])
   const s = new Sheet(
-    page,
+    doc,
     await doc.embedFont(StandardFonts.Helvetica),
     await doc.embedFont(StandardFonts.HelveticaBold),
-    await doc.embedFont(StandardFonts.HelveticaOblique)
+    await doc.embedFont(StandardFonts.HelveticaOblique),
+    opts.trace
   )
+  const page = s.page
 
   const f = ctx.facturation ?? {}
   const junior = ctx.junior ?? {}
@@ -277,25 +321,48 @@ export async function renderFacturePdf(ctx: FactureRenderContext): Promise<Uint8
     })
   })
 
+  // Page de suite : rappel du numéro en tête, le contenu reprend à MARGE_HAUT.
+  const pageSuivante = () => {
+    s.nouvellePage()
+    s.text(`Facture N° ${winAnsi(f.numero || "")} (suite)`, M_LEFT, 25, { size: 9, color: GRIS })
+  }
+
   // ── Tableau des prestations ──────────────────────────────────────────────
   const X_JEH = 400 // bord droit de la colonne « Nombre de JEH »
   const X_PU = 495 // bord droit de « Montant unitaire »
   const X_HT = M_RIGHT - 4 // bord droit de « Montant HT »
+  const X_DESIGNATION = M_LEFT + 4
+  // La désignation se replie avant l'en-tête « Nombre de JEH » (plus large que
+  // les nombres) : un long intitulé suivi d'une période débordait sur les JEH.
+  const LARGEUR_DESIGNATION =
+    X_JEH - s.bold.widthOfTextAtSize("Nombre de JEH", 10) - 10 - X_DESIGNATION
+  const INTERLIGNE = 12
 
-  let t = objetTop + objetH + 22
-  s.line(M_LEFT, t, M_RIGHT, { color: NOIR, width: 1 })
-  t += 3
-  s.text("Désignation", M_LEFT + 4, t, { size: 10, bold: true })
-  s.text("Nombre de JEH", X_JEH, t, { size: 10, bold: true, align: "right" })
-  s.text("Montant unitaire", X_PU, t, { size: 10, bold: true, align: "right" })
-  s.text("Montant HT", X_HT, t, { size: 10, bold: true, align: "right" })
-  t += 14
-  s.line(M_LEFT, t, M_RIGHT, { color: NOIR, width: 1 })
+  const enteteTableau = (top: number): number => {
+    let y = top
+    s.line(M_LEFT, y, M_RIGHT, { color: NOIR, width: 1 })
+    y += 3
+    s.text("Désignation", X_DESIGNATION, y, { size: 10, bold: true })
+    s.text("Nombre de JEH", X_JEH, y, { size: 10, bold: true, align: "right" })
+    s.text("Montant unitaire", X_PU, y, { size: 10, bold: true, align: "right" })
+    s.text("Montant HT", X_HT, y, { size: 10, bold: true, align: "right" })
+    y += 14
+    s.line(M_LEFT, y, M_RIGHT, { color: NOIR, width: 1 })
+    return y
+  }
 
+  let t = enteteTableau(objetTop + objetH + 22)
   phases.forEach((p, i) => {
-    const h = 16
+    const lignes = decouper(String(p.nom ?? ""), s.regular, 10, LARGEUR_DESIGNATION)
+    const h = 4 + lignes.length * INTERLIGNE
+    // Tableau trop long pour la page : on le poursuit sur la suivante, en-tête compris.
+    if (t + h > PAGE_H - MARGE_HAUT) {
+      s.line(M_LEFT, t, M_RIGHT, { color: NOIR, width: 1 })
+      pageSuivante()
+      t = enteteTableau(MARGE_HAUT)
+    }
     if (i % 2 === 0) s.rect(M_LEFT, t, M_RIGHT - M_LEFT, h, ZEBRE)
-    s.text(p.nom, M_LEFT + 4, t + 3.5, { size: 10 })
+    lignes.forEach((ligne, j) => s.text(ligne, X_DESIGNATION, t + 3.5 + j * INTERLIGNE, { size: 10 }))
     s.text(fmtEntier(p.nombre_jeh), X_JEH, t + 3.5, { size: 10, align: "right" })
     s.text(fmtMontant(p.prix_jeh), X_PU, t + 3.5, { size: 10, align: "right" })
     s.text(fmtMontant(p.montant_ht), X_HT, t + 3.5, { size: 10, align: "right" })
@@ -303,175 +370,196 @@ export async function renderFacturePdf(ctx: FactureRenderContext): Promise<Uint8
   })
   s.line(M_LEFT, t, M_RIGHT, { color: NOIR, width: 1 })
 
-  // ── Dates + synthèse de l'étude (colonne gauche) ─────────────────────────
-  const blocTop = Math.max(t + 34, 470)
-  let d = blocTop
-  for (const [label, valeur] of [
-    ["Date d'émission de la facture :", f.emitted_at],
-    ["Date d'échéance de la facture :", f.due_at],
-  ] as const) {
-    s.text(label, M_LEFT, d, { size: 10, bold: true })
-    s.text(valeur, 232, d, { size: 10 })
-    d += 14
+  // Bas de facture en deux blocs, chacun mesuré à blanc avant d'être dessiné :
+  // les totaux restent si possible sous le tableau, puis les mentions et les
+  // modalités de paiement. Un bloc qui ne tient plus part en tête de la page
+  // suivante au lieu d'être coupé par le bord de la feuille. Les ancrages fixes
+  // de la maquette (470, 548…) ne valent que sur la première page.
+  const placer = (top: number, dessiner: (top: number, ancres: boolean) => number): number => {
+    const ancres = s.numeroPage === 0
+    s.dry = true
+    const fin = dessiner(top, ancres)
+    s.dry = false
+    if (fin <= PAGE_H - MARGE_BAS) return dessiner(top, ancres)
+    pageSuivante()
+    return dessiner(MARGE_HAUT, false)
   }
-  d += 16
-  for (const [label, valeur] of [
-    ["Nombre total de JEH(s) :", fmtEntier(ctx.nb_jeh)],
-    ["Montant total HT (EUR) de l'étude :", fmtMontant(f.total_ht_etude ?? etude.tarif_ht)],
-  ] as const) {
-    s.text(label, M_LEFT, d, { size: 10, bold: true })
-    s.text(valeur, 232, d, { size: 10 })
-    d += 14
-  }
-
-  // ── Bloc des totaux (colonne droite, encadré) ────────────────────────────
-  const estAcompte = !!f.est_acompte
-  const totaux: Array<{ label: string; valeur: string; bold?: boolean; note?: string }> = [
-    { label: "Total prestation", valeur: fmtMontant(f.total_prestation) },
-    { label: "Frais", valeur: fmtMontant(f.ligne_frais) },
-    { label: String(f.libelle_deduction ?? ""), valeur: fmtMontant(f.montant_deduction), bold: true },
-    { label: String(f.libelle_ligne ?? ""), valeur: fmtMontant(f.montant_ht), bold: true },
-    {
-      label: `Montant TVA${winAnsi(f.mention_tva_acompte ?? "")} (${fmtMontant(f.tva_taux)}%)`,
-      valeur: fmtMontant(f.montant_tva),
-      bold: true,
-      note: String(f.mention_regime_tva || "TVA sur les encaissements"),
-    },
-  ]
-
-  const BOX_X = 329
-  const BOX_W = M_RIGHT - BOX_X
-  const X_LABEL_R = 496 // bord droit de la colonne des libellés
-  const X_SEP = 502 // filet vertical entre libellés et montants
-  const X_VAL_R = M_RIGHT - 8 // bord droit des montants
-  const boxTop = blocTop - 4
-  let b = boxTop
-  totaux.forEach((r, i) => {
-    const h = r.note ? 24 : 14
-    s.text(r.label, X_LABEL_R, b + 2, { size: 9.5, bold: r.bold, align: "right" })
-    s.text(r.valeur, X_VAL_R, b + 2, { size: 9.5, align: "right" })
-    if (r.note) s.text(r.note, X_LABEL_R, b + 13, { size: 8, italic: true, align: "right" })
-    // Filet après « Frais » : sépare le rappel du budget de l'étude du calcul
-    // propre à cette facture.
-    if (i === 1) s.line(BOX_X, b + h, M_RIGHT)
-    b += h
-  })
-  s.line(BOX_X, b, M_RIGHT, { color: NOIR, width: 1 })
-
-  const libelleTtc = `${winAnsi(f.libelle_ttc ?? "Total")} TTC à payer`
-  s.text(libelleTtc, X_LABEL_R, b + 3, { size: 10, bold: true, align: "right" })
-  s.text(`${fmtMontant(f.montant_ttc)} €`, X_VAL_R, b + 3, {
-    size: 10,
-    bold: true,
-    align: "right",
-  })
-  b += 17
-  s.border(BOX_X, boxTop, BOX_W, b - boxTop)
-  s.page.drawLine({
-    start: { x: X_SEP, y: s.y(boxTop) },
-    end: { x: X_SEP, y: s.y(b) },
-    thickness: 0.7,
-    color: GRIS_LIGNE,
-  })
-
-  // ── Mentions légales ─────────────────────────────────────────────────────
-  let m = Math.max(b + 20, 548)
-  s.text(
-    f.mention_escompte || "Aucun escompte n'est accordé en cas de paiement anticipé",
-    M_LEFT,
-    m,
-    { size: 8.5, color: GRIS }
-  )
-  m += 10.5
-  const penalites = f.taux_penalites || "3 fois le taux d'intérêt légal en vigueur"
-  const indemnite = f.indemnite_recouvrement || "40 euros"
-  m = s.paragraph(
-    `En cas de retard de paiement, conformément à la loi 2008-776 du 4 août 2008, il sera appliqué des pénalités au taux de ${winAnsi(penalites)} et en application des articles L441-3 et L441-6 du code de commerce, il sera appliqué une indemnité de recouvrement de ${winAnsi(indemnite)}.`,
-    M_LEFT,
-    m,
-    300,
-    { size: 8.5, color: GRIS, lineHeight: 10.5 }
-  )
-  m = s.paragraph(
-    "Cette pénalité court à compter de la date d'échéance jusqu'au jour du paiement complet des sommes dues.",
-    M_LEFT,
-    m,
-    460,
-    { size: 8.5, color: GRIS, lineHeight: 10.5 }
-  )
-  s.text(f.conditions_reglement || "A réception de facture", M_LEFT, m, {
-    size: 8.5,
-    color: GRIS,
-  })
-
-  // ── Modalités de paiement ────────────────────────────────────────────────
-  let p = Math.max(m + 18, 626)
-  s.text("Modalités de paiement :", M_LEFT, p, { size: 10, bold: true })
-  const nomTresorier = [tresorier.prenom, tresorier.nom].filter(Boolean).join(" ")
-  if (nomTresorier) {
-    // « Le Trésorier » / « La Trésorière » : accordé sur parametres.tresorier_genre.
-    const titre = `${winAnsi(tresorier.titre_fonction || "Le Trésorier")},`
-    s.text(titre, 355, p, { size: 10, bold: true })
-    s.text(nomTresorier, 355 + s.bold.widthOfTextAtSize(titre, 10) + 4, p, { size: 10 })
-  }
-  p += 15
-
-  const gaucheModalites = [
-    { texte: "Pour les versements", italic: false },
-    { texte: "Merci d'indiquer votre nom", italic: true },
-    { texte: "et numéro de facture", italic: false },
-  ]
-  const droiteModalites = [
-    junior.banque_rib ? `RIB : ${winAnsi(junior.banque_rib)}` : "",
-    junior.banque_domiciliation ? `Domiciliation : ${winAnsi(junior.banque_domiciliation)}` : "",
-    junior.banque_iban ? `IBAN : ${winAnsi(junior.banque_iban)}` : "",
-    junior.banque_bic ? `BIC ${winAnsi(junior.banque_bic)}` : "",
-  ]
-  for (let i = 0; i < Math.max(gaucheModalites.length, droiteModalites.length); i++) {
-    const l = gaucheModalites[i]
-    if (l) s.text(l.texte, M_LEFT, p, { size: 10, italic: l.italic, color: l.italic ? GRIS : NOIR })
-    if (droiteModalites[i]) s.text(droiteModalites[i], 195, p, { size: 10 })
-    p += 12.5
-  }
-
-  p += 8
-  s.text("Pour les chèques", M_LEFT, p, { size: 10 })
-  s.text(`A l'ordre de ${winAnsi(junior.ordre_cheques || junior.raison_sociale || "")}`, 160, p, {
-    size: 10,
-  })
-
-  // ── Pied de page ─────────────────────────────────────────────────────────
-  // Le pied suit toujours le flux : le borner par le haut le faisait remonter
-  // au-dessus du bloc « Pour les chèques » dès que l'objet passait sur deux
-  // lignes (facture de solde citant la convention ET le PVRF).
-  const pied = Math.max(p + 26, 726)
-  s.text(
-    "Pour un règlement par chèque, nous vous remercions d'envoyer votre règlement accompagné du papillon à l'adresse :",
-    PAGE_W / 2,
-    pied,
-    { size: 9, bold: true, align: "center" }
-  )
-  const adresseComplete = [
-    junior.raison_sociale,
-    [junior.adresse1, junior.adresse2, junior.code_postal, junior.ville]
-      .filter(Boolean)
-      .join(" "),
-  ]
-    .filter(Boolean)
-    .join(", ")
-  s.text(adresseComplete, PAGE_W / 2, pied + 14, { size: 9.5, align: "center" })
-
-  s.line(M_LEFT, pied + 36, M_RIGHT)
-  s.text(
-    `Client : ${winAnsi(entreprise.nom || "")} ${winAnsi(f.numero || "")} – Net à payer : ${fmtMontant(
-      f.montant_ttc
-    )} EUR`,
-    M_LEFT,
-    pied + 44,
-    { size: 10, color: GRIS }
-  )
+  const finSynthese = placer(t + 34, synthese)
+  placer(finSynthese + 20, mentionsEtPaiement)
 
   return doc.save()
+
+  /** Dates, synthèse de l'étude et totaux à partir de `top` ; renvoie l'ordonnée finale. */
+  function synthese(top: number, ancres: boolean): number {
+    const blocTop = Math.max(top, ancres ? 470 : 0)
+    // ── Dates + synthèse de l'étude (colonne gauche) ─────────────────────────
+    let d = blocTop
+    for (const [label, valeur] of [
+      ["Date d'émission de la facture :", f.emitted_at],
+      ["Date d'échéance de la facture :", f.due_at],
+    ] as const) {
+      s.text(label, M_LEFT, d, { size: 10, bold: true })
+      s.text(valeur, 232, d, { size: 10 })
+      d += 14
+    }
+    d += 16
+    for (const [label, valeur] of [
+      ["Nombre total de JEH(s) :", fmtEntier(ctx.nb_jeh)],
+      ["Montant total HT (EUR) de l'étude :", fmtMontant(f.total_ht_etude ?? etude.tarif_ht)],
+    ] as const) {
+      s.text(label, M_LEFT, d, { size: 10, bold: true })
+      s.text(valeur, 232, d, { size: 10 })
+      d += 14
+    }
+
+    // ── Bloc des totaux (colonne droite, encadré) ────────────────────────────
+    const estAcompte = !!f.est_acompte
+    const totaux: Array<{ label: string; valeur: string; bold?: boolean; note?: string }> = [
+      { label: "Total prestation", valeur: fmtMontant(f.total_prestation) },
+      { label: "Frais", valeur: fmtMontant(f.ligne_frais) },
+      { label: String(f.libelle_deduction ?? ""), valeur: fmtMontant(f.montant_deduction), bold: true },
+      { label: String(f.libelle_ligne ?? ""), valeur: fmtMontant(f.montant_ht), bold: true },
+      {
+        label: `Montant TVA${winAnsi(f.mention_tva_acompte ?? "")} (${fmtMontant(f.tva_taux)}%)`,
+        valeur: fmtMontant(f.montant_tva),
+        bold: true,
+        note: String(f.mention_regime_tva || "TVA sur les encaissements"),
+      },
+    ]
+
+    const BOX_X = 329
+    const BOX_W = M_RIGHT - BOX_X
+    const X_LABEL_R = 496 // bord droit de la colonne des libellés
+    const X_SEP = 502 // filet vertical entre libellés et montants
+    const X_VAL_R = M_RIGHT - 8 // bord droit des montants
+    const boxTop = blocTop - 4
+    let b = boxTop
+    totaux.forEach((r, i) => {
+      const h = r.note ? 24 : 14
+      s.text(r.label, X_LABEL_R, b + 2, { size: 9.5, bold: r.bold, align: "right" })
+      s.text(r.valeur, X_VAL_R, b + 2, { size: 9.5, align: "right" })
+      if (r.note) s.text(r.note, X_LABEL_R, b + 13, { size: 8, italic: true, align: "right" })
+      // Filet après « Frais » : sépare le rappel du budget de l'étude du calcul
+      // propre à cette facture.
+      if (i === 1) s.line(BOX_X, b + h, M_RIGHT)
+      b += h
+    })
+    s.line(BOX_X, b, M_RIGHT, { color: NOIR, width: 1 })
+
+    const libelleTtc = `${winAnsi(f.libelle_ttc ?? "Total")} TTC à payer`
+    s.text(libelleTtc, X_LABEL_R, b + 3, { size: 10, bold: true, align: "right" })
+    s.text(`${fmtMontant(f.montant_ttc)} €`, X_VAL_R, b + 3, {
+      size: 10,
+      bold: true,
+      align: "right",
+    })
+    b += 17
+    s.border(BOX_X, boxTop, BOX_W, b - boxTop)
+    s.vline(X_SEP, boxTop, b)
+    return Math.max(b, d)
+  }
+
+  /** Mentions légales, modalités de paiement et pied à partir de `top` ; renvoie l'ordonnée finale. */
+  function mentionsEtPaiement(top: number, ancres: boolean): number {
+    // ── Mentions légales ─────────────────────────────────────────────────────
+    let m = Math.max(top, ancres ? 548 : 0)
+    s.text(
+      f.mention_escompte || "Aucun escompte n'est accordé en cas de paiement anticipé",
+      M_LEFT,
+      m,
+      { size: 8.5, color: GRIS }
+    )
+    m += 10.5
+    const penalites = f.taux_penalites || "3 fois le taux d'intérêt légal en vigueur"
+    const indemnite = f.indemnite_recouvrement || "40 euros"
+    m = s.paragraph(
+      `En cas de retard de paiement, conformément à la loi 2008-776 du 4 août 2008, il sera appliqué des pénalités au taux de ${winAnsi(penalites)} et en application des articles L441-3 et L441-6 du code de commerce, il sera appliqué une indemnité de recouvrement de ${winAnsi(indemnite)}.`,
+      M_LEFT,
+      m,
+      300,
+      { size: 8.5, color: GRIS, lineHeight: 10.5 }
+    )
+    m = s.paragraph(
+      "Cette pénalité court à compter de la date d'échéance jusqu'au jour du paiement complet des sommes dues.",
+      M_LEFT,
+      m,
+      460,
+      { size: 8.5, color: GRIS, lineHeight: 10.5 }
+    )
+    s.text(f.conditions_reglement || "A réception de facture", M_LEFT, m, {
+      size: 8.5,
+      color: GRIS,
+    })
+
+    // ── Modalités de paiement ────────────────────────────────────────────────
+    let p = Math.max(m + 18, ancres ? 626 : 0)
+    s.text("Modalités de paiement :", M_LEFT, p, { size: 10, bold: true })
+    const nomTresorier = [tresorier.prenom, tresorier.nom].filter(Boolean).join(" ")
+    if (nomTresorier) {
+      // « Le Trésorier » / « La Trésorière » : accordé sur parametres.tresorier_genre.
+      const titre = `${winAnsi(tresorier.titre_fonction || "Le Trésorier")},`
+      s.text(titre, 355, p, { size: 10, bold: true })
+      s.text(nomTresorier, 355 + s.bold.widthOfTextAtSize(titre, 10) + 4, p, { size: 10 })
+    }
+    p += 15
+
+    const gaucheModalites = [
+      { texte: "Pour les versements", italic: false },
+      { texte: "Merci d'indiquer votre nom", italic: true },
+      { texte: "et numéro de facture", italic: false },
+    ]
+    const droiteModalites = [
+      junior.banque_rib ? `RIB : ${winAnsi(junior.banque_rib)}` : "",
+      junior.banque_domiciliation ? `Domiciliation : ${winAnsi(junior.banque_domiciliation)}` : "",
+      junior.banque_iban ? `IBAN : ${winAnsi(junior.banque_iban)}` : "",
+      junior.banque_bic ? `BIC ${winAnsi(junior.banque_bic)}` : "",
+    ]
+    for (let i = 0; i < Math.max(gaucheModalites.length, droiteModalites.length); i++) {
+      const l = gaucheModalites[i]
+      if (l) s.text(l.texte, M_LEFT, p, { size: 10, italic: l.italic, color: l.italic ? GRIS : NOIR })
+      if (droiteModalites[i]) s.text(droiteModalites[i], 195, p, { size: 10 })
+      p += 12.5
+    }
+
+    p += 8
+    s.text("Pour les chèques", M_LEFT, p, { size: 10 })
+    s.text(`A l'ordre de ${winAnsi(junior.ordre_cheques || junior.raison_sociale || "")}`, 160, p, {
+      size: 10,
+    })
+
+    // ── Pied de page ─────────────────────────────────────────────────────────
+    // Le pied suit toujours le flux : le borner par le haut le faisait remonter
+    // au-dessus du bloc « Pour les chèques » dès que l'objet passait sur deux
+    // lignes (facture de solde citant la convention ET le PVRF).
+    const pied = Math.max(p + 26, ancres ? 726 : 0)
+    s.text(
+      "Pour un règlement par chèque, nous vous remercions d'envoyer votre règlement accompagné du papillon à l'adresse :",
+      PAGE_W / 2,
+      pied,
+      { size: 9, bold: true, align: "center" }
+    )
+    const adresseComplete = [
+      junior.raison_sociale,
+      [junior.adresse1, junior.adresse2, junior.code_postal, junior.ville]
+        .filter(Boolean)
+        .join(" "),
+    ]
+      .filter(Boolean)
+      .join(", ")
+    s.text(adresseComplete, PAGE_W / 2, pied + 14, { size: 9.5, align: "center" })
+
+    s.line(M_LEFT, pied + 36, M_RIGHT)
+    s.text(
+      `Client : ${winAnsi(entreprise.nom || "")} ${winAnsi(f.numero || "")} – Net à payer : ${fmtMontant(
+        f.montant_ttc
+      )} EUR`,
+      M_LEFT,
+      pied + 44,
+      { size: 10, color: GRIS }
+    )
+
+    return pied + 54
+  }
 }
 
 /** Découpe un texte en lignes tenant dans `maxWidth` pour la police donnée. */
