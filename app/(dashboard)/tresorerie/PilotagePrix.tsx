@@ -12,12 +12,10 @@ const PRIX_FIELDS = [
   { key: "frais_dossier_moyen", label: "Frais de dossier (€)" },
   { key: "marge_je_moyenne_pct", label: "Marge JE par défaut (%)" },
 ]
-const FOURCHETTE_FIELDS = [
-  { key: "prix_jeh_min", label: "Prix JEH minimum (€)" },
-  { key: "prix_jeh_max", label: "Prix JEH maximum (€)" },
-]
-// Clés financières gérées ici (pour ne lire/sauver QUE celles-ci).
-const PRIX_KEYS = [...PRIX_FIELDS, ...FOURCHETTE_FIELDS].map((f) => f.key)
+// Clés financières gérées ici (pour ne lire/sauver QUE celles-ci). La
+// fourchette du JEH (prix min/max, plafond de rétribution) se règle dans
+// Administration ▸ Paramètres (lib/missions/fourchette-jeh.ts).
+const PRIX_KEYS = PRIX_FIELDS.map((f) => f.key)
 
 export default function PilotagePrix() {
   const [values, setValues] = useState<ParametresMap>({})
@@ -57,7 +55,7 @@ export default function PilotagePrix() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-manrope font-bold text-[#00236f] text-lg">Pilotage des prix</h2>
-          <p className="text-xs text-zinc-500 mt-0.5">Prix moyens, fourchettes JEH et marges recommandées (utilisés par défaut dans les propositions).</p>
+          <p className="text-xs text-zinc-500 mt-0.5">Prix moyens et marges recommandées (utilisés par défaut dans les propositions). La fourchette du JEH (CNJE) se règle dans Administration ▸ Paramètres.</p>
         </div>
         <button
           onClick={handleSave}
@@ -70,14 +68,9 @@ export default function PilotagePrix() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Card icon={Euro} title="Prix moyens">
+        <Card icon={Euro} title="Prix moyens" full>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
             {PRIX_FIELDS.map((f) => <NumField key={f.key} field={f} value={values[f.key] ?? ""} onChange={(v) => set(f.key, v)} />)}
-          </div>
-        </Card>
-        <Card icon={Gauge} title="Fourchettes de prix (JEH)">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-            {FOURCHETTE_FIELDS.map((f) => <NumField key={f.key} field={f} value={values[f.key] ?? ""} onChange={(v) => set(f.key, v)} />)}
           </div>
         </Card>
         <Card icon={Gauge} title="Marges recommandées par taille d'entreprise" full>

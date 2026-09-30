@@ -56,12 +56,23 @@ import {
 } from "@/lib/actions/missions"
 import { estAffectationDirecte } from "@/lib/missions/affectation"
 import {
+  coutClientParIntervenant,
   formatEuros,
   jehTotalMission,
   montantTotalMission,
   remunerationParIntervenant,
   remunerationParJeh,
 } from "@/lib/missions/remuneration"
+import {
+  FOURCHETTE_JEH_DEFAUT,
+  blocageRetribution,
+  depassementsFourchetteJeh,
+  lireFourchetteJeh,
+  nbJehMinimum,
+  type DepassementFourchette,
+  type FourchetteJeh,
+} from "@/lib/missions/fourchette-jeh"
+import { getParametres } from "@/lib/actions/parametres"
 import { hasPermission, canEditEtude } from "@/lib/auth/permissions"
 
 const STATUT_COLORS: Record<string, string> = {
@@ -92,28 +103,18 @@ const GANTT_COLORS = [
   "#C9A84C", "#4A90D9", "#6366F1", "#EC4899", "#14B8A6", "#F97316", "#8B5CF6",
 ]
 
-// Grossissement marge (même règle que le budget de l'étude) : la rémunération
-// saisie est celle réellement versée à l'intervenant — jamais modifiée, c'est
-// ce chiffre qui s'affiche sur la mission publiée. La marge n'intervient que
-// pour déterminer le palier de JEH et le coût réel facturé au client.
-function coutAvecMarge(remuneration: number, margePct: number): number {
-  if (margePct <= 0) return remuneration
-  return Math.ceil(remuneration / (1 - margePct / 100))
-}
-
-// Barème JEH (template Excel Budget Audencia), appliqué au coût marge
-// comprise : plus la mission coûte cher au client, plus elle compte de JEH.
-function nbJehFromRemuneration(coutAvecMargeInclus: number): number {
-  if (coutAvecMargeInclus < 500) return 1
-  if (coutAvecMargeInclus < 900) return 2
-  if (coutAvecMargeInclus < 1350) return 3
-  return 4
-}
-
 // Récap sous le champ Rémunération : les JEH et la rémunération saisis sont
 // ceux de CHAQUE intervenant, la mission en compte autant de fois qu'il y a
 // d'intervenants (2 JEH pour 311 € × 26 = 52 JEH, 8 086 €).
-function RecapBaremeMission({ form }: { form: { nb_jeh: string; nb_intervenants: string; remuneration: string } }) {
+function RecapBaremeMission({
+  form,
+  margePct,
+  fourchette,
+}: {
+  form: { nb_jeh: string; nb_intervenants: string; remuneration: string }
+  margePct: number | string | null | undefined
+  fourchette: FourchetteJeh
+}) {
   // Même lecture des champs que l'enregistrement (handleSaveMission).
   const bareme = {
     nb_jeh: parseInt(form.nb_jeh) || 0,
@@ -122,14 +123,40 @@ function RecapBaremeMission({ form }: { form: { nb_jeh: string; nb_intervenants:
   }
   const parJeh = remunerationParJeh(bareme)
   if (parJeh == null) return null
+  const retribution = remunerationParIntervenant(bareme)
+  const coutClient = coutClientParIntervenant(bareme, margePct)
+  const depassements = depassementsFourchetteJeh(bareme.nb_jeh, retribution, coutClient, fourchette)
+  const blocage = blocageRetribution(bareme.nb_jeh, retribution, coutClient, fourchette)
   return (
-    <p className="text-xs text-muted-foreground">
-      Chaque intervenant : {bareme.nb_jeh} JEH pour {formatEuros(remunerationParIntervenant(bareme))} ({formatEuros(parJeh)}/JEH)
-      {" · "}Mission : <span className="font-semibold text-[#00236f]">{jehTotalMission(bareme)} JEH, {formatEuros(montantTotalMission(bareme))}</span>
-    </p>
+    <>
+      {blocage && (
+        <p className="text-xs rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-red-700">
+          {blocage} La mission ne pourra pas être enregistrée.
+        </p>
+      )}
+      <p className="text-xs text-muted-foreground">
+        Chaque intervenant : {bareme.nb_jeh} JEH pour {formatEuros(retribution)} ({formatEuros(parJeh)}/JEH)
+        {" · "}Mission : <span className="font-semibold text-[#00236f]">{jehTotalMission(bareme)} JEH, {formatEuros(montantTotalMission(bareme))}</span>
+      </p>
+      {depassements.length > 0 && (
+        <p className="text-xs rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-amber-800">
+          Hors fourchette CNJE : {libelleDepassements(depassements)}.
+          {" "}Passer à au moins {nbJehMinimum(retribution, coutClient, fourchette)} JEH par intervenant.
+        </p>
+      )}
+    </>
   )
 }
 
+function libelleDepassements(depassements: DepassementFourchette[]): string {
+  return depassements
+    .map((d) =>
+      d.cote === "client"
+        ? `${formatEuros(d.parJeh)} HT facturé par JEH (plafond ${formatEuros(d.plafond)})`
+        : `${formatEuros(d.parJeh)} brut reversé par JEH (plafond ${formatEuros(d.plafond)} ; au-delà, cotisations sur 70 % du brut)`
+    )
+    .join(" et ")
+}
 export default function EtudeDetailPage() {
   const params = useParams()
   const etudeId = params.etudeId as string
@@ -249,8 +276,23 @@ export default function EtudeDetailPage() {
     })
   }, [])
 
+  // Fourchette du JEH (plafonds CNJE) éditée dans Administration ▸ Paramètres.
+  const [fourchetteJeh, setFourchetteJeh] = useState(FOURCHETTE_JEH_DEFAUT)
+  useEffect(() => {
+    getParametres().then((res) => setFourchetteJeh(lireFourchetteJeh(res.data)))
+  }, [])
+
   const handleSaveMission = async () => {
     if (!missionForm.nom.trim()) { toast.error("Nom requis"); return }
+    // Sous le prix minimum CNJE ou la rétribution minimum par JEH : refusée.
+    const retributionSaisie = parseFloat(missionForm.remuneration) || 0
+    const blocage = blocageRetribution(
+      parseInt(missionForm.nb_jeh) || 0,
+      retributionSaisie,
+      coutClientParIntervenant({ remuneration: retributionSaisie }, (etude as any)?.marge_pct),
+      fourchetteJeh
+    )
+    if (blocage) { toast.error(blocage); return }
     setCreatingMission(true)
     const supabase = createClient()
 
@@ -638,6 +680,14 @@ export default function EtudeDetailPage() {
                 const remuneration = remunerationParIntervenant(m)
                 const parJeh = remunerationParJeh(m)
                 const montantMission = montantTotalMission(m)
+                const horsFourchette = canEditMissions
+                  ? depassementsFourchetteJeh(
+                      Number(m.nb_jeh) || 0,
+                      remuneration,
+                      coutClientParIntervenant(m, (etude as any)?.marge_pct),
+                      fourchetteJeh
+                    )
+                  : []
                 return (
                   <div key={m.id} className="group bg-white rounded-xl border border-border shadow-sm p-4 hover:shadow-md hover:border-gold/30 transition-all">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -681,6 +731,14 @@ export default function EtudeDetailPage() {
                             <DollarSign className="h-3 w-3" />
                             {formatEuros(remuneration)}/intervenant
                             {parJeh != null && <span className="text-zinc-400">({formatEuros(parJeh)}/JEH)</span>}
+                          </span>
+                        )}
+                        {horsFourchette.length > 0 && (
+                          <span
+                            className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200"
+                            title={`Hors fourchette CNJE : ${libelleDepassements(horsFourchette)}.`}
+                          >
+                            HORS FOURCHETTE CNJE
                           </span>
                         )}
                         <span>
@@ -1088,25 +1146,31 @@ export default function EtudeDetailPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Rémunération par intervenant (€)</Label>
+              <Label>Rétribution par intervenant (€ brut)</Label>
               <Input
                 type="number"
                 value={missionForm.remuneration}
                 onChange={(e) => {
+                  // La rétribution saisie est celle versée à l'intervenant ; la
+                  // marge de l'étude ne sert qu'au coût client. On propose le
+                  // plus petit nombre entier de JEH sous les plafonds CNJE.
                   const remuneration = e.target.value
                   const parsed = parseFloat(remuneration)
-                  const margePct = Number((etude as any)?.marge_pct) || 0
                   setMissionForm({
                     ...missionForm,
                     remuneration,
                     nb_jeh: Number.isFinite(parsed)
-                      ? String(nbJehFromRemuneration(coutAvecMarge(parsed, margePct)))
+                      ? String(nbJehMinimum(
+                          parsed,
+                          coutClientParIntervenant({ remuneration: parsed }, (etude as any)?.marge_pct),
+                          fourchetteJeh
+                        ))
                       : missionForm.nb_jeh,
                   })
                 }}
                 placeholder="0"
               />
-              <RecapBaremeMission form={missionForm} />
+              <RecapBaremeMission form={missionForm} margePct={(etude as any)?.marge_pct} fourchette={fourchetteJeh} />
             </div>
           </div>
           <DialogFooter>

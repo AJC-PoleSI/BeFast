@@ -200,8 +200,8 @@ export const DOCUMENT_FIELDS: FieldDef[] = [
   // ── Bulletin de Versement (scope mission) ─────────────────
   { placeholder: "numero_document", label: "Compteur du document dans l'étude (\"01\", \"02\"…)", source: "calculé" },
   { placeholder: "reference_document", label: "Référence complète du document = son nom de fichier", source: "calculé", example: "26 RDM01 18" },
-  { placeholder: "bv.base_urssaf", label: "Assiette forfaitaire par JEH (€)", source: "parametres.bv_base_urssaf" },
-  { placeholder: "bv.assiette", label: "Assiette des cotisations (JEH × base)", source: "calculé" },
+  { placeholder: "bv.base_urssaf", label: "Base URSSAF par JEH (€), ou « 70 % du brut » au-delà du plafond", source: "parametres.bv_base_urssaf" },
+  { placeholder: "bv.assiette", label: "Assiette des cotisations (JEH × base, ou 70 % du brut au-delà du plafond)", source: "calculé" },
   { placeholder: "bv.retribution_par_jeh", label: "Rétribution brute par JEH", source: "calculé" },
   { placeholder: "bv.am_base", label: "Ligne Assurance Maladie (idem at/avp/avd/af/autre/csg/crdscsg : _nom, _base, _junior_montant, _etudiant_taux, _etudiant_montant)", source: "calculé depuis parametres bv_*" },
   { placeholder: "bv.total_junior", label: "Total cotisations part Junior", source: "calculé" },

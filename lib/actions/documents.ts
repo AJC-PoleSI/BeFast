@@ -8,8 +8,9 @@ import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noSt
 import { decryptData } from "@/lib/crypto"
 import { getMasterKey } from "@/lib/crypto-key"
 import { decryptFromString } from "@/lib/encryption"
-import { numeroEtudeCourt, codeClasseurEtude, referenceConventionEtude } from "@/lib/document-numbering"
+import { numeroEtudeCourt, codeClasseurEtude, referenceConventionEtude, referenceRdmIntervenant } from "@/lib/document-numbering"
 import { remunerationParIntervenant, remunerationParJeh } from "@/lib/missions/remuneration"
+import { contexteCotisationsBv } from "@/lib/bv/cotisations"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { canAccessEntityDocuments, isMembreInterne } from "@/lib/auth/document-access"
 
@@ -457,84 +458,6 @@ function fmtDec(n: number, decimals = 2): string {
   return (Number(n) || 0).toFixed(decimals).replace(".", ",")
 }
 
-/**
- * Contexte {bv.*} du Bulletin de Versement : tableau des cotisations URSSAF.
- * Tous les taux viennent de la table parametres (clés bv_*, remplies par le
- * trésorier avec les taux officiels de l'année). Les cellules sont préformatées
- * en chaînes (virgule décimale, vide si taux = 0) — le template n'a plus aucun calcul.
- */
-function buildBvContext(params: Record<string, string>, nbJeh: number, retributionBrute: number) {
-  const num = (k: string) => Number(params[k]) || 0
-  const baseUrssaf = num("bv_base_urssaf")
-  const assiette = nbJeh * baseUrssaf
-  const csgBase = retributionBrute * ((num("bv_csg_assiette_pct") || 98.25) / 100)
-
-  // slug → [libellé, assiette de calcul]. AC (chômage, supprimée) sert
-  // uniquement à la ligne "évolution de la rétribution" du modèle CNJE.
-  const ROWS: [string, string, number][] = [
-    ["am", "Assurance Maladie", assiette],
-    ["at", "ACCIDENT DU TRAVAIL", assiette],
-    ["avp", "Assurance Vieillesse plafonnée", assiette],
-    ["avd", "Assurance Vieillesse déplafonnée", assiette],
-    ["af", "ALLOCATIONS FAMILIALES", assiette],
-    ["autre", "Autres contributions", assiette],
-    ["csg", "CSG déductible", csgBase],
-    ["crdscsg", "CSG/CRDS non déductible", csgBase],
-  ]
-
-  const bv: Record<string, any> = {
-    base_urssaf: fmtDec(baseUrssaf),
-    assiette: fmtDec(assiette),
-    retribution_brute: fmtDec(retributionBrute),
-    retribution_par_jeh: fmtDec(nbJeh > 0 ? retributionBrute / nbJeh : 0),
-  }
-
-  let totalJuniorUrssaf = 0, totalEtudiantUrssaf = 0, totalTauxEtudiantUrssaf = 0
-  let totalJuniorBrute = 0, totalEtudiantBrute = 0
-
-  for (const [slug, nom, base] of ROWS) {
-    const tauxJunior = num(`bv_${slug}_taux_junior`)
-    const tauxEtudiant = num(`bv_${slug}_taux_etudiant`)
-    const montantJunior = (base * tauxJunior) / 100
-    const montantEtudiant = (base * tauxEtudiant) / 100
-
-    bv[`${slug}_nom`] = nom
-    bv[`${slug}_base`] = fmtDec(base)
-    bv[`${slug}_junior_montant`] = tauxJunior > 0 ? fmtDec(montantJunior) : ""
-    bv[`${slug}_etudiant_taux`] = tauxEtudiant > 0 ? fmtDec(tauxEtudiant) : ""
-    bv[`${slug}_etudiant_pct`] = tauxEtudiant > 0 ? "%" : ""
-    bv[`${slug}_etudiant_montant`] = tauxEtudiant > 0 ? fmtDec(montantEtudiant) : ""
-
-    if (slug === "csg" || slug === "crdscsg") {
-      totalJuniorBrute += montantJunior
-      totalEtudiantBrute += montantEtudiant
-    } else {
-      totalJuniorUrssaf += montantJunior
-      totalEtudiantUrssaf += montantEtudiant
-      totalTauxEtudiantUrssaf += tauxEtudiant
-    }
-  }
-
-  const totalEtudiant = totalEtudiantUrssaf + totalEtudiantBrute
-  // CSG/CRDS non déductible réintégrée dans le net imposable
-  const nonDeductible = (csgBase * num("bv_crdscsg_taux_etudiant")) / 100
-  // Coefficients de la ligne "évolution liée à la suppression des cotisations
-  // chômage et maladie" repris tels quels du modèle CNJE (AC = base assiette).
-  const evolution = assiette * 0.0075 + assiette * 0.0145 - csgBase * 0.017 + assiette * 0.0095
-
-  bv.total_junior_urssaf = fmtDec(totalJuniorUrssaf)
-  bv.total_etudiant_taux_urssaf = fmtDec(totalTauxEtudiantUrssaf)
-  bv.total_etudiant_urssaf = fmtDec(totalEtudiantUrssaf)
-  bv.total_junior = fmtDec(totalJuniorUrssaf + totalJuniorBrute)
-  bv.total_etudiant = fmtDec(totalEtudiant)
-  bv.total_cotisations = fmtDec(totalJuniorUrssaf + totalJuniorBrute + totalEtudiant)
-  bv.net_paye = fmtDec(retributionBrute - totalEtudiant)
-  bv.net_imposable = fmtDec(retributionBrute - totalEtudiant + nonDeductible)
-  bv.evolution_suppression = fmtDec(evolution)
-
-  return bv
-}
-
 // "modifiée par l'avenant X" si un avenant existe, sinon chaîne vide.
 // Remplace les ternaires non supportés dans les templates PVRI/PVRF/Facture.
 function buildMentionAvenant(etude: any): string {
@@ -667,23 +590,27 @@ export async function buildTemplateContext(
       m.etude_id
         ? sb.from("echeancier_blocs").select("*").eq("etude_id", m.etude_id)
         : Promise.resolve({ data: [], error: null }),
-      // Dernier RDM généré pour cette mission (pour {mission.reference_recap_mission})
+      // RDM générés pour cette mission, du plus récent au plus ancien : on y
+      // choisit celui de l'intervenant (pour {mission.reference_recap_mission}).
       sb
         .from("generated_documents")
-        .select("file_name, created_at, document_templates!inner(category)")
+        .select("file_name, intervenant_id, created_at, document_templates!inner(category)")
         .eq("scope", "mission")
         .eq("entity_id", entityId)
         .eq("document_templates.category", "rdm")
         .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+        .limit(200),
     ])
 
     const etude: any = (etudeRes as any).data || {}
     const selectedIntervenant: any = (intervenantRes as any).data
     const blocs: any[] = (blocsRes as any).data || []
-    const rdmDoc: any = (rdmDocRes as any)?.data
-    const referenceRecapMission = rdmDoc?.file_name ? String(rdmDoc.file_name).replace(/\.(docx|pdf|pptx)$/i, "") : ""
+    // RDM de CET intervenant (une mission peut en compter 26), jamais celui
+    // d'un autre : le BV et les avenants doivent citer le bon RM.
+    const referenceRecapMission = referenceRdmIntervenant(
+      ((rdmDocRes as any)?.data as any[]) || [],
+      intervenantId || m.intervenant_id
+    )
 
 
     // Step 3: Fetch client and suiveurs for the etude (in parallel)
@@ -759,7 +686,8 @@ export async function buildTemplateContext(
         reference_recap_mission: referenceRecapMission,
       },
       // Bulletin de Versement : tableau des cotisations URSSAF précalculé
-      bv: buildBvContext(params, missionNbJeh, missionRemuneration),
+      // (assiette forfaitaire ou 70 % du brut, taux des paramètres bv_*).
+      bv: contexteCotisationsBv(params, missionNbJeh, missionRemuneration),
       // Étude — dates formatted DD/MM/YYYY
       etude: {
         ...etude,

@@ -3,6 +3,7 @@ import {
   numeroEtudeCourt,
   codeClasseurEtude,
   segmentRdmParent,
+  referenceRdmIntervenant,
   referenceConventionEtude,
 } from "./document-numbering"
 
@@ -74,5 +75,29 @@ describe("referenceConventionEtude", () => {
   it("renvoie une chaîne vide sans numéro", () => {
     expect(referenceConventionEtude("")).toBe("")
     expect(referenceConventionEtude(null)).toBe("")
+  })
+})
+
+describe("referenceRdmIntervenant", () => {
+  // Du plus récent au plus ancien, comme la requête (created_at desc).
+  const rdms = [
+    { file_name: "26 RDM03 20.docx", intervenant_id: "b" },
+    { file_name: "26 RDM02 20.docx", intervenant_id: "a" },
+    { file_name: "26 RDM01 20.docx", intervenant_id: null },
+  ]
+
+  it("prend le RDM de l'intervenant, jamais celui d'un autre", () => {
+    expect(referenceRdmIntervenant(rdms, "a")).toBe("26 RDM02 20")
+    expect(referenceRdmIntervenant(rdms, "b")).toBe("26 RDM03 20")
+  })
+
+  it("se rabat sur un ancien RDM non rattaché", () => {
+    expect(referenceRdmIntervenant(rdms, "c")).toBe("26 RDM01 20")
+    expect(referenceRdmIntervenant(rdms.slice(0, 2), "c")).toBe("")
+  })
+
+  it("prend le dernier RDM sans intervenant désigné", () => {
+    expect(referenceRdmIntervenant(rdms, null)).toBe("26 RDM03 20")
+    expect(referenceRdmIntervenant([], "a")).toBe("")
   })
 })

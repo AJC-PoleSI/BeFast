@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { renderTemplate } from "@/lib/docx/template-engine"
 import { buildTemplateContext } from "@/lib/actions/documents"
+import { champsManquantsBv, messageBvIncomplet } from "@/lib/bv/verification"
 import { requireApiAdmin } from "@/lib/auth/api-guards"
 import { numeroEtudeCourt, segmentRdmParent } from "@/lib/document-numbering"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
@@ -143,6 +144,16 @@ export async function POST(req: NextRequest) {
     }),
   ])
   if (dlRes.error || !dlRes.data) return NextResponse.json({ error: "DL template" }, { status: 500 })
+
+  // Un BV doit porter toutes les informations exigées par la CNJE (identité,
+  // adresse et n° de sécurité sociale de l'étudiant, référence de son RDM,
+  // JEH et rétribution) : incomplet, il n'est pas généré.
+  if (tpl.category === "bulletin_versement") {
+    const manquants = champsManquantsBv(context as any)
+    if (manquants.length > 0) {
+      return NextResponse.json({ error: messageBvIncomplet(manquants) }, { status: 422 })
+    }
+  }
   const templateBuf = Buffer.from(await dlRes.data.arrayBuffer())
 
   // Ne jamais journaliser le contenu du contexte : il contient des données

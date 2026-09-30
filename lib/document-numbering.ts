@@ -39,6 +39,23 @@ export function segmentRdmParent(referenceRdm?: string | null): string {
 }
 
 /**
+ * Référence du RDM d'UN intervenant ("26 RDM02 20"), parmi les RDM générés
+ * pour la mission, du plus récent au plus ancien. Une mission peut compter
+ * 26 intervenants, chacun avec son RDM : on prend le sien ; à défaut un RDM
+ * ancien non rattaché (générés avant le 30/09/2026, sans intervenant_id) ;
+ * jamais celui d'un autre intervenant. Sans intervenant désigné : le dernier.
+ */
+export function referenceRdmIntervenant(
+  rdms: { file_name?: string | null; intervenant_id?: string | null }[],
+  intervenantId?: string | null
+): string {
+  const choisi = intervenantId
+    ? rdms.find((d) => d.intervenant_id === intervenantId) ?? rdms.find((d) => !d.intervenant_id)
+    : rdms[0]
+  return choisi?.file_name ? String(choisi.file_name).replace(/\.(docx|pdf|pptx)$/i, "") : ""
+}
+
+/**
  * Code classeur sur 4 chiffres (AA + NUMERO_ETUDE) : "2618".
  * Si le numéro stocké ne porte pas l'année (ex. "18"), on complète avec `annee`.
  */
