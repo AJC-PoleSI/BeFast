@@ -4,9 +4,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { renderTemplate } from "@/lib/docx/template-engine"
-import { buildTemplateContext } from "@/lib/actions/documents"
+import { buildTemplateContext, type ScopeDocument } from "@/lib/documents/context"
 import { champsManquantsBv, messageBvIncomplet } from "@/lib/bv/verification"
 import { requireApiAdmin } from "@/lib/auth/api-guards"
+import { estIntervenantDeLaMission, estIntervenantDeLEtude } from "@/lib/auth/document-access"
 import { numeroEtudeCourt, segmentRdmParent } from "@/lib/document-numbering"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { canEditEtude, hasPermission } from "@/lib/auth/permissions"
@@ -57,13 +58,21 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { template_id, scope, entity_id, intervenant_id } = body as {
     template_id: string
-    scope: "etude" | "mission" | "personne" | "general" | "facture"
+    scope: ScopeDocument
     entity_id: string
     intervenant_id?: string
   }
 
   if (!template_id || !scope || !entity_id) {
     return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 })
+  }
+  // Le scope « personne » (ligne `personnes` brute de n'importe quel id) n'a
+  // jamais eu d'appelant dans l'application : refusé.
+  if (!["etude", "mission", "general", "facture"].includes(scope)) {
+    return NextResponse.json({ error: "Scope inconnu" }, { status: 400 })
+  }
+  if (intervenant_id && typeof intervenant_id !== "string") {
+    return NextResponse.json({ error: "intervenant_id invalide" }, { status: 400 })
   }
 
   const { data: tpl, error: tErr } = await sb
@@ -133,6 +142,21 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       )
     }
+
+    // L'intervenant choisi doit être rattaché à la mission (ou à l'étude) :
+    // sans ce contrôle, n'importe quel id de membre ressortait dans le
+    // document avec ses coordonnées déchiffrées.
+    if (intervenant_id) {
+      const rattache =
+        scope === "mission"
+          ? await estIntervenantDeLaMission(entity_id, intervenant_id)
+          : await estIntervenantDeLEtude(entity_id, intervenant_id)
+      if (!rattache) {
+        return NextResponse.json({ error: "Cet intervenant n'est pas rattaché à cette mission." }, { status: 403 })
+      }
+    }
+  } else if (intervenant_id) {
+    return NextResponse.json({ error: "intervenant_id n'est accepté que pour une étude ou une mission" }, { status: 400 })
   }
 
   // Téléchargement du fichier et construction du contexte en parallèle —

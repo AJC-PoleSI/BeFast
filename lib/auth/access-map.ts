@@ -35,7 +35,7 @@ export const SURFACES: SurfaceProtegee[] = [
   // ── Pages ────────────────────────────────────────────────────────────────
   { libelle: "Accueil / tableau de bord", couche: "page", fichier: "app/(dashboard)/page.tsx", cles: ["dashboard"], exception: "sans la clé, redirection vers le profil" },
   { libelle: "Mon profil", couche: "page", fichier: "app/(dashboard)/dashboard/profil/layout.tsx", cles: ["profil"] },
-  { libelle: "Fiche d'un autre membre", couche: "page", fichier: "app/(dashboard)/dashboard/profil/[userId]/layout.tsx", cles: ["membres", "voir_documents_membres"], exception: "consulter sa propre fiche" },
+  { libelle: "Fiche d'un autre membre", couche: "page", fichier: "app/(dashboard)/dashboard/profil/[userId]/layout.tsx", cles: ["membres", "voir_documents_membres", "voir_nss", "voir_rib"], exception: "consulter sa propre fiche" },
   { libelle: "Missions", couche: "page", fichier: "app/(dashboard)/missions/layout.tsx", cles: ["missions"] },
   { libelle: "Mes documents", couche: "page", fichier: "app/(dashboard)/documents/layout.tsx", cles: ["documents"] },
   { libelle: "Études", couche: "page", fichier: "app/(dashboard)/etudes/layout.tsx", cles: ["etudes"] },
@@ -46,7 +46,7 @@ export const SURFACES: SurfaceProtegee[] = [
   { libelle: "Administration ▸ Paramètres", couche: "page", fichier: "app/(dashboard)/administration/page.tsx", cles: ["parametres_structure"] },
   { libelle: "Administration ▸ Membres & Droits", couche: "page", fichier: "app/(dashboard)/administration/membres/layout.tsx", cles: ["membres"] },
   { libelle: "Administration ▸ Modèles de documents", couche: "page", fichier: "app/(dashboard)/administration/documents/layout.tsx", cles: ["administration", "gerer_parametres"] },
-  { libelle: "Administration ▸ Données", couche: "page", fichier: "app/(dashboard)/administration/donnees/layout.tsx", cles: ["administration"] },
+  { libelle: "Administration ▸ Données", couche: "page", fichier: "app/(dashboard)/administration/donnees/layout.tsx", cles: [], adminUniquement: true },
   { libelle: "Signatures électroniques", couche: "page", fichier: "app/(dashboard)/signatures/layout.tsx", cles: ["etudes", "signer_documents", "signer_ba"], exception: "signer son propre bulletin se fait par le lien LiveConsent reçu par email" },
   { libelle: "Administration ▸ Clients", couche: "page", fichier: "app/(dashboard)/administration/clients/layout.tsx", cles: ["administration", "prospection"] },
 
@@ -67,6 +67,8 @@ export const SURFACES: SurfaceProtegee[] = [
   { libelle: "Téléchargement d'un objet stocké", couche: "api", fichier: "app/api/storage/download/route.ts", cles: ["voir_factures"], exception: "intervenant de la mission" },
   { libelle: "Justificatifs d'un membre (liste / URL signée / ZIP)", couche: "api", fichier: "app/api/profil/documents/route.ts", cles: ["voir_documents_membres"], exception: "ses propres documents" },
   { libelle: "Son bulletin d'adhésion pré-rempli", couche: "api", fichier: "app/api/profil/documents/bulletin-adhesion/route.ts", cles: ["documents"] },
+  { libelle: "Génération d'un document (Word / PDF)", couche: "api", fichier: "app/api/documents/generate/route.ts", cles: ["voir_factures"], exception: "créateur ou suiveur de l'étude (canEditEtude) ; Bulletin de Versement réservé aux administrateurs" },
+  { libelle: "Proposition commerciale (PowerPoint)", couche: "api", fichier: "app/api/generate-ppt/route.ts", cles: ["prospection"] },
 
   // ── Server actions ───────────────────────────────────────────────────────
   { libelle: "Créer une étude", couche: "action", fichier: "lib/actions/etudes.ts", cles: ["nouvelle_mission"] },
@@ -90,6 +92,14 @@ export const SURFACES: SurfaceProtegee[] = [
   { libelle: "Envoyer / lister les demandes de signature", couche: "action", fichier: "lib/actions/signature.ts", cles: ["etudes", "signer_documents", "signer_ba"] },
   { libelle: "File de signature du bureau", couche: "action", fichier: "lib/actions/signature.ts", cles: ["signer_documents", "signer_ba"] },
   { libelle: "Déchiffrement des PII d'un autre membre", couche: "action", fichier: "lib/actions/encryption.ts", cles: ["voir_nss", "voir_rib"], exception: "ses propres données" },
+  { libelle: "Lire les études (liste, détail)", couche: "action", fichier: "lib/actions/etudes.ts", cles: ["etudes"] },
+  { libelle: "Annuaire des membres et des clients (formulaire d'étude)", couche: "action", fichier: "lib/actions/etudes.ts", cles: ["etudes", "nouvelle_mission", "prospection"] },
+  { libelle: "Gestion des clients (fiche complète, modification)", couche: "action", fichier: "lib/actions/etudes.ts", cles: ["administration", "prospection"] },
+  { libelle: "Échéancier d'une étude (blocs)", couche: "action", fichier: "lib/actions/etudes.ts", cles: ["modifier_etudes"], exception: "créateur ou suiveur (chef de projet) de l'étude" },
+  { libelle: "Signer la CE d'une proposition (création de l'étude)", couche: "action", fichier: "lib/actions/propositions.ts", cles: ["prospection"] },
+  { libelle: "Marges recommandées (lecture)", couche: "action", fichier: "lib/actions/parametres.ts", cles: ["voir_factures", "gerer_parametres", "prospection"] },
+  { libelle: "Pilotage des phases (statistiques, suggestions)", couche: "action", fichier: "lib/actions/phases.ts", cles: ["prospection", "gerer_parametres", "administration"] },
+  { libelle: "Catalogue des postes", couche: "action", fichier: "lib/actions/members.ts", cles: ["membres"] },
 
   // ── RLS (dernier rempart, public.has_permission) ──────────────────────────
   { libelle: "Écriture des missions", couche: "rls", fichier: "supabase/migrations/070_suiveurs_gerent_leur_etude.sql", cles: ["modifier_etudes", "publier_missions", "voir_factures"], exception: "créateur ou suiveur (chef de projet) de l'étude" },

@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic"
 
 import "server-only"
-import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { requireApiPermission } from "@/lib/auth/api-guards"
 import { NextResponse } from "next/server"
@@ -14,8 +13,7 @@ export async function GET() {
   const guard = await requireApiPermission("parametres_structure")
   if (!guard.ok) return guard.response
 
-  const supabase = createClient()
-  const { data, error } = await supabase.from("parametres").select("*")
+  const { data, error } = await createAdminClient().from("parametres").select("*")
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ parametres: data })
 }

@@ -36,7 +36,7 @@ const ADMIN_NAV_LINKS = [
     label: "Données",
     description: "Explorateur et exports CSV",
     icon: Database,
-    permissions: ["administration"] as PermissionKey[],
+    permissions: [] as PermissionKey[], // administrateurs seulement (cf. donnees/layout.tsx)
   },
 ]
 

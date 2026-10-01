@@ -210,6 +210,11 @@ export async function sendDocumentForSignature(formData: FormData) {
 
 /** Re-synchronise le statut d'une demande depuis LiveConsent (bouton Actualiser). */
 export async function refreshSignatureStatus(id: string) {
+  const acces = await requireActionPermission(
+    ["etudes", "signer_documents", "signer_ba"],
+    "Vous n'avez pas la permission d'accéder aux signatures."
+  )
+  if (!acces.ok) return { error: acces.error }
   const supabase = createClient()
   const {
     data: { user },

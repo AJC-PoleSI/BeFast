@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
   const { data: rows, error } = await admin
     .from("personnes")
-    .select("id, email, reset_token_expires_at")
+    .select("id, reset_token_expires_at")
     .eq("reset_token_hash", tokenHash)
     .limit(1)
 
@@ -40,9 +40,16 @@ export async function GET(req: NextRequest) {
   }
 
   // Token custom valide → mint une session recovery Supabase à la volée.
+  // L'adresse est celle du compte Auth, jamais `personnes.email` : cette
+  // colonne était modifiable par son propriétaire (RLS « update own »), un
+  // jeton valide aurait donc ouvert une session sur le compte de son choix.
+  const { data: authUser } = await admin.auth.admin.getUserById(personne.id)
+  const authEmail = authUser?.user?.email
+  if (!authEmail) return NextResponse.redirect(invalid)
+
   const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
     type: "recovery",
-    email: personne.email as string,
+    email: authEmail,
     options: { redirectTo: `${base}/reset-password` },
   })
   const otp = link?.properties?.action_link

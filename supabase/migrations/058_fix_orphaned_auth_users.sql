@@ -30,7 +30,7 @@ BEGIN
   ON CONFLICT (id) DO NOTHING; -- sécurité si la ligne existe déjà
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 2. Recrée le trigger (au cas où il aurait été supprimé ou jamais créé en prod).
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;

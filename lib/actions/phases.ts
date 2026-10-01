@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { requireActionPermission } from "@/lib/auth/action-guards"
 import { hasAnyPermission } from "@/lib/auth/permissions"
 import { revalidateTag, unstable_cache } from "next/cache"
 import { PHASES_TAG } from "@/lib/cache-tags"
@@ -18,6 +19,9 @@ export type PhaseDefaut = {
   duree_semaines: number
   archived: boolean
 }
+
+// Lectures de pilotage (budget_etude, proposals) : mêmes portes que la page
+// Phases de la prospection et le paramétrage avancé.
 
 // --- Droits de l'appelant (admin / super-admin) ---
 async function getCaller() {
@@ -127,8 +131,9 @@ export async function setPhaseArchived(id: number, archived: boolean): Promise<{
 // --- Prix net moyen PAR phase (sur études signées) ---
 // net = prix_jeh / (1 + marge_pct/100). prix_jeh est déjà HT (TVA hors JEH).
 export async function getPrixNetMoyenParPhase(): Promise<{ data: Record<string, number>; error: string | null }> {
-  const { user } = await getCaller()
-  if (!user) return { data: {}, error: "Non authentifié" }
+  // Lecture de budget_etude en client admin : réservée au pilotage (page Phases).
+  const acces = await requireActionPermission(["prospection", "gerer_parametres", "administration"])
+  if (!acces.ok) return { data: {}, error: acces.error }
   const admin = createAdminClient()
   const { data, error } = await admin.from("budget_etude").select("phase, prix_jeh, marge_pct")
   if (error) return { data: {}, error: error.message }
@@ -153,9 +158,9 @@ export async function getPhasesStats(): Promise<{
   data: { nbPhasesActives: number; nbPhasesArchivees: number; nbPropales: number; nbCeSignees: number; tauxConversion: number; phasePlusUtilisee: string | null }
   error: string | null
 }> {
-  const { user } = await getCaller()
   const empty = { nbPhasesActives: 0, nbPhasesArchivees: 0, nbPropales: 0, nbCeSignees: 0, tauxConversion: 0, phasePlusUtilisee: null }
-  if (!user) return { data: empty, error: "Non authentifié" }
+  const acces = await requireActionPermission(["prospection", "gerer_parametres", "administration"])
+  if (!acces.ok) return { data: empty, error: acces.error }
   const admin = createAdminClient()
 
   const [phasesRes, propsRes, phaseNamesRes] = await Promise.all([
@@ -185,8 +190,8 @@ export async function getPhasesStats(): Promise<{
 
 // --- Phases suggérées (détectées dans les propales, absentes du catalogue) ---
 export async function getSuggestedPhases(): Promise<{ data: string[]; error: string | null }> {
-  const { user } = await getCaller()
-  if (!user) return { data: [], error: "Non authentifié" }
+  const acces = await requireActionPermission(["prospection", "gerer_parametres", "administration"])
+  if (!acces.ok) return { data: [], error: acces.error }
   const admin = createAdminClient()
   const [catRes, usedRes] = await Promise.all([
     admin.from("phases_defaut").select("nom"),

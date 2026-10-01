@@ -1,5 +1,7 @@
 "use client"
 
+import { useUser } from "@/hooks/useUser"
+
 import { useState, useEffect, useRef } from "react"
 import { Search, MoreVertical, Loader, ExternalLink, ShieldCheck, ShieldAlert, CheckCircle2, Clock, XCircle, Ban, X, Trash2 } from "lucide-react"
 import Link from "next/link"
@@ -168,6 +170,11 @@ function DeleteMemberModal({ member, onCancel, onConfirm, busy }: {
 }
 
 export function MembresTab() {
+  // Les actions sur un compte suivent les gardes de l'API : valider/rejeter =
+  // `valider_comptes`, supprimer = administrateur. Avant, tout porteur de
+  // `membres` voyait les boutons et obtenait une erreur au clic.
+  const { permissions, isAdmin } = useUser()
+  const peutValider = isAdmin || !!permissions?.valider_comptes
   const [members, setMembers] = useState<PersonneWithRole[]>([])
   const [allRoles, setAllRoles] = useState<ProfilType[]>([])
   const [filteredMembers, setFilteredMembers] = useState<PersonneWithRole[]>([])
@@ -465,7 +472,7 @@ export function MembresTab() {
                           {/* Un compte supprimé n'est pas revalidable : ses données
                               personnelles ont été purgées, le revalider ne rendrait
                               l'accès qu'à une coquille anonymisée. */}
-                          {m.account_status !== "validated" && m.account_status !== "deleted" && (
+                          {peutValider && m.account_status !== "validated" && m.account_status !== "deleted" && (
                             <button
                               onClick={() => patchStatus(m.id, "validated")}
                               disabled={updating === m.id}
@@ -475,7 +482,7 @@ export function MembresTab() {
                               Valider le compte
                             </button>
                           )}
-                          {m.account_status === "pending_validation" && (
+                          {peutValider && m.account_status === "pending_validation" && (
                             <button
                               onClick={() => setRejectTarget(m)}
                               disabled={updating === m.id}
@@ -485,7 +492,7 @@ export function MembresTab() {
                               Rejeter
                             </button>
                           )}
-                          {m.account_status !== "deleted" && (
+                          {isAdmin && m.account_status !== "deleted" && (
                             <button
                               onClick={() => setDeleteTarget(m)}
                               disabled={updating === m.id}

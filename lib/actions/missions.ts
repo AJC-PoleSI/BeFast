@@ -67,6 +67,21 @@ export async function getMission(id: string) {
   return { data }
 }
 
+const COLONNES_MISSION_FORMULAIRE = [
+  "etude_id",
+  "nom",
+  "description",
+  "type",
+  "voie",
+  "classe",
+  "langues",
+  "date_debut",
+  "date_fin",
+  "remuneration",
+  "nb_jeh",
+  "nb_intervenants",
+] as const
+
 export async function createMission(formData: {
   etude_id?: string
   nom: string
@@ -90,12 +105,16 @@ export async function createMission(formData: {
 
   const supabase = createClient()
 
+  // Liste blanche : l'objet reçu du client ne doit jamais pouvoir porter
+  // `published`, `intervenant_id` ou `created_by` (affectation de masse).
+  const payload: Record<string, unknown> = { created_by: guard.userId }
+  for (const k of COLONNES_MISSION_FORMULAIRE) {
+    if (formData[k] !== undefined) payload[k] = formData[k]
+  }
+
   const { data, error } = await supabase
     .from("missions")
-    .insert({
-      ...formData,
-      created_by: guard.userId,
-    })
+    .insert(payload)
     .select()
     .single()
 

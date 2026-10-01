@@ -80,11 +80,12 @@ const _getAllParametresCached = unstable_cache(
 // DEBUG: Test query without JOINs to verify data exists
 export async function getEtudesRaw(filters?: { statut?: string }) {
   noStore()
+  // Lecture des études : clé `etudes`. La RLS laisse lire toute étude
+  // publiée (budget, marge, client compris) à n'importe quel compte, le garde
+  // applicatif ferme cet écart pour les intervenants et comptes restreints.
+  const acces = await requireActionPermission("etudes", "Vous n'avez pas accès aux études.")
+  if (!acces.ok) return { error: acces.error }
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
 
   let query = supabase
     .from("etudes")
@@ -104,11 +105,12 @@ export async function getEtudesRaw(filters?: { statut?: string }) {
 // car SELECT est déjà optimisé (colonnes spécifiques).
 export async function getEtudes(filters?: { statut?: string }) {
   noStore()
+  // Lecture des études : clé `etudes`. La RLS laisse lire toute étude
+  // publiée (budget, marge, client compris) à n'importe quel compte, le garde
+  // applicatif ferme cet écart pour les intervenants et comptes restreints.
+  const acces = await requireActionPermission("etudes", "Vous n'avez pas accès aux études.")
+  if (!acces.ok) return { error: acces.error }
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
 
   let query = supabase
     .from("etudes")
@@ -129,11 +131,12 @@ export async function getEtudes(filters?: { statut?: string }) {
 // après modification (les utilisateurs modifient fréquemment leurs études).
 export async function getEtude(id: string) {
   noStore()
+  // Lecture des études : clé `etudes`. La RLS laisse lire toute étude
+  // publiée (budget, marge, client compris) à n'importe quel compte, le garde
+  // applicatif ferme cet écart pour les intervenants et comptes restreints.
+  const acces = await requireActionPermission("etudes", "Vous n'avez pas accès aux études.")
+  if (!acces.ok) return { error: acces.error }
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
 
   const { data, error } = await supabase
     .from("etudes")
@@ -157,6 +160,38 @@ function withSuiveursList<T extends { etude_suiveurs?: { personnes: unknown }[] 
     suiveurs: (etude_suiveurs ?? [])
       .map((es) => es.personnes)
       .filter(Boolean) as { id: string; prenom: string | null; nom: string | null; email: string | null }[],
+  }
+}
+
+// Colonnes que les formulaires peuvent écrire. Tout le reste (`published`,
+// `created_by`, `suiveur_id`…) est posé par le serveur : un objet forgé ne
+// doit pas pouvoir publier une étude ni en changer le créateur.
+const COLONNES_ETUDE_FORMULAIRE = [
+  "nom", "numero", "client_id", "budget", "budget_ht", "frais_dossier", "marge_pct", "type", "commentaire", "statut",
+] as const
+const COLONNES_CLIENT_FORMULAIRE = [
+  "nom", "type", "secteur", "contact_civilite", "contact_prenom", "contact_nom", "contact_poste",
+  "contact_email", "contact_phone", "adresse", "code_postal", "ville", "pays",
+] as const
+const COLONNES_BLOC_FORMULAIRE = ["nom", "semaine_debut", "duree_semaines", "jeh", "couleur", "ordre"] as const
+
+function filtrerColonnes(obj: Record<string, unknown>, cles: readonly string[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const k of cles) if (k in obj && obj[k] !== undefined) out[k] = obj[k]
+  return out
+}
+
+/** Créateur + suiveurs d'une étude, pour canEditEtude. null si introuvable. */
+async function chargerAccesEtude(supabase: ReturnType<typeof createClient>, etudeId: string) {
+  const { data } = await supabase
+    .from("etudes")
+    .select("created_by, etude_suiveurs(personne_id)")
+    .eq("id", etudeId)
+    .single()
+  if (!data) return null
+  return {
+    created_by: data.created_by,
+    suiveurs: (data.etude_suiveurs ?? []).map((x: { personne_id: string }) => ({ id: x.personne_id })),
   }
 }
 
@@ -194,7 +229,7 @@ export async function createEtude(formData: {
   const { data, error } = await supabase
     .from("etudes")
     .insert({
-      ...rest,
+      ...filtrerColonnes(rest, COLONNES_ETUDE_FORMULAIRE),
       suiveur_id: suiveursFinaux[0] ?? null,
       created_by: user.id,
     })
@@ -265,7 +300,7 @@ export async function updateEtude(
   }
 
   const { suiveur_ids, ...rest } = updates
-  const payload: Record<string, unknown> = { ...rest }
+  const payload: Record<string, unknown> = filtrerColonnes(rest, COLONNES_ETUDE_FORMULAIRE)
   if (suiveur_ids !== undefined) payload.suiveur_id = suiveur_ids[0] ?? null
 
   const { error } = await supabase
@@ -313,11 +348,10 @@ export async function getEtudeMissions(etudeId: string) {
 // ---- Clients ----
 
 export async function getClients() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
+  // Annuaire (nom, contact) lu en client admin : réservé au formulaire d'étude
+  // et à la prospection — pas aux 600 intervenants ni aux comptes restreints.
+  const acces = await requireActionPermission(["etudes", "nouvelle_mission", "prospection"])
+  if (!acces.ok) return { error: acces.error }
   return _getClientsCached()
 }
 
@@ -336,17 +370,14 @@ export async function createClient_(formData: {
   ville?: string
   pays?: string
 }) {
+  const acces = await requireActionPermission(["nouvelle_mission", "administration", "prospection"])
+  if (!acces.ok) return { error: acces.error }
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return { error: "Non authentifié" }
   if (!formData.nom?.trim()) return { error: "Le nom du client est requis." }
 
   const { data, error } = await supabase
     .from("clients")
-    .insert(formData)
+    .insert(filtrerColonnes(formData, COLONNES_CLIENT_FORMULAIRE))
     .select()
     .single()
 
@@ -358,11 +389,10 @@ export async function createClient_(formData: {
 // Liste complète (tous les champs) — pour la page de gestion des clients.
 // PAS de cache : cette page reste peu fréquentée, la fraîcheur prime.
 export async function getClientsFull() {
+  // Fiche complète des clients : même porte que la page Clients.
+  const acces = await requireActionPermission(["administration", "prospection"])
+  if (!acces.ok) return { error: acces.error }
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
 
   const { data, error } = await supabase
     .from("clients")
@@ -391,19 +421,16 @@ export async function updateClient_(
     actif: boolean
   }>
 ) {
+  const acces = await requireActionPermission(["administration", "prospection"])
+  if (!acces.ok) return { error: acces.error }
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return { error: "Non authentifié" }
   if (formData.nom !== undefined && !formData.nom.trim()) {
     return { error: "Le nom du client est requis." }
   }
 
   const { data, error } = await supabase
     .from("clients")
-    .update(formData)
+    .update(filtrerColonnes(formData, [...COLONNES_CLIENT_FORMULAIRE, "actif"]))
     .eq("id", id)
     .select()
     .single()
@@ -448,10 +475,27 @@ export async function upsertEcheancierBloc(bloc: {
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
+  // Les blocs sont les lignes des conventions et des factures : seuls le
+  // créateur, les suiveurs (chefs de projet) et `modifier_etudes` les
+  // modifient — comme l'étude elle-même. L'étude de rattachement d'un bloc
+  // existant est lue en base, jamais prise dans l'objet reçu.
+  let etudeId = bloc.etude_id
+  if (bloc.id) {
+    const { data: existant } = await supabase.from("echeancier_blocs").select("etude_id").eq("id", bloc.id).single()
+    if (!existant) return { error: "Bloc introuvable" }
+    etudeId = existant.etude_id
+  }
+  const acces = await chargerAccesEtude(supabase, etudeId)
+  if (!acces) return { error: "Étude introuvable" }
+  const profile = await getCachedProfile(user.id)
+  if (!canEditEtude(profile, acces)) return { error: "Vous n'êtes pas autorisé à modifier l'échéancier de cette étude." }
+
+  const colonnes = filtrerColonnes(bloc as Record<string, unknown>, COLONNES_BLOC_FORMULAIRE)
+
   if (bloc.id) {
     const { data, error } = await supabase
       .from("echeancier_blocs")
-      .update(bloc)
+      .update(colonnes)
       .eq("id", bloc.id)
       .select()
       .single()
@@ -461,7 +505,7 @@ export async function upsertEcheancierBloc(bloc: {
 
   const { data, error } = await supabase
     .from("echeancier_blocs")
-    .insert(bloc)
+    .insert({ ...colonnes, etude_id: etudeId })
     .select()
     .single()
 
@@ -549,6 +593,13 @@ export async function deleteEcheancierBloc(id: string) {
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
+  const { data: existant } = await supabase.from("echeancier_blocs").select("etude_id").eq("id", id).single()
+  if (!existant) return { error: "Bloc introuvable" }
+  const acces = await chargerAccesEtude(supabase, existant.etude_id)
+  if (!acces) return { error: "Étude introuvable" }
+  const profile = await getCachedProfile(user.id)
+  if (!canEditEtude(profile, acces)) return { error: "Vous n'êtes pas autorisé à modifier l'échéancier de cette étude." }
+
   const { error } = await supabase
     .from("echeancier_blocs")
     .delete()
@@ -559,11 +610,8 @@ export async function deleteEcheancierBloc(id: string) {
 }
 
 export async function getMembers() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
+  const acces = await requireActionPermission(["etudes", "nouvelle_mission", "prospection"])
+  if (!acces.ok) return { error: acces.error }
   return _getMembersCached()
 }
 

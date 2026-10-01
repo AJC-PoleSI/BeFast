@@ -302,7 +302,8 @@ export default function MissionDetailPage() {
                   {STATUT_LABELS[mission.statut]}
                 </Badge>
               </div>
-              {mission.etudes && (
+              {/* La page Études exige la clé `etudes` : pas de lien vers un refus pour un intervenant. */}
+              {mission.etudes && (isAdmin || permissions?.etudes) && (
                 <Link
                   href={`/etudes/${mission.etudes.id}`}
                   className="text-sm text-blue hover:underline flex items-center gap-1"

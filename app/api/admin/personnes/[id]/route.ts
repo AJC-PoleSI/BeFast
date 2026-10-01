@@ -51,6 +51,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Le statut du compte conditionne ses permissions (compte restreint) et
+    // vit dans le profil mis en cache 5 min : on l'invalide tout de suite.
+    revalidateTag(USER_PROFILE_TAG(id))
+
     // Trace : `rejected_by` dit qui, jamais quand ni quoi pour les autres
     // statuts. Sans ce journal, un balayage de la file de validation (160
     // comptes les 17-18/09/2026) ne laisse aucune trace exploitable.

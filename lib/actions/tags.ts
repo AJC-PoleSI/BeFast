@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { requireActionPermission } from "@/lib/auth/action-guards"
 
 export async function getTagsDictionary() {
@@ -26,7 +27,9 @@ export async function saveTagsDictionary(tags: any[]) {
     "Vous n'avez pas la permission de modifier le dictionnaire des balises."
   )
   if (!guard.ok) return { error: guard.error }
-  const sb = createClient()
+  // Client admin : la RLS de `parametres` (069) n'ouvre l'écriture qu'à
+  // `parametres_structure`, le garde applicatif ci-dessus fait foi ici.
+  const sb = createAdminClient()
 
   const { error } = await sb.from("parametres").upsert({ key: "tags_dictionary", value: JSON.stringify(tags) }, { onConflict: "key" })
   if (error) return { error: error.message }

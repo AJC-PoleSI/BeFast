@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { hasPermission } from "@/lib/auth/permissions"
 import { encryptData, decryptData, generateEncryptionSalt } from "@/lib/crypto"
+import { avecPIIEnClair, lireSecret } from "@/lib/pii/personne"
 import { getMasterKey } from "@/lib/crypto-key"
 
 export async function getDecryptedProfile(userId: string) {
@@ -40,18 +41,22 @@ export async function getDecryptedProfile(userId: string) {
 
     if (error || !profile) return { error: "Profil introuvable" }
 
-    const salt = profile.encryption_salt
-    if (!salt) return { error: "Salte manquant" }
+    // Jamais de jeton ni de colonne technique dans la réponse ; les
+    // coordonnées sortent déchiffrées (version chiffrée prioritaire) et
+    // NSS/IBAN sont lus dans leurs deux formats historiques (lireSecret).
+    const {
+      reset_token_hash: _rth,
+      reset_token_expires_at: _rte,
+      verification_token_hash: _vth,
+      verification_token_expires_at: _vte,
+      ...reste
+    } = profile as Record<string, any>
 
     return {
       data: {
-        ...profile,
-        nss: peutVoirNss && profile.nss_encrypted ? decryptData(profile.nss_encrypted, profile.nss_iv, profile.nss_auth_tag, MASTER_KEY, salt) : null,
-        iban: peutVoirRib && profile.iban_encrypted ? decryptData(profile.iban_encrypted, profile.iban_iv, profile.iban_auth_tag, MASTER_KEY, salt) : null,
-        adresse: profile.adresse_encrypted ? decryptData(profile.adresse_encrypted, profile.adresse_iv, profile.adresse_auth_tag, MASTER_KEY, salt) : profile.adresse,
-        date_naissance: profile.date_naissance_encrypted ? decryptData(profile.date_naissance_encrypted, profile.date_naissance_iv, profile.date_naissance_auth_tag, MASTER_KEY, salt) : profile.date_naissance,
-        ville: profile.ville_encrypted ? decryptData(profile.ville_encrypted, profile.ville_iv, profile.ville_auth_tag, MASTER_KEY, salt) : profile.ville,
-        code_postal: profile.code_postal_encrypted ? decryptData(profile.code_postal_encrypted, profile.code_postal_iv, profile.code_postal_auth_tag, MASTER_KEY, salt) : profile.code_postal,
+        ...avecPIIEnClair(reste),
+        nss: peutVoirNss ? lireSecret(profile, "nss") : null,
+        iban: peutVoirRib ? lireSecret(profile, "iban") : null,
       },
     }
   } catch (error) {

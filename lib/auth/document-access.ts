@@ -82,3 +82,41 @@ export async function canAccessEntityDocuments(
   if (scope === "etude") return intervientSurEtude(entityId, profile.id)
   return false
 }
+
+/**
+ * L'intervenant est-il rattaché à cette mission ? Même source de vérité que
+ * `listMissionIntervenants` (lib/actions/documents.ts) : intervenant principal
+ * (`missions.intervenant_id`), collaboration, ou candidature acceptée.
+ */
+export async function estIntervenantDeLaMission(missionId: string, personneId: string): Promise<boolean> {
+  if (!missionId || !personneId) return false
+  const admin = createAdminClient()
+  const [{ data: mission }, { data: collab }, { data: candidature }] = await Promise.all([
+    admin.from("missions").select("intervenant_id").eq("id", missionId).maybeSingle(),
+    admin
+      .from("mission_collaborations")
+      .select("id")
+      .eq("mission_id", missionId)
+      .eq("intervenant_id", personneId)
+      .maybeSingle(),
+    admin
+      .from("candidatures")
+      .select("id")
+      .eq("mission_id", missionId)
+      .eq("personne_id", personneId)
+      .eq("statut", "acceptee")
+      .maybeSingle(),
+  ])
+  return mission?.intervenant_id === personneId || !!collab || !!candidature
+}
+
+/** L'intervenant est-il rattaché à au moins une mission de cette étude ? */
+export async function estIntervenantDeLEtude(etudeId: string, personneId: string): Promise<boolean> {
+  if (!etudeId || !personneId) return false
+  const admin = createAdminClient()
+  const { data: missions } = await admin.from("missions").select("id").eq("etude_id", etudeId)
+  for (const m of missions ?? []) {
+    if (await estIntervenantDeLaMission((m as { id: string }).id, personneId)) return true
+  }
+  return false
+}

@@ -351,11 +351,11 @@ export async function deleteProposal(id: string) {
 // Crée : 1 étude + N blocs d'échéancier (Gantt) + N missions (candidatures).
 // Idempotent : si la propale a déjà une étude liée, on la renvoie sans recréer.
 export async function signProposal(id: string) {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
+  // Signer la CE crée une étude réelle, ses missions et ses factures avec le
+  // client admin : même permission que les autres écritures de prospection.
+  const acces = await requireActionPermission("prospection", "Vous n'avez pas la permission de signer une proposition.")
+  if (!acces.ok) return { error: acces.error }
+  const user = { id: acces.userId }
 
   // Client admin pour orchestrer l'insertion multi-tables sans buter sur la RLS
   const sb = createAdminClient()

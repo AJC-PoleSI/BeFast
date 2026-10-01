@@ -48,13 +48,18 @@ export async function getAllMembers(): Promise<{ data: PersonneWithRole[] | null
     if (!allowed) return { data: null, error: "Non autorisé" }
 
     const admin = createAdminClient()
+    // Colonnes explicites : jamais les chiffrés (NSS, IBAN, coordonnées), le
+    // sel, les jetons ni les colonnes PII historiques en clair — la liste des
+    // membres n'en a pas besoin et elle est servie à tout porteur de `membres`.
     const { data, error } = await admin
       .from("personnes")
-      .select("*, profils_types!profil_type_id(*)")
+      .select(
+        "id, email, prenom, nom, account_status, profil_type_id, created_at, updated_at, portable, promo, pole, etablissement, scolarite, actif, rejection_reason, rejected_at, rejected_by, legacy_bequick_id, civilite, competences, password_setup_sent_at, password_set_at, rh_candidate_id, is_candidate, documents_complete, avatar_url, email_verified, profils_types!profil_type_id(*)"
+      )
       .order("created_at", { ascending: false })
 
     if (error) return { data: null, error: error.message }
-    const members = (data ?? []) as PersonneWithRole[]
+    const members = (data ?? []) as unknown as PersonneWithRole[]
 
     // Postes par personne — requête séparée et tolérante (si la table
     // personne_postes n'existe pas encore, on renvoie les membres sans postes).
@@ -102,6 +107,9 @@ export async function updateMemberRole(personneId: string, roleSlug: string) {
       .eq("id", personneId)
 
     if (error) return { success: false, error: error.message }
+    // Le profil mis en cache (5 min) porte le rôle : une rétrogradation doit
+    // prendre effet tout de suite, pas au prochain rafraîchissement.
+    revalidateTag(`user-profile:${personneId}`)
     return { success: true, profil: { id: profil.id, slug: roleSlug } }
   } catch (err) {
     console.error("[updateMemberRole] Exception:", err)
@@ -144,6 +152,16 @@ export async function updateRolePermissions(roleId: string, permissions: Record<
       .eq("id", roleId)
 
     if (error) return { success: false, error: error.message }
+    // Les permissions sont embarquées dans le profil mis en cache de chaque
+    // porteur (rôle de base ou poste) : on invalide tous les porteurs.
+    const [{ data: parRole }, { data: parPoste }] = await Promise.all([
+      admin.from("personnes").select("id").eq("profil_type_id", roleId),
+      admin.from("personne_postes").select("personne_id").eq("poste_id", roleId),
+    ])
+    const ids = new Set<string>()
+    for (const r of parRole ?? []) ids.add((r as { id: string }).id)
+    for (const r of parPoste ?? []) ids.add((r as { personne_id: string }).personne_id)
+    for (const id of ids) revalidateTag(`user-profile:${id}`)
     return { success: true }
   } catch (err) {
     console.error("[updateRolePermissions] Exception:", err)
@@ -213,18 +231,20 @@ export async function deleteRole(roleId: string) {
       return { success: false, error: "Impossible de supprimer le rôle Administrateur." }
     }
 
-    // Count affected users
-    const { count } = await admin
+    // Affected users
+    const { data: affectes } = await admin
       .from("personnes")
-      .select("id", { count: "exact", head: true })
+      .select("id")
       .eq("profil_type_id", roleId)
+    const count = affectes?.length ?? 0
 
     // Remove profil_type from affected users first
-    if (count && count > 0) {
+    if (count > 0) {
       await admin
         .from("personnes")
         .update({ profil_type_id: null })
         .eq("profil_type_id", roleId)
+      for (const a of affectes ?? []) revalidateTag(`user-profile:${(a as { id: string }).id}`)
     }
 
     const { error } = await admin
@@ -243,6 +263,10 @@ export async function deleteRole(roleId: string) {
 /** Liste des postes assignables (bureau + pôles). */
 export async function getPostesCatalog(): Promise<{ data: ProfilType[] | null; error: string | null }> {
   try {
+    // Seule action du dépôt sans aucun garde : la matrice des permissions des
+    // postes se lisait sans même être connecté. Même porte que l'écran Membres.
+    const acces = await requireActionPermission("membres")
+    if (!acces.ok) return { data: null, error: acces.error }
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("profils_types")

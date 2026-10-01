@@ -37,14 +37,26 @@ export async function getParametres(): Promise<{ data: ParametresMap | null; err
   }
 }
 
-// Écriture en lot des paramètres — administrateur uniquement.
+// Clés du pilotage des prix (app/(dashboard)/tresorerie/PilotagePrix.tsx).
+const CLES_PILOTAGE_PRIX = new Set(["prix_jeh_moyen", "prix_suivi_jeh_moyen", "frais_dossier_moyen", "marge_je_moyenne_pct"])
+
+// Écriture en lot des paramètres.
 export async function saveParametres(values: ParametresMap): Promise<{ success: boolean; error?: string }> {
   // Paramètres globaux de la structure : permission `parametres_structure`
-  // (Présidente, Pôle Trésorerie…) en plus des administrateurs.
-  const guard = await requireActionPermission(
-    "parametres_structure",
-    "Seuls les responsables des paramètres de la structure peuvent les modifier."
-  )
+  // (Présidente, Pôle Trésorerie…) en plus des administrateurs. Deux
+  // sous-ensembles ont leurs propres portes, celles des écrans qui les
+  // éditent : le pilotage des prix (onglet Trésorerie, `voir_factures`) et
+  // les textes par défaut des propositions (page Phases, `gerer_parametres`
+  // / `administration`). Sans cela, ces écrans affichaient un formulaire que
+  // l'enregistrement refusait.
+  const cles = Object.keys(values)
+  const message = "Seuls les responsables des paramètres de la structure peuvent les modifier."
+  const guard =
+    cles.length > 0 && cles.every((k) => CLES_PILOTAGE_PRIX.has(k))
+      ? await requireActionPermission(["parametres_structure", "gerer_parametres", "voir_factures"], message)
+      : cles.length > 0 && cles.every((k) => /^propale_.*_default$/.test(k))
+        ? await requireActionPermission(["parametres_structure", "gerer_parametres", "administration"], message)
+        : await requireActionPermission("parametres_structure", message)
   if (!guard.ok) return { success: false, error: guard.error }
 
   const admin = createAdminClient()
@@ -75,11 +87,12 @@ const _readMarges = unstable_cache(
   { tags: [MARGES_TAG] }
 )
 
-// Map taille -> marge_pct. Accessible à tout membre authentifié.
+// Map taille -> marge_pct.
 export async function getMargesRecommandees(): Promise<{ data: MargesMap | null; error: string | null }> {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { data: null, error: "Non authentifié" }
+  // Lecture en client admin (hors RLS « interne ») : réservée aux écrans qui
+  // s'en servent — pilotage des prix, prospection, paramétrage avancé.
+  const acces = await requireActionPermission(["voir_factures", "gerer_parametres", "prospection"])
+  if (!acces.ok) return { data: null, error: acces.error }
 
   try {
     return { data: await _readMarges(), error: null }

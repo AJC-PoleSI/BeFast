@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { buildTemplateContext } from "@/lib/actions/documents"
+import { buildTemplateContext } from "@/lib/documents/context"
 import { renderFacturePdf } from "@/lib/facture/pdf"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { hasPermission } from "@/lib/auth/permissions"

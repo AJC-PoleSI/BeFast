@@ -1,16 +1,16 @@
-# Graph Report - Befast  (2026-09-09)
+# Graph Report - Befast  (2026-10-02)
 
 ## Corpus Check
-- 370 files · ~249,126 words
+- 440 files · ~294,604 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2070 nodes · 4013 edges · 123 communities (115 shown, 8 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 108 edges (avg confidence: 0.8)
+- 2378 nodes · 5018 edges · 135 communities (124 shown, 11 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 125 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `bb5cbcd4`
+- Built from commit: `8da1ae50`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -101,10 +101,13 @@
 - [[_COMMUNITY_Community 97|Community 97]]
 - [[_COMMUNITY_Community 98|Community 98]]
 - [[_COMMUNITY_Community 99|Community 99]]
+- [[_COMMUNITY_Community 100|Community 100]]
 - [[_COMMUNITY_Community 101|Community 101]]
 - [[_COMMUNITY_Community 102|Community 102]]
+- [[_COMMUNITY_Community 103|Community 103]]
 - [[_COMMUNITY_Community 104|Community 104]]
 - [[_COMMUNITY_Community 105|Community 105]]
+- [[_COMMUNITY_Community 106|Community 106]]
 - [[_COMMUNITY_Community 107|Community 107]]
 - [[_COMMUNITY_Community 108|Community 108]]
 - [[_COMMUNITY_Community 109|Community 109]]
@@ -112,58 +115,67 @@
 - [[_COMMUNITY_Community 111|Community 111]]
 - [[_COMMUNITY_Community 112|Community 112]]
 - [[_COMMUNITY_Community 113|Community 113]]
+- [[_COMMUNITY_Community 114|Community 114]]
+- [[_COMMUNITY_Community 115|Community 115]]
+- [[_COMMUNITY_Community 116|Community 116]]
 - [[_COMMUNITY_Community 117|Community 117]]
 - [[_COMMUNITY_Community 118|Community 118]]
 - [[_COMMUNITY_Community 119|Community 119]]
+- [[_COMMUNITY_Community 120|Community 120]]
 - [[_COMMUNITY_Community 121|Community 121]]
 - [[_COMMUNITY_Community 122|Community 122]]
 - [[_COMMUNITY_Community 123|Community 123]]
 - [[_COMMUNITY_Community 124|Community 124]]
+- [[_COMMUNITY_Community 130|Community 130]]
+- [[_COMMUNITY_Community 131|Community 131]]
+- [[_COMMUNITY_Community 132|Community 132]]
+- [[_COMMUNITY_Community 133|Community 133]]
+- [[_COMMUNITY_Community 134|Community 134]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `createClient` - 168 edges
-2. `createAdminClient()` - 132 edges
-3. `getCachedProfile()` - 45 edges
-4. `hasPermission()` - 42 edges
-5. `cn()` - 40 edges
-6. `useUser()` - 28 edges
-7. `requireApiAdmin()` - 27 edges
-8. `Button` - 25 edges
-9. `buildTemplateContext()` - 23 edges
-10. `PersonneWithRole` - 22 edges
+1. `createClient` - 176 edges
+2. `createAdminClient()` - 151 edges
+3. `getCachedProfile()` - 60 edges
+4. `hasPermission()` - 53 edges
+5. `requireActionPermission()` - 49 edges
+6. `cn()` - 40 edges
+7. `useUser()` - 32 edges
+8. `checkPageAccess()` - 31 edges
+9. `requireApiAdmin()` - 29 edges
+10. `buildTemplateContext()` - 26 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `ProfilPage()` --calls--> `useUser()`  [INFERRED]
   app/(dashboard)/dashboard/profil/page.tsx → hooks/useUser.tsx
-- `PATCH()` --calls--> `createAdminClient()`  [INFERRED]
-  app/api/profil/custom-fields/route.ts → lib/supabase/admin.ts
-- `ProfileHeaderProps` --references--> `PersonneWithRole`  [EXTRACTED]
-  app/(dashboard)/dashboard/profil/_components/profile-header.tsx → types/database.types.ts
-- `ProfileInfoCardProps` --references--> `PersonneWithRole`  [EXTRACTED]
-  app/(dashboard)/dashboard/profil/_components/profile-info-card.tsx → types/database.types.ts
-- `SensitiveFieldCardProps` --references--> `PersonneWithRole`  [EXTRACTED]
-  app/(dashboard)/dashboard/profil/_components/sensitive-field-card.tsx → types/database.types.ts
+- `AdminDocumentsLayout()` --calls--> `checkPageAccess()`  [INFERRED]
+  app/(dashboard)/administration/documents/layout.tsx → lib/auth/page-guards.ts
+- `AdminProfilePage()` --calls--> `useUser()`  [EXTRACTED]
+  app/(dashboard)/dashboard/profil/[userId]/page.tsx → hooks/useUser.tsx
+- `DocumentsLayout()` --calls--> `checkPageAccess()`  [INFERRED]
+  app/(dashboard)/documents/layout.tsx → lib/auth/page-guards.ts
+- `EtudeDocumentsPage()` --calls--> `canEditEtude()`  [INFERRED]
+  app/(dashboard)/etudes/[etudeId]/documents/page.tsx → lib/auth/permissions.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (123 total, 8 thin omitted)
+## Communities (135 total, 11 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.16
-Nodes (24): collectStaffEmails(), notifyAccountOpened(), candidaterMission(), createMission(), getCandidaturesMission(), getChefsDeProjet(), getMission(), repondreCandidature() (+16 more)
+Cohesion: 0.10
+Nodes (20): BudgetValidationRow, decideBudget(), deleteProposal(), GANTT_COLORS, getBudgetValidations(), getProposals(), isCallerAdmin(), nextEtudeNumero() (+12 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.13
-Nodes (23): toggleMissionPublished(), callerHasMembresAccess(), getSignaturesAccess(), listBureauQueue(), GET(), GET(), GET(), fetchProfile() (+15 more)
+Cohesion: 0.27
+Nodes (8): useUrlFilters(), CLASSES, FILTER_KEYS, MISSION_TYPES, MissionsClient(), TYPE_COLORS, typeLabel(), VOIES
 
 ### Community 2 - "Community 2"
-Cohesion: 0.11
+Cohesion: 0.12
 Nodes (20): createRole(), deleteRole(), getAllMembers(), getAllRoles(), getCallerRole(), getPostesCatalog(), setPersonnePostes(), updateMemberRole() (+12 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.07
-Nodes (40): listMissionIntervenants(), listTemplates(), State, ROLE_MAP, FIELD_CONFIG, SensitiveEditModalProps, FIELD_LABELS, SensitiveFieldModalProps (+32 more)
+Cohesion: 0.13
+Nodes (28): deleteGeneratedDocument(), listEtudeMissions(), listMissionIntervenants(), listTemplates(), _listTemplatesCached, getEtude(), withSuiveursList(), isMembreInterne() (+20 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.06
@@ -174,16 +186,16 @@ Cohesion: 0.06
 Nodes (50): Plan 01-01: scaffolding Next.js, design system, Supabase, encryption, migrations SQL, custom_access_token_hook (rôle dans claims JWT), lib/encryption.ts (encrypt/decrypt server-only), Migrations SQL (profils_types, personnes, RLS, JWT hook), Active, BeFast — Odensia Junior Conseil, Constraints, Context (+42 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.07
-Nodes (33): DashboardShell(), DashboardShellProps, UseUserReturn, AppSidebar(), AppSidebarProps, IconType, labelVariants, NAV (+25 more)
+Cohesion: 0.21
+Nodes (13): AvatarUploadProps, Avatar, AvatarFallback, AvatarImage, Tabs(), TabsContent(), TabsContext, TabsContextValue (+5 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.06
 Nodes (36): dependencies, @aws-sdk/client-s3, @aws-sdk/s3-request-presigner, class-variance-authority, clsx, docx-preview, docxtemplater, exceljs (+28 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.11
-Nodes (17): PATCH(), DOC_ICONS, DocumentsGrid(), DocumentsGridProps, StatusBadgeProps, ACCEPTED_FILE_TYPES, CustomFieldFormValues, customFieldValueSchema (+9 more)
+Cohesion: 0.08
+Nodes (34): POST(), DOC_ICONS, DocumentsGrid(), DocumentsGridProps, safeJson(), StatusBadgeProps, uploadDocument(), isTypeCheckViolation() (+26 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.08
@@ -194,20 +206,20 @@ Cohesion: 0.08
 Nodes (31): AES-256-GCM Encryption Utilities, BeFast Design System, Custom JWT Access Token Hook, Manual Scaffolding over create-next-app, Next.js 14 App Router Project, Phase 01 Plan 01: Foundation, server-only Import Guard Pattern, SQL Schema (profils_types, personnes) (+23 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.06
-Nodes (33): getParametres(), _readParametres, createPhaseDefaut(), getCaller(), getMyPhasePermissions(), getPhasesDefaut(), getPhasesStats(), getPrixNetMoyenParPhase() (+25 more)
+Cohesion: 0.18
+Nodes (16): createPhaseDefaut(), getCaller(), getMyPhasePermissions(), getPhasesDefaut(), getPhasesStats(), getPrixNetMoyenParPhase(), getSuggestedPhases(), integrateSuggestedPhase() (+8 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.18
 Nodes (12): audit_logs table, BeFast Security Fixes Implementation Plan, Phase 1: Critical Fixes, Phase 2: High Priority Fixes (audit logging), Phase 3: Medium Priority (encryption + docs), lib/supabase-security.ts utilities, HIGH: etudes/clients missing ownership check, HIGH: missing RLS on mission_intervenants (+4 more)
 
 ### Community 13 - "Community 13"
-Cohesion: 0.10
-Nodes (26): createClient_(), createEtude(), deleteEtude(), getAllParametres(), _getAllParametresCached, getClients(), _getClientsCached, getClientsFull() (+18 more)
+Cohesion: 0.12
+Nodes (10): getProposal(), DEFAULT_MODALITES, GANTT_COLORS, getNextMonday(), PhaseCatalogue, phasesFallback, ProposalForm(), mockSavedPropales (+2 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.09
-Nodes (26): Candidature, CandidatureStatut, CandidatureWithMission, CandidatureWithPersonne, ClientType, CustomFieldType, CustomFieldValue, DocumentStatus (+18 more)
+Cohesion: 0.08
+Nodes (27): Candidature, CandidatureStatut, CandidatureWithMission, CandidatureWithPersonne, ClientType, CustomFieldType, CustomFieldValue, DocumentStatus (+19 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.07
@@ -218,56 +230,52 @@ Cohesion: 0.09
 Nodes (21): 1. Contexte, 2. Objectifs, 3. Décisions validées (défauts confirmés), 4.1 Hub à onglets (`/signatures`), 4.2 Découpage en phases, 4. Architecture, 5.1 Migration `038_signature_ba.sql`, 5.2 Extension du client LiveConsent (+13 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.09
-Nodes (31): deleteEcheancierBloc(), getEcheancierBlocs(), getEtudeMissions(), getEtudesRaw(), savePolesSilent(), setParametre(), upsertEcheancierBloc(), getMargesRecommandees() (+23 more)
+Cohesion: 0.15
+Nodes (22): buildPersonnePatch(), clean(), dedupeByEmail(), MappedMember, mapPoste(), MapResult, mapRow(), mapStatus() (+14 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.13
-Nodes (23): buildPersonnePatch(), clean(), dedupeByEmail(), MappedMember, mapPoste(), MapResult, mapRow(), mapStatus() (+15 more)
+Cohesion: 0.16
+Nodes (17): affecterIntervenant(), candidaterMission(), COLONNES_MISSION_FORMULAIRE, createMission(), getCandidaturesMission(), getChefsDeProjet(), getMission(), rechercherIntervenantsAffectables() (+9 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.08
-Nodes (45): annulerPaiementHerite(), annulerRetributionPaiement(), CaParEtude, chargerIntervenantsMission(), chargerNumerosBVUtilises(), chargerSourcesRetributions(), createFacture(), deleteFacture() (+37 more)
-
-### Community 20 - "Community 20"
-Cohesion: 0.09
-Nodes (7): ADMIN_NAV_LINKS, AdminSidebar(), LEGACY_ACTIVE, RoleGuard(), RoleGuardProps, PermissionKey, Skeleton()
+Cohesion: 0.18
+Nodes (21): annulerPaiementHerite(), annulerRetributionPaiement(), chargerIntervenantsMission(), chargerNumerosBVUtilises(), chargerSourcesRetributions(), createFacture(), deleteFacture(), getEtudesForFactureSelect() (+13 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.12
-Nodes (14): ProfilPage(), DeleteAccountRequest(), CustomField, DynamicFieldsCard(), DynamicFieldsCardProps, DEFAULT_POLES, FIELD_CONFIG, ProfileInfoCard() (+6 more)
+Cohesion: 0.19
+Nodes (18): GET(), SIGNED_STATUSES, timingSafeEqualStr(), signatureReminderEmail(), BaSettings, checkMemberComplete(), CompletenessResult, ENCRYPTED_COLS (+10 more)
 
 ### Community 22 - "Community 22"
 Cohesion: 0.10
 Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+11 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.19
-Nodes (14): issueVerification(), GET(), escapeHtml(), generatePasswordResetToken(), generateVerificationToken(), hashToken(), siteUrl(), verificationEmailHtml() (+6 more)
+Cohesion: 0.13
+Nodes (25): toggleEtudePublished(), toggleMissionPublished(), callerHasMembresAccess(), getAffecteur(), getSignaturesAccess(), listBureauQueue(), GET(), GET() (+17 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.07
-Nodes (56): buildBvContext(), buildFactureContext(), buildIntervenantContext(), buildJuniorAlias(), buildMentionAvenant(), buildOrganigramme(), buildPhasesContext(), buildSignataire() (+48 more)
+Nodes (59): deleteTemplate(), updateTemplateMeta(), getDecryptedProfile(), updateProfileWithEncryption(), GET(), GET(), issueAndSendVerification(), issuedWithinCooldown() (+51 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.12
 Nodes (16): aliases, components, hooks, lib, ui, utils, rsc, $schema (+8 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.17
-Nodes (13): BudgetInput, BudgetPhaseInput, BudgetPhaseLine, computeBudget(), DEFAULT_MODALITES, PaiementModalites, PaiementType, PaiementVersementInput (+5 more)
+Cohesion: 0.05
+Nodes (70): getMyPendingSignature(), ActionRapide, ACTIONS_RAPIDES, CANDIDATURE_STYLE, IntervenantDashboard(), IntervenantDashboardView(), STATUT_BADGE, MemberSignatureBanner() (+62 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.24
-Nodes (10): getStats(), fmt(), metadata, StatistiquesPage(), COLOR_MAP, KpiCard(), StatistiquesClient(), StatsData (+2 more)
+Cohesion: 0.13
+Nodes (19): getProposalBudget(), BudgetSheet(), BudgetSheetMeta, BudgetBreakdown, BudgetInput, BudgetPhaseInput, BudgetPhaseLine, computeBudget() (+11 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.17
 Nodes (11): File Structure, Import des membres Be Quick → Be Fast — Implementation Plan, Ordre d'exécution réel (hors code, côté utilisateur), Task 1: Dépendances & gitignore, Task 2: Migration 042 (colonnes legacy + rename rôle), Task 3: Corriger les références `membre_agc` dans le code, Task 4: Module de mapping pur (TDD), Task 5: Mini-loader d'environnement (+3 more)
 
 ### Community 29 - "Community 29"
-Cohesion: 0.24
-Nodes (10): deleteGeneratedDocument(), listEntityDocuments(), listEtudeAllDocuments(), GET(), canAccessEntityDocuments(), INTERNE_SLUGS, intervientSurEtude(), isMembreInterne() (+2 more)
+Cohesion: 0.11
+Nodes (25): BAMemberRow, BureauQueueRow, delegateToTresorier(), getBaAdminSettings(), getBaEligibleSigners(), getPosteHolderUserId(), getSignatureConfig(), listBAMembers() (+17 more)
 
 ### Community 30 - "Community 30"
 Cohesion: 0.13
@@ -275,7 +283,7 @@ Nodes (14): 10. Risques / points d'attention, 1. Contexte & existant, 2. Décisi
 
 ### Community 31 - "Community 31"
 Cohesion: 0.13
-Nodes (19): GET(), PATCH(), PATCH(), GET(), GET(), GET(), ApiGuardResult, requireApiAdmin() (+11 more)
+Nodes (26): GET(), PATCH(), PATCH(), GET(), GET(), GET(), PATCH(), ApiGuardResult (+18 more)
 
 ### Community 32 - "Community 32"
 Cohesion: 0.04
@@ -298,8 +306,8 @@ Cohesion: 0.06
 Nodes (35): 1. shadcn/ui Theming — Custom Palette with CSS Variables, 2. Kanban Board — @dnd-kit/core, 3. Gantt / Timeline Scheduler — @dnd-kit/sortable, 4. Role-Based Sidebar Navigation, 5.1 Data Tables (TanStack Table + shadcn/ui), 5.2 Form Wizards (Multi-Step), 5.3 Modal Dialogs, 5.4 Accordion Forms (Settings Pages) (+27 more)
 
 ### Community 37 - "Community 37"
-Cohesion: 0.14
-Nodes (14): decouper(), FactureRenderContext, fmtEntier(), fmtMontant(), GRIS, GRIS_FOND, GRIS_LIGNE, NOIR (+6 more)
+Cohesion: 0.11
+Nodes (17): decouper(), FactureRenderContext, fmtEntier(), fmtMontant(), GRIS, GRIS_FOND, GRIS_LIGNE, NOIR (+9 more)
 
 ### Community 38 - "Community 38"
 Cohesion: 0.20
@@ -310,8 +318,8 @@ Cohesion: 0.24
 Nodes (6): inter, manrope, metadata, ThemeProvider(), Toaster(), ToasterProps
 
 ### Community 41 - "Community 41"
-Cohesion: 0.27
-Nodes (8): useUrlFilters(), CLASSES, FILTER_KEYS, MISSION_TYPES, MissionsClient(), TYPE_COLORS, typeLabel(), VOIES
+Cohesion: 0.07
+Nodes (34): DashboardShell(), DashboardShellProps, UseUserReturn, AppSidebar(), AppSidebarProps, IconType, labelVariants, NAV (+26 more)
 
 ### Community 42 - "Community 42"
 Cohesion: 0.06
@@ -322,28 +330,28 @@ Cohesion: 0.33
 Nodes (7): Composant AppSidebar, Composant Button, Couleur Navy marque (#00236f), Couleur Or accent (#C9A84C), Charte graphique Be Fast, Règle d'or: une entité = un composant partout, Typographie Inter / Manrope
 
 ### Community 44 - "Community 44"
-Cohesion: 0.29
-Nodes (9): deleteAccount(), DeletionResult, anonymisedEmailFor(), buildAnonymisationPatch(), ENCRYPTED_FIELDS, PATCH(), accountValidatedEmail(), DELETE() (+1 more)
+Cohesion: 0.08
+Nodes (46): chargerAccesEtude(), COLONNES_BLOC_FORMULAIRE, COLONNES_CLIENT_FORMULAIRE, COLONNES_ETUDE_FORMULAIRE, createClient_(), createEtude(), deleteEcheancierBloc(), filtrerColonnes() (+38 more)
 
 ### Community 45 - "Community 45"
-Cohesion: 0.42
-Nodes (7): escapeXml(), fixBrokenTags(), generateBudgetTableXml(), generateGanttTableXml(), POST(), replacePlaceholderShapeWithTable(), setShapeText()
+Cohesion: 0.50
+Nodes (5): deleteAccount(), DeletionResult, anonymisedEmailFor(), buildAnonymisationPatch(), ENCRYPTED_FIELDS
 
 ### Community 46 - "Community 46"
-Cohesion: 0.23
-Nodes (9): CustomFieldForm, CustomField, CustomFieldModal(), CustomFieldModalProps, CustomFieldsTable(), CustomFieldsTableProps, TYPE_LABELS, customFieldSchema (+1 more)
+Cohesion: 0.11
+Nodes (21): ADMIN_NAV_LINKS, AdminSidebar(), LEGACY_ACTIVE, ChampsTab(), CustomFieldForm, CustomField, CustomFieldModal(), CustomFieldModalProps (+13 more)
 
 ### Community 47 - "Community 47"
-Cohesion: 0.26
-Nodes (7): getProposalBudget(), BudgetSheet(), BudgetSheetMeta, BudgetBreakdown, fmtEURBudget(), buildBudgetWorkbook(), GET()
+Cohesion: 0.14
+Nodes (11): issueVerification(), resendVerification(), resetPassword(), signIn(), signOut(), signUp(), MissionCardProps, Button (+3 more)
 
 ### Community 48 - "Community 48"
 Cohesion: 0.10
 Nodes (20): BeFast (`~/Desktop/Befast`), Ce que ce plan ne fait pas, Ce qui a réellement été construit — écarts au plan, Précautions communes à toutes les tâches, RH Manager (`~/Desktop/RH Manager Anti/frontend`), Structure des fichiers, Suppression de compte — Plan d'implémentation, Task 0 : Branches de travail (+12 more)
 
 ### Community 49 - "Community 49"
-Cohesion: 0.27
-Nodes (6): getProposals(), metadata, PipelinePage(), COLUMNS, PipelineClient(), PipelineProposal
+Cohesion: 0.25
+Nodes (16): collectStaffEmails(), notifyAccountOpened(), accountCreatedUserEmail(), accountDeletionRequestEmail(), accountUnblockEmail(), brandedEmail(), bulletinAdhesionEmail(), candidatureAccepteeEmail() (+8 more)
 
 ### Community 51 - "Community 51"
 Cohesion: 0.67
@@ -354,20 +362,20 @@ Cohesion: 0.17
 Nodes (11): Contexte & objectif, Flux email « définir mon mot de passe » (construit, dormant), Hors périmètre (non-goals), Import des membres Be Quick → Be Fast — Design, Mapping des champs (CSV → `personnes` / Auth), Mapping des rôles, Migration schéma, Renommage de rôle préalable : `membre_agc` → `membre_ajc` (+3 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.10
-Nodes (25): resendVerification(), resetPassword(), signIn(), signOut(), signUp(), MissionCardProps, createClient(), SupportReport (+17 more)
+Cohesion: 0.15
+Nodes (16): FIELD_CONFIG, ProfileInfoForm(), ProfileInfoFormProps, ProfileFormValues, createClient(), SupportReport, STATUS_STYLES, Card (+8 more)
 
 ### Community 56 - "Community 56"
-Cohesion: 0.18
-Nodes (18): BAMemberRow, delegateToTresorier(), getBaAdminSettings(), getBaEligibleSigners(), getPosteHolderUserId(), getSignatureConfig(), listBAMembers(), listSignatureRequests() (+10 more)
+Cohesion: 0.12
+Nodes (24): COLONNES_BA, GET(), dec(), ajusterTaille(), BA_FIELD_NAMES, BaFieldValues, fillBaPdf(), loadBaTemplate() (+16 more)
 
 ### Community 57 - "Community 57"
-Cohesion: 0.14
-Nodes (15): isDuplicateRequest(), NOW, POST(), sendEmail(), SendResult, sendViaBrevo(), sendViaResend(), POST() (+7 more)
+Cohesion: 0.15
+Nodes (13): CaParEtude, FactureRow, GenerateParams, useDocumentDownload(), BUDGET_STATUS_CHIP, FactureModal(), fmtEUR(), PayRetributionModal() (+5 more)
 
 ### Community 58 - "Community 58"
-Cohesion: 0.23
-Nodes (13): refreshSignatureStatus(), sendDocumentForSignature(), GET(), safeEqual(), CreateSignatureOpts, createSignatureRequest(), DEFAULT_SIGNATURE_POS, getRequestStatus() (+5 more)
+Cohesion: 0.16
+Nodes (13): clesCouvertes(), CoucheAcces, SurfaceProtegee, SURFACES, accede(), parSlug(), personne(), ProfilFixture (+5 more)
 
 ### Community 60 - "Community 60"
 Cohesion: 0.13
@@ -378,32 +386,36 @@ Cohesion: 0.14
 Nodes (13): Phase 2 (hors périmètre de ce plan), Rétributions par intervenant (Trésorerie) — plan d'implémentation, Structure des fichiers, Task 10 : Vérification finale, Task 1 : Module pur — numérotation des BV, Task 2 : Module pur — composition des lignes de rétribution, Task 3 : Module pur — agrégats par personne et KPI, Task 4 : Migration SQL (+5 more)
 
 ### Community 62 - "Community 62"
-Cohesion: 0.15
-Nodes (10): BureauQueueRow, SignatureRequestRow, TabKey, BATab(), BureauTab(), LibreTab(), STATUS_STYLES, Badge() (+2 more)
+Cohesion: 0.09
+Nodes (31): AdministrationLayout(), AdministrationPage(), checkPageAccess(), getPageProfile(), PageAccess, pageHasPermission(), assietteCotisations(), contexteCotisationsBv() (+23 more)
 
 ### Community 63 - "Community 63"
-Cohesion: 0.32
-Nodes (6): AvatarUpload(), ProfileHeader(), ProfileHeaderProps, estMembreInterne(), ROLES_SANS_AFFECTATION, RolesBadges()
+Cohesion: 0.23
+Nodes (11): getTresorerieData(), agregerParPersonne(), buildRetributionRows(), effectifDeclare(), IntervenantSource, kpisRetributions(), MissionSource, nextNumeroBV() (+3 more)
 
 ### Community 65 - "Community 65"
 Cohesion: 0.15
 Nodes (12): Découpage du code, Gestion des erreurs, Impacts, Interface, Migration à appliquer manuellement, Modèle de données, Montant, Numérotation des BV (+4 more)
 
 ### Community 66 - "Community 66"
-Cohesion: 0.18
-Nodes (10): MissionDocumentsPage(), EtudesPage(), UserContext, UserProvider(), useUser(), MissionInternePage(), MembresDroitsShell(), MissionDetailPage() (+2 more)
+Cohesion: 0.25
+Nodes (12): POST(), getCurrentUserProfile(), isMissionIntervenant(), requireAdmin(), requireAdminOrManager(), requireEtudeSuiveur(), requireMissionAccess(), requireMissionIntervenant() (+4 more)
 
 ### Community 67 - "Community 67"
-Cohesion: 0.24
-Nodes (10): getEtudes(), getMesCandidatures(), getMissions(), getMyPendingSignature(), MemberSignatureBanner(), DashboardPage(), STATUT_BADGE, MissionsPage() (+2 more)
+Cohesion: 0.20
+Nodes (15): refreshSignatureStatus(), sendDocumentForSignature(), GET(), safeEqual(), documentToSignEmail(), abandonRequest(), CreateSignatureOpts, createSignatureRequest() (+7 more)
 
 ### Community 68 - "Community 68"
-Cohesion: 0.31
-Nodes (4): extractPlaceholders(), stripXmlTags(), applyFilter(), numberToFrenchWords()
+Cohesion: 0.15
+Nodes (13): loadEnv(), COMMIT, EMAIL_ARGS, LIMIT_ARG, main(), SITE_URL, SITE_URL_ARG, sleep() (+5 more)
 
 ### Community 69 - "Community 69"
-Cohesion: 0.48
-Nodes (5): GET(), POST(), buildMissionDocPath(), buildPersonneDocPath(), sanitize()
+Cohesion: 0.20
+Nodes (9): estMissionPubliee(), CAND_STATUT_COLORS, CAND_STATUT_LABELS, MissionDetailPage(), STATUT_COLORS, STATUT_LABELS, Badge(), BadgeProps (+1 more)
+
+### Community 70 - "Community 70"
+Cohesion: 0.14
+Nodes (13): Ajout du 24/09 : modèle de BA téléchargeable (remplacé le 26/09, jamais livré), Base de données, Besoin, Code, Conception, Décisions, Dépôt du bulletin d'adhésion signé — design, Gestion d'erreur : migration non appliquée (+5 more)
 
 ### Community 71 - "Community 71"
 Cohesion: 0.50
@@ -434,8 +446,8 @@ Cohesion: 0.08
 Nodes (23): 1. Inventaire par domaine, 2. Redondances identifiées 🔴, 3. Données exploitées vs. exploitables (générables), 4. Tables à intégrer (propositions) 🟢, Cartographie des bases de données — BeFast, 💼 Commercial / CRM, Déjà exploitées, 💰 Finance (+15 more)
 
 ### Community 92 - "Community 92"
-Cohesion: 0.17
-Nodes (16): AvatarUploadProps, FIELD_CONFIG, ProfileInfoForm(), ProfileInfoFormProps, ProfileFormValues, Avatar, AvatarFallback, AvatarImage (+8 more)
+Cohesion: 0.16
+Nodes (12): deleteEtude(), getParametre(), updateEtude(), deleteMission(), canDeleteEtude(), canEditEtude(), estSuiveurEtude(), EtudesPage() (+4 more)
 
 ### Community 93 - "Community 93"
 Cohesion: 0.09
@@ -446,20 +458,20 @@ Cohesion: 0.09
 Nodes (22): Administration — Droits, Administration — Membres, Administration — Paramètres Structure, Administration — Templates Documents, Authentification & Accès, Design & UX, Documents Personnels, Infrastructure & Sécurité (+14 more)
 
 ### Community 95 - "Community 95"
-Cohesion: 0.53
-Nodes (5): renderTemplate(), CATEGORY_CODES, pad2(), POST(), sanitize()
-
-### Community 97 - "Community 97"
-Cohesion: 0.12
-Nodes (31): GET(), SIGNED_STATUSES, timingSafeEqualStr(), signatureReminderEmail(), BaSettings, checkMemberComplete(), CompletenessResult, dec() (+23 more)
+Cohesion: 0.20
+Nodes (9): 1. Le modèle, 2. Les profils en base, 3. Catalogue des permissions et point d'application, 4. Règles à respecter en développement, 5. Migration associée, Cartographie des rôles, postes et permissions — Be Fast, Postes bureau (cumulables), Postes pôles (cumulables) (+1 more)
 
 ### Community 98 - "Community 98"
 Cohesion: 0.11
 Nodes (17): 1. Flux inscription complet, 2. Flux connexion → dashboard avec role, 3. Comportement middleware (redirect non-authentifie), 4. RoleGuard — acces refuse, Anti-Patterns Found, Behavioral Spot-Checks, Data-Flow Trace (Level 4), Gaps Summary (+9 more)
 
 ### Community 99 - "Community 99"
-Cohesion: 0.43
-Nodes (4): FactureReconciliable, rang(), repartirVersements(), totalDejaFacture()
+Cohesion: 0.42
+Nodes (7): escapeXml(), fixBrokenTags(), generateBudgetTableXml(), generateGanttTableXml(), POST(), replacePlaceholderShapeWithTable(), setShapeText()
+
+### Community 100 - "Community 100"
+Cohesion: 0.20
+Nodes (9): Carte des fichiers, Dépôt du bulletin d'adhésion signé — plan d'implémentation, Task 1 : tests de validation des fichiers (verrouiller l'existant), Task 2 : type `bulletin_adhesion`, Task 3 : migration 073, Task 4 : grille « Mes documents », Task 5 : message lisible si la migration manque, Task 6 : vérification réelle (+1 more)
 
 ### Community 101 - "Community 101"
 Cohesion: 0.15
@@ -469,13 +481,17 @@ Nodes (12): Accomplishments, Auto-fixed Issues, Decisions Made, Deviations from 
 Cohesion: 0.15
 Nodes (12): Accomplishments, Auto-fixed Issues, Decisions Made, Deviations from Plan, Files Created/Modified, Issues Encountered, Next Phase Readiness, Performance (+4 more)
 
+### Community 103 - "Community 103"
+Cohesion: 0.09
+Nodes (39): estIntervenantDeLaMission(), estIntervenantDeLEtude(), CHAMPS_INTERVENANT, champsManquantsBv(), Contexte, messageBvIncomplet(), rempli(), intervenant (+31 more)
+
 ### Community 104 - "Community 104"
 Cohesion: 0.17
 Nodes (11): Assets Réutilisables (Phase 1), Avatar, Canonical Refs, Decisions, Deferred Ideas, Documents, Domain, Données sensibles (NSS / IBAN) (+3 more)
 
 ### Community 105 - "Community 105"
-Cohesion: 0.21
-Nodes (11): BudgetValidationRow, deleteProposal(), GANTT_COLORS, getBudgetValidations(), isCallerAdmin(), nextEtudeNumero(), ProposalBudgetDetail, ProposalInput (+3 more)
+Cohesion: 0.15
+Nodes (11): getTagsDictionary(), BA_PDF_FIELDS, CAT_ETUDE_DOCS, CAT_INTERVENANT_DOCS, CAT_MEMBRE_DOCS, DOCUMENT_TYPES, DEFAULT_DICTIONARY, ICONS (+3 more)
 
 ### Community 107 - "Community 107"
 Cohesion: 0.20
@@ -505,6 +521,18 @@ Nodes (7): Manual-Only Verifications, Per-Task Verification Map, Phase 02 — Va
 Cohesion: 0.25
 Nodes (7): Expérience utilisateur, Logs — BeFast, Membres & administration, Module Propositions / Prospection (générateur de propositions commerciales), Pilotage & paramètres, Trésorerie, À venir / en cours
 
+### Community 114 - "Community 114"
+Cohesion: 0.10
+Nodes (22): ProfilPage(), AvatarUpload(), DeleteAccountRequest(), CustomField, DynamicFieldsCard(), DynamicFieldsCardProps, ProfileHeader(), ProfileHeaderProps (+14 more)
+
+### Community 115 - "Community 115"
+Cohesion: 0.29
+Nodes (8): listEntityDocuments(), listEtudeAllDocuments(), GET(), canAccessEntityDocuments(), INTERNE_SLUGS, intervientSurEtude(), isMissionIntervenant(), GET()
+
+### Community 116 - "Community 116"
+Cohesion: 0.19
+Nodes (11): CLES_PILOTAGE_PRIX, getMargesRecommandees(), getParametres(), _readMarges, _readParametres, MargesMap, ParametresMap, TailleEntreprise (+3 more)
+
 ### Community 117 - "Community 117"
 Cohesion: 0.33
 Nodes (6): Migration 035 security_fix_critical.sql, HIGH: factures excessive read access, guard_personnes_protected_columns trigger, CRITICAL: Privilege Escalation on personnes, Rationale: RLS fixes are backwards compatible, app/api/profil/route.ts hardened
@@ -516,6 +544,10 @@ Nodes (6): Security Audit & Implementation Progress, Phase A: Migration 035 Vali
 ### Community 119 - "Community 119"
 Cohesion: 0.33
 Nodes (6): Manual Testing with API Routes, Test 1: User A cannot read all budgets, Test 2: User A cannot modify taux_horaire, Test 3: User A cannot read unassigned factures, Test 4: Admin CAN modify taux_horaire, Test Setup
+
+### Community 120 - "Community 120"
+Cohesion: 0.29
+Nodes (8): isDuplicateRequest(), NOW, POST(), sendEmail(), SendResult, sendViaBrevo(), sendViaResend(), main()
 
 ### Community 121 - "Community 121"
 Cohesion: 0.40
@@ -533,25 +565,41 @@ Nodes (3): Local Testing Workflow, Option A: Test with Supabase CLI (Recommended
 Cohesion: 0.40
 Nodes (5): Be Fast — CRM de la Junior-Entreprise Audencia (AJC), graphify, Règles importantes, Stack, Structure
 
+### Community 130 - "Community 130"
+Cohesion: 0.26
+Nodes (10): getStats(), fmt(), metadata, StatistiquesPage(), COLOR_MAP, KpiCard(), StatistiquesClient(), StatsData (+2 more)
+
+### Community 131 - "Community 131"
+Cohesion: 0.57
+Nodes (5): PATCH(), accountValidatedEmail(), DELETE(), USER_PROFILE_TAG(), logAudit()
+
+### Community 132 - "Community 132"
+Cohesion: 0.43
+Nodes (4): FactureReconciliable, rang(), repartirVersements(), totalDejaFacture()
+
+### Community 133 - "Community 133"
+Cohesion: 0.53
+Nodes (4): POST(), CuratedDocument, provisionRhCandidate(), pushDocumentsToRh()
+
 ## Knowledge Gaps
-- **844 isolated node(s):** `ADMIN_NAV_LINKS`, `LEGACY_ACTIVE`, `CustomField`, `CustomFieldModalProps`, `TYPE_LABELS` (+839 more)
+- **925 isolated node(s):** `STATUT_BADGE`, `CANDIDATURE_STYLE`, `ActionRapide`, `ACTIONS_RAPIDES`, `ADMIN_NAV_LINKS` (+920 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `createClient` connect `Community 17` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 8`, `Community 11`, `Community 13`, `Community 19`, `Community 23`, `Community 24`, `Community 27`, `Community 29`, `Community 31`, `Community 44`, `Community 45`, `Community 49`, `Community 54`, `Community 56`, `Community 57`, `Community 58`, `Community 67`, `Community 69`, `Community 95`, `Community 105`?**
-  _High betweenness centrality (0.078) - this node is a cross-community bridge._
-- **Why does `createAdminClient()` connect `Community 17` to `Community 0`, `Community 1`, `Community 2`, `Community 8`, `Community 11`, `Community 13`, `Community 23`, `Community 24`, `Community 29`, `Community 31`, `Community 44`, `Community 45`, `Community 47`, `Community 54`, `Community 56`, `Community 57`, `Community 58`, `Community 67`, `Community 69`, `Community 95`, `Community 97`, `Community 105`?**
-  _High betweenness centrality (0.033) - this node is a cross-community bridge._
-- **Why does `renderFacturePdf()` connect `Community 37` to `Community 1`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `createAdminClient()` connect `Community 31` to `Community 0`, `Community 2`, `Community 131`, `Community 133`, `Community 8`, `Community 11`, `Community 18`, `Community 21`, `Community 23`, `Community 24`, `Community 26`, `Community 27`, `Community 29`, `Community 44`, `Community 45`, `Community 47`, `Community 49`, `Community 56`, `Community 67`, `Community 99`, `Community 103`, `Community 115`, `Community 116`?**
+  _High betweenness centrality (0.054) - this node is a cross-community bridge._
+- **Why does `createClient` connect `Community 44` to `Community 0`, `Community 2`, `Community 3`, `Community 130`, `Community 131`, `Community 133`, `Community 8`, `Community 11`, `Community 13`, `Community 18`, `Community 19`, `Community 23`, `Community 24`, `Community 26`, `Community 29`, `Community 31`, `Community 47`, `Community 62`, `Community 63`, `Community 66`, `Community 67`, `Community 92`, `Community 99`, `Community 103`, `Community 105`, `Community 115`, `Community 116`, `Community 120`?**
+  _High betweenness centrality (0.054) - this node is a cross-community bridge._
+- **Why does `renderFacturePdf()` connect `Community 37` to `Community 23`?**
+  _High betweenness centrality (0.021) - this node is a cross-community bridge._
 - **Are the 16 inferred relationships involving `createAdminClient()` (e.g. with `PATCH()` and `PATCH()`) actually correct?**
   _`createAdminClient()` has 16 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 5 inferred relationships involving `getCachedProfile()` (e.g. with `GET()` and `GET()`) actually correct?**
   _`getCachedProfile()` has 5 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 4 inferred relationships involving `hasPermission()` (e.g. with `GET()` and `GET()`) actually correct?**
   _`hasPermission()` has 4 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `ADMIN_NAV_LINKS`, `LEGACY_ACTIVE`, `CustomField` to the rest of the system?**
-  _844 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **What connects `STATUT_BADGE`, `CANDIDATURE_STYLE`, `ActionRapide` to the rest of the system?**
+  _925 weakly-connected nodes found - possible documentation gaps or missing edges._

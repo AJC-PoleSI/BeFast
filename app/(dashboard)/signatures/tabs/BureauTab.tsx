@@ -135,10 +135,10 @@ export function BureauTab({ configured }: { configured: boolean }) {
                     <RefreshCw className={cn("h-4 w-4", busy === r.id && "animate-spin")} />
                   </button>
 
-                  {/* getBureauQueue() ne renvoie jamais "president" — la présidente (non-admin,
-                      permission "autres" documents) est identifiée par role === "bureau" (audit
-                      du 2026-09-07 : le bouton n'apparaissait donc jamais que pour un admin). */}
-                  {(role === "bureau" || role === "admin") && r.category === "ba" && (
+                  {/* delegateToTresorier (lib/actions/signature.ts) est réservée aux
+                      administrateurs : le bouton suit l'action, sinon la présidente
+                      obtenait « Réservé aux administrateurs » au clic. */}
+                  {role === "admin" && r.category === "ba" && (
                     <button
                       onClick={() => handleDelegate(r.id)}
                       disabled={busy === r.id || !configured}
