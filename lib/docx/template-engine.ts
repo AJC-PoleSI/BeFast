@@ -180,6 +180,10 @@ function applyFilter(value: any, filterStr: string, scope: any): any {
         : `${sign}${eurosWords} euros`
     }
     case "formatDate": {
+      // Champ absent/vide : ne JAMAIS retomber sur la date du jour (Date.now()) —
+      // un document envoyé à un client afficherait silencieusement "aujourd'hui"
+      // à la place d'une date métier jamais saisie.
+      if (value === null || value === undefined || value === "") return ""
       let date: Date
       if (value instanceof Date) {
         date = value
@@ -189,7 +193,7 @@ function applyFilter(value: any, filterStr: string, scope: any): any {
         const [dd, mm, yyyy] = value.trim().split("/").map(Number)
         date = new Date(yyyy, mm - 1, dd)
       } else {
-        date = new Date(value || Date.now())
+        date = new Date(value)
       }
       if (isNaN(date.getTime())) return value || ""
       const format = arg || "DD/MM/YYYY"

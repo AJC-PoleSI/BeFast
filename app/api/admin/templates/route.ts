@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { requireApiAdmin } from "@/lib/auth/api-guards"
+import { requireApiAnyPermission } from "@/lib/auth/api-guards"
 import { extractPlaceholders } from "@/lib/docx/template-engine"
 import { revalidateTag } from "next/cache"
 
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   // Création de template = opération d'administration : réservée aux admins.
   // Auparavant, tout compte authentifié (y compris intervenant/candidat)
   // pouvait créer un template servant à générer des documents officiels.
-  const guard = await requireApiAdmin()
+  const guard = await requireApiAnyPermission(["administration", "gerer_parametres"])
   if (!guard.ok) return guard.response
 
   const sb = createClient()

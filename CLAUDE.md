@@ -23,7 +23,10 @@ Application interne de gestion pour Audencia Junior Conseil : membres, études/m
 ## Règles importantes
 
 - **Migrations** : elles ne s'appliquent pas automatiquement. Créer le fichier numéroté dans `supabase/migrations/` et signaler à Felix qu'il doit l'appliquer manuellement (dashboard Supabase).
-- **Permissions** : système de rôles + postes (bureau/pôles, sous-rôles cumulés, migration 039). Les permissions se fusionnent dans `useUser` (merge 3 voies). Ne pas ajouter de clé de permission sans mettre à jour le type `PermissionKey` ET l'objet `emptyPermissions`.
+- **Permissions** : rôles de base + postes (bureau/pôles) cumulés, migration 039. Source de vérité : `lib/auth/permissions.ts` (`ALL_PERMISSION_KEYS`, `resolveEffectivePermissions`, `hasPermission`, `hasAnyPermission`). Cartographie complète : `docs/CARTOGRAPHIE_ROLES.md` + `lib/auth/access-map.ts`, verrouillés par `lib/auth/access-map.test.ts`.
+  - Gardes à réutiliser (ne pas réimplémenter) : `lib/auth/page-guards.ts` (`checkPageAccess` dans un `layout.tsx`), `lib/auth/api-guards.ts` (`requireApiPermission` / `requireApiAnyPermission`), `lib/auth/action-guards.ts` (`requireActionPermission`).
+  - Une nouvelle clé doit être ajoutée à `ALL_PERMISSION_KEYS`, à `PERM_LABELS` (écran Droits) **et** ouvrir une surface déclarée dans `access-map.ts` — sinon les tests échouent (clé morte).
+  - Une page ne se protège jamais par le seul masquage du lien dans la sidebar ; une action qui utilise `createAdminClient()` contourne la RLS, la permission applicative y est obligatoire.
 - **Supabase client** : utiliser `createClient` de `lib/supabase/` (`@supabase/ssr`). `createClientComponentClient` (auth-helpers) est déprécié dans ce projet.
 - **Numérotation des documents** : par catégorie ; `{mission.numero_etude}` renvoie les deux derniers chiffres uniquement.
 - **LiveConsent** (signature électronique) : intégration gatée par variable d'env ; ne pas activer sans validation.

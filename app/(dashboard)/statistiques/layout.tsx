@@ -1,13 +1,8 @@
-import { RoleGuard } from "@/components/layout/RoleGuard"
+import { checkPageAccess } from "@/lib/auth/page-guards"
+import { AccessDenied } from "@/components/layout/AccessDenied"
 
-export default function StatistiquesLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return (
-    <RoleGuard permission="statistiques">
-      {children}
-    </RoleGuard>
-  )
+export default async function StatistiquesLayout({ children }: { children: React.ReactNode }) {
+  const access = await checkPageAccess(["statistiques"])
+  if (!access.ok) return <AccessDenied />
+  return <>{children}</>
 }

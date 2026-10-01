@@ -5,7 +5,9 @@ import Link from "next/link"
 import type { MissionWithEtude, CandidatureWithMission } from "@/types/database.types"
 import { MemberSignatureBanner } from "./_components/MemberSignatureBanner"
 import { IntervenantDashboard } from "./_components/IntervenantDashboard"
-import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { redirect } from "next/navigation"
+import { getPageProfile } from "@/lib/auth/page-guards"
+import { hasPermission } from "@/lib/auth/permissions"
 
 const STATUT_BADGE: Record<string, { label: string; className: string }> = {
   ouverte: { label: "Ouverte", className: "bg-blue-100 text-blue-700" },
@@ -19,12 +21,19 @@ export default async function DashboardPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Sans la permission `dashboard` (candidats, comptes en attente…), on renvoie
+  // vers la première page réellement accessible plutôt que d'afficher un écran
+  // de refus sur la page d'atterrissage de la connexion.
+  const ctx = await getPageProfile()
+  if (ctx && !hasPermission(ctx.profile, "dashboard")) {
+    redirect(hasPermission(ctx.profile, "profil") ? "/dashboard/profil" : "/attente")
+  }
+
   // Intervenant : accueil dédié dont les cartes ne comptent que ce qui le
   // concerne (rétributions, missions, études, candidatures). Les autres rôles
   // gardent l'accueil ci-dessous.
-  const profile = user ? await getCachedProfile(user.id) : null
-  if (user && profile?.profils_types?.slug === "intervenant") {
-    return <IntervenantDashboard userId={user.id} profile={profile} />
+  if (ctx?.profile?.profils_types?.slug === "intervenant") {
+    return <IntervenantDashboard userId={ctx.userId} profile={ctx.profile} />
   }
 
   const [

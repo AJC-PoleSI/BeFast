@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { hasPermission } from "@/lib/auth/permissions"
 import { encryptData, decryptData, generateEncryptionSalt } from "@/lib/crypto"
 import { getMasterKey } from "@/lib/crypto-key"
 
@@ -13,17 +15,20 @@ export async function getDecryptedProfile(userId: string) {
 
     const admin = createAdminClient()
 
-    // Contrôle d'accès : on ne déchiffre les données sensibles (NSS, IBAN…)
-    // que pour soi-même, ou si l'appelant est administrateur.
+    // Contrôle d'accès : pour soi-même, tout est déchiffré. Sinon l'appelant
+    // doit être administrateur (accès complet) ou porter une permission PII —
+    // `voir_nss` (Pôle RH) / `voir_rib` (Trésorerie) — et il ne reçoit alors
+    // QUE le champ correspondant. Avant, ces deux permissions n'ouvraient rien :
+    // seul l'administrateur pouvait déchiffrer, les postes concernés ne voyaient
+    // qu'un indicateur de présence sur la fiche.
+    let peutVoirNss = true
+    let peutVoirRib = true
     if (user.id !== userId) {
-      const { data: caller } = await admin
-        .from("personnes")
-        .select("profils_types!profil_type_id(slug)")
-        .eq("id", user.id)
-        .single()
-      if ((caller?.profils_types as any)?.slug !== "administrateur") {
-        return { error: "Non autorisé" }
-      }
+      const callerProfile = await getCachedProfile(user.id)
+      const estAdmin = callerProfile?.profils_types?.slug === "administrateur"
+      peutVoirNss = estAdmin || hasPermission(callerProfile, "voir_nss")
+      peutVoirRib = estAdmin || hasPermission(callerProfile, "voir_rib")
+      if (!peutVoirNss && !peutVoirRib) return { error: "Non autorisé" }
     }
 
     const MASTER_KEY = getMasterKey()
@@ -41,8 +46,8 @@ export async function getDecryptedProfile(userId: string) {
     return {
       data: {
         ...profile,
-        nss: profile.nss_encrypted ? decryptData(profile.nss_encrypted, profile.nss_iv, profile.nss_auth_tag, MASTER_KEY, salt) : null,
-        iban: profile.iban_encrypted ? decryptData(profile.iban_encrypted, profile.iban_iv, profile.iban_auth_tag, MASTER_KEY, salt) : null,
+        nss: peutVoirNss && profile.nss_encrypted ? decryptData(profile.nss_encrypted, profile.nss_iv, profile.nss_auth_tag, MASTER_KEY, salt) : null,
+        iban: peutVoirRib && profile.iban_encrypted ? decryptData(profile.iban_encrypted, profile.iban_iv, profile.iban_auth_tag, MASTER_KEY, salt) : null,
         adresse: profile.adresse_encrypted ? decryptData(profile.adresse_encrypted, profile.adresse_iv, profile.adresse_auth_tag, MASTER_KEY, salt) : profile.adresse,
         date_naissance: profile.date_naissance_encrypted ? decryptData(profile.date_naissance_encrypted, profile.date_naissance_iv, profile.date_naissance_auth_tag, MASTER_KEY, salt) : profile.date_naissance,
         ville: profile.ville_encrypted ? decryptData(profile.ville_encrypted, profile.ville_iv, profile.ville_auth_tag, MASTER_KEY, salt) : profile.ville,

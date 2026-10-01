@@ -17,9 +17,27 @@ export function emptyPermissions(): Permissions {
 }
 
 /**
+ * Clés laissées à un compte qui n'est pas (encore) validé : il peut compléter
+ * son profil et déposer ses justificatifs, rien d'autre.
+ */
+const CLES_COMPTE_NON_VALIDE: PermissionKey[] = ["profil", "documents"]
+
+/** `true` si le compte n'est pas validé (en attente, refusé, supprimé). */
+export function estCompteRestreint(profile: PersonneWithRole | null): boolean {
+  if (!profile) return false
+  if (profile.profils_types?.slug === "administrateur") return false
+  return profile.account_status !== "validated"
+}
+
+/**
  * Permissions effectives = OR clé-par-clé du rôle de base et de tous les postes
  * (bureau/pôles) assignés. Une source manquante (poste sans profils_types, etc.)
  * est ignorée sans erreur.
+ *
+ * Un compte non validé est ramené à `profil` + `documents` : la restriction
+ * était auparavant appliquée uniquement dans `app/(dashboard)/layout.tsx`, donc
+ * seulement à l'affichage — les gardes serveur (API, server actions, pages)
+ * voyaient les permissions complètes d'un compte en attente de validation.
  */
 export function resolveEffectivePermissions(profile: PersonneWithRole | null): Permissions {
   if (!profile) return emptyPermissions()
@@ -37,6 +55,11 @@ export function resolveEffectivePermissions(profile: PersonneWithRole | null): P
       if ((src as Record<string, unknown>)[k] === true) perms[k] = true
     }
   }
+  if (estCompteRestreint(profile)) {
+    const restreint = emptyPermissions()
+    for (const k of CLES_COMPTE_NON_VALIDE) restreint[k] = perms[k]
+    return restreint
+  }
   return perms
 }
 
@@ -44,6 +67,14 @@ export function resolveEffectivePermissions(profile: PersonneWithRole | null): P
 export function hasPermission(profile: PersonneWithRole | null, key: PermissionKey): boolean {
   if (profile?.profils_types?.slug === "administrateur") return true
   return resolveEffectivePermissions(profile)[key] === true
+}
+
+/** Au moins une des clés (utile pour les espaces à plusieurs portes d'entrée). */
+export function hasAnyPermission(
+  profile: PersonneWithRole | null,
+  keys: PermissionKey[]
+): boolean {
+  return keys.some((k) => hasPermission(profile, k))
 }
 
 /** Étude telle qu'attendue par les gardes ci-dessous. */
@@ -81,6 +112,7 @@ export function canEditEtude(
 ): boolean {
   if (!profile) return false
   if (profile.profils_types?.slug === "administrateur") return true
+  if (estCompteRestreint(profile)) return false
   if (etude.created_by && etude.created_by === profile.id) return true
   if (estSuiveurEtude(profile, etude)) return true
   return hasPermission(profile, "modifier_etudes")
@@ -98,6 +130,7 @@ export function canDeleteEtude(
 ): boolean {
   if (!profile) return false
   if (profile.profils_types?.slug === "administrateur") return true
+  if (estCompteRestreint(profile)) return false
   if (etude.created_by && etude.created_by === profile.id) return true
   return hasPermission(profile, "modifier_etudes")
 }

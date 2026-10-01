@@ -2,42 +2,64 @@ export const dynamic = "force-dynamic"
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { encryptData, decryptData, generateEncryptionSalt } from "@/lib/crypto"
+import { encryptData, generateEncryptionSalt } from "@/lib/crypto"
 import { getMasterKey } from "@/lib/crypto-key"
+import { CHAMPS_PII, colonnesPII, lirePII, lireSecret, type ChampPII } from "@/lib/pii/personne"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { hasPermission } from "@/lib/auth/permissions"
 import { getCurrentUserProfile, logAudit } from "@/lib/supabase-security"
 import { USER_PROFILE_TAG } from "@/lib/cache-tags"
 import { ETABLISSEMENTS, SCOLARITES } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 import { revalidateTag } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 
+/**
+ * Permissions qui ouvrent la fiche d'un autre membre (/dashboard/profil/[userId]).
+ * La fiche pré-remplit son formulaire avec les coordonnées déchiffrées d'ici :
+ * elles ne sont plus en clair en base.
+ */
+const CLES_FICHE_MEMBRE = ["membres", "voir_documents_membres", "voir_nss", "voir_rib"] as const
+
 export async function GET(req: NextRequest) {
   try {
     const sb = createClient()
     const { user } = await getCurrentUserProfile(sb)
+    const targetUserId = new URL(req.url).searchParams.get("targetUserId") ?? user.id
+    const estSoi = targetUserId === user.id
 
-    const MASTER_KEY = getMasterKey()
+    if (!estSoi) {
+      const appelant = await getCachedProfile(user.id)
+      if (!CLES_FICHE_MEMBRE.some((cle) => hasPermission(appelant, cle))) {
+        return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
+      }
+    }
+
     const admin = createAdminClient()
     const { data: fullProfile, error } = await admin
       .from("personnes")
       .select("*")
-      .eq("id", user.id)
+      .eq("id", targetUserId)
       .single()
 
     if (error || !fullProfile) return NextResponse.json({ error: "Profil introuvable" }, { status: 404 })
 
-    const salt = fullProfile.encryption_salt || generateEncryptionSalt()
-
-    const decrypted = {
-      ...fullProfile,
-      nss: fullProfile.nss_encrypted ? decryptData(fullProfile.nss_encrypted, fullProfile.nss_iv, fullProfile.nss_auth_tag, MASTER_KEY, salt) : null,
-      iban: fullProfile.iban_encrypted ? decryptData(fullProfile.iban_encrypted, fullProfile.iban_iv, fullProfile.iban_auth_tag, MASTER_KEY, salt) : null,
-      adresse: fullProfile.adresse_encrypted ? decryptData(fullProfile.adresse_encrypted, fullProfile.adresse_iv, fullProfile.adresse_auth_tag, MASTER_KEY, salt) : fullProfile.adresse,
-      date_naissance: fullProfile.date_naissance_encrypted ? decryptData(fullProfile.date_naissance_encrypted, fullProfile.date_naissance_iv, fullProfile.date_naissance_auth_tag, MASTER_KEY, salt) : fullProfile.date_naissance,
-      ville: fullProfile.ville_encrypted ? decryptData(fullProfile.ville_encrypted, fullProfile.ville_iv, fullProfile.ville_auth_tag, MASTER_KEY, salt) : fullProfile.ville,
-      code_postal: fullProfile.code_postal_encrypted ? decryptData(fullProfile.code_postal_encrypted, fullProfile.code_postal_iv, fullProfile.code_postal_auth_tag, MASTER_KEY, salt) : fullProfile.code_postal,
+    // Pour un autre membre : ses coordonnées seulement, jamais NSS ni IBAN.
+    if (!estSoi) {
+      return NextResponse.json({ data: { id: fullProfile.id, ...lirePII(fullProfile) } })
     }
 
-    return NextResponse.json({ data: decrypted })
+    // Déchiffrement tolérant, dans les deux formats du NSS/IBAN : un champ
+    // illisible vaut null. Auparavant, un NSS importé de Be Quick (format
+    // mono-chaîne) faisait échouer toute la réponse et le formulaire retombait
+    // sur le profil en cache, dont les coordonnées ne sont plus en clair.
+    return NextResponse.json({
+      data: {
+        ...fullProfile,
+        nss: lireSecret(fullProfile, "nss"),
+        iban: lireSecret(fullProfile, "iban"),
+        ...lirePII(fullProfile),
+      },
+    })
   } catch (error: any) {
     console.error("[GET /api/profil]", error.message)
     return NextResponse.json({ error: error.message }, { status: error.status || 401 })
@@ -76,30 +98,12 @@ export async function PUT(req: NextRequest) {
       updates.iban_iv = enc.iv
       updates.iban_auth_tag = enc.authTag
     }
-    if (body.adresse) {
-      const enc = encryptData(body.adresse, MASTER_KEY, salt)
-      updates.adresse_encrypted = enc.encrypted
-      updates.adresse_iv = enc.iv
-      updates.adresse_auth_tag = enc.authTag
+    // Champ renseigné : écrit chiffré, colonne en clair vidée.
+    const pii: Partial<Record<ChampPII, string>> = {}
+    for (const field of CHAMPS_PII) {
+      if (body[field]) pii[field] = body[field]
     }
-    if (body.date_naissance) {
-      const enc = encryptData(body.date_naissance, MASTER_KEY, salt)
-      updates.date_naissance_encrypted = enc.encrypted
-      updates.date_naissance_iv = enc.iv
-      updates.date_naissance_auth_tag = enc.authTag
-    }
-    if (body.ville) {
-      const enc = encryptData(body.ville, MASTER_KEY, salt)
-      updates.ville_encrypted = enc.encrypted
-      updates.ville_iv = enc.iv
-      updates.ville_auth_tag = enc.authTag
-    }
-    if (body.code_postal) {
-      const enc = encryptData(body.code_postal, MASTER_KEY, salt)
-      updates.code_postal_encrypted = enc.encrypted
-      updates.code_postal_iv = enc.iv
-      updates.code_postal_auth_tag = enc.authTag
-    }
+    Object.assign(updates, colonnesPII(pii, salt))
 
     const { data: updated, error } = await admin
       .from("personnes")
@@ -185,10 +189,8 @@ export async function PATCH(req: NextRequest) {
     }
 
     // --- Chiffrement côté serveur pour les champs sensibles ---
-    // Le GET décrypte depuis les colonnes *_encrypted : si on écrit
-    // uniquement dans la colonne en clair, le GET retourne l'ancienne
-    // valeur chiffrée (ou null) → la donnée semble disparaître.
-    const MASTER_KEY = getMasterKey()
+    // Le GET lit les colonnes *_encrypted : une valeur écrite uniquement en
+    // clair ne serait pas relue (et ne doit de toute façon plus l'être).
     const admin = createAdminClient()
 
     const { data: existingProfile } = await admin
@@ -202,20 +204,13 @@ export async function PATCH(req: NextRequest) {
       updates.encryption_salt = salt
     }
 
-    const ENCRYPT_FIELDS = ["date_naissance", "adresse", "ville", "code_postal"] as const
-    for (const field of ENCRYPT_FIELDS) {
-      if (updates[field]) {
-        const enc = encryptData(updates[field], MASTER_KEY, salt)
-        updates[`${field}_encrypted`] = enc.encrypted
-        updates[`${field}_iv`] = enc.iv
-        updates[`${field}_auth_tag`] = enc.authTag
-      } else if (updates[field] === null) {
-        // Champ explicitement vidé → supprimer aussi la version chiffrée
-        updates[`${field}_encrypted`] = null
-        updates[`${field}_iv`] = null
-        updates[`${field}_auth_tag`] = null
-      }
+    // Les données personnelles ne sont écrites que chiffrées : la colonne en
+    // clair du même nom est vidée (elle recevait jusqu'ici une copie lisible).
+    const pii: Partial<Record<ChampPII, string | null>> = {}
+    for (const field of CHAMPS_PII) {
+      if (field in updates) pii[field] = updates[field]
     }
+    Object.assign(updates, colonnesPII(pii, salt))
 
     const { data: updated, error } = await admin
       .from("personnes")
@@ -236,18 +231,7 @@ export async function PATCH(req: NextRequest) {
 
     // Retourner le profil avec les champs décryptés pour que le frontend
     // puisse mettre à jour son état immédiatement sans re-fetch.
-    const decryptedResponse: Record<string, unknown> = { ...updated }
-    for (const field of ENCRYPT_FIELDS) {
-      const encField = `${field}_encrypted`
-      if (updated[encField]) {
-        decryptedResponse[field] = decryptData(
-          updated[encField], updated[`${field}_iv`],
-          updated[`${field}_auth_tag`], MASTER_KEY, salt
-        )
-      }
-    }
-
-    return NextResponse.json({ data: decryptedResponse })
+    return NextResponse.json({ data: { ...updated, ...lirePII(updated) } })
   } catch (error: any) {
     console.error("[PATCH /api/profil]", error.message)
     return NextResponse.json({ error: error.message }, { status: error.status || 500 })

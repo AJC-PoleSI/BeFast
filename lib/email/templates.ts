@@ -121,6 +121,31 @@ export function passwordSetupEmail(opts: { prenom: string | null; link: string }
   }
 }
 
+/**
+ * Débloque un compte existant dont le titulaire est resté à la porte (tentatives
+ * de réinscription retombées sur des liens morts, mot de passe jamais utilisé…).
+ * Contrairement à `passwordResetEmail`, il ne prétend pas que le destinataire a
+ * demandé quoi que ce soit : c'est nous qui reprenons contact. `validiteHeures`
+ * doit refléter la durée réelle du jeton émis.
+ */
+export function accountUnblockEmail(opts: {
+  prenom: string | null
+  link: string
+  validiteHeures: number
+}) {
+  return {
+    subject: "Accédez à votre compte BeFast — définissez votre mot de passe",
+    html: brandedEmail({
+      title: `Votre compte BeFast vous attend${opts.prenom ? ` ${esc(opts.prenom)}` : ""}`,
+      intro:
+        "Votre compte existe bien sur BeFast, mais un problème technique de notre côté a fait échouer vos tentatives de connexion : les liens reçus ne menaient nulle part. C'est corrigé. Définissez votre mot de passe avec le bouton ci-dessous pour accéder à votre compte. " +
+        `Ce lien est personnel et valable ${opts.validiteHeures} heures.`,
+      ctaLabel: "Définir mon mot de passe",
+      ctaUrl: opts.link,
+    }),
+  }
+}
+
 export function passwordResetEmail(opts: { prenom: string | null; link: string }) {
   return {
     subject: "Réinitialisez votre mot de passe BeFast",

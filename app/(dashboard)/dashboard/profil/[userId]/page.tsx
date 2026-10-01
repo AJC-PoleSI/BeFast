@@ -32,12 +32,15 @@ export default function AdminProfilePage() {
 
   const [profile, setProfile] = useState<PersonneWithRole | null>(null)
   const [loading, setLoading] = useState(true)
+  // Coordonnées déchiffrées reçues : sans elles, le formulaire afficherait des
+  // cases vides, et l'enregistrer effacerait l'adresse chiffrée.
+  const [coordonneesChargees, setCoordonneesChargees] = useState(false)
 
   const fetchProfile = useCallback(async () => {
     const supabase = createClient()
     // Les postes (bureau/pôles) vivent dans `personne_postes` : sans cette
     // seconde requête, la vue administrateur n'affiche que le rôle de base.
-    const [{ data }, { data: postes }] = await Promise.all([
+    const [{ data }, { data: postes }, coordonnees] = await Promise.all([
       supabase
         .from("personnes")
         .select("*, profils_types!profil_type_id(*)")
@@ -47,11 +50,20 @@ export default function AdminProfilePage() {
         .from("personne_postes")
         .select("profils_types(*)")
         .eq("personne_id", userId),
+      // Adresse, ville, code postal, date de naissance : stockés chiffrés,
+      // déchiffrés côté serveur.
+      fetch(`/api/profil?targetUserId=${userId}`, { cache: "no-store" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => json?.data ?? null)
+        .catch(() => null),
     ])
 
     setProfile(
-      data ? ({ ...data, personne_postes: postes ?? [] } as PersonneWithRole) : null
+      data
+        ? ({ ...data, ...(coordonnees ?? {}), personne_postes: postes ?? [] } as PersonneWithRole)
+        : null
     )
+    setCoordonneesChargees(!!coordonnees)
     setLoading(false)
   }, [userId])
 
@@ -77,14 +89,24 @@ export default function AdminProfilePage() {
   // Cloisonnement des PII : NSS pour le pôle RH, IBAN pour la trésorerie.
   const canViewNss = isAdmin || permissions?.voir_nss === true
   const canViewRib = isAdmin || permissions?.voir_rib === true
+  const canValidateAccount = isAdmin || permissions?.valider_comptes === true
+  // Ouvrir la fiche ne dépend plus des seuls justificatifs : la gestion des
+  // membres (`membres`, ex. Pôle Trésorerie) ou l'accès à une PII y donne droit,
+  // chaque bloc restant filtré par sa propre permission.
+  const canOpenSheet =
+    canViewMemberDocs ||
+    canViewNss ||
+    canViewRib ||
+    isAdmin ||
+    permissions?.membres === true
 
   useEffect(() => {
-    if (!authLoading && canViewMemberDocs) {
+    if (!authLoading && canOpenSheet) {
       fetchProfile()
-    } else if (!authLoading && !canViewMemberDocs) {
+    } else if (!authLoading && !canOpenSheet) {
       setLoading(false)
     }
-  }, [authLoading, canViewMemberDocs, fetchProfile])
+  }, [authLoading, canOpenSheet, fetchProfile])
 
   if (authLoading || loading) {
     return (
@@ -96,13 +118,13 @@ export default function AdminProfilePage() {
     )
   }
 
-  if (!canViewMemberDocs) {
+  if (!canOpenSheet) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <h2 className="font-heading text-xl font-bold mb-2">Accès non autorisé</h2>
           <p className="text-muted-foreground">
-            Vous n'avez pas la permission de consulter les documents des membres.
+            Vous n&apos;avez pas la permission de consulter la fiche d&apos;un membre.
           </p>
         </div>
       </div>
@@ -191,7 +213,7 @@ export default function AdminProfilePage() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    {profile.account_status === "validated" ? (
+                    {!canValidateAccount ? null : profile.account_status === "validated" ? (
                       <Button 
                         size="sm" 
                         variant="outline" 
@@ -227,6 +249,7 @@ export default function AdminProfilePage() {
             <ProfileInfoForm
               initialValues={initialValues}
               targetUserId={userId}
+              readOnly={!coordonneesChargees}
             />
           </div>
 
@@ -264,7 +287,14 @@ export default function AdminProfilePage() {
 
         <div className="space-y-6">
           <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
-            <DocumentsGrid targetUserId={userId} readOnly isAdminView />
+            {canViewMemberDocs ? (
+              <DocumentsGrid targetUserId={userId} readOnly isAdminView />
+            ) : (
+              <div className="p-6 text-sm text-muted-foreground">
+                Les justificatifs de ce membre sont réservés aux profils disposant de
+                la permission « Documents des membres ».
+              </div>
+            )}
           </div>
         </div>
       </div>

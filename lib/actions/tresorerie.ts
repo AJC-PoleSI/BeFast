@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next/cache"
 import { FACTURES_TAG, MISSIONS_TAG } from "@/lib/cache-tags"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
-import { hasPermission } from "@/lib/auth/permissions"
+import { hasPermission, hasAnyPermission } from "@/lib/auth/permissions"
 import { chargerToutesLesPages, tableRetributionsAbsente } from "@/lib/supabase/pagination"
 import {
   buildRetributionRows,
@@ -26,6 +26,17 @@ import { remunerationParIntervenant } from "@/lib/missions/remuneration"
 async function requireVoirFactures(userId: string): Promise<string | null> {
   const profile = await getCachedProfile(userId)
   if (!hasPermission(profile, "voir_factures")) return "Non autorisé"
+  return null
+}
+
+/**
+ * Bulletins de versement : la trésorerie complète (`voir_factures`) ou la seule
+ * validation des BV (`valider_bv`, pour un poste qui valide les versements aux
+ * intervenants sans avoir accès à la facturation).
+ */
+async function requireValiderBV(userId: string): Promise<string | null> {
+  const profile = await getCachedProfile(userId)
+  if (!hasAnyPermission(profile, ["voir_factures", "valider_bv"])) return "Non autorisé"
   return null
 }
 
@@ -680,7 +691,7 @@ export async function getProchainNumeroBV() {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
-  const permErr = await requireVoirFactures(user.id)
+  const permErr = await requireValiderBV(user.id)
   if (permErr) return { error: permErr }
 
   const { numeros, error } = await chargerNumerosBVUtilises(supabase)
@@ -747,7 +758,7 @@ export async function marquerRetributionPaiement(input: {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
-  const permErr = await requireVoirFactures(user.id)
+  const permErr = await requireValiderBV(user.id)
   if (permErr) return { error: permErr }
 
   // Le montant vient de la ligne affichée côté client : on ne lui fait pas
@@ -873,7 +884,7 @@ export async function annulerRetributionPaiement(missionId: string, personneId: 
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
-  const permErr = await requireVoirFactures(user.id)
+  const permErr = await requireValiderBV(user.id)
   if (permErr) return { error: permErr }
 
   // Un UPDATE écarté par RLS renvoie zéro ligne SANS erreur : « aucune ligne
@@ -926,7 +937,7 @@ export async function marquerMissionRetributionsPayees(missionId: string, date_p
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
-  const permErr = await requireVoirFactures(user.id)
+  const permErr = await requireValiderBV(user.id)
   if (permErr) return { error: permErr }
 
   const { data: mission, error: missionErr } = await supabase

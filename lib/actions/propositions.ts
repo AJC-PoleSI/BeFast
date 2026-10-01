@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { requireActionPermission } from "@/lib/auth/action-guards"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next/cache"
 import { ETUDES_TAG, MEMBERS_TAG, CLIENTS_TAG, PROPOSALS_TAG } from "@/lib/cache-tags"
@@ -55,6 +56,9 @@ async function nextEtudeNumero(sb: ReturnType<typeof createClient>): Promise<str
 
 // Membres AJC validés — alimente le menu déroulant CDP
 export async function getProposalMembers() {
+  const acces = await requireActionPermission("prospection", "Vous n'avez pas la permission d'accéder à la prospection.")
+  if (!acces.ok) return { error: acces.error }
+
   const supabase = createClient()
   const {
     data: { user },
@@ -96,6 +100,9 @@ export async function getProposalMembers() {
 }
 
 export async function getProposalClients() {
+  const acces = await requireActionPermission("prospection", "Vous n'avez pas la permission d'accéder à la prospection.")
+  if (!acces.ok) return { error: acces.error }
+
   const supabase = createClient()
   const {
     data: { user },
@@ -114,6 +121,9 @@ export async function getProposalClients() {
 // ---- Lecture des propositions ----
 
 export async function getProposals() {
+  const acces = await requireActionPermission("prospection", "Vous n'avez pas la permission d'accéder à la prospection.")
+  if (!acces.ok) return { error: acces.error }
+
   noStore()
   const supabase = createClient()
   const {
@@ -130,6 +140,9 @@ export async function getProposals() {
 }
 
 export async function getProposal(id: string) {
+  const acces = await requireActionPermission("prospection", "Vous n'avez pas la permission d'accéder à la prospection.")
+  if (!acces.ok) return { error: acces.error }
+
   noStore()
   const supabase = createClient()
   const {
@@ -195,6 +208,9 @@ export type ProposalInput = {
 }
 
 export async function saveProposal(input: ProposalInput) {
+  const acces = await requireActionPermission("prospection", "Vous n'avez pas la permission d'accéder à la prospection.")
+  if (!acces.ok) return { error: acces.error }
+
   const supabase = createClient()
   const {
     data: { user },
@@ -284,6 +300,9 @@ export async function saveProposal(input: ProposalInput) {
 }
 
 export async function updateProposalStatus(id: string, status: string) {
+  const acces = await requireActionPermission("prospection", "Vous n'avez pas la permission d'accéder à la prospection.")
+  if (!acces.ok) return { error: acces.error }
+
   const supabase = createClient()
   const {
     data: { user },

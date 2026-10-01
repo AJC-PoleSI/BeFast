@@ -2,9 +2,10 @@
 
 import { revalidateTag } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { requireActionPermission } from "@/lib/auth/action-guards"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
-import { hasPermission } from "@/lib/auth/permissions"
+import { hasPermission, emptyPermissions } from "@/lib/auth/permissions"
 import type { PersonneWithRole, ProfilType, PersonnePoste } from "@/types/database.types"
 
 async function getCallerRole(): Promise<string | null> {
@@ -109,6 +110,9 @@ export async function updateMemberRole(personneId: string, roleSlug: string) {
 }
 
 export async function getAllRoles(): Promise<{ data: ProfilType[] | null; error: string | null }> {
+  const acces = await requireActionPermission("membres", "Vous n'avez pas la permission de consulter les rôles.")
+  if (!acces.ok) return { data: null, error: acces.error }
+
   try {
     const client = createClient()
     const { data: { user } } = await client.auth.getUser()
@@ -173,19 +177,9 @@ export async function createRole(
 
     if (existing) return { success: false, error: "Un rôle avec ce slug existe déjà." }
 
-    const emptyPerms = {
-      dashboard: false, profil: false, missions: false, etudes: false,
-      prospection: false, statistiques: false, administration: false,
-      membres: false, documents: false, nouvelle_mission: false,
-      selectionner_candidats: false, valider_comptes: false,
-      voir_documents_membres: false, voir_factures: false,
-      voir_nss: false, voir_rib: false,
-      valider_bv: false, assigner_intervenants: false,
-      modifier_etudes: false,
-      parametres_structure: false, gerer_parametres: false,
-      publier_etudes: false, publier_missions: false,
-      signer_documents: false, signer_ba: false,
-    }
+    // Source de vérité unique : ALL_PERMISSION_KEYS (lib/auth/permissions).
+    // Une liste recopiée ici oubliait systématiquement les clés ajoutées ensuite.
+    const emptyPerms = emptyPermissions()
 
     const { data, error } = await admin
       .from("profils_types")

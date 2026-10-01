@@ -4,14 +4,14 @@ import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { requireApiAdmin } from "@/lib/auth/api-guards"
+import { requireApiAnyPermission } from "@/lib/auth/api-guards"
 import { customFieldSchema } from "@/app/(dashboard)/dashboard/profil/_lib/schemas"
 import { NextResponse } from "next/server"
 
 
 export async function GET(request: Request) {
   try {
-    const guard = await requireApiAdmin()
+    const guard = await requireApiAnyPermission(["administration", "gerer_parametres"])
     if (!guard.ok) return guard.response
 
     const supabase = createClient()
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const guard = await requireApiAdmin()
+    const guard = await requireApiAnyPermission(["administration", "gerer_parametres"])
     if (!guard.ok) return guard.response
 
     const body = await request.json()
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const guard = await requireApiAdmin()
+    const guard = await requireApiAnyPermission(["administration", "gerer_parametres"])
     if (!guard.ok) return guard.response
 
     const body = await request.json()
@@ -146,7 +146,7 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const guard = await requireApiAdmin()
+    const guard = await requireApiAnyPermission(["administration", "gerer_parametres"])
     if (!guard.ok) return guard.response
 
     const { searchParams } = new URL(request.url)

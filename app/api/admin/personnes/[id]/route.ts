@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
-import { requireApiAdmin } from "@/lib/auth/api-guards"
+import { requireApiAdmin, requireApiPermission } from "@/lib/auth/api-guards"
 import { NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/send"
 import { accountValidatedEmail } from "@/lib/email/templates"
@@ -19,8 +19,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       return NextResponse.json({ error: "account_status required" }, { status: 400 })
     }
 
-    // Contrôle d'accès : seul un administrateur peut valider / rejeter un compte.
-    const guard = await requireApiAdmin()
+    // Contrôle d'accès : permission `valider_comptes` (administrateurs et tout
+    // poste à qui elle est accordée, ex. Pôle RH).
+    const guard = await requireApiPermission("valider_comptes")
     if (!guard.ok) return guard.response
 
     const supabase = createAdminClient()

@@ -4,6 +4,7 @@ import { Suspense } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Users, ShieldCheck, KeyRound, ListPlus, Loader } from "lucide-react"
 import { useUser } from "@/hooks/useUser"
+import type { PermissionKey } from "@/types/database.types"
 import { MembresTab } from "./_components/MembresTab"
 import { RolesTab } from "./_components/RolesTab"
 import { CampagneTab } from "./_components/CampagneTab"
@@ -19,19 +20,38 @@ import { ChampsTab } from "./_components/ChampsTab"
 
 type TabKey = "membres" | "roles" | "campagne" | "champs"
 
-const ALL_TABS: { key: TabKey; label: string; icon: any; adminOnly?: boolean }[] = [
+// `permissions` = clés qui ouvrent l'onglet en plus du rôle administrateur.
+// L'onglet « Champs personnalisés » écrit sur /api/admin/custom-fields, gardé
+// par le paramétrage avancé : sans cette liste, l'onglet s'affichait pour tout
+// détenteur de `membres` (Pôle RH) et renvoyait un 403 au premier clic.
+const ALL_TABS: {
+  key: TabKey
+  label: string
+  icon: any
+  adminOnly?: boolean
+  permissions?: PermissionKey[]
+}[] = [
   { key: "membres", label: "Membres", icon: Users },
   { key: "roles", label: "Rôles & permissions", icon: ShieldCheck, adminOnly: true },
   { key: "campagne", label: "Campagne mot de passe", icon: KeyRound, adminOnly: true },
-  { key: "champs", label: "Champs personnalisés", icon: ListPlus },
+  {
+    key: "champs",
+    label: "Champs personnalisés",
+    icon: ListPlus,
+    permissions: ["gerer_parametres", "administration"],
+  },
 ]
 
 function MembresDroitsShell() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { isAdmin } = useUser()
-  const TABS = ALL_TABS.filter((t) => !t.adminOnly || isAdmin)
+  const { isAdmin, permissions } = useUser()
+  const TABS = ALL_TABS.filter((t) => {
+    if (t.adminOnly) return isAdmin
+    if (t.permissions) return isAdmin || t.permissions.some((k) => permissions?.[k] === true)
+    return true
+  })
   const raw = searchParams.get("tab")
   const activeTab: TabKey = TABS.some((t) => t.key === raw) ? (raw as TabKey) : "membres"
 
@@ -69,7 +89,7 @@ function MembresDroitsShell() {
         {activeTab === "membres" && <MembresTab />}
         {activeTab === "roles" && isAdmin && <RolesTab />}
         {activeTab === "campagne" && isAdmin && <CampagneTab />}
-        {activeTab === "champs" && <ChampsTab />}
+        {activeTab === "champs" && TABS.some((t) => t.key === "champs") && <ChampsTab />}
       </div>
     </div>
   )

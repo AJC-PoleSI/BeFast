@@ -4,12 +4,12 @@ import "server-only"
 
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { requireApiAdmin } from "@/lib/auth/api-guards"
+import { requireApiPermission } from "@/lib/auth/api-guards"
 
 
 export async function GET() {
   try {
-    const guard = await requireApiAdmin()
+    const guard = await requireApiPermission("voir_documents_membres")
     if (!guard.ok) return guard.response
 
     const admin = createAdminClient()

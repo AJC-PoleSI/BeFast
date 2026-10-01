@@ -37,7 +37,12 @@ function toCSV(rows: Record<string, any>[]): string {
   const headers = Array.from(new Set(flat.flatMap((r) => Object.keys(r))))
   const escape = (val: any) => {
     if (val === null || val === undefined) return ""
-    const s = String(val)
+    let s = String(val)
+    // Neutralise l'injection de formule CSV (CWE-1236) : Excel/LibreOffice
+    // interprètent une cellule commençant par =, +, -, @, tab ou CR comme une
+    // formule — un champ utilisateur (nom, commentaire...) pourrait sinon
+    // exécuter du code ou exfiltrer des données à l'ouverture du fichier.
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
     return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
   const lines = [headers.join(";")]

@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { hasAnyPermission } from "@/lib/auth/permissions"
 import { revalidateTag, unstable_cache } from "next/cache"
 import { PHASES_TAG } from "@/lib/cache-tags"
 
@@ -21,7 +23,7 @@ export type PhaseDefaut = {
 async function getCaller() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { user: null, isAdmin: false, isSuper: false }
+  if (!user) return { user: null, isAdmin: false, isSuper: false, canManage: false }
   const admin = createAdminClient()
   const { data } = await admin
     .from("personnes")
@@ -29,12 +31,18 @@ async function getCaller() {
     .eq("id", user.id)
     .single()
   const isAdmin = (data?.profils_types as any)?.slug === "administrateur"
-  return { user, isAdmin, isSuper: isAdmin && !!(data as any)?.is_super_admin }
+  // Le pilotage des phases par défaut est ouvert à la permission de
+  // paramétrage avancé (`gerer_parametres`) en plus des administrateurs.
+  const profile = await getCachedProfile(user.id)
+  const canManage = isAdmin || hasAnyPermission(profile, ["gerer_parametres", "administration"])
+  return { user, isAdmin, isSuper: isAdmin && !!(data as any)?.is_super_admin, canManage }
 }
 
 export async function getMyPhasePermissions() {
-  const { isAdmin, isSuper } = await getCaller()
-  return { isAdmin, isSuper }
+  const { isAdmin, isSuper, canManage } = await getCaller()
+  // `isAdmin` reste la clé lue par l'UI existante : elle pilote l'affichage des
+  // boutons d'édition, désormais alignée sur le droit réel (canManage).
+  return { isAdmin: canManage, isSuper, isAdminRole: isAdmin }
 }
 
 // --- Lecture (cache, données publiques) ---
@@ -65,8 +73,8 @@ export async function getPhasesDefaut(includeArchived = false): Promise<{ data: 
 
 // --- Écriture (admin) ---
 export async function savePhaseDefaut(phase: Omit<PhaseDefaut, "archived">): Promise<{ success: boolean; error?: string }> {
-  const { isAdmin } = await getCaller()
-  if (!isAdmin) return { success: false, error: "Seul un administrateur peut modifier les phases." }
+  const { canManage } = await getCaller()
+  if (!canManage) return { success: false, error: "Vous n'avez pas la permission de modifier les phases." }
 
   const admin = createAdminClient()
   const { error } = await admin.from("phases_defaut").upsert({
@@ -87,8 +95,8 @@ export async function savePhaseDefaut(phase: Omit<PhaseDefaut, "archived">): Pro
 
 // Crée une phase vierge (id = max+1). Admin.
 export async function createPhaseDefaut(): Promise<{ data?: PhaseDefaut; error?: string }> {
-  const { isAdmin } = await getCaller()
-  if (!isAdmin) return { error: "Seul un administrateur peut créer une phase." }
+  const { canManage } = await getCaller()
+  if (!canManage) return { error: "Vous n'avez pas la permission de créer une phase." }
   const admin = createAdminClient()
   const { data: maxRow } = await admin.from("phases_defaut").select("id").order("id", { ascending: false }).limit(1).maybeSingle()
   const nextId = ((maxRow?.id as number) ?? 0) + 1
@@ -199,8 +207,8 @@ export async function getSuggestedPhases(): Promise<{ data: string[]; error: str
 
 // Intègre une phase suggérée au catalogue (source='auto'). Admin.
 export async function integrateSuggestedPhase(nom: string): Promise<{ success: boolean; error?: string }> {
-  const { isAdmin } = await getCaller()
-  if (!isAdmin) return { success: false, error: "Seul un administrateur peut intégrer une phase." }
+  const { canManage } = await getCaller()
+  if (!canManage) return { success: false, error: "Vous n'avez pas la permission d'intégrer une phase." }
   const admin = createAdminClient()
   const { data: maxRow } = await admin.from("phases_defaut").select("id").order("id", { ascending: false }).limit(1).maybeSingle()
   const nextId = ((maxRow?.id as number) ?? 0) + 1

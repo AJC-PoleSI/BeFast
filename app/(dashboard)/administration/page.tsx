@@ -32,6 +32,7 @@ import {
   PARAMETRE_BV_ASSIETTE_DEPASSEMENT_PCT,
   PARAMETRE_BV_BASE_URSSAF,
 } from "@/lib/bv/cotisations"
+import { RoleGuard } from "@/components/layout/RoleGuard"
 
 /* ──────────────────────────────────────────────────────────────────────────
  * Paramètres de la structure (identité, légal, bureau, financier…).
@@ -285,6 +286,17 @@ const STRUCTURE_SECTIONS: SectionDef[] = [
 ]
 
 export default function ParametresAdminPage() {
+  // Les paramètres globaux de la structure (TVA, RIB, identité, bureau…) sont
+  // portés par la permission `parametres_structure` — la sauvegarde côté
+  // serveur (setParametres) applique le même contrôle.
+  return (
+    <RoleGuard permission="parametres_structure">
+      <ParametresAdminContent />
+    </RoleGuard>
+  )
+}
+
+function ParametresAdminContent() {
   const [structureForm, setStructureForm] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)

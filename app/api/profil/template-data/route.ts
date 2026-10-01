@@ -5,6 +5,7 @@ import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
 import { decryptFromString } from "@/lib/encryption"
+import { lirePII } from "@/lib/pii/personne"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
@@ -69,6 +70,9 @@ export async function GET(request: Request) {
       )
     }
 
+    // Coordonnées stockées chiffrées : on les déchiffre ici.
+    const pii = lirePII(profile)
+
     // Build template variables object
     const templateVars: Record<string, any> = {
       // Basic info
@@ -78,13 +82,13 @@ export async function GET(request: Request) {
       nom: profile.nom || "",
       portable: profile.portable || "",
       promo: profile.promo || "",
-      adresse: profile.adresse || "",
-      ville: profile.ville || "",
-      code_postal: profile.code_postal || "",
+      adresse: pii.adresse || "",
+      ville: pii.ville || "",
+      code_postal: pii.code_postal || "",
       pole: profile.pole || "",
       etablissement: profile.etablissement || "",
       scolarite: profile.scolarite || "",
-      date_naissance: profile.date_naissance || "",
+      date_naissance: pii.date_naissance || "",
 
       // Computed fields
       nom_complet: `${profile.prenom || ""} ${profile.nom || ""}`.trim(),

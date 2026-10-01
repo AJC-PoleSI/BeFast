@@ -1,38 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import type { PersonneWithRole, Permissions } from "@/types/database.types"
+import type { Permissions } from "@/types/database.types"
 import { DashboardShell } from "./dashboard-shell"
 import { UserProvider } from "@/hooks/useUser"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { resolveEffectivePermissions } from "@/lib/auth/permissions"
 
-const emptyPermissions: Permissions = {
-  dashboard: false,
-  profil: false,
-  missions: false,
-  etudes: false,
-  prospection: false,
-  statistiques: false,
-  administration: false,
-  membres: false,
-  documents: false,
-  nouvelle_mission: false,
-  voir_documents_membres: false,
-  voir_nss: false,
-  voir_rib: false,
-  assigner_intervenants: false,
-  modifier_etudes: false,
-  parametres_structure: false,
-  selectionner_candidats: false,
-  valider_comptes: false,
-  valider_bv: false,
-  voir_factures: false,
-  gerer_parametres: false,
-  publier_etudes: false,
-  publier_missions: false,
-  signer_documents: false,
-  signer_ba: false,
-}
 
 export default async function DashboardLayout({
   children,
@@ -65,20 +38,12 @@ export default async function DashboardLayout({
   const isAdmin = profile?.profils_types?.slug === "administrateur"
 
   // Permissions effectives = rôle de base ∪ postes (bureau/pôles) assignés.
-  let permissions: Permissions | null = profile
+  // `resolveEffectivePermissions` applique aussi la restriction des comptes non
+  // validés (profil + documents uniquement) — même source de vérité que les
+  // gardes serveur, plus de liste de clés dupliquée ici.
+  const permissions: Permissions | null = profile
     ? resolveEffectivePermissions(profile)
     : null
-
-  // Restreindre les accès si le compte n'est pas validé
-  if (profile?.account_status !== "validated" && !isAdmin) {
-    if (permissions) {
-      // On ne garde que profil et documents
-      const restricted: Permissions = { ...emptyPermissions }
-      if (permissions.profil) restricted.profil = true
-      if (permissions.documents) restricted.documents = true
-      permissions = restricted
-    }
-  }
 
   const userName = profile
     ? [profile.prenom, profile.nom].filter(Boolean).join(" ") || profile.email

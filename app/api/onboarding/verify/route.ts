@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { hashToken } from "@/lib/auth/verification"
 import { provisionRhCandidate } from "@/lib/integration/rh-client"
+import { lirePII } from "@/lib/pii/personne"
 
 // POST /api/onboarding/verify  { token }
 // Le token de vérif fait office de credential (64-hex, hashé en base).
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
   const { data: rows } = await admin
     .from("personnes")
     .select(
-      "id, email, prenom, nom, date_of_birth, email_verified, verification_token_expires_at"
+      "id, email, prenom, nom, date_of_birth, email_verified, verification_token_expires_at, encryption_salt, date_naissance, date_naissance_encrypted, date_naissance_iv, date_naissance_auth_tag"
     )
     .eq("verification_token_hash", tokenHash)
     .limit(1)
@@ -48,7 +49,9 @@ export async function POST(req: NextRequest) {
       email,
       firstName: personne.prenom ?? "",
       lastName: personne.nom ?? "",
-      dateOfBirth: personne.date_of_birth ?? null,
+      // Chiffrée dans `date_naissance` ; `date_of_birth` (en clair) ne sert
+      // plus qu'aux inscriptions antérieures au 26/09/2026 non encore reprises.
+      dateOfBirth: lirePII(personne).date_naissance ?? personne.date_of_birth ?? null,
       befastPersonId: personne.id,
       source: "onboarding",
     })

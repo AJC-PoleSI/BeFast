@@ -45,6 +45,8 @@ export function buildAnonymisationPatch(personneId: string): Record<string, unkn
     ville: null,
     code_postal: null,
     date_naissance: null,
+    // Date de naissance saisie à l'inscription candidat (RH Manager).
+    date_of_birth: null,
   }
 
   for (const champ of ENCRYPTED_FIELDS) {

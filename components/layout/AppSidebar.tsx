@@ -48,21 +48,32 @@ interface NavEntry {
   label: string
   href: string
   icon: IconType
-  permission: keyof Permissions
+  /** Le lien s'affiche si AU MOINS UNE de ces clés est accordée. */
+  permissions: (keyof Permissions)[]
   adminOnly?: boolean
 }
 
+// Chaque entrée doit correspondre au garde serveur de la page cible
+// (layout.tsx / lib/auth/page-guards.ts) : un lien visible mène toujours à une
+// page accessible, et inversement.
 const NAV: NavEntry[] = [
-  { label: "Accueil", href: "/", icon: LayoutDashboard, permission: "dashboard" },
-  { label: "Mon profil", href: "/profil", icon: UserCircle, permission: "profil" },
-  { label: "Missions", href: "/missions", icon: Briefcase, permission: "missions" },
-  { label: "Mes documents", href: "/documents", icon: FolderOpen, permission: "documents" },
-  { label: "Études", href: "/etudes", icon: GraduationCap, permission: "etudes" },
-  { label: "Prospection", href: "/prospection", icon: TrendingUp, permission: "prospection" },
-  { label: "Trésorerie", href: "/tresorerie", icon: Wallet, permission: "voir_factures" },
-  { label: "Signatures", href: "/signatures", icon: FileSignature, permission: "etudes" },
-  { label: "Statistiques", href: "/statistiques", icon: BarChart3, permission: "statistiques" },
-  { label: "Administration", href: "/administration", icon: Shield, permission: "membres" },
+  { label: "Accueil", href: "/", icon: LayoutDashboard, permissions: ["dashboard"] },
+  { label: "Mon profil", href: "/profil", icon: UserCircle, permissions: ["profil"] },
+  { label: "Missions", href: "/missions", icon: Briefcase, permissions: ["missions"] },
+  { label: "Mes documents", href: "/documents", icon: FolderOpen, permissions: ["documents"] },
+  { label: "Études", href: "/etudes", icon: GraduationCap, permissions: ["etudes"] },
+  { label: "Prospection", href: "/prospection", icon: TrendingUp, permissions: ["prospection"] },
+  { label: "Trésorerie", href: "/tresorerie", icon: Wallet, permissions: ["voir_factures"] },
+  // La file de signature s'ouvre sur la permission de signer — pas sur `etudes`,
+  // qu'un·e Trésorier·ère porteur·se de `signer_documents` n'a pas forcément.
+  { label: "Signatures", href: "/signatures", icon: FileSignature, permissions: ["signer_documents", "signer_ba", "etudes"] },
+  { label: "Statistiques", href: "/statistiques", icon: BarChart3, permissions: ["statistiques"] },
+  {
+    label: "Administration",
+    href: "/administration",
+    icon: Shield,
+    permissions: ["administration", "membres", "parametres_structure", "gerer_parametres"],
+  },
 ]
 
 const sidebarVariants = {
@@ -109,7 +120,7 @@ export function AppSidebar({ permissions, isAdmin, userName }: AppSidebarProps) 
   const items = NAV.filter((item) => {
     if (item.adminOnly) return !!isAdmin
     if (isAdmin) return true
-    return permissions?.[item.permission] === true
+    return item.permissions.some((key) => permissions?.[key] === true)
   })
 
   const email = profile?.email ?? null

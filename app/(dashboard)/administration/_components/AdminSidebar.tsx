@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Settings, FileText, Users, Database } from "lucide-react"
+import { useUser } from "@/hooks/useUser"
+import type { PermissionKey } from "@/types/database.types"
 
 // 4 sections claires — les anciens onglets (Droits, Campagne mdp, Champs
 // personnalisés, Import/Export) sont devenus des onglets internes de
@@ -13,24 +15,28 @@ const ADMIN_NAV_LINKS = [
     label: "Paramètres",
     description: "Structure, bureau, banque, cotisations",
     icon: Settings,
+    permissions: ["parametres_structure"] as PermissionKey[],
   },
   {
     href: "/administration/membres",
     label: "Membres & Droits",
     description: "Comptes, rôles, permissions, campagne mdp",
     icon: Users,
+    permissions: ["membres"] as PermissionKey[],
   },
   {
     href: "/administration/documents",
     label: "Modèles de documents",
     description: "Templates Word / PDF et balises",
     icon: FileText,
+    permissions: ["administration", "gerer_parametres"] as PermissionKey[],
   },
   {
     href: "/administration/donnees",
     label: "Données",
     description: "Explorateur et exports CSV",
     icon: Database,
+    permissions: ["administration"] as PermissionKey[],
   },
 ]
 
@@ -44,6 +50,13 @@ const LEGACY_ACTIVE: Record<string, string> = {
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const { permissions, isAdmin } = useUser()
+
+  // Chaque section a son propre garde serveur (layout.tsx) : on n'affiche que
+  // celles réellement ouvertes, sinon le lien mène à un écran de refus.
+  const links = ADMIN_NAV_LINKS.filter(
+    (l) => isAdmin || l.permissions.some((k) => permissions?.[k] === true)
+  )
 
   const isActive = (href: string) => {
     if (href === "/administration") {
@@ -66,7 +79,7 @@ export function AdminSidebar() {
       </div>
 
       <div className="space-y-1.5">
-        {ADMIN_NAV_LINKS.map((link) => {
+        {links.map((link) => {
           const Icon = link.icon
           const active = isActive(link.href)
 

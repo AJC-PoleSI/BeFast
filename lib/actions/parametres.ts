@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { requireActionPermission } from "@/lib/auth/action-guards"
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache"
 import { PARAMETRES_TAG, MARGES_TAG } from "@/lib/cache-tags"
 import type { ParametresMap, MargesMap } from "@/lib/proposals-constants"
@@ -38,19 +39,15 @@ export async function getParametres(): Promise<{ data: ParametresMap | null; err
 
 // Écriture en lot des paramètres — administrateur uniquement.
 export async function saveParametres(values: ParametresMap): Promise<{ success: boolean; error?: string }> {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: "Non authentifié" }
+  // Paramètres globaux de la structure : permission `parametres_structure`
+  // (Présidente, Pôle Trésorerie…) en plus des administrateurs.
+  const guard = await requireActionPermission(
+    "parametres_structure",
+    "Seuls les responsables des paramètres de la structure peuvent les modifier."
+  )
+  if (!guard.ok) return { success: false, error: guard.error }
 
   const admin = createAdminClient()
-  const { data: caller } = await admin
-    .from("personnes")
-    .select("profils_types!profil_type_id(slug)")
-    .eq("id", user.id)
-    .single()
-  if ((caller?.profils_types as any)?.slug !== "administrateur") {
-    return { success: false, error: "Seul un administrateur peut modifier les paramètres." }
-  }
 
   const rows = Object.entries(values).map(([key, value]) => ({
     key,
@@ -93,19 +90,14 @@ export async function getMargesRecommandees(): Promise<{ data: MargesMap | null;
 
 // Écriture en lot des marges — administrateur uniquement.
 export async function saveMargesRecommandees(values: MargesMap): Promise<{ success: boolean; error?: string }> {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: "Non authentifié" }
+  // Pilotage des prix : trésorerie (`voir_factures`) ou paramétrage avancé.
+  const guard = await requireActionPermission(
+    ["gerer_parametres", "voir_factures"],
+    "Seule la trésorerie ou un gestionnaire des paramètres peut modifier les marges."
+  )
+  if (!guard.ok) return { success: false, error: guard.error }
 
   const admin = createAdminClient()
-  const { data: caller } = await admin
-    .from("personnes")
-    .select("profils_types!profil_type_id(slug)")
-    .eq("id", user.id)
-    .single()
-  if ((caller?.profils_types as any)?.slug !== "administrateur") {
-    return { success: false, error: "Seul un administrateur peut modifier les marges." }
-  }
 
   const rows = Object.entries(values).map(([taille_entreprise, marge_pct]) => ({
     taille_entreprise,

@@ -11,7 +11,8 @@ import {
   intervenantAffecteEmail,
 } from "@/lib/email/templates"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
-import { hasPermission, canEditEtude } from "@/lib/auth/permissions"
+import { requireActionPermission } from "@/lib/auth/action-guards"
+import { hasPermission, hasAnyPermission, canEditEtude } from "@/lib/auth/permissions"
 import { estMissionPubliee } from "@/lib/mission-visibilite"
 import { motifRefusAffectation } from "@/lib/missions/affectation"
 
@@ -80,18 +81,20 @@ export async function createMission(formData: {
   nb_jeh?: number
   nb_intervenants?: number
 }) {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Création d'une mission : permission `nouvelle_mission`.
+  const guard = await requireActionPermission(
+    "nouvelle_mission",
+    "Vous n'avez pas la permission de créer une mission."
+  )
+  if (!guard.ok) return { error: guard.error }
 
-  if (!user) return { error: "Non authentifié" }
+  const supabase = createClient()
 
   const { data, error } = await supabase
     .from("missions")
     .insert({
       ...formData,
-      created_by: user.id,
+      created_by: guard.userId,
     })
     .select()
     .single()
@@ -243,8 +246,11 @@ export async function repondreCandidature(
   } = await supabase.auth.getUser()
   if (!user) return { error: "Non authentifié" }
 
+  // Accepter une candidature = assigner l'intervenant à la mission : les deux
+  // clés du catalogue (« Accepter / refuser les candidatures » et « Assigner
+  // des intervenants ») ouvrent donc la même décision.
   const profile = await getCachedProfile(user.id)
-  if (!hasPermission(profile, "selectionner_candidats")) {
+  if (!hasAnyPermission(profile, ["selectionner_candidats", "assigner_intervenants"])) {
     return { error: "Seuls le pôle RH et les administrateurs peuvent accepter ou refuser une candidature." }
   }
 

@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { issueAndSendVerification } from "@/lib/auth/issue-verification"
 import { verifySignedRequest } from "@/lib/integration/token"
+import { generateEncryptionSalt } from "@/lib/crypto"
+import { colonnesPII } from "@/lib/pii/personne"
 
 const ALLOWED_EMAIL_DOMAIN = "audencia.com"
 
@@ -144,13 +146,18 @@ export async function POST(req: NextRequest) {
     const personId = created.user.id
 
     // Le trigger handle_new_user a créé la ligne personnes ; on la spécialise
-    // en candidat cloisonné.
+    // en candidat cloisonné. La date de naissance n'est stockée que chiffrée
+    // (champ `date_naissance` du profil), plus jamais en clair.
+    const sel = generateEncryptionSalt()
+    const dateNaissance = /^\d{4}-\d{2}-\d{2}/.exec(dateOfBirth ?? "")?.[0] ?? null
     const { error: specializeErr } = await admin
       .from("personnes")
       .update({
         prenom,
         nom,
-        date_of_birth: dateOfBirth,
+        ...(dateNaissance
+          ? { encryption_salt: sel, ...colonnesPII({ date_naissance: dateNaissance }, sel) }
+          : {}),
         is_candidate: true,
         ...(candRole?.id ? { profil_type_id: candRole.id } : {}),
       })

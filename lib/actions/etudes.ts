@@ -11,6 +11,7 @@ import {
   ETUDE_DETAIL_TAG,
 } from "@/lib/cache-tags"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { requireActionPermission } from "@/lib/auth/action-guards"
 import { hasPermission, canEditEtude, canDeleteEtude } from "@/lib/auth/permissions"
 
 // Cached version of getClients — clients rarely change.
@@ -172,12 +173,15 @@ export async function createEtude(formData: {
   commentaire?: string
   statut?: string
 }) {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Création d'une étude : permission `nouvelle_mission`.
+  const guard = await requireActionPermission(
+    "nouvelle_mission",
+    "Vous n'avez pas la permission de créer une étude."
+  )
+  if (!guard.ok) return { error: guard.error }
 
-  if (!user) return { error: "Non authentifié" }
+  const supabase = createClient()
+  const user = { id: guard.userId }
 
   const { suiveur_ids, ...rest } = formData
 
@@ -575,11 +579,12 @@ export async function getParametre(key: string) {
 }
 
 export async function setParametre(key: string, value: string) {
+  const guard = await requireActionPermission(
+    "parametres_structure",
+    "Vous n'avez pas la permission de modifier les paramètres de la structure."
+  )
+  if (!guard.ok) return { error: guard.error }
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
 
   const { error } = await supabase.from("parametres").upsert({ key, value }, { onConflict: "key" })
   if (error) return { error: error.message }
@@ -598,11 +603,12 @@ export async function getAllParametres() {
 }
 
 export async function setParametres(updates: Record<string, string>) {
+  const guard = await requireActionPermission(
+    "parametres_structure",
+    "Vous n'avez pas la permission de modifier les paramètres de la structure."
+  )
+  if (!guard.ok) return { error: guard.error }
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
 
   const rows = Object.entries(updates).map(([key, value]) => ({ key, value }))
   const { error } = await supabase.from("parametres").upsert(rows, { onConflict: "key" })
@@ -621,11 +627,14 @@ export async function setParametres(updates: Record<string, string>) {
  * that overwrites the user's changes.
  */
 export async function savePolesSilent(polesJson: string, permsJson: string) {
-  const client = createClient()
-  const {
-    data: { user },
-  } = await client.auth.getUser()
-  if (!user) return { error: "Non authentifié" }
+  // Écrit avec le client admin (contourne la RLS) : la permission applicative
+  // est donc le seul contrôle — sans elle, n'importe quel compte connecté
+  // pouvait réécrire la liste des pôles de la structure.
+  const guard = await requireActionPermission(
+    "parametres_structure",
+    "Vous n'avez pas la permission de modifier les pôles."
+  )
+  if (!guard.ok) return { error: guard.error }
 
   const supabase = createAdminClient()
   const rows = [

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { timingSafeEqual } from "crypto"
 import { createAdminClient } from "@/lib/supabase/admin"
 import {
   getRequestStatus,
@@ -17,6 +18,14 @@ import { signatureReminderEmail } from "@/lib/email/templates"
 export const dynamic = "force-dynamic"
 export const maxDuration = 300
 
+/** Comparaison à temps constant de deux chaînes (évite les attaques par timing sur CRON_SECRET). */
+function timingSafeEqualStr(a: string, b: string): boolean {
+  const ab = Buffer.from(a)
+  const bb = Buffer.from(b)
+  if (ab.length !== bb.length) return false
+  return timingSafeEqual(ab, bb)
+}
+
 const SIGNED_STATUSES = ["signed", "completed", "signe", "termine"]
 const DAY = 86_400_000
 const AUTO_SEND_LIMIT = 25 // garde-fou : nombre max d'envois auto par exécution
@@ -30,12 +39,13 @@ const AUTO_SEND_LIMIT = 25 // garde-fou : nombre max d'envois auto par exécutio
  * Protégé par CRON_SECRET (Vercel ajoute `Authorization: Bearer $CRON_SECRET`).
  */
 export async function GET(request: Request) {
+  // Fail-closed : sans CRON_SECRET configuré, la route déclenchait
+  // auparavant des envois de Bulletins d'Adhésion à quiconque connaissait
+  // l'URL (audit sécurité du 2026-09-07).
   const secret = process.env.CRON_SECRET
-  if (secret) {
-    const auth = request.headers.get("authorization")
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+  const auth = request.headers.get("authorization")
+  if (!secret || !timingSafeEqualStr(auth ?? "", `Bearer ${secret}`)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   if (!isLiveConsentConfigured()) {
@@ -49,10 +59,15 @@ export async function GET(request: Request) {
 
   // ── 1. Envoi automatique (réglage global unique) ───────────────────────────
   if (templatePath && settings.autoGlobal) {
+    // Pas de .limit() : au-delà de 657 membres actuels, un plafond arbitraire
+    // laisserait une partie des membres ne jamais être candidats à l'envoi
+    // auto (AUTO_SEND_LIMIT ci-dessous borne déjà le nombre d'envois réels
+    // par exécution). Tri stable pour que ce soit toujours les mêmes profils
+    // qui passent en premier d'un jour sur l'autre en cas de forte volumétrie.
     const { data: candidates } = await admin
       .from("personnes")
       .select("*")
-      .limit(200)
+      .order("created_at", { ascending: true })
 
     // Membres ayant déjà une demande BA non archivée → exclus.
     const { data: openBa } = await admin

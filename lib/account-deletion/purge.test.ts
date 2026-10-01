@@ -54,6 +54,8 @@ describe("buildAnonymisationPatch", () => {
       "ville",
       "code_postal",
       "date_naissance",
+      // Saisie à l'inscription candidat : oubliée jusqu'au 26/09/2026.
+      "date_of_birth",
     ]) {
       expect(patch[champ]).toBeNull()
     }

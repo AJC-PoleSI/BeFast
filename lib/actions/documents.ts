@@ -8,10 +8,12 @@ import { revalidatePath, revalidateTag, unstable_cache, unstable_noStore as noSt
 import { decryptData } from "@/lib/crypto"
 import { getMasterKey } from "@/lib/crypto-key"
 import { decryptFromString } from "@/lib/encryption"
+import { avecPIIEnClair } from "@/lib/pii/personne"
 import { numeroEtudeCourt, codeClasseurEtude, referenceConventionEtude, referenceRdmIntervenant } from "@/lib/document-numbering"
 import { remunerationParIntervenant, remunerationParJeh } from "@/lib/missions/remuneration"
 import { contexteCotisationsBv } from "@/lib/bv/cotisations"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { requireActionPermission } from "@/lib/auth/action-guards"
 import { canAccessEntityDocuments, isMembreInterne } from "@/lib/auth/document-access"
 
 const TEMPLATES_TAG = "document_templates"
@@ -50,6 +52,14 @@ export async function listTemplates() {
 }
 
 export async function deleteTemplate(id: string) {
+  // Modèles de documents : réservé à l'administration / au paramétrage avancé
+  // (la RLS de `document_templates` laisse passer les membres internes).
+  const guard = await requireActionPermission(
+    ["administration", "gerer_parametres"],
+    "Vous n'avez pas la permission de gérer les modèles de documents."
+  )
+  if (!guard.ok) return { error: guard.error }
+
   const sb = createClient()
   const {
     data: { user },
@@ -75,6 +85,14 @@ export async function updateTemplateMeta(
   id: string,
   updates: Partial<{ name: string; description: string; category: string }>
 ) {
+  // Modèles de documents : réservé à l'administration / au paramétrage avancé
+  // (la RLS de `document_templates` laisse passer les membres internes).
+  const guard = await requireActionPermission(
+    ["administration", "gerer_parametres"],
+    "Vous n'avez pas la permission de gérer les modèles de documents."
+  )
+  if (!guard.ok) return { error: guard.error }
+
   const sb = createClient()
   const {
     data: { user },
@@ -508,10 +526,12 @@ function decryptNss(person: any): string {
 
 // Build étudiant/intervenant context from a personne record.
 // Only extract primitive fields — skip nested Supabase join objects.
+// Coordonnées ({intervenant.adresse}…) déchiffrées, colonnes de chiffrement
+// écartées : elles ne sont plus en clair en base.
 function buildIntervenantContext(person: any) {
   if (!person || Object.keys(person).length === 0) return {}
   const ctx: Record<string, any> = {}
-  for (const [k, v] of Object.entries(person)) {
+  for (const [k, v] of Object.entries(avecPIIEnClair(person))) {
     if (v !== null && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date)) continue
     ctx[k] = v ?? ""
   }
@@ -543,6 +563,9 @@ export async function buildTemplateContext(
   intervenantId?: string,
   options?: { includeNss?: boolean }
 ): Promise<Record<string, any>> {
+  const acces = await requireActionPermission(["etudes", "missions"], "Vous n'avez pas la permission de générer ce document.")
+  if (!acces.ok) return { error: acces.error }
+
   if (scope === "facture") return buildFactureContext(entityId)
 
   const client = createClient()

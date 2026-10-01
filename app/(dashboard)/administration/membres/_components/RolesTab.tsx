@@ -14,6 +14,7 @@ type PermKey =
   | "modifier_etudes" | "publier_etudes" | "publier_missions"
   | "parametres_structure" | "voir_factures"
   | "signer_documents" | "signer_ba"
+  | "valider_comptes" | "valider_bv" | "gerer_parametres"
 
 const PERM_LABELS: Record<PermKey, { label: string; description: string; icon: string }> = {
   dashboard:               { label: "Tableau de bord",           description: "Accès à la page d'accueil",                         icon: "dashboard" },
@@ -28,13 +29,16 @@ const PERM_LABELS: Record<PermKey, { label: string; description: string; icon: s
   prospection:             { label: "Prospection",                description: "Accès aux outils de prospection",                   icon: "timeline" },
   statistiques:            { label: "Statistiques",               description: "Voir les statistiques financières",                  icon: "bar_chart" },
   membres:                 { label: "Gestion membres",            description: "Voir et gérer la liste des membres",                icon: "group" },
-  administration:          { label: "Administration",             description: "Accès complet au panneau admin",                    icon: "admin_panel_settings" },
-  nouvelle_mission:        { label: "Créer une mission",          description: "Créer de nouvelles missions/études",                icon: "add_circle" },
-  assigner_intervenants:   { label: "Assigner des intervenants",  description: "Peut assigner des intervenants aux missions (RH & SI)", icon: "person_add" },
+  administration:          { label: "Administration",             description: "Entrer dans l'espace d'administration + explorateur et exports de données", icon: "admin_panel_settings" },
+  nouvelle_mission:        { label: "Créer une mission",          description: "Créer de nouvelles études et missions",              icon: "add_circle" },
+  assigner_intervenants:   { label: "Assigner des intervenants",  description: "Accepter une candidature et rattacher l'intervenant à la mission (équivalent RH de la clé ci-dessus)", icon: "person_add" },
   modifier_etudes:         { label: "Modifier toutes les études", description: "Modifier les études même sans en être le créateur (créateur et admin toujours autorisés)", icon: "edit_note" },
   publier_etudes:          { label: "Publier les études",         description: "Faire passer une étude de brouillon à visible (Marketing & SI)", icon: "publish" },
   publier_missions:        { label: "Publier les missions",       description: "Faire passer une mission de brouillon à visible (Marketing & SI)", icon: "campaign" },
-  parametres_structure:    { label: "Paramètres structure",       description: "Accès aux paramètres globaux (TVA, etc.)",           icon: "settings" },
+  parametres_structure:    { label: "Paramètres structure",       description: "Voir et modifier les paramètres globaux : identité, bureau, banque, TVA, cotisations", icon: "settings" },
+  gerer_parametres:        { label: "Paramétrage avancé",         description: "Modèles de documents, dictionnaire de balises, champs personnalisés, phases par défaut", icon: "tune" },
+  valider_comptes:         { label: "Valider les inscriptions",   description: "Valider ou refuser les comptes en attente de validation", icon: "verified_user" },
+  valider_bv:              { label: "Valider les bulletins de versement", description: "Numéroter et marquer payés les BV des intervenants, sans accès à la facturation", icon: "receipt_long" },
   voir_factures:           { label: "Trésorerie",                 description: "Consulter et gérer les factures, paiements et rétributions intervenants", icon: "account_balance_wallet" },
   signer_documents:        { label: "Signer les documents",       description: "Signer les documents classiques (file du bureau)",   icon: "draw" },
   signer_ba:               { label: "Signer les bulletins d'adhésion", description: "Signer les BA des nouveaux membres",             icon: "how_to_reg" },

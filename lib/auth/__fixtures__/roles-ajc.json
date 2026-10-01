@@ -1,0 +1,207 @@
+{
+  "_commentaire": "Instantané de la table profils_types (rôles de base + postes bureau/pôles) — source : Supabase, 2026-09-12. Sert de référence aux tests de la matrice d'accès : si les droits changent en base, régénérer ce fichier et relire les écarts.",
+  "genere_le": "2026-09-12",
+  "profils": [
+    {
+      "nom": "Administrateur",
+      "slug": "administrateur",
+      "categorie": "base",
+      "est_defaut": false,
+      "permissions": {
+        "dashboard": true,
+        "profil": true,
+        "missions": true,
+        "etudes": true,
+        "prospection": true,
+        "statistiques": true,
+        "administration": true,
+        "documents": true,
+        "nouvelle_mission": true,
+        "voir_documents_membres": true
+      }
+    },
+    {
+      "nom": "Candidat",
+      "slug": "candidat",
+      "categorie": "base",
+      "est_defaut": false,
+      "permissions": {
+        "profil": true,
+        "documents": true
+      }
+    },
+    {
+      "nom": "Intervenant",
+      "slug": "intervenant",
+      "categorie": "base",
+      "est_defaut": true,
+      "permissions": {
+        "dashboard": true,
+        "profil": true,
+        "missions": true,
+        "documents": true
+      }
+    },
+    {
+      "nom": "Membre AJC",
+      "slug": "membre_ajc",
+      "categorie": "base",
+      "est_defaut": false,
+      "permissions": {
+        "dashboard": true,
+        "profil": true,
+        "missions": true,
+        "etudes": true,
+        "statistiques": true,
+        "documents": true,
+        "nouvelle_mission": true
+      }
+    },
+    {
+      "nom": "Présidente",
+      "slug": "presidente",
+      "categorie": "bureau",
+      "est_defaut": false,
+      "permissions": {
+        "dashboard": true,
+        "profil": true,
+        "missions": true,
+        "etudes": true,
+        "prospection": true,
+        "statistiques": true,
+        "administration": true,
+        "membres": true,
+        "documents": true,
+        "nouvelle_mission": true,
+        "parametres_structure": true,
+        "voir_factures": true,
+        "signer_documents": true,
+        "signer_ba": true
+      }
+    },
+    {
+      "nom": "Secrétaire Général",
+      "slug": "secretaire_general",
+      "categorie": "bureau",
+      "est_defaut": false,
+      "permissions": {
+        "dashboard": true,
+        "profil": true,
+        "missions": true,
+        "etudes": true,
+        "prospection": true,
+        "statistiques": true,
+        "administration": true,
+        "documents": true,
+        "nouvelle_mission": true
+      }
+    },
+    {
+      "nom": "Trésorier·ère",
+      "slug": "tresorier",
+      "categorie": "bureau",
+      "est_defaut": false,
+      "permissions": {
+        "voir_rib": true,
+        "voir_factures": true,
+        "signer_documents": true,
+        "signer_ba": true
+      }
+    },
+    {
+      "nom": "Vice-Présidente",
+      "slug": "vice_presidente",
+      "categorie": "bureau",
+      "est_defaut": false,
+      "permissions": {}
+    },
+    {
+      "nom": "Pôle Audit Qualité",
+      "slug": "pole_audit_qualite",
+      "categorie": "pole",
+      "est_defaut": false,
+      "permissions": {}
+    },
+    {
+      "nom": "Pôle Développement Commercial",
+      "slug": "pole_dev_co",
+      "categorie": "pole",
+      "est_defaut": false,
+      "permissions": {}
+    },
+    {
+      "nom": "Pôle Marketing",
+      "slug": "pole_marketing",
+      "categorie": "pole",
+      "est_defaut": false,
+      "permissions": {
+        "publier_etudes": true,
+        "publier_missions": true
+      }
+    },
+    {
+      "nom": "Pôle Ressources Humaines",
+      "slug": "pole_rh",
+      "categorie": "pole",
+      "est_defaut": false,
+      "permissions": {
+        "membres": true,
+        "voir_documents_membres": true,
+        "voir_nss": true,
+        "assigner_intervenants": true,
+        "selectionner_candidats": true
+      }
+    },
+    {
+      "nom": "Pôle Systèmes d'Information",
+      "slug": "pole_si",
+      "categorie": "pole",
+      "est_defaut": false,
+      "permissions": {
+        "modifier_etudes": true,
+        "publier_etudes": true,
+        "publier_missions": true
+      }
+    },
+    {
+      "nom": "Pôle Trésorerie",
+      "slug": "pole_tresorerie",
+      "categorie": "pole",
+      "est_defaut": false,
+      "permissions": {
+        "dashboard": true,
+        "profil": true,
+        "missions": true,
+        "etudes": true,
+        "statistiques": true,
+        "membres": true,
+        "documents": true,
+        "nouvelle_mission": true,
+        "voir_rib": true,
+        "parametres_structure": true,
+        "voir_factures": true,
+        "publier_etudes": true,
+        "publier_missions": true
+      }
+    },
+    {
+      "nom": "Responsable RH",
+      "slug": "responsable_rh",
+      "categorie": "pole",
+      "est_defaut": false,
+      "permissions": {
+        "dashboard": true,
+        "profil": true,
+        "missions": true,
+        "etudes": true,
+        "membres": true,
+        "documents": true,
+        "voir_documents_membres": true,
+        "voir_nss": true,
+        "assigner_intervenants": true,
+        "selectionner_candidats": true,
+        "signer_ba": true
+      }
+    }
+  ]
+}

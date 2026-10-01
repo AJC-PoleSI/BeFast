@@ -2,8 +2,12 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { jehTotalMission, montantTotalMission } from "@/lib/missions/remuneration"
+import { requireActionPermission } from "@/lib/auth/action-guards"
 
 export async function getStats() {
+  const acces = await requireActionPermission("statistiques", "Vous n'avez pas la permission de consulter les statistiques.")
+  if (!acces.ok) return { error: acces.error }
+
   const supabase = createClient()
   const {
     data: { user },
@@ -29,8 +33,13 @@ export async function getStats() {
     prospection: etudes.filter(e => e.type === "prospection").length,
   }
 
+  // "Réalisé" = études terminées (facturation acquise) ; "prévisionnel" =
+  // études encore en cours ou signées (budget attendu, pas encore acquis).
+  // Avant correctif, "en_cours" était compté dans les deux totaux à la fois
+  // (double comptage), donnant un CA global supérieur à la somme réelle des
+  // budgets des études — cf. audit du 2026-09-07.
   const caRealise = etudes
-    .filter(e => e.statut === "terminee" || e.statut === "en_cours")
+    .filter(e => e.statut === "terminee")
     .reduce((sum, e) => sum + Number(e.budget_ht ?? e.budget ?? 0), 0)
 
   const caPrevisionnel = etudes

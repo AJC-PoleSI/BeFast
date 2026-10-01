@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
+import { requireActionPermission } from "@/lib/auth/action-guards"
 import { hasPermission } from "@/lib/auth/permissions"
 import {
   createSignatureRequest,
@@ -94,6 +95,16 @@ export async function getSignaturesAccess(): Promise<{ isAdmin: boolean; isBurea
 export async function listSignatureRequests(): Promise<
   { data: SignatureRequestRow[] } | { error: string }
 > {
+  // Même périmètre que la page /signatures : membres internes (`etudes`) et
+  // signataires du bureau. Sans ce garde, tout compte authentifié — dont les
+  // 600+ intervenants et les candidats — pouvait lister les demandes de
+  // signature de l'organisation et en envoyer de nouvelles.
+  const acces = await requireActionPermission(
+    ["etudes", "signer_documents", "signer_ba"],
+    "Vous n'avez pas la permission d'accéder aux signatures."
+  )
+  if (!acces.ok) return { error: acces.error }
+
   const supabase = createClient()
   const {
     data: { user },
@@ -112,6 +123,16 @@ export async function listSignatureRequests(): Promise<
 }
 
 export async function sendDocumentForSignature(formData: FormData) {
+  // Même périmètre que la page /signatures : membres internes (`etudes`) et
+  // signataires du bureau. Sans ce garde, tout compte authentifié — dont les
+  // 600+ intervenants et les candidats — pouvait lister les demandes de
+  // signature de l'organisation et en envoyer de nouvelles.
+  const acces = await requireActionPermission(
+    ["etudes", "signer_documents", "signer_ba"],
+    "Vous n'avez pas la permission d'accéder aux signatures."
+  )
+  if (!acces.ok) return { error: acces.error }
+
   const supabase = createClient()
   const {
     data: { user },

@@ -2,8 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { decryptData } from "@/lib/crypto"
-import { getMasterKey } from "@/lib/crypto-key"
+import { lirePII, lireSecret } from "@/lib/pii/personne"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -14,7 +13,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     const targetId = params.id
 
-    const MASTER_KEY = getMasterKey()
     const admin = createAdminClient()
     const { data: caller } = await admin
       .from("personnes")
@@ -44,13 +42,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: "Membre introuvable" }, { status: 404 })
     }
 
-    const salt = profile.encryption_salt
     const decrypted = {
       ...profile,
-      nss: profile.nss_encrypted && salt ? decryptData(profile.nss_encrypted, profile.nss_iv, profile.nss_auth_tag, MASTER_KEY, salt) : null,
-      iban: profile.iban_encrypted && salt ? decryptData(profile.iban_encrypted, profile.iban_iv, profile.iban_auth_tag, MASTER_KEY, salt) : null,
-      adresse: profile.adresse_encrypted && salt ? decryptData(profile.adresse_encrypted, profile.adresse_iv, profile.adresse_auth_tag, MASTER_KEY, salt) : profile.adresse,
-      date_naissance: profile.date_naissance_encrypted && salt ? decryptData(profile.date_naissance_encrypted, profile.date_naissance_iv, profile.date_naissance_auth_tag, MASTER_KEY, salt) : profile.date_naissance,
+      nss: lireSecret(profile, "nss"),
+      iban: lireSecret(profile, "iban"),
+      // Coordonnées : les quatre champs, déchiffrés (ville et code postal
+      // n'étaient renvoyés qu'en clair, colonne désormais vide).
+      ...lirePII(profile),
     }
 
     return NextResponse.json({ data: decrypted })

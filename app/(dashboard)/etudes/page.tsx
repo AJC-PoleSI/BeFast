@@ -741,6 +741,7 @@ export default function EtudesPage() {
                     <option value="signee">Signée</option>
                     <option value="en_cours">En cours</option>
                     <option value="terminee">Terminée</option>
+                    <option value="annulee">Annulée</option>
                   </select>
                 </div>
                 <div className="col-span-2">

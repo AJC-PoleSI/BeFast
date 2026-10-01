@@ -75,19 +75,25 @@ import {
 import { getParametres } from "@/lib/actions/parametres"
 import { hasPermission, canEditEtude } from "@/lib/auth/permissions"
 
+const MAX_WEEKS = 104
+
 const STATUT_COLORS: Record<string, string> = {
+  prospect: "bg-purple-100 text-purple-700 border-purple-200",
   prospection: "bg-purple-100 text-purple-700 border-purple-200",
   en_cours_prospection: "bg-amber-100 text-amber-700 border-amber-200",
   signee: "bg-emerald-100 text-emerald-700 border-emerald-200",
   en_cours: "bg-blue-100 text-blue-700 border-blue-200",
   terminee: "bg-gray-100 text-gray-600 border-gray-200",
+  annulee: "bg-red-100 text-red-600 border-red-200",
 }
 const STATUT_LABELS: Record<string, string> = {
+  prospect: "Prospect",
   prospection: "Prospection",
   en_cours_prospection: "En cours de prospection",
   signee: "Signée",
   en_cours: "En cours",
   terminee: "Terminée",
+  annulee: "Annulée",
 }
 const MISSION_STATUT_COLORS: Record<string, string> = {
   ouverte: "bg-emerald-100 text-emerald-700",
@@ -157,6 +163,7 @@ function libelleDepassements(depassements: DepassementFourchette[]): string {
     )
     .join(" et ")
 }
+
 export default function EtudeDetailPage() {
   const params = useParams()
   const etudeId = params.etudeId as string
@@ -216,6 +223,22 @@ export default function EtudeDetailPage() {
   const [creatingBloc, setCreatingBloc] = useState(false)
 
   const [nbWeeks, setNbWeeks] = useState(12)
+  const [weeksInput, setWeeksInput] = useState("12")
+  // Dernière semaine occupée par un bloc : l'échéancier s'élargit tout seul
+  // pour ne jamais couper un bloc (une mission de 46 semaines débordait des
+  // 12 semaines par défaut et faisait défiler tout le tableau).
+  const finPlanning = blocs.reduce(
+    (max, b) => Math.max(max, (b.semaine_debut ?? 1) + (b.duree_semaines ?? 1) - 1),
+    0
+  )
+
+  useEffect(() => {
+    setNbWeeks(prev => Math.min(MAX_WEEKS, Math.max(prev, finPlanning)))
+  }, [finPlanning])
+
+  useEffect(() => {
+    setWeeksInput(String(nbWeeks))
+  }, [nbWeeks])
 
   const fetchData = useCallback(async () => {
     const supabase = createClient()
@@ -802,16 +825,31 @@ export default function EtudeDetailPage() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Semaines :</span>
-                <select
-                  value={nbWeeks}
-                  onChange={e => setNbWeeks(Number(e.target.value))}
-                  className="h-8 px-2 text-sm border border-input rounded-md bg-white"
-                >
-                  {[4, 6, 8, 10, 12, 16, 20, 24, 30, 36, 52].map(n => (
-                    <option key={n} value={n}>{n} semaines</option>
-                  ))}
-                </select>
+                <label htmlFor="echeancier-semaines" className="text-sm text-muted-foreground">Semaines :</label>
+                <Input
+                  id="echeancier-semaines"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={MAX_WEEKS}
+                  value={weeksInput}
+                  onChange={e => {
+                    setWeeksInput(e.target.value)
+                    const n = parseInt(e.target.value, 10)
+                    if (n >= 1 && n <= MAX_WEEKS) setNbWeeks(n)
+                  }}
+                  onBlur={() => setWeeksInput(String(nbWeeks))}
+                  className="h-8 w-20 text-sm bg-white"
+                />
+                {finPlanning > nbWeeks && (
+                  <button
+                    type="button"
+                    onClick={() => setNbWeeks(Math.min(MAX_WEEKS, finPlanning))}
+                    className="text-xs text-amber-700 hover:underline"
+                  >
+                    Des blocs vont jusqu&apos;à S{finPlanning} — tout afficher
+                  </button>
+                )}
               </div>
               <Button onClick={() => setShowBlocModal(true)} className="bg-gold text-navy font-semibold hover:bg-gold/90" size="sm">
                 <Plus className="h-4 w-4 mr-1.5" /> Ajouter un bloc
@@ -821,11 +859,14 @@ export default function EtudeDetailPage() {
             {/* Gantt chart */}
             <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <div className="min-w-[800px]">
+                {/* 192 px de colonne Phase + ~32 px par semaine pour que « S46 » reste lisible */}
+                <div style={{ minWidth: Math.max(800, 192 + nbWeeks * 32) }}>
                   {/* Week headers */}
                   <div className="flex border-b border-border">
-                    <div className="w-48 shrink-0 px-4 py-2 bg-muted/30 text-xs font-medium text-muted-foreground">
-                      Phase
+                    <div className="w-48 shrink-0 sticky left-0 z-10 bg-white">
+                      <div className="h-full px-4 py-2 bg-muted/30 text-xs font-medium text-muted-foreground">
+                        Phase
+                      </div>
                     </div>
                     {Array.from({ length: nbWeeks }).map((_, i) => (
                       <div key={i} className="flex-1 px-1 py-2 text-center text-xs text-muted-foreground border-l border-border/50 bg-muted/10">
@@ -842,7 +883,7 @@ export default function EtudeDetailPage() {
                   ) : (
                     blocs.map((bloc) => (
                       <div key={bloc.id} className="flex border-b border-border/50 group">
-                        <div className="w-48 shrink-0 px-4 py-3 flex items-center justify-between text-sm">
+                        <div className="w-48 shrink-0 sticky left-0 z-10 bg-white px-4 py-3 flex items-center justify-between text-sm">
                           <button
                             className="text-left"
                             onClick={() => {
@@ -866,7 +907,7 @@ export default function EtudeDetailPage() {
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
-                        <div className="flex-1 flex relative py-2" id={`track-${bloc.id}`}>
+                        <div className="flex-1 flex relative py-2 overflow-hidden" id={`track-${bloc.id}`}>
                           {Array.from({ length: nbWeeks }).map((_, i) => (
                             <div key={i} className="flex-1 border-l border-border/20" />
                           ))}
@@ -1198,7 +1239,7 @@ export default function EtudeDetailPage() {
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
                 <Label>Semaine début</Label>
-                <Input type="number" min="1" max={nbWeeks} value={blocForm.semaine_debut} onChange={(e) => setBlocForm({ ...blocForm, semaine_debut: e.target.value })} />
+                <Input type="number" min="1" max={MAX_WEEKS} value={blocForm.semaine_debut} onChange={(e) => setBlocForm({ ...blocForm, semaine_debut: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>Durée (semaines)</Label>

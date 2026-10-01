@@ -3,11 +3,17 @@ export const dynamic = "force-dynamic"
 import "server-only"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { requireApiAdmin } from "@/lib/auth/api-guards"
+import { requireApiPermission } from "@/lib/auth/api-guards"
 import { NextResponse } from "next/server"
 
 
 export async function GET() {
+  // Contient entre autres le RIB de l'association et les taux de paie —
+  // aucune vérification d'autorisation n'existait ici alors que le PATCH
+  // juste en dessous en a une (audit sécurité du 2026-09-07).
+  const guard = await requireApiPermission("parametres_structure")
+  if (!guard.ok) return guard.response
+
   const supabase = createClient()
   const { data, error } = await supabase.from("parametres").select("*")
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -15,7 +21,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const guard = await requireApiAdmin()
+  const guard = await requireApiPermission("parametres_structure")
   if (!guard.ok) return guard.response
 
   const admin = createAdminClient()

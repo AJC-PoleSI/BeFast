@@ -3,7 +3,7 @@ import "server-only"
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
-import { hasPermission } from "@/lib/auth/permissions"
+import { hasPermission, hasAnyPermission } from "@/lib/auth/permissions"
 import type { PersonneWithRole, PermissionKey } from "@/types/database.types"
 
 /**
@@ -74,6 +74,25 @@ export async function requireApiPermission(key: PermissionKey): Promise<ApiGuard
   if (!guard.ok) return guard
 
   if (!hasPermission(guard.profile, key)) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Non autorisé" }, { status: 403 }),
+    }
+  }
+
+  return guard
+}
+
+/**
+ * Require an authenticated user holding AT LEAST ONE of the given permissions.
+ * Utile pour les espaces à plusieurs portes d'entrée (paramétrage avancé =
+ * `gerer_parametres` ou `administration`, par exemple). 403 sinon.
+ */
+export async function requireApiAnyPermission(keys: PermissionKey[]): Promise<ApiGuardResult> {
+  const guard = await requireApiUser()
+  if (!guard.ok) return guard
+
+  if (!hasAnyPermission(guard.profile, keys)) {
     return {
       ok: false,
       response: NextResponse.json({ error: "Non autorisé" }, { status: 403 }),

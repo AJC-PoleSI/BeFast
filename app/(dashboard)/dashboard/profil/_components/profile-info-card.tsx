@@ -52,6 +52,10 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly, isAdmin }: Profil
   const [saving, setSaving] = useState(false)
   const [poles, setPoles] = useState<string[]>(DEFAULT_POLES)
   const [loadingDecrypted, setLoadingDecrypted] = useState(true)
+  // Coordonnées déchiffrées bien reçues. Sinon le formulaire montrerait des
+  // cases vides (elles ne sont plus en clair dans le profil en cache) et
+  // l'enregistrer effacerait l'adresse : la modification reste alors fermée.
+  const [coordonneesOk, setCoordonneesOk] = useState(false)
 
   useEffect(() => {
     getParametre("poles_liste").then((raw) => setPoles(parsePoles(raw as string | null)))
@@ -83,6 +87,7 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly, isAdmin }: Profil
         if (cancelled || !json.data) return
         const decrypted = json.data as PersonneWithRole
         setValues(buildValues(decrypted))
+        setCoordonneesOk(true)
         setLoadingDecrypted(false)
       })
       .catch(() => setLoadingDecrypted(false))
@@ -170,7 +175,7 @@ export function ProfileInfoCard({ profile, onUpdate, readOnly, isAdmin }: Profil
     <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
       <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
         <h2 className="font-manrope font-bold text-[#00236f] text-base">Informations Personnelles</h2>
-        {!readOnly && !editing && (
+        {!readOnly && !editing && coordonneesOk && (
           <button
             onClick={() => setEditing(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-[#00236f] hover:bg-[#d0d8ff] transition-colors"
