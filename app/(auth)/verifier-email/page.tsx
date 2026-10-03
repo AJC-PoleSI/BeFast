@@ -14,7 +14,9 @@ export default function VerifierEmailPage({
       ? "Ce lien de vérification a expiré. Demandez-en un nouveau ci-dessous."
       : status === "invalid"
         ? "Ce lien de vérification est invalide. Demandez-en un nouveau ci-dessous."
-        : null
+        : status === "error"
+          ? "La vérification n'a pas pu être enregistrée. Réessayez le lien dans quelques minutes."
+          : null
 
   return (
     <div className="w-full max-w-sm rounded-2xl border border-[#ece7dc] bg-card/95 dark:border-border p-8 text-center shadow-[0_8px_30px_rgba(0,35,111,0.08)] backdrop-blur">
@@ -26,7 +28,7 @@ export default function VerifierEmailPage({
 
       <p className="text-sm text-muted-foreground mb-6">
         Un email de v&eacute;rification vient de vous &ecirc;tre envoy&eacute;. Cliquez sur le
-        lien qu&apos;il contient pour activer votre compte. Le lien est valable 24&nbsp;heures.
+        lien qu&apos;il contient pour activer votre compte. Le lien est valable 72&nbsp;heures.
       </p>
 
       {banner && (

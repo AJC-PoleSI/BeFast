@@ -9,6 +9,7 @@ import {
   siteUrl,
 } from "@/lib/auth/verification"
 import { issuedWithinCooldown } from "@/lib/auth/issue-verification"
+import { decideLogin } from "@/lib/auth/login-gate"
 import { sendEmail } from "@/lib/email/send"
 import {
   accountCreatedUserEmail,
@@ -33,7 +34,7 @@ async function issueVerification(
 ) {
   const { token, tokenHash, expiresAt } = generateVerificationToken()
   const admin = createAdminClient()
-  await admin
+  const { error: dbErr } = await admin
     .from("personnes")
     .update({
       verification_token_hash: tokenHash,
@@ -41,14 +42,20 @@ async function issueVerification(
       email_verified: false,
     })
     .eq("id", userId)
+  if (dbErr) {
+    // Sans jeton en base, le lien envoyé serait mort : on n'envoie rien.
+    console.error("[auth/issueVerification] écriture du jeton", dbErr.message)
+    return
+  }
 
   const link = `${siteUrl()}/verify-email?token=${token}`
   // Best-effort: a failed email must not break the flow.
-  await sendEmail({
+  const sent = await sendEmail({
     to: email,
     subject: VERIFICATION_SUBJECT,
     html: verificationEmailHtml({ prenom, link }),
   })
+  if (!sent.ok) console.error("[auth/issueVerification] envoi impossible", sent.error)
 }
 
 // Destinataires de l'alerte « nouveau compte » : administrateurs (rôle de base)
@@ -134,41 +141,81 @@ async function notifyAccountOpened(opts: {
 
 export async function signIn(formData: FormData) {
   const supabase = createClient()
-  const email = ((formData.get("email") as string) ?? "").trim().toLowerCase()
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password: formData.get("password") as string,
-  })
-  if (error || !data.user) {
-    return {
-      error: "Identifiants incorrects. Vérifiez votre email et mot de passe.",
-    }
-  }
-
-  // Gate: the email must be verified before any session is granted.
   const admin = createAdminClient()
-  const { data: rows } = await admin
-    .from("personnes")
-    .select("email_verified")
-    .eq("id", data.user.id)
-    .limit(1)
-  const personne = rows?.[0]
+  const email = ((formData.get("email") as string) ?? "").trim().toLowerCase()
+  const password = formData.get("password") as string
 
-  if (personne && personne.email_verified === false) {
-    await supabase.auth.signOut()
-    return {
-      error:
-        "Votre adresse email n'est pas encore vérifiée. Consultez votre boîte de réception (ou renvoyez un email de vérification).",
-      needsVerification: true,
+  let { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+  // Sur échec, Supabase ne renvoie pas l'utilisateur : on retrouve la ligne
+  // par l'email (toujours stocké en minuscules).
+  const { data: rows } = data.user
+    ? await admin.from("personnes").select("id, email_verified").eq("id", data.user.id).limit(1)
+    : await admin.from("personnes").select("id, email_verified").eq("email", email).limit(1)
+  const personne = rows?.[0] as { id: string; email_verified: boolean | null } | undefined
+  const appEmailVerified = personne ? personne.email_verified !== false : null
+
+  const errorCode = (e: typeof error) =>
+    e ? (e.code ?? (e.status === 429 ? "over_request_rate_limit" : "unknown")) : null
+
+  let decision = decideLogin({
+    authErrorCode: errorCode(error),
+    authEmailConfirmed: !!data.user?.email_confirmed_at,
+    appEmailVerified,
+  })
+
+  if (decision.kind === "confirm_auth_and_retry" && personne) {
+    const { error: confirmErr } = await admin.auth.admin.updateUserById(personne.id, {
+      email_confirm: true,
+    })
+    if (confirmErr) {
+      console.error("[auth/signIn] confirmation Supabase impossible", confirmErr.code ?? confirmErr.message)
+    } else {
+      ;({ data, error } = await supabase.auth.signInWithPassword({ email, password }))
+      decision = decideLogin({
+        authErrorCode: errorCode(error),
+        authEmailConfirmed: !!data.user?.email_confirmed_at,
+        appEmailVerified: true,
+      })
     }
   }
 
-  redirect("/")
+  if (error) {
+    // Seul le code part dans les logs : avant, chaque refus était muet.
+    console.warn("[auth/signIn] refus Supabase", errorCode(error))
+  }
+
+  switch (decision.kind) {
+    case "ok":
+      if (decision.healAppFlag && personne) {
+        const { error: healErr } = await admin
+          .from("personnes")
+          .update({ email_verified: true })
+          .eq("id", personne.id)
+        if (healErr) console.error("[auth/signIn] resynchronisation email_verified", healErr.message)
+      }
+      redirect("/")
+    case "needs_verification":
+      if (data.user) await supabase.auth.signOut()
+      return {
+        error:
+          "Votre adresse email n'est pas encore vérifiée. Cliquez sur le lien reçu par email, ou demandez-en un nouveau.",
+        needsVerification: true,
+      }
+    case "bad_credentials":
+      return { error: "Email ou mot de passe incorrect." }
+    case "rate_limited":
+      return {
+        error: "Trop de tentatives de connexion. Patientez quelques minutes puis réessayez.",
+      }
+    default:
+      return {
+        error: "Connexion impossible pour le moment. Réessayez dans quelques minutes.",
+      }
+  }
 }
 
 export async function signUp(formData: FormData) {
-  const supabase = createClient()
   const email = ((formData.get("email") as string) ?? "").trim().toLowerCase()
   const prenom = (formData.get("prenom") as string) ?? ""
   const nom = (formData.get("nom") as string) ?? ""
@@ -191,37 +238,38 @@ export async function signUp(formData: FormData) {
     }
   }
 
-  const { data, error } = await supabase.auth.signUp({
+  // Création par l'API admin, comme le parcours candidat (/api/onboarding/
+  // register), et non par `supabase.auth.signUp` : ce dernier faisait partir,
+  // en plus de notre email, l'email de confirmation natif de Supabase (en
+  // anglais, par son SMTP limité à quelques envois par heure). Deux liens dont
+  // chacun ne validait qu'un des deux indicateurs de vérification : cliquer
+  // celui de Supabase laissait le compte bloqué (incident du 02/10/2026).
+  // `createUser` n'envoie aucun email ; seul notre lien `/verify-email` reste,
+  // et il confirme les deux indicateurs.
+  const admin = createAdminClient()
+  const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
-    options: {
-      data: { prenom, nom },
-    },
+    email_confirm: false,
+    user_metadata: { prenom, nom },
   })
 
-  if (error) {
-    if (error.message.includes("already registered")) {
-      return {
-        error: "Un compte existe déjà avec cette adresse email.",
-      }
+  const alreadyRegistered =
+    error?.code === "email_exists" || /already (been )?registered/i.test(error?.message ?? "")
+
+  if (error && !alreadyRegistered) {
+    console.error("[auth/signUp] createUser", error.code ?? error.message)
+    if (error.code === "weak_password") {
+      return { error: "Ce mot de passe est trop faible. Choisissez-en un plus long ou plus varié." }
     }
     return { error: "Une erreur est survenue. Veuillez réessayer." }
   }
 
-  // Adresse déjà prise : avec la confirmation d'email activée, Supabase ne
-  // renvoie AUCUNE erreur — il retourne un utilisateur factice (id aléatoire,
-  // `identities` vide) pour ne pas révéler l'existence du compte. Sans ce
-  // test, chaque nouvelle tentative rejouait tout le flux « nouveau compte » :
-  // un email de vérification au jeton orphelin (l'update est keyé sur l'id
-  // factice, donc aucune ligne touchée → lien mort), un « compte créé » au
-  // candidat, et l'alerte « Nouveau compte créé » à tous les admins. Une
-  // candidate bloquée a ainsi réessayé 5 fois le 21/09/2026 : 5 liens morts
-  // pour elle, 5 alertes pour le bureau, et aucune piste vers la vraie issue.
-  const alreadyRegistered =
-    Array.isArray(data.user?.identities) && data.user!.identities!.length === 0
-
-  if (!data.user?.id || alreadyRegistered) {
-    const admin = createAdminClient()
+  // Adresse déjà prise : une nouvelle tentative ne doit pas rejouer le flux
+  // « nouveau compte » (email au jeton orphelin, « compte créé », alerte à
+  // tous les admins — une candidate bloquée a ainsi réessayé 5 fois le
+  // 21/09/2026).
+  if (alreadyRegistered || !data.user?.id) {
     const { data: rows } = await admin
       .from("personnes")
       .select("id, prenom, email_verified, verification_token_expires_at")
@@ -263,12 +311,18 @@ export async function resendVerification(formData: FormData) {
   const admin = createAdminClient()
   const { data: rows } = await admin
     .from("personnes")
-    .select("id, prenom, email_verified")
+    .select("id, prenom, email_verified, verification_token_expires_at")
     .eq("email", email)
     .limit(1)
   const personne = rows?.[0]
 
-  if (personne && personne.email_verified === false) {
+  // Délai minimal : chaque envoi écrase le jeton précédent, un double clic sur
+  // « Renvoyer » rendait mort le lien qui venait de partir.
+  if (
+    personne &&
+    personne.email_verified === false &&
+    !issuedWithinCooldown(personne.verification_token_expires_at)
+  ) {
     await issueVerification(personne.id, email, personne.prenom)
   }
 

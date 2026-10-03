@@ -7,7 +7,7 @@ import { verifySsoToken } from "@/lib/integration/token"
 
 // GET /api/sso/consume?token=…  (switch entrant depuis RH Manager)
 // Vérifie le token SSO court, retrouve le compte, génère un magic-link
-// Supabase et redirige le navigateur dessus → session BeFast ouverte.
+// Supabase et passe son token_hash à /auth/confirm → session BeFast ouverte.
 export async function GET(req: NextRequest) {
   const base = siteUrl()
   const token = req.nextUrl.searchParams.get("token") ?? ""
@@ -37,10 +37,15 @@ export async function GET(req: NextRequest) {
     options: { redirectTo: `${base}/` },
   })
 
-  const actionLink = data?.properties?.action_link
-  if (error || !actionLink) {
+  // Pas l'`action_link` : Supabase y renvoie la session dans le fragment de
+  // l'URL, que rien ne lisait (personne connectée sur /login). Le `token_hash`
+  // est vérifié côté serveur par /auth/confirm, qui pose les cookies.
+  const hashedToken = data?.properties?.hashed_token
+  if (error || !hashedToken) {
     return NextResponse.redirect(`${base}/login?sso=error`)
   }
 
-  return NextResponse.redirect(actionLink)
+  return NextResponse.redirect(
+    `${base}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=magiclink&next=/`
+  )
 }

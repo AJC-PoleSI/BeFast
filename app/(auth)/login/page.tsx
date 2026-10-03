@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import Link from "next/link"
 import { Rocket } from "lucide-react"
 import { signIn } from "@/lib/actions/auth"
@@ -9,26 +9,44 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 
+// Retours d'autres écrans vers /login. Avant le 02/10/2026, seul `verified`
+// était lu — et par un toast lancé au montage, perdu car le <Toaster> du layout
+// racine n'est pas encore abonné à ce moment-là : même « Adresse email
+// vérifiée » ne s'affichait pas. D'où un bandeau dans la carte.
+type Notice = { kind: "success" | "error"; text: string }
+const URL_NOTICES: Record<string, Record<string, Notice>> = {
+  verified: { "1": { kind: "success", text: "Adresse email vérifiée. Vous pouvez vous connecter." } },
+  sso: {
+    invalid: { kind: "error", text: "Le lien de connexion a expiré. Connectez-vous ici avec votre email et votre mot de passe." },
+    unknown: { kind: "error", text: "Compte Be Fast introuvable ou email non vérifié. Connectez-vous ici, ou créez votre compte." },
+    error: { kind: "error", text: "La connexion automatique a échoué. Connectez-vous ici avec votre email et votre mot de passe." },
+  },
+  error: { lien_invalide: { kind: "error", text: "Ce lien est invalide ou a expiré." } },
+  compte: { supprime: { kind: "error", text: "Ce compte a été supprimé." } },
+}
+
 export default function LoginPage() {
   const [isPending, startTransition] = useTransition()
+  const [needsVerification, setNeedsVerification] = useState(false)
+  const [notice, setNotice] = useState<Notice | null>(null)
 
-  // Success banner after clicking the email-verification link.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    if (params.get("verified") === "1") {
-      toast.success("Adresse email vérifiée. Vous pouvez vous connecter.", {
-        duration: 6000,
-        position: "top-right",
-      })
+    for (const [key, byValue] of Object.entries(URL_NOTICES)) {
+      const found = byValue[params.get(key) ?? ""]
+      if (!found) continue
+      setNotice(found)
       window.history.replaceState(null, "", window.location.pathname)
+      break
     }
   }, [])
 
   async function handleSubmit(formData: FormData) {
     startTransition(async () => {
       const result = await signIn(formData)
+      setNeedsVerification(!!result?.needsVerification)
       if (result?.error) {
-        toast.error(result.error, { duration: 5000, position: "top-right" })
+        toast.error(result.error, { duration: 6000, position: "top-right" })
       }
     })
   }
@@ -50,6 +68,19 @@ export default function LoginPage() {
       <h2 className="mb-6 text-center text-lg font-semibold text-foreground">
         Connexion
       </h2>
+
+      {notice && (
+        <div
+          role="status"
+          className={`mb-4 rounded-md border p-3 text-sm ${
+            notice.kind === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-amber-200 bg-amber-50 text-amber-900"
+          }`}
+        >
+          {notice.text}
+        </div>
+      )}
 
       <form action={handleSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -79,6 +110,15 @@ export default function LoginPage() {
           {isPending ? "Connexion…" : "Se connecter"}
         </Button>
       </form>
+
+      {needsVerification && (
+        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          Votre adresse email n&apos;est pas encore vérifiée.{" "}
+          <Link href="/verifier-email" className="font-medium underline underline-offset-2">
+            Renvoyer l&apos;email de vérification
+          </Link>
+        </div>
+      )}
 
       <div className="mt-6 flex flex-col items-center gap-2 text-sm">
         <Link
