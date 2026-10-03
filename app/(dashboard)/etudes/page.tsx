@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getEtudes, createEtude, updateEtude, getClients, createClient_ as addClient, getMembers, getParametre, deleteEtude, toggleEtudePublished } from "@/lib/actions/etudes"
+import { getEtudes, getMesEtudeIds, createEtude, updateEtude, getClients, createClient_ as addClient, getMembers, getParametre, deleteEtude, toggleEtudePublished } from "@/lib/actions/etudes"
+import { partitionMesEtudes } from "@/lib/etudes/mes-etudes"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MultiSelect } from "@/components/ui/multi-select"
 import Link from "next/link"
@@ -64,6 +65,7 @@ export default function EtudesPage() {
   const { profile } = useUser()
   const canPublish = hasPermission(profile, "publier_etudes")
   const [etudes, setEtudes] = useState<EtudeWithRelations[]>([])
+  const [mesEtudeIds, setMesEtudeIds] = useState<string[]>([])
   const [publishConfirmEtude, setPublishConfirmEtude] = useState<EtudeWithRelations | null>(null)
   const [publishConfirmChecked, setPublishConfirmChecked] = useState(false)
   const [publishSubmitting, setPublishSubmitting] = useState(false)
@@ -120,9 +122,10 @@ export default function EtudesPage() {
   useEffect(() => {
     const loadEtudes = async () => {
       setLoading(true)
-      const [etudesResult, clientsResult, membresResult] = await Promise.all([
-        getEtudes(), getClients(), getMembers()
+      const [etudesResult, clientsResult, membresResult, mesIdsResult] = await Promise.all([
+        getEtudes(), getClients(), getMembers(), getMesEtudeIds()
       ])
+      if (mesIdsResult.data) setMesEtudeIds(mesIdsResult.data)
       console.log("[EtudesPage] getEtudes result:", JSON.stringify(etudesResult))
       if ((etudesResult as any).error) {
         console.error("[EtudesPage] getEtudes ERROR:", (etudesResult as any).error)
@@ -156,9 +159,106 @@ export default function EtudesPage() {
     {} as Record<string, number>
   )
 
-  // Active/featured study
-  const activeStudy = filteredEtudes.find((e) => e.statut === "en_cours")
+  const { mine: mesEtudes, others: autresEtudes } = partitionMesEtudes(filteredEtudes, mesEtudeIds)
 
+  // Ligne d'une étude (réutilisée par « Mes études » et « Autres études »).
+  const renderEtudeRow = (etude: EtudeWithRelations) => {
+    const sc = getStatutConfig(etude.statut)
+    const suiveursLabel = (etude.suiveurs && etude.suiveurs.length > 0)
+      ? `Suiveur${etude.suiveurs.length > 1 ? "s" : ""} : ${etude.suiveurs.map(s => `${s.prenom} ${s.nom}`).join(", ")}`
+      : (etude as any).suiveur ? `Suiveur : ${(etude as any).suiveur.prenom} ${(etude as any).suiveur.nom}` : null
+    const meta = [etude.numero, etude.clients?.nom, suiveursLabel].filter(Boolean).join(" · ")
+    const montant = etude.budget_ht ?? etude.budget
+    return (
+      <div key={etude.id} className="group relative flex items-start gap-2 px-5 py-3.5 hover:bg-zinc-50 transition-colors">
+        <Link href={`/etudes/${etude.id}`} className="flex items-start gap-3 flex-1 min-w-0 cursor-pointer">
+          <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${sc?.dotClass || "bg-zinc-300"}`} />
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-start justify-between gap-3">
+              <p className="min-w-0 text-sm font-semibold text-zinc-800 leading-snug line-clamp-2 break-words" title={etude.nom || undefined}>
+                {etude.nom?.trim() || <span className="italic font-normal text-zinc-400">Sans nom</span>}
+              </p>
+              {montant != null && (
+                <span className="shrink-0 text-xs font-bold leading-5 text-[#00236f] tabular-nums whitespace-nowrap">
+                  {Number(montant).toLocaleString("fr-FR")} € HT
+                </span>
+              )}
+            </div>
+            {meta && (
+              <p className="text-xs text-zinc-400 truncate" title={meta}>{meta}</p>
+            )}
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              {!(etude as any).published && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                  <EyeOff className="w-3 h-3" />
+                  Brouillon
+                </span>
+              )}
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${sc?.chipClass || "bg-zinc-100 text-zinc-600"}`}>
+                {sc?.label || etude.statut}
+              </span>
+            </div>
+          </div>
+        </Link>
+        {canPublish && (
+          <button
+            onClick={(e) => {
+              e.preventDefault(); e.stopPropagation()
+              handleTogglePublish(etude)
+            }}
+            className={`p-1.5 rounded-md transition-all shrink-0 ${(etude as any).published ? "text-emerald-600 hover:bg-emerald-50" : "text-amber-600 hover:bg-amber-50"}`}
+            title={(etude as any).published ? "Dépublier" : "Publier"}
+          >
+            {(etude as any).published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+          </button>
+        )}
+        {(canEditEtude(profile, etude) || canDeleteEtude(profile, etude)) && (
+        <div className="absolute right-3 bottom-2.5 flex items-center gap-0.5 p-0.5 rounded-lg bg-white border border-zinc-200 shadow-sm opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        {canEditEtude(profile, etude) && (
+        <button
+          onClick={(e) => {
+            e.preventDefault(); e.stopPropagation()
+            setEditingId(etude.id)
+            setForm({
+              nom: etude.nom ?? "",
+              numero: etude.numero ?? "",
+              statut: etude.statut ?? "prospect",
+              budget: etude.budget?.toString() ?? "",
+              budget_ht: etude.budget_ht?.toString() ?? "",
+              frais_dossier: (etude as any).frais_dossier?.toString() ?? "",
+              marge_pct: (etude as any).marge_pct?.toString() ?? "",
+              type: etude.type ?? "",
+              commentaire: etude.commentaire ?? "",
+              client_id: etude.client_id ?? "",
+              suiveur_ids: (etude.suiveurs && etude.suiveurs.length > 0)
+                ? etude.suiveurs.map(s => s.id)
+                : (etude.suiveur_id ? [etude.suiveur_id] : []),
+            })
+            setShowModal(true)
+          }}
+          className="p-1.5 rounded-md text-zinc-400 hover:text-[#00236f] hover:bg-[#d0d8ff] transition-colors"
+          title="Modifier l'étude"
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
+        )}
+        {canDeleteEtude(profile, etude) && (
+        <button
+          onClick={(e) => {
+            e.preventDefault(); e.stopPropagation()
+            setDeleteConfirmEtude(etude)
+          }}
+          className="p-1.5 rounded-md text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+          title="Supprimer l'étude"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+        )}
+        </div>
+        )}
+      </div>
+    )
+  }
   const handleTogglePublish = async (etude: EtudeWithRelations) => {
     const newPublished = !(etude as any).published
     // Passage brouillon → visible : on demande confirmation (missions publiées ?)
@@ -257,194 +357,45 @@ export default function EtudesPage() {
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Active study detail panel */}
-          {activeStudy && (
-            <div className="lg:col-span-8">
-              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-6">
-                <div className="flex items-start justify-between gap-4 mb-5">
-                  <div className="flex-1">
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUT_CONFIG[activeStudy.statut]?.chipClass}`}>
-                        {STATUT_CONFIG[activeStudy.statut]?.label}
-                      </span>
-                    </div>
-                    <h2 className="text-xl font-manrope font-black text-[#00236f] mb-1">{activeStudy.nom}</h2>
-                    <p className="text-sm text-zinc-400 font-mono">{activeStudy.numero}</p>
-                  </div>
-                  {(activeStudy.budget_ht ?? activeStudy.budget) != null && (
-                    <div className="text-right shrink-0">
-                      <p className="text-xs text-zinc-400">Budget</p>
-                      <p className="text-2xl font-manrope font-black text-[#00236f] tabular-nums whitespace-nowrap">
-                        {Number(activeStudy.budget_ht ?? activeStudy.budget).toLocaleString("fr-FR")} € HT
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Info grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-zinc-50 rounded-xl mb-5">
-                  {activeStudy.clients && (
-                    <div>
-                      <p className="text-xs text-zinc-400 mb-1">Client</p>
-                      <p className="text-sm font-semibold text-zinc-800">{activeStudy.clients.nom}</p>
-                    </div>
-                  )}
-                  {((activeStudy.suiveurs && activeStudy.suiveurs.length > 0) || activeStudy.suiveur) && (
-                    <div>
-                      <p className="text-xs text-zinc-400 mb-1">Suiveur{(activeStudy.suiveurs?.length ?? 0) > 1 ? "s" : ""}</p>
-                      <p className="text-sm font-semibold text-zinc-800">
-                        {(activeStudy.suiveurs && activeStudy.suiveurs.length > 0)
-                          ? activeStudy.suiveurs.map(s => `${s.prenom} ${s.nom}`).join(", ")
-                          : `${activeStudy.suiveur!.prenom} ${activeStudy.suiveur!.nom}`}
-                      </p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-xs text-zinc-400 mb-1">Statut</p>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUT_CONFIG[activeStudy.statut]?.chipClass}`}>
-                      {STATUT_CONFIG[activeStudy.statut]?.label}
-                    </span>
-                  </div>
-                </div>
-
-                {activeStudy.commentaire && (
-                  <div className="p-4 bg-[#d0d8ff]/30 rounded-xl mb-4">
-                    <p className="text-xs font-semibold text-[#00236f] mb-1 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-base">comment</span>
-                      Commentaires
-                    </p>
-                    <p className="text-sm text-zinc-600">{activeStudy.commentaire}</p>
-                  </div>
-                )}
-
-                <Link
-                  href={`/etudes/${activeStudy.id}`}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00236f] text-white text-sm font-semibold hover:bg-[#1e3a8a] transition-colors w-fit"
-                >
-                  Voir l'échéancier complet
-                  <span className="material-symbols-outlined text-lg">arrow_forward</span>
-                </Link>
+        <div className="space-y-6">
+          {/* « Mes études » épinglées en haut — demande de Baptiste (02/10/2026) :
+              ses propres études se perdaient dans la liste de toute la JE, et un
+              grand panneau mettait en avant une étude « en cours » arbitraire. */}
+          {mesEtudes.length > 0 && (
+            <div className="bg-white rounded-xl border-2 border-[#00236f]/20 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-zinc-100 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#00236f] text-xl">push_pin</span>
+                <h2 className="font-manrope font-bold text-[#00236f] text-base">
+                  Mes études ({mesEtudes.length})
+                </h2>
+              </div>
+              <div className="divide-y divide-zinc-100">
+                {mesEtudes.map(renderEtudeRow)}
               </div>
             </div>
           )}
 
-          {/* Studies list panel */}
-          <div className={activeStudy ? "lg:col-span-4" : "lg:col-span-12"}>
-            <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-zinc-100">
-                <h2 className="font-manrope font-bold text-[#00236f] text-base">
-                  {filteredEtudes.length} étude{filteredEtudes.length !== 1 ? "s" : ""}
-                </h2>
-              </div>
-              <div className="divide-y divide-zinc-100 max-h-[600px] overflow-y-auto">
-                {filteredEtudes.length > 0 ? (
-                  filteredEtudes.map((etude) => {
-                    const sc = getStatutConfig(etude.statut)
-                    const suiveursLabel = (etude.suiveurs && etude.suiveurs.length > 0)
-                      ? `Suiveur${etude.suiveurs.length > 1 ? "s" : ""} : ${etude.suiveurs.map(s => `${s.prenom} ${s.nom}`).join(", ")}`
-                      : (etude as any).suiveur ? `Suiveur : ${(etude as any).suiveur.prenom} ${(etude as any).suiveur.nom}` : null
-                    const meta = [etude.numero, etude.clients?.nom, suiveursLabel].filter(Boolean).join(" · ")
-                    const montant = etude.budget_ht ?? etude.budget
-                    return (
-                      <div key={etude.id} className="group relative flex items-start gap-2 px-5 py-3.5 hover:bg-zinc-50 transition-colors">
-                        <Link href={`/etudes/${etude.id}`} className="flex items-start gap-3 flex-1 min-w-0 cursor-pointer">
-                          <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${sc?.dotClass || "bg-zinc-300"}`} />
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <div className="flex items-start justify-between gap-3">
-                              <p className="min-w-0 text-sm font-semibold text-zinc-800 leading-snug line-clamp-2 break-words" title={etude.nom || undefined}>
-                                {etude.nom?.trim() || <span className="italic font-normal text-zinc-400">Sans nom</span>}
-                              </p>
-                              {montant != null && (
-                                <span className="shrink-0 text-xs font-bold leading-5 text-[#00236f] tabular-nums whitespace-nowrap">
-                                  {Number(montant).toLocaleString("fr-FR")} € HT
-                                </span>
-                              )}
-                            </div>
-                            {meta && (
-                              <p className="text-xs text-zinc-400 truncate" title={meta}>{meta}</p>
-                            )}
-                            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                              {!(etude as any).published && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                  <EyeOff className="w-3 h-3" />
-                                  Brouillon
-                                </span>
-                              )}
-                              <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${sc?.chipClass || "bg-zinc-100 text-zinc-600"}`}>
-                                {sc?.label || etude.statut}
-                              </span>
-                            </div>
-                          </div>
-                        </Link>
-                        {canPublish && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault(); e.stopPropagation()
-                              handleTogglePublish(etude)
-                            }}
-                            className={`p-1.5 rounded-md transition-all shrink-0 ${(etude as any).published ? "text-emerald-600 hover:bg-emerald-50" : "text-amber-600 hover:bg-amber-50"}`}
-                            title={(etude as any).published ? "Dépublier" : "Publier"}
-                          >
-                            {(etude as any).published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                          </button>
-                        )}
-                        {(canEditEtude(profile, etude) || canDeleteEtude(profile, etude)) && (
-                        <div className="absolute right-3 bottom-2.5 flex items-center gap-0.5 p-0.5 rounded-lg bg-white border border-zinc-200 shadow-sm opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                        {canEditEtude(profile, etude) && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault(); e.stopPropagation()
-                            setEditingId(etude.id)
-                            setForm({
-                              nom: etude.nom ?? "",
-                              numero: etude.numero ?? "",
-                              statut: etude.statut ?? "prospect",
-                              budget: etude.budget?.toString() ?? "",
-                              budget_ht: etude.budget_ht?.toString() ?? "",
-                              frais_dossier: (etude as any).frais_dossier?.toString() ?? "",
-                              marge_pct: (etude as any).marge_pct?.toString() ?? "",
-                              type: etude.type ?? "",
-                              commentaire: etude.commentaire ?? "",
-                              client_id: etude.client_id ?? "",
-                              suiveur_ids: (etude.suiveurs && etude.suiveurs.length > 0)
-                                ? etude.suiveurs.map(s => s.id)
-                                : (etude.suiveur_id ? [etude.suiveur_id] : []),
-                            })
-                            setShowModal(true)
-                          }}
-                          className="p-1.5 rounded-md text-zinc-400 hover:text-[#00236f] hover:bg-[#d0d8ff] transition-colors"
-                          title="Modifier l'étude"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        )}
-                        {canDeleteEtude(profile, etude) && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault(); e.stopPropagation()
-                            setDeleteConfirmEtude(etude)
-                          }}
-                          className="p-1.5 rounded-md text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Supprimer l'étude"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        )}
-                        </div>
-                        )}
-                      </div>
-                    )
-                  })
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-zinc-400">
-                    <span className="material-symbols-outlined text-4xl mb-2">school</span>
-                    <p className="text-sm">
-                      {searchTerm || selectedStatut ? "Aucune étude correspondante" : "Créez votre première étude"}
-                    </p>
-                  </div>
-                )}
-              </div>
+          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-zinc-100">
+              <h2 className="font-manrope font-bold text-[#00236f] text-base">
+                {mesEtudes.length > 0 ? "Autres études" : "Études"} ({autresEtudes.length})
+              </h2>
+            </div>
+            <div className="divide-y divide-zinc-100 max-h-[600px] overflow-y-auto">
+              {autresEtudes.length > 0 ? (
+                autresEtudes.map(renderEtudeRow)
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-zinc-400">
+                  <span className="material-symbols-outlined text-4xl mb-2">school</span>
+                  <p className="text-sm">
+                    {searchTerm || selectedStatut
+                      ? "Aucune étude correspondante"
+                      : mesEtudes.length > 0
+                        ? "Aucune autre étude"
+                        : "Créez votre première étude"}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -493,9 +444,11 @@ export default function EtudesPage() {
                 setShowModal(false)
                 setEditingId(null)
                 setForm({ nom: "", numero: "", statut: "prospection", budget: "", budget_ht: "", frais_dossier: "", marge_pct: "", type: "", commentaire: "", client_id: "", suiveur_ids: [] as string[] })
-                // Refresh list
-                const fresh = await getEtudes()
+                // Refresh list (et « Mes études » : la création ou un changement
+                // de suiveurs déplace l'étude entre les deux sections)
+                const [fresh, freshMesIds] = await Promise.all([getEtudes(), getMesEtudeIds()])
                 if ((fresh as any).data) setEtudes((fresh as any).data)
+                if (freshMesIds.data) setMesEtudeIds(freshMesIds.data)
               }}
               className="flex flex-col flex-1 min-h-0"
             >

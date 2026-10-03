@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { getMissions, getMesCandidatures } from "@/lib/actions/missions"
-import { getEtudes } from "@/lib/actions/etudes"
+import { getEtudes, getMesEtudeIds } from "@/lib/actions/etudes"
+import { partitionMesEtudes, ordonnerPourAccueil } from "@/lib/etudes/mes-etudes"
 import Link from "next/link"
 import type { MissionWithEtude, CandidatureWithMission } from "@/types/database.types"
 import { MemberSignatureBanner } from "./_components/MemberSignatureBanner"
@@ -8,6 +9,16 @@ import { IntervenantDashboard } from "./_components/IntervenantDashboard"
 import { redirect } from "next/navigation"
 import { getPageProfile } from "@/lib/auth/page-guards"
 import { hasPermission } from "@/lib/auth/permissions"
+
+const ETUDE_STATUT: Record<string, { label: string; className: string }> = {
+  en_cours: { label: "En cours", className: "bg-blue-100 text-blue-700" },
+  signee: { label: "Signée", className: "bg-indigo-100 text-indigo-700" },
+  en_cours_prospection: { label: "En cours de prospection", className: "bg-amber-100 text-amber-700" },
+  prospection: { label: "Prospection", className: "bg-zinc-100 text-zinc-600" },
+  prospect: { label: "Prospection", className: "bg-zinc-100 text-zinc-600" },
+  terminee: { label: "Terminée", className: "bg-green-100 text-green-700" },
+  annulee: { label: "Annulée", className: "bg-red-100 text-red-600" },
+}
 
 const STATUT_BADGE: Record<string, { label: string; className: string }> = {
   ouverte: { label: "Ouverte", className: "bg-blue-100 text-blue-700" },
@@ -41,6 +52,7 @@ export default async function DashboardPage() {
     missionsResult,
     etudesResult,
     candidaturesResult,
+    mesEtudeIdsResult,
   ] = await Promise.all([
     user
       ? supabase.from("personnes").select("prenom, email").eq("id", user.id).single()
@@ -48,6 +60,7 @@ export default async function DashboardPage() {
     getMissions({ statut: "ouverte" }),
     getEtudes(),
     getMesCandidatures(),
+    getMesEtudeIds(),
   ])
 
   const personne = personneResult.data
@@ -57,7 +70,16 @@ export default async function DashboardPage() {
 
   const missions = allMissions.slice(0, 5)
   const candidatures = allCandidatures.slice(0, 3)
-  const etudesEnCours = allEtudes.filter((e: any) => e.statut === "en_cours")
+  // Accueil centré sur la personne (retour de Baptiste du 02/10/2026) : ses
+  // études d'abord, et uniquement des chiffres réels — la carte « CA
+  // Financier » restait vide et « 75 % acceptation » était écrit en dur.
+  const mesEtudes = ordonnerPourAccueil(
+    partitionMesEtudes(allEtudes as { id: string; statut: string; nom: string; numero: string; clients?: { nom: string } | null }[], mesEtudeIdsResult.data ?? []).mine
+  )
+  const mesEtudesEnCours = mesEtudes.filter((e) => e.statut === "en_cours")
+  const candidaturesAcceptees = allCandidatures.filter((c) => c.statut === "acceptee").length
+  const candidaturesRefusees = allCandidatures.filter((c) => c.statut === "refusee").length
+  const candidaturesEnAttente = allCandidatures.length - candidaturesAcceptees - candidaturesRefusees
 
   const greeting = personne
     ? `Bienvenue, ${personne.prenom || personne.email}`
@@ -72,44 +94,15 @@ export default async function DashboardPage() {
       {/* Bannière : bulletin d'adhésion en attente de signature */}
       <MemberSignatureBanner />
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats cards — chiffres personnels et réels uniquement */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-zinc-200 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">CA Financier</p>
-              <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">—</p>
-              <p className="text-xs text-zinc-400 mt-1">Prévisionnel N/A</p>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-[#d0d8ff] flex items-center justify-center">
-              <span className="material-symbols-outlined text-[#00236f] text-xl">euro</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-zinc-200 p-5 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Missions actives</p>
-              <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">{allMissions.length}</p>
-              <Link href="/missions" className="text-xs text-[#00236f] mt-1 hover:underline inline-flex items-center gap-0.5">
-                Voir missions
-                <span className="material-symbols-outlined text-base">arrow_forward</span>
-              </Link>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center">
-              <span className="material-symbols-outlined text-blue-600 text-xl">assignment</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-zinc-200 p-5 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Études en cours</p>
-              <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">{etudesEnCours.length}</p>
+              <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Mes études en cours</p>
+              <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">{mesEtudesEnCours.length}</p>
               <Link href="/etudes" className="text-xs text-[#00236f] mt-1 hover:underline inline-flex items-center gap-0.5">
-                Voir études
+                Voir mes études
                 <span className="material-symbols-outlined text-base">arrow_forward</span>
               </Link>
             </div>
@@ -122,10 +115,28 @@ export default async function DashboardPage() {
         <div className="bg-white rounded-xl border border-zinc-200 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between">
             <div>
+              <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Missions ouvertes</p>
+              <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">{allMissions.length}</p>
+              <Link href="/missions" className="text-xs text-[#00236f] mt-1 hover:underline inline-flex items-center gap-0.5">
+                Candidater
+                <span className="material-symbols-outlined text-base">arrow_forward</span>
+              </Link>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center">
+              <span className="material-symbols-outlined text-blue-600 text-xl">assignment</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-zinc-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
+            <div>
               <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Mes candidatures</p>
               <p className="text-2xl font-manrope font-black text-[#00236f] mt-2">{allCandidatures.length}</p>
               {allCandidatures.length > 0 ? (
-                <p className="text-xs text-emerald-600 mt-1 font-medium">75% acceptation</p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  {candidaturesAcceptees} acceptée{candidaturesAcceptees > 1 ? "s" : ""} · {candidaturesEnAttente} en attente
+                </p>
               ) : (
                 <p className="text-xs text-zinc-400 mt-1">Aucune candidature</p>
               )}
@@ -139,10 +150,54 @@ export default async function DashboardPage() {
 
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent missions */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-zinc-200 shadow-sm">
+        <div className="lg:col-span-2 space-y-6">
+        {/* Mes études : accès direct, sans passer par la liste de toute la JE */}
+        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
           <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
-            <h2 className="font-manrope font-bold text-[#00236f] text-base">Missions récentes</h2>
+            <h2 className="font-manrope font-bold text-[#00236f] text-base">Mes études</h2>
+            <Link href="/etudes" className="text-xs text-[#00236f] font-medium hover:underline flex items-center gap-0.5">
+              Toutes les études
+              <span className="material-symbols-outlined text-base">arrow_forward</span>
+            </Link>
+          </div>
+          <div className="divide-y divide-zinc-100">
+            {mesEtudes.length > 0 ? (
+              mesEtudes.slice(0, 6).map((etude) => {
+                const badge = ETUDE_STATUT[etude.statut] || { label: etude.statut, className: "bg-zinc-100 text-zinc-600" }
+                return (
+                  <Link
+                    key={etude.id}
+                    href={`/etudes/${etude.id}`}
+                    className="flex items-center gap-4 px-6 py-3.5 hover:bg-zinc-50 transition-colors"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-purple-600 text-lg">school</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-zinc-800 truncate">{etude.nom?.trim() || "Sans nom"}</p>
+                      <p className="text-xs text-zinc-400 truncate">
+                        {[etude.numero, etude.clients?.nom].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                    <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.className}`}>
+                      {badge.label}
+                    </span>
+                  </Link>
+                )
+              })
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 text-zinc-400">
+                <span className="material-symbols-outlined text-4xl mb-2">school</span>
+                <p className="text-sm">Vous ne suivez aucune étude pour l&apos;instant</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Missions ouvertes */}
+        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
+            <h2 className="font-manrope font-bold text-[#00236f] text-base">Missions ouvertes</h2>
             <Link href="/missions" className="text-xs text-[#00236f] font-medium hover:underline flex items-center gap-0.5">
               Voir tout
               <span className="material-symbols-outlined text-base">arrow_forward</span>
@@ -185,6 +240,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+        </div>
+
         {/* Right column */}
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-5">
@@ -193,8 +250,8 @@ export default async function DashboardPage() {
               {[
                 { label: "Candidater à une mission", href: "/missions", icon: "assignment" },
                 { label: "Voir mes études", href: "/etudes", icon: "school" },
-                { label: "Gérer mes documents", href: "/profil", icon: "folder_open" },
-                { label: "Mon profil", href: "/profil", icon: "person" },
+                { label: "Gérer mes documents", href: "/documents", icon: "folder_open" },
+                { label: "Mon profil", href: "/dashboard/profil", icon: "person" },
               ].map((action) => (
                 <Link
                   key={action.href + action.label}

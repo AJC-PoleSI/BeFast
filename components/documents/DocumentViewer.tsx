@@ -13,13 +13,18 @@ export function DocumentViewer({
   open,
   onOpenChange,
   url,
+  downloadUrl,
   fileName,
 }: {
   open: boolean
   onOpenChange: (val: boolean) => void
+  /** Fichier affiché dans l'aperçu (route `preview`, en ligne). */
   url: string | null
+  /** Route de téléchargement ; à défaut, `url`. */
+  downloadUrl?: string | null
   fileName: string | null
 }) {
+  const telechargement = downloadUrl ?? url
   const containerRef = useRef<HTMLDivElement>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +51,9 @@ export function DocumentViewer({
 
     const loadDocument = async () => {
       try {
-        const res = await fetch(url, { cache: "force-cache" })
+        // Pas de cache : un document régénéré garde le même identifiant, l'aperçu
+        // montrait alors l'ancienne version.
+        const res = await fetch(url, { cache: "no-store" })
         if (!res.ok) throw new Error("Erreur lors du chargement du fichier")
         const blob = await res.blob()
 
@@ -106,11 +113,9 @@ export function DocumentViewer({
             <p className="text-[11px] text-zinc-500">Aperçu rapide</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {url && (
+            {telechargement && (
               <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={telechargement}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#00236f] bg-[#00236f]/10 rounded-lg hover:bg-[#00236f]/20 transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -143,9 +148,9 @@ export function DocumentViewer({
               </div>
               <h3 className="text-zinc-800 font-bold mb-2">Aperçu indisponible</h3>
               <p className="text-sm text-zinc-500 mb-4">{error}</p>
-              {url && (
+              {telechargement && (
                 <a
-                  href={url}
+                  href={telechargement}
                   className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-[#00236f] rounded-lg shadow-sm hover:bg-[#1e3a8a] transition-colors"
                 >
                   Télécharger le fichier original

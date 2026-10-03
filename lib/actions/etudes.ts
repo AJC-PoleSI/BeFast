@@ -127,6 +127,53 @@ export async function getEtudes(filters?: { statut?: string }) {
   return { data: (data ?? []).map(withSuiveursList) }
 }
 
+// Identifiants des études qui concernent la personne connectée : créateur,
+// suiveur (chef de projet) ou intervenant sur une de ses missions — même
+// définition que le contrôle d'accès aux documents (lib/auth/document-access).
+// Sert à épingler « Mes études » en haut de la page Études.
+// Client admin : mission_collaborations et candidatures ne sont pas toutes
+// lisibles en RLS ; chaque requête est filtrée sur l'utilisateur authentifié
+// et ne renvoie que des identifiants d'études.
+export async function getMesEtudeIds(): Promise<{ data?: string[]; error?: string }> {
+  noStore()
+  const acces = await requireActionPermission("etudes", "Vous n'avez pas accès aux études.")
+  if (!acces.ok) return { error: acces.error }
+  const uid = acces.userId
+  const admin = createAdminClient()
+
+  const [crees, suivies, multiSuivies, missionsDirectes, collabs, candidatures] = await Promise.all([
+    admin.from("etudes").select("id").eq("created_by", uid),
+    admin.from("etudes").select("id").eq("suiveur_id", uid),
+    admin.from("etude_suiveurs").select("etude_id").eq("personne_id", uid),
+    admin.from("missions").select("etude_id").eq("intervenant_id", uid),
+    admin.from("mission_collaborations").select("mission_id").eq("intervenant_id", uid),
+    admin.from("candidatures").select("mission_id").eq("personne_id", uid).eq("statut", "acceptee"),
+  ])
+
+  const ids = new Set<string>()
+  const add = (id: string | null | undefined) => {
+    if (id) ids.add(id)
+  }
+  for (const r of crees.data ?? []) add((r as { id: string }).id)
+  for (const r of suivies.data ?? []) add((r as { id: string }).id)
+  for (const r of multiSuivies.data ?? []) add((r as { etude_id: string | null }).etude_id)
+  for (const r of missionsDirectes.data ?? []) add((r as { etude_id: string | null }).etude_id)
+
+  const missionIds = [
+    ...(collabs.data ?? []).map((r) => (r as { mission_id: string }).mission_id),
+    ...(candidatures.data ?? []).map((r) => (r as { mission_id: string }).mission_id),
+  ]
+  if (missionIds.length) {
+    const { data: viaMissions } = await admin
+      .from("missions")
+      .select("etude_id")
+      .in("id", [...new Set(missionIds)])
+    for (const r of viaMissions ?? []) add((r as { etude_id: string | null }).etude_id)
+  }
+
+  return { data: [...ids] }
+}
+
 // Détail d'une étude — PAS de cache pour garantir la fraîcheur des données
 // après modification (les utilisateurs modifient fréquemment leurs études).
 export async function getEtude(id: string) {

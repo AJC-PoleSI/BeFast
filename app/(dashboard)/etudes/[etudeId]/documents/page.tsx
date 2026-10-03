@@ -18,6 +18,8 @@ import { getEtude } from "@/lib/actions/etudes"
 import { useUser } from "@/hooks/useUser"
 import { canEditEtude } from "@/lib/auth/permissions"
 import { IntervenantConcerne } from "@/components/documents/IntervenantConcerne"
+import { DocumentViewer } from "@/components/documents/DocumentViewer"
+import { documentDownloadName } from "@/lib/documents/download-name"
 import {
   Dialog,
   DialogContent,
@@ -113,6 +115,8 @@ export default function EtudeDocumentsPage() {
   const [formState, dispatch] = useReducer(formReducer, initialFormState)
   const [templates, setTemplates] = useState<any[]>([])
   const [docs, setDocs] = useState<any[]>([])
+  // Clic sur un document → aperçu ; bouton « Télécharger » → fichier (demande de Baptiste, 02/10/2026).
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; downloadUrl: string; name: string } | null>(null)
   const [missions, setMissions] = useState<any[]>([])
   const [generating, setGenerating] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -281,7 +285,13 @@ export default function EtudeDocumentsPage() {
               <div
                 key={d.id}
                 className="bg-white rounded-xl border border-border shadow-sm p-3 flex items-center justify-between gap-3 cursor-pointer hover:border-[#00236f]/30 transition-colors"
-                onClick={() => window.open(`/api/documents/${d.id}/download`, "_blank")}
+                onClick={() =>
+                  setPreviewDoc({
+                    url: `/api/documents/${d.id}/preview`,
+                    downloadUrl: `/api/documents/${d.id}/download`,
+                    name: documentDownloadName(d.file_name, d.intervenant),
+                  })
+                }
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <FileText className="h-4 w-4 text-[#00236f] shrink-0" />
@@ -296,14 +306,22 @@ export default function EtudeDocumentsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a 
-                    href={`/api/documents/${d.id}/download`} 
-                    className="inline-flex items-center gap-1 text-xs text-[#00236f] hover:bg-[#00236f]/10 p-1.5 rounded transition-colors"
+                  <a
+                    href={`/api/documents/${d.id}/download`}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-[#00236f] hover:bg-[#00236f]/10 px-2 py-1.5 rounded transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Download className="h-3.5 w-3.5" />
+                    Télécharger
                   </a>
-                  <button onClick={() => handleDelete(d.id)} className="text-red-500 hover:text-red-700">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDelete(d.id)
+                    }}
+                    className="text-red-500 hover:text-red-700"
+                    title="Supprimer"
+                  >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -412,6 +430,13 @@ export default function EtudeDocumentsPage() {
         </DialogContent>
       </Dialog>
 
+      <DocumentViewer
+        open={!!previewDoc}
+        onOpenChange={(open) => !open && setPreviewDoc(null)}
+        url={previewDoc?.url || null}
+        downloadUrl={previewDoc?.downloadUrl || null}
+        fileName={previewDoc?.name || null}
+      />
     </div>
   )
 }
