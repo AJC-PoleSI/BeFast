@@ -39,6 +39,7 @@ import {
   Eye,
   EyeOff,
   UserPlus,
+  AlertTriangle,
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -197,7 +198,14 @@ export default function EtudeDetailPage() {
   const [affectMission, setAffectMission] = useState<any | null>(null)
   const [affectRecherche, setAffectRecherche] = useState("")
   const [affectResultats, setAffectResultats] = useState<
-    { id: string; prenom: string | null; nom: string | null; email: string | null; role: string | null }[]
+    {
+      id: string
+      prenom: string | null
+      nom: string | null
+      email: string | null
+      role: string | null
+      avertissements: string[]
+    }[]
   >([])
   const [affectRecherchant, setAffectRecherchant] = useState(false)
   const [affectNotifier, setAffectNotifier] = useState(true)
@@ -277,7 +285,7 @@ export default function EtudeDetailPage() {
     if (missionIds.length > 0) {
       const { data: cands } = await supabase
         .from("candidatures")
-        .select("*, personnes!candidatures_personne_id_fkey(id, prenom, nom, email)")
+        .select("*, personnes!candidatures_personne_id_fkey(id, prenom, nom, email, account_status)")
         .in("mission_id", missionIds)
         .order("created_at", { ascending: true })
       setCandidatures((cands as any[]) || [])
@@ -510,9 +518,14 @@ export default function EtudeDetailPage() {
     const res = await affecterIntervenant(affectMission.id, p.id, { notifier: affectNotifier })
     setAffectEnCours(null)
     if ((res as any).error) { toast.error((res as any).error); return }
-    toast.success(
+    const message =
       `${p.prenom ?? ""} ${p.nom ?? ""} affecté·e à la mission${affectNotifier ? " — email envoyé" : ""}`.trim()
-    )
+    const avertissements: string[] = (res as any).avertissements ?? []
+    if (avertissements.length > 0) {
+      toast.warning(message, { description: avertissements.join(" · ") })
+    } else {
+      toast.success(message)
+    }
     setAffectMission(null)
     fetchData()
   }
@@ -1063,6 +1076,16 @@ export default function EtudeDetailPage() {
                                         En attente
                                       </Badge>
                                     )}
+                                    {p?.account_status === "pending_validation" && (
+                                      <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-300">
+                                        <AlertTriangle className="h-3 w-3 mr-1" /> Compte non validé
+                                      </Badge>
+                                    )}
+                                    {p?.account_status === "rejected" && (
+                                      <Badge variant="outline" className="text-[10px] bg-red-50 text-red-700 border-red-300">
+                                        <AlertTriangle className="h-3 w-3 mr-1" /> Compte rejeté
+                                      </Badge>
+                                    )}
                                   </div>
                                   {p?.email && (
                                     <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
@@ -1274,8 +1297,10 @@ export default function EtudeDetailPage() {
           <div className="px-6 pb-2 space-y-3">
             <p className="text-sm text-muted-foreground">
               Mission <strong className="text-foreground">{affectMission?.nom}</strong>. La personne
-              est ajoutée directement comme acceptée, sans avoir postulé. Seuls les comptes validés
-              apparaissent ; ceux qui ont déjà postulé se gèrent depuis leur candidature.
+              est ajoutée directement comme acceptée, sans avoir postulé. Les comptes validés et
+              ceux en attente de validation apparaissent (un avertissement signale un compte non
+              validé ou un dossier incomplet) ; ceux qui ont déjà postulé se gèrent depuis leur
+              candidature.
             </p>
             <Input
               autoFocus
@@ -1294,7 +1319,7 @@ export default function EtudeDetailPage() {
                 </p>
               ) : affectResultats.length === 0 ? (
                 <p className="px-3 py-4 text-center text-xs text-muted-foreground">
-                  Aucun compte validé ne correspond.
+                  Aucun compte ne correspond.
                 </p>
               ) : (
                 affectResultats.map((p) => (
@@ -1307,6 +1332,12 @@ export default function EtudeDetailPage() {
                         )}
                       </div>
                       {p.email && <div className="text-xs text-muted-foreground truncate">{p.email}</div>}
+                      {p.avertissements.map((a) => (
+                        <div key={a} className="flex items-start gap-1 text-[11px] text-amber-700 mt-0.5">
+                          <AlertTriangle className="h-3 w-3 mt-px shrink-0" />
+                          <span>{a}</span>
+                        </div>
+                      ))}
                     </div>
                     <Button
                       size="sm"

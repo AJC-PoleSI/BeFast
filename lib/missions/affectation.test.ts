@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest"
-import { motifRefusAffectation, missionComplete, estAffectationDirecte } from "./affectation"
+import {
+  motifRefusAffectation,
+  missionComplete,
+  estAffectationDirecte,
+  avertissementsAffectation,
+} from "./affectation"
 
 const valide = { account_status: "validated" }
 
@@ -26,10 +31,19 @@ describe("motifRefusAffectation", () => {
     expect(motifRefusAffectation({ ...base, personne: null })).toMatch(/introuvable/)
   })
 
-  it("refuse un compte non validé (candidat en attente, refusé…)", () => {
+  it("autorise un compte en attente de validation (l'avertissement est affiché à part)", () => {
     expect(
       motifRefusAffectation({ ...base, personne: { account_status: "pending_validation" } })
-    ).toMatch(/validé/)
+    ).toBeNull()
+  })
+
+  it("refuse un compte rejeté ou supprimé", () => {
+    expect(
+      motifRefusAffectation({ ...base, personne: { account_status: "rejected" } })
+    ).toMatch(/rejeté/)
+    expect(
+      motifRefusAffectation({ ...base, personne: { account_status: "deleted" } })
+    ).toMatch(/actif/)
   })
 
   it("refuse une personne déjà positionnée sur la mission", () => {
@@ -38,6 +52,27 @@ describe("motifRefusAffectation", () => {
 
   it("refuse quand la mission est complète", () => {
     expect(motifRefusAffectation({ ...base, accepteesCount: 26 })).toMatch(/complète/)
+  })
+})
+
+describe("avertissementsAffectation", () => {
+  it("aucun avertissement pour un compte validé au dossier complet", () => {
+    expect(avertissementsAffectation({ account_status: "validated", manquants: [] })).toEqual([])
+  })
+
+  it("signale un compte en attente de validation", () => {
+    expect(avertissementsAffectation({ account_status: "pending_validation", manquants: [] })).toEqual([
+      "Compte en attente de validation",
+    ])
+  })
+
+  it("liste ce qui manque au dossier, en clair", () => {
+    expect(
+      avertissementsAffectation({
+        account_status: "validated",
+        manquants: ["portable", "code_postal", "carte_etudiante"],
+      })
+    ).toEqual(["Dossier incomplet : téléphone, code postal, carte étudiante"])
   })
 })
 

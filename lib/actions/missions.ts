@@ -14,7 +14,12 @@ import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { requireActionPermission } from "@/lib/auth/action-guards"
 import { hasPermission, hasAnyPermission, canEditEtude } from "@/lib/auth/permissions"
 import { estMissionPubliee } from "@/lib/mission-visibilite"
-import { motifRefusAffectation } from "@/lib/missions/affectation"
+import {
+  motifRefusAffectation,
+  avertissementsAffectation,
+  STATUTS_AFFECTABLES,
+} from "@/lib/missions/affectation"
+import { missingProfileFieldsFromRow, BA_REQUIRED_DOC_TYPES } from "@/lib/signature/ba"
 
 // Liste des missions — PAS de cache. Les utilisateurs créent/modifient
 // fréquemment leurs missions et doivent toujours voir leur travail.
@@ -386,9 +391,42 @@ const sansAccents = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
 
 /**
- * Comptes validés correspondant à la recherche (nom, prénom ou email), hors
- * personnes déjà positionnées sur la mission — celles-là se gèrent avec
- * « Accepter » / « Refuser » sur leur candidature.
+ * Avertissements d'affectation par personne : compte non validé, dossier
+ * incomplet (champs et justificatifs exigés pour le BA). Les champs chiffrés
+ * sont testés sur leur présence, sans déchiffrer.
+ */
+async function avertissementsParPersonne(
+  admin: ReturnType<typeof createAdminClient>,
+  ids: string[]
+): Promise<Map<string, string[]>> {
+  const resultat = new Map<string, string[]>()
+  if (ids.length === 0) return resultat
+  const [{ data: rows }, { data: docs }] = await Promise.all([
+    admin
+      .from("personnes")
+      .select(
+        "id, account_status, prenom, nom, portable, date_naissance, adresse, ville, code_postal, etablissement, scolarite, adresse_encrypted, ville_encrypted, code_postal_encrypted, date_naissance_encrypted"
+      )
+      .in("id", ids),
+    admin.from("documents_personnes").select("personne_id, type").in("personne_id", ids),
+  ])
+  for (const row of rows ?? []) {
+    const deposes = new Set((docs ?? []).filter((d) => d.personne_id === row.id).map((d) => d.type))
+    const manquants = [
+      ...missingProfileFieldsFromRow(row),
+      ...BA_REQUIRED_DOC_TYPES.filter((t) => !deposes.has(t)),
+    ]
+    resultat.set(row.id, avertissementsAffectation({ account_status: row.account_status, manquants }))
+  }
+  return resultat
+}
+
+/**
+ * Comptes validés ou en attente de validation correspondant à la recherche
+ * (nom, prénom ou email), hors personnes déjà positionnées sur la mission —
+ * celles-là se gèrent avec « Accepter » / « Refuser » sur leur candidature.
+ * Chaque résultat porte ses avertissements (compte non validé, dossier
+ * incomplet) : ils n'empêchent pas l'affectation.
  */
 export async function rechercherIntervenantsAffectables(missionId: string, recherche: string) {
   const acces = await getAffecteur()
@@ -401,7 +439,7 @@ export async function rechercherIntervenantsAffectables(missionId: string, reche
   // `personnes` ne laisse pas forcément un membre RH lire tous les comptes.
   // Le filtrage texte se fait ici et non en SQL : sans l'extension `unaccent`,
   // un ILIKE ne trouverait pas « Léa » en tapant « lea ». Quelques centaines
-  // de comptes validés, lus par pages (PostgREST plafonne à 1000 lignes).
+  // de comptes, lus par pages (PostgREST plafonne à 1000 lignes).
   const admin = createAdminClient()
   const { data: deja } = await admin
     .from("candidatures")
@@ -420,7 +458,7 @@ export async function rechercherIntervenantsAffectables(missionId: string, reche
     const { data, error } = await admin
       .from("personnes")
       .select("id, prenom, nom, email, profils_types!profil_type_id(nom)")
-      .eq("account_status", "validated")
+      .in("account_status", [...STATUTS_AFFECTABLES])
       .order("nom", { ascending: true })
       .range(from, from + PAGE - 1)
     if (error) return { error: error.message }
@@ -429,20 +467,25 @@ export async function rechercherIntervenantsAffectables(missionId: string, reche
   }
 
   const exclus = new Set((deja ?? []).map((d) => d.personne_id))
-  const data = personnes
+  const trouves = personnes
     .filter((p) => !exclus.has(p.id))
     .filter((p) => {
       const texte = sansAccents(`${p.prenom ?? ""} ${p.nom ?? ""} ${p.email ?? ""}`)
       return mots.every((m) => texte.includes(m))
     })
     .slice(0, 20)
-    .map((p) => ({
-      id: p.id,
-      prenom: p.prenom,
-      nom: p.nom,
-      email: p.email,
-      role: (p.profils_types as { nom?: string | null } | null)?.nom ?? null,
-    }))
+  const avertissements = await avertissementsParPersonne(
+    admin,
+    trouves.map((p) => p.id)
+  )
+  const data = trouves.map((p) => ({
+    id: p.id,
+    prenom: p.prenom,
+    nom: p.nom,
+    email: p.email,
+    role: (p.profils_types as { nom?: string | null } | null)?.nom ?? null,
+    avertissements: avertissements.get(p.id) ?? [],
+  }))
   return { data }
 }
 
@@ -500,7 +543,8 @@ export async function affecterIntervenant(
     await sendEmail({ to: personne.email, subject: tpl.subject, html: tpl.html })
   }
 
-  return { success: true }
+  const avertissements = (await avertissementsParPersonne(admin, [personneId])).get(personneId) ?? []
+  return { success: true, avertissements }
 }
 
 /**
