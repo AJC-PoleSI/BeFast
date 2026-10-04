@@ -4,6 +4,7 @@ import {
   hasPermission,
   canEditEtude,
   canDeleteEtude,
+  canChangeMemberRole,
 } from "./permissions"
 import type { PersonneWithRole } from "@/types/database.types"
 
@@ -128,5 +129,44 @@ describe("canDeleteEtude", () => {
   it("l'administrateur peut supprimer n'importe quelle étude", () => {
     const p = make({}, [], "administrateur")
     expect(canDeleteEtude(p, { created_by: "autre-id" })).toBe(true)
+  })
+})
+
+describe("canChangeMemberRole", () => {
+  const cible = { id: "u2", roleActuel: "intervenant", nouveauRole: "membre_ajc" }
+
+  it("refuse sans la permission changer_roles", () => {
+    expect(canChangeMemberRole(make({ membres: true }), cible).ok).toBe(false)
+  })
+
+  it("autorise le porteur de changer_roles (via un poste) à passer un intervenant en membre AJC", () => {
+    const p = make({}, [{ profils_types: { permissions: { changer_roles: true } } }])
+    expect(canChangeMemberRole(p, cible).ok).toBe(true)
+  })
+
+  it("interdit à un non-administrateur de nommer un administrateur", () => {
+    const p = make({ changer_roles: true })
+    expect(canChangeMemberRole(p, { ...cible, nouveauRole: "administrateur" }).ok).toBe(false)
+  })
+
+  it("interdit à un non-administrateur de rétrograder un administrateur", () => {
+    const p = make({ changer_roles: true })
+    expect(canChangeMemberRole(p, { ...cible, roleActuel: "administrateur" }).ok).toBe(false)
+  })
+
+  it("interdit à un non-administrateur de changer son propre rôle", () => {
+    const p = make({ changer_roles: true })
+    expect(canChangeMemberRole(p, { ...cible, id: p.id }).ok).toBe(false)
+  })
+
+  it("refuse un compte non validé même porteur de la clé", () => {
+    const p = { ...make({ changer_roles: true }), account_status: "pending_validation" } as PersonneWithRole
+    expect(canChangeMemberRole(p, cible).ok).toBe(false)
+  })
+
+  it("l'administrateur peut tout, y compris nommer un administrateur", () => {
+    const admin = make({}, [], "administrateur")
+    expect(canChangeMemberRole(admin, { ...cible, nouveauRole: "administrateur" }).ok).toBe(true)
+    expect(canChangeMemberRole(admin, { ...cible, roleActuel: "administrateur" }).ok).toBe(true)
   })
 })

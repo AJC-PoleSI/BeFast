@@ -14,7 +14,7 @@ type PermKey =
   | "modifier_etudes" | "publier_etudes" | "publier_missions"
   | "parametres_structure" | "voir_factures"
   | "signer_documents" | "signer_ba"
-  | "valider_comptes" | "valider_bv" | "gerer_parametres"
+  | "valider_comptes" | "changer_roles" | "valider_bv" | "gerer_parametres"
 
 const PERM_LABELS: Record<PermKey, { label: string; description: string; icon: string }> = {
   dashboard:               { label: "Tableau de bord",           description: "Accès à la page d'accueil",                         icon: "dashboard" },
@@ -38,6 +38,7 @@ const PERM_LABELS: Record<PermKey, { label: string; description: string; icon: s
   parametres_structure:    { label: "Paramètres structure",       description: "Voir et modifier les paramètres globaux : identité, bureau, banque, TVA, cotisations", icon: "settings" },
   gerer_parametres:        { label: "Paramétrage avancé",         description: "Modèles de documents, dictionnaire de balises, champs personnalisés, phases par défaut", icon: "tune" },
   valider_comptes:         { label: "Valider les inscriptions",   description: "Valider ou refuser les comptes en attente de validation", icon: "verified_user" },
+  changer_roles:           { label: "Changer le rôle des membres", description: "Passer un compte d'un rôle de base à un autre (Candidat, Intervenant, Membre AJC…) — jamais vers ou depuis Administrateur, ni son propre rôle", icon: "manage_accounts" },
   valider_bv:              { label: "Valider les bulletins de versement", description: "Numéroter et marquer payés les BV des intervenants, sans accès à la facturation", icon: "receipt_long" },
   voir_factures:           { label: "Trésorerie",                 description: "Consulter et gérer les factures, paiements et rétributions intervenants", icon: "account_balance_wallet" },
   signer_documents:        { label: "Signer les documents",       description: "Signer les documents classiques (file du bureau)",   icon: "draw" },

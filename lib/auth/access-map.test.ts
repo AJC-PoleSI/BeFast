@@ -216,6 +216,14 @@ describe("matrice des rôles AJC (instantané de la base)", () => {
     expect(accede(p, surface("Bulletins de versement des intervenants"))).toBe(false)
   })
 
+  it("changer le rôle d'un membre : Responsable RH oui, Pôle RH et membre AJC non", () => {
+    const surf = surface("Changer le rôle de base d'un membre")
+    expect(accede(personne("membre_ajc", ["responsable_rh"]), surf)).toBe(true)
+    expect(accede(personne("membre_ajc", ["pole_rh"]), surf)).toBe(false)
+    expect(accede(personne("membre_ajc"), surf)).toBe(false)
+    expect(accede(personne("administrateur"), surf)).toBe(true)
+  })
+
   it("Pôle SI (poste) : publication et édition des études", () => {
     const p = personne("membre_ajc", ["pole_si"])
     expect(accede(p, surface("Publier une étude"))).toBe(true)

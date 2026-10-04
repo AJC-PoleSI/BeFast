@@ -64,7 +64,7 @@ Quatre couches appliquent la même décision :
 | Poste | Permissions |
 |---|---|
 | **Pôle Ressources Humaines** | membres, voir_documents_membres, voir_nss, selectionner_candidats, assigner_intervenants |
-| **Responsable RH** | idem + signer_ba, etudes, missions, documents, dashboard, profil |
+| **Responsable RH** | idem + valider_comptes, changer_roles, signer_ba, etudes, missions, documents, dashboard, profil |
 | **Pôle Trésorerie** | voir_factures, voir_rib, membres, parametres_structure, publier_etudes, publier_missions, etudes, missions, documents, statistiques, dashboard, profil, nouvelle_mission |
 | **Pôle Systèmes d'Information** | modifier_etudes, publier_etudes, publier_missions |
 | **Pôle Marketing** | publier_etudes, publier_missions |
@@ -98,6 +98,7 @@ Quatre couches appliquent la même décision :
 | `voir_factures` | trésorerie complète | page + 5 routes API + 11 actions + RLS |
 | `valider_bv` | bulletins de versement seuls | 4 actions trésorerie |
 | `valider_comptes` | valider/refuser une inscription | `PATCH /api/admin/personnes/[id]` |
+| `changer_roles` | changer le rôle de base d'un membre (Intervenant → Membre AJC…) ; jamais vers/depuis Administrateur ni son propre rôle | `updateMemberRole` (`canChangeMemberRole`) |
 | `signer_documents` | file de signature du bureau | `getSignaturesAccess`, `listBureauQueue` |
 | `signer_ba` | signature des bulletins d'adhésion | idem + sélection du signataire |
 

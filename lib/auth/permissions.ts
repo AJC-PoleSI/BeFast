@@ -6,7 +6,7 @@ export const ALL_PERMISSION_KEYS: PermissionKey[] = [
   "administration", "membres", "documents", "nouvelle_mission",
   "voir_documents_membres", "voir_nss", "voir_rib",
   "assigner_intervenants", "modifier_etudes", "parametres_structure",
-  "selectionner_candidats", "valider_comptes", "valider_bv", "voir_factures",
+  "selectionner_candidats", "valider_comptes", "changer_roles", "valider_bv", "voir_factures",
   "gerer_parametres", "publier_etudes", "publier_missions",
   "signer_documents", "signer_ba",
 ]
@@ -133,4 +133,30 @@ export function canDeleteEtude(
   if (estCompteRestreint(profile)) return false
   if (etude.created_by && etude.created_by === profile.id) return true
   return hasPermission(profile, "modifier_etudes")
+}
+
+/**
+ * Changement du rôle de base d'un membre (Candidat, Intervenant, Membre AJC…).
+ *
+ * Ouvert aux porteurs de `changer_roles`, avec trois garde-fous pour qu'une
+ * délégation à un poste ne devienne pas une prise de pouvoir : seul un
+ * administrateur nomme ou retire un administrateur, et personne d'autre que
+ * lui ne change son propre rôle.
+ */
+export function canChangeMemberRole(
+  profile: PersonneWithRole | null,
+  cible: { id: string; roleActuel: string | null; nouveauRole: string }
+): { ok: true } | { ok: false; error: string } {
+  if (!profile) return { ok: false, error: "Non authentifié" }
+  if (profile.profils_types?.slug === "administrateur") return { ok: true }
+  if (!hasPermission(profile, "changer_roles")) {
+    return { ok: false, error: "Vous n'avez pas la permission de changer le rôle d'un membre." }
+  }
+  if (cible.id === profile.id) {
+    return { ok: false, error: "Vous ne pouvez pas modifier votre propre rôle." }
+  }
+  if (cible.roleActuel === "administrateur" || cible.nouveauRole === "administrateur") {
+    return { ok: false, error: "Seul un administrateur peut nommer ou retirer un administrateur." }
+  }
+  return { ok: true }
 }

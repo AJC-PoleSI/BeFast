@@ -86,6 +86,7 @@ export const SURFACES: SurfaceProtegee[] = [
   { libelle: "Modèles de documents (suppression / métadonnées)", couche: "action", fichier: "lib/actions/documents.ts", cles: ["administration", "gerer_parametres"] },
   { libelle: "Phases par défaut (pilotage)", couche: "action", fichier: "lib/actions/phases.ts", cles: ["gerer_parametres", "administration"] },
   { libelle: "Liste des membres", couche: "action", fichier: "lib/actions/members.ts", cles: ["membres"] },
+  { libelle: "Changer le rôle de base d'un membre", couche: "action", fichier: "lib/actions/members.ts", cles: ["changer_roles"], exception: "nommer / retirer un administrateur et changer son propre rôle restent réservés aux administrateurs (canChangeMemberRole)" },
   { libelle: "Rôles, postes et permissions (écriture)", couche: "action", fichier: "lib/actions/members.ts", cles: [], adminUniquement: true },
   { libelle: "Trésorerie (factures, paiements)", couche: "action", fichier: "lib/actions/tresorerie.ts", cles: ["voir_factures"] },
   { libelle: "Bulletins de versement des intervenants", couche: "action", fichier: "lib/actions/tresorerie.ts", cles: ["voir_factures", "valider_bv"] },

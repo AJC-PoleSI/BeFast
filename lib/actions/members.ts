@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server"
 import { requireActionPermission } from "@/lib/auth/action-guards"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
-import { hasPermission, emptyPermissions } from "@/lib/auth/permissions"
+import { hasPermission, emptyPermissions, canChangeMemberRole } from "@/lib/auth/permissions"
+import { logAudit } from "@/lib/supabase-security"
 import type { PersonneWithRole, ProfilType, PersonnePoste } from "@/types/database.types"
 
 async function getCallerRole(): Promise<string | null> {
@@ -31,9 +32,9 @@ async function getCallerRole(): Promise<string | null> {
 
 // Lecture de la liste des membres : ouverte à quiconque a la permission
 // applicative "membres" (admin, mais aussi Pôle RH / Pôle Trésorerie…), pas
-// seulement au rôle de base "administrateur". Les actions de modification
-// (rôle, postes, création/suppression de rôle) restent réservées à
-// getCallerRole() === "administrateur" ci-dessous.
+// seulement au rôle de base "administrateur". Changer le rôle de base d'un
+// membre relève du droit `changer_roles` ; les postes et la création /
+// suppression de rôles restent réservés à getCallerRole() === "administrateur".
 async function callerHasMembresAccess(): Promise<boolean> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -89,17 +90,41 @@ export async function getAllMembers(): Promise<{ data: PersonneWithRole[] | null
 
 export async function updateMemberRole(personneId: string, roleSlug: string) {
   try {
-    const role = await getCallerRole()
-    if (role !== "administrateur") return { success: false, error: "Seul un administrateur peut modifier les rôles." }
+    // Droit `changer_roles` (administrateur, ou poste à qui il est accordé dans
+    // Administration ▸ Droits). Avant : codé en dur « administrateur », donc
+    // aucun poste ne pouvait passer un intervenant en membre AJC.
+    const acces = await requireActionPermission(
+      "changer_roles",
+      "Vous n'avez pas la permission de changer le rôle d'un membre."
+    )
+    if (!acces.ok) return { success: false, error: acces.error }
 
     const admin = createAdminClient()
+    // Uniquement un rôle de BASE : un poste (Présidente, Pôle SI…) posé comme
+    // rôle de base donnerait ses permissions sans passer par setPersonnePostes.
     const { data: profil, error: profilError } = await admin
       .from("profils_types")
       .select("id")
       .eq("slug", roleSlug)
+      .eq("categorie", "base")
       .single()
 
     if (profilError) return { success: false, error: "Rôle introuvable" }
+
+    const { data: cible, error: cibleError } = await admin
+      .from("personnes")
+      .select("profils_types!profil_type_id(slug)")
+      .eq("id", personneId)
+      .single()
+    if (cibleError) return { success: false, error: "Membre introuvable" }
+    const roleActuel = (cible?.profils_types as any)?.slug ?? null
+
+    const autorise = canChangeMemberRole(acces.profile, {
+      id: personneId,
+      roleActuel,
+      nouveauRole: roleSlug,
+    })
+    if (!autorise.ok) return { success: false, error: autorise.error }
 
     const { error } = await admin
       .from("personnes")
@@ -110,6 +135,11 @@ export async function updateMemberRole(personneId: string, roleSlug: string) {
     // Le profil mis en cache (5 min) porte le rôle : une rétrogradation doit
     // prendre effet tout de suite, pas au prochain rafraîchissement.
     revalidateTag(`user-profile:${personneId}`)
+    // Le droit n'est plus réservé aux administrateurs : on garde la trace de
+    // qui a changé quel rôle.
+    await logAudit(createClient(), "personnes", "UPDATE", personneId, {
+      profil_type: { avant: roleActuel, apres: roleSlug },
+    })
     return { success: true, profil: { id: profil.id, slug: roleSlug } }
   } catch (err) {
     console.error("[updateMemberRole] Exception:", err)

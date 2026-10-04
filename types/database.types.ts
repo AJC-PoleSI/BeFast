@@ -17,6 +17,7 @@ export type PermissionKey =
   | "parametres_structure"
   | "selectionner_candidats"
   | "valider_comptes"
+  | "changer_roles"
   | "valider_bv"
   | "voir_factures"
   | "gerer_parametres"

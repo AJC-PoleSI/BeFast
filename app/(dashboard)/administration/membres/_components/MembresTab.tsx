@@ -7,6 +7,7 @@ import { Search, MoreVertical, Loader, ExternalLink, ShieldCheck, ShieldAlert, C
 import Link from "next/link"
 import { getAllMembers, updateMemberRole, getAllRoles } from "@/lib/actions/members"
 import type { PersonneWithRole, ProfilType } from "@/types/database.types"
+import { canChangeMemberRole } from "@/lib/auth/permissions"
 import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
@@ -28,12 +29,16 @@ const ROLE_MAP: Record<string, { label: string; color: string }> = {
   ancien_membre_agc: { label: "Ancien membre",     color: "bg-zinc-100 text-zinc-600 border-zinc-200" },
 }
 
-function RoleDropdown({ member, roles, onRoleChange, onPostesSaved, updating }: {
+function RoleDropdown({ member, roles, onRoleChange, onPostesSaved, updating, peutChangerRole, peutGererPostes, isAdmin }: {
   member: PersonneWithRole
   roles: ProfilType[]
   onRoleChange: (id: string, role: string) => void
   onPostesSaved: () => Promise<void>
   updating: string | null
+  /** Déjà filtré par canChangeMemberRole (soi-même, administrateur cible). */
+  peutChangerRole: boolean
+  peutGererPostes: boolean
+  isAdmin: boolean
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -45,6 +50,8 @@ function RoleDropdown({ member, roles, onRoleChange, onPostesSaved, updating }: 
     document.addEventListener("mousedown", handleClick)
     return () => document.removeEventListener("mousedown", handleClick)
   }, [])
+
+  if (!peutChangerRole && !peutGererPostes) return null
 
   return (
     <div ref={ref} className="relative inline-block">
@@ -59,11 +66,16 @@ function RoleDropdown({ member, roles, onRoleChange, onPostesSaved, updating }: 
       </button>
       {open && (
         <div className="absolute right-0 mt-1 w-64 bg-white border border-zinc-200 rounded-xl shadow-xl z-20">
+          {peutChangerRole && (<>
           <p className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
             Changer le rôle
           </p>
           <div className="p-1.5">
-            {roles.filter((r) => (r.categorie ?? "base") === "base").map((r) => (
+            {roles
+              .filter((r) => (r.categorie ?? "base") === "base")
+              // Nommer un administrateur reste réservé aux administrateurs.
+              .filter((r) => isAdmin || r.slug !== "administrateur")
+              .map((r) => (
               <button
                 key={r.slug}
                 onClick={() => { setOpen(false); onRoleChange(member.id, r.slug) }}
@@ -78,7 +90,9 @@ function RoleDropdown({ member, roles, onRoleChange, onPostesSaved, updating }: 
               </button>
             ))}
           </div>
-          <div className="border-t border-zinc-100 px-3 py-3">
+          </>)}
+          {peutGererPostes && (
+          <div className={`${peutChangerRole ? "border-t border-zinc-100 " : ""}px-3 py-3`}>
             <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
               Postes (bureau / pôles)
             </p>
@@ -91,6 +105,7 @@ function RoleDropdown({ member, roles, onRoleChange, onPostesSaved, updating }: 
               onSaved={onPostesSaved}
             />
           </div>
+          )}
         </div>
       )}
     </div>
@@ -171,9 +186,10 @@ function DeleteMemberModal({ member, onCancel, onConfirm, busy }: {
 
 export function MembresTab() {
   // Les actions sur un compte suivent les gardes de l'API : valider/rejeter =
-  // `valider_comptes`, supprimer = administrateur. Avant, tout porteur de
-  // `membres` voyait les boutons et obtenait une erreur au clic.
-  const { permissions, isAdmin } = useUser()
+  // `valider_comptes`, changer le rôle = `changer_roles` (canChangeMemberRole),
+  // postes et suppression = administrateur. Avant, tout porteur de `membres`
+  // voyait les boutons et obtenait une erreur au clic.
+  const { profile, permissions, isAdmin } = useUser()
   const peutValider = isAdmin || !!permissions?.valider_comptes
   const [members, setMembers] = useState<PersonneWithRole[]>([])
   const [allRoles, setAllRoles] = useState<ProfilType[]>([])
@@ -508,6 +524,13 @@ export function MembresTab() {
                             onRoleChange={handleRoleChange}
                             onPostesSaved={loadMembers}
                             updating={updating}
+                            peutChangerRole={canChangeMemberRole(profile, {
+                              id: m.id,
+                              roleActuel: m.profils_types?.slug ?? null,
+                              nouveauRole: "",
+                            }).ok}
+                            peutGererPostes={isAdmin}
+                            isAdmin={isAdmin}
                           />
                         </div>
                       </td>

@@ -200,7 +200,8 @@
         "voir_nss": true,
         "assigner_intervenants": true,
         "selectionner_candidats": true,
-        "signer_ba": true
+        "signer_ba": true,
+        "changer_roles": true
       }
     }
   ]
