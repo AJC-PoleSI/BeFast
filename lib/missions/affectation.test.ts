@@ -4,6 +4,7 @@ import {
   missionComplete,
   estAffectationDirecte,
   avertissementsAffectation,
+  filtrerAffectables,
 } from "./affectation"
 
 const valide = { account_status: "validated" }
@@ -73,6 +74,33 @@ describe("avertissementsAffectation", () => {
         manquants: ["portable", "code_postal", "carte_etudiante"],
       })
     ).toEqual(["Dossier incomplet : téléphone, code postal, carte étudiante"])
+  })
+})
+
+describe("filtrerAffectables", () => {
+  const comptes = [
+    { id: "1", prenom: "Léa", nom: "Dupont", email: "lea.dupont@audencia.com" },
+    { id: "2", prenom: "Nathalène", nom: "Auclair", email: "nathalene.auclair@audencia.com" },
+    { id: "3", prenom: "Louis", nom: "Polaert", email: "louis.polaert@audencia.com" },
+  ]
+
+  it("ignore les accents et la casse", () => {
+    expect(filtrerAffectables(comptes, "lea").map((c) => c.id)).toEqual(["1"])
+    expect(filtrerAffectables(comptes, "NATHALENE").map((c) => c.id)).toEqual(["2"])
+  })
+
+  it("exige tous les mots, dans n'importe quel champ", () => {
+    expect(filtrerAffectables(comptes, "louis polaert").map((c) => c.id)).toEqual(["3"])
+    expect(filtrerAffectables(comptes, "louis dupont")).toEqual([])
+  })
+
+  it("ne renvoie rien sous 2 caractères", () => {
+    expect(filtrerAffectables(comptes, "l")).toEqual([])
+    expect(filtrerAffectables(comptes, "  ")).toEqual([])
+  })
+
+  it("plafonne le nombre de résultats", () => {
+    expect(filtrerAffectables(comptes, "audencia", 2)).toHaveLength(2)
   })
 })
 

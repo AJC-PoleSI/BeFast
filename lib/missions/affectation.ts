@@ -73,6 +73,30 @@ export function avertissementsAffectation(opts: {
   return avertissements
 }
 
+const sansAccents = (s: string) =>
+  s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+
+/**
+ * Filtre la liste des comptes affectables sur la recherche saisie : chaque
+ * mot doit apparaître dans le prénom, le nom ou l'email, sans tenir compte
+ * des accents ni de la casse (« lea » trouve « Léa »). Rien sous 2 caractères.
+ */
+export function filtrerAffectables<
+  T extends { prenom: string | null; nom: string | null; email: string | null },
+>(comptes: T[], recherche: string, max = 20): T[] {
+  const mots = sansAccents(recherche).split(/\s+/).filter(Boolean)
+  if (mots.join("").length < 2) return []
+  const resultats: T[] = []
+  for (const c of comptes) {
+    const texte = sansAccents(`${c.prenom ?? ""} ${c.nom ?? ""} ${c.email ?? ""}`)
+    if (mots.every((m) => texte.includes(m))) {
+      resultats.push(c)
+      if (resultats.length >= max) break
+    }
+  }
+  return resultats
+}
+
 /**
  * `true` pour une candidature créée par un tiers (affectation directe). Une
  * candidature déposée par l'intervenant lui-même n'a pas de `created_by`.

@@ -387,106 +387,92 @@ async function getAffecteur() {
   return { userId: user.id }
 }
 
-const sansAccents = (s: string) =>
-  s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
-
-/**
- * Avertissements d'affectation par personne : compte non validé, dossier
- * incomplet (champs et justificatifs exigés pour le BA). Les champs chiffrés
- * sont testés sur leur présence, sans déchiffrer.
- */
-async function avertissementsParPersonne(
-  admin: ReturnType<typeof createAdminClient>,
-  ids: string[]
-): Promise<Map<string, string[]>> {
-  const resultat = new Map<string, string[]>()
-  if (ids.length === 0) return resultat
-  const [{ data: rows }, { data: docs }] = await Promise.all([
-    admin
-      .from("personnes")
-      .select(
-        "id, account_status, prenom, nom, portable, date_naissance, adresse, ville, code_postal, etablissement, scolarite, adresse_encrypted, ville_encrypted, code_postal_encrypted, date_naissance_encrypted"
-      )
-      .in("id", ids),
-    admin.from("documents_personnes").select("personne_id, type").in("personne_id", ids),
-  ])
-  for (const row of rows ?? []) {
-    const deposes = new Set((docs ?? []).filter((d) => d.personne_id === row.id).map((d) => d.type))
-    const manquants = [
-      ...missingProfileFieldsFromRow(row),
-      ...BA_REQUIRED_DOC_TYPES.filter((t) => !deposes.has(t)),
-    ]
-    resultat.set(row.id, avertissementsAffectation({ account_status: row.account_status, manquants }))
+/** Lit toutes les lignes d'une requête PostgREST, plafonnée à 1000 par appel. */
+async function toutesLesLignes<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
+): Promise<T[]> {
+  const PAGE = 1000
+  const lignes: T[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await page(from, from + PAGE - 1)
+    if (error) throw new Error(error.message)
+    lignes.push(...(data ?? []))
+    if (!data || data.length < PAGE) return lignes
   }
-  return resultat
 }
 
 /**
- * Comptes validés ou en attente de validation correspondant à la recherche
- * (nom, prénom ou email), hors personnes déjà positionnées sur la mission —
- * celles-là se gèrent avec « Accepter » / « Refuser » sur leur candidature.
- * Chaque résultat porte ses avertissements (compte non validé, dossier
- * incomplet) : ils n'empêchent pas l'affectation.
+ * Tous les comptes affectables à la mission (validés ou en attente de
+ * validation), hors personnes déjà positionnées dessus — celles-là se gèrent
+ * avec « Accepter » / « Refuser » sur leur candidature. Chaque compte porte
+ * ses avertissements (compte non validé, dossier incomplet : champs et
+ * justificatifs exigés pour le BA, chiffrés testés sans déchiffrer) ; ils
+ * n'empêchent pas l'affectation.
+ *
+ * Chargée UNE fois à l'ouverture de la fenêtre « Affecter » : la recherche se
+ * filtre ensuite côté navigateur (filtrerAffectables), sans aller-retour
+ * serveur à chaque frappe. ~800 comptes, une centaine de ko.
  */
-export async function rechercherIntervenantsAffectables(missionId: string, recherche: string) {
+export async function listerIntervenantsAffectables(missionId: string) {
   const acces = await getAffecteur()
   if ("error" in acces) return { error: acces.error }
 
-  const mots = sansAccents(recherche).split(/\s+/).filter(Boolean)
-  if (mots.join("").length < 2) return { data: [] }
-
   // Client admin : la permission est vérifiée ci-dessus, et la RLS de
   // `personnes` ne laisse pas forcément un membre RH lire tous les comptes.
-  // Le filtrage texte se fait ici et non en SQL : sans l'extension `unaccent`,
-  // un ILIKE ne trouverait pas « Léa » en tapant « lea ». Quelques centaines
-  // de comptes, lus par pages (PostgREST plafonne à 1000 lignes).
   const admin = createAdminClient()
-  const { data: deja } = await admin
-    .from("candidatures")
-    .select("personne_id")
-    .eq("mission_id", missionId)
+  try {
+    const [deja, personnes, docs] = await Promise.all([
+      toutesLesLignes<{ personne_id: string }>((from, to) =>
+        admin.from("candidatures").select("personne_id").eq("mission_id", missionId).range(from, to)
+      ),
+      toutesLesLignes<any>((from, to) =>
+        admin
+          .from("personnes")
+          .select(
+            "id, prenom, nom, email, account_status, portable, date_naissance, adresse, ville, code_postal, etablissement, scolarite, adresse_encrypted, ville_encrypted, code_postal_encrypted, date_naissance_encrypted, profils_types!profil_type_id(nom)"
+          )
+          .in("account_status", [...STATUTS_AFFECTABLES])
+          .order("nom", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to)
+      ),
+      toutesLesLignes<{ personne_id: string; type: string }>((from, to) =>
+        admin
+          .from("documents_personnes")
+          .select("personne_id, type")
+          .in("type", [...BA_REQUIRED_DOC_TYPES])
+          .range(from, to)
+      ),
+    ])
 
-  const PAGE = 1000
-  const personnes: {
-    id: string
-    prenom: string | null
-    nom: string | null
-    email: string | null
-    profils_types: unknown
-  }[] = []
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await admin
-      .from("personnes")
-      .select("id, prenom, nom, email, profils_types!profil_type_id(nom)")
-      .in("account_status", [...STATUTS_AFFECTABLES])
-      .order("nom", { ascending: true })
-      .range(from, from + PAGE - 1)
-    if (error) return { error: error.message }
-    personnes.push(...(data ?? []))
-    if (!data || data.length < PAGE) break
+    const exclus = new Set(deja.map((d) => d.personne_id))
+    const deposes = new Map<string, Set<string>>()
+    for (const d of docs) {
+      if (!deposes.has(d.personne_id)) deposes.set(d.personne_id, new Set())
+      deposes.get(d.personne_id)!.add(d.type)
+    }
+
+    const data = personnes
+      .filter((p) => !exclus.has(p.id))
+      .map((p) => {
+        const types = deposes.get(p.id) ?? new Set<string>()
+        const manquants = [
+          ...missingProfileFieldsFromRow(p),
+          ...BA_REQUIRED_DOC_TYPES.filter((t) => !types.has(t)),
+        ]
+        return {
+          id: p.id as string,
+          prenom: p.prenom as string | null,
+          nom: p.nom as string | null,
+          email: p.email as string | null,
+          role: (p.profils_types as { nom?: string | null } | null)?.nom ?? null,
+          avertissements: avertissementsAffectation({ account_status: p.account_status, manquants }),
+        }
+      })
+    return { data }
+  } catch (e) {
+    return { error: (e as Error).message }
   }
-
-  const exclus = new Set((deja ?? []).map((d) => d.personne_id))
-  const trouves = personnes
-    .filter((p) => !exclus.has(p.id))
-    .filter((p) => {
-      const texte = sansAccents(`${p.prenom ?? ""} ${p.nom ?? ""} ${p.email ?? ""}`)
-      return mots.every((m) => texte.includes(m))
-    })
-    .slice(0, 20)
-  const avertissements = await avertissementsParPersonne(
-    admin,
-    trouves.map((p) => p.id)
-  )
-  const data = trouves.map((p) => ({
-    id: p.id,
-    prenom: p.prenom,
-    nom: p.nom,
-    email: p.email,
-    role: (p.profils_types as { nom?: string | null } | null)?.nom ?? null,
-    avertissements: avertissements.get(p.id) ?? [],
-  }))
-  return { data }
 }
 
 /**
@@ -543,8 +529,7 @@ export async function affecterIntervenant(
     await sendEmail({ to: personne.email, subject: tpl.subject, html: tpl.html })
   }
 
-  const avertissements = (await avertissementsParPersonne(admin, [personneId])).get(personneId) ?? []
-  return { success: true, avertissements }
+  return { success: true }
 }
 
 /**

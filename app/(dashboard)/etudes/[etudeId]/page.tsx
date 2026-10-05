@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { useParams } from "next/navigation"
 import { useUser } from "@/hooks/useUser"
 import { createClient } from "@/lib/supabase/client"
@@ -51,11 +51,11 @@ import type {
 import { getMembers, toggleMissionPublished } from "@/lib/actions/etudes"
 import {
   repondreCandidature,
-  rechercherIntervenantsAffectables,
+  listerIntervenantsAffectables,
   affecterIntervenant,
   deleteMission,
 } from "@/lib/actions/missions"
-import { estAffectationDirecte } from "@/lib/missions/affectation"
+import { estAffectationDirecte, filtrerAffectables } from "@/lib/missions/affectation"
 import {
   coutClientParIntervenant,
   formatEuros,
@@ -197,7 +197,7 @@ export default function EtudeDetailPage() {
   // Affectation directe d'un intervenant qui n'a pas postulé
   const [affectMission, setAffectMission] = useState<any | null>(null)
   const [affectRecherche, setAffectRecherche] = useState("")
-  const [affectResultats, setAffectResultats] = useState<
+  const [affectComptes, setAffectComptes] = useState<
     {
       id: string
       prenom: string | null
@@ -207,7 +207,7 @@ export default function EtudeDetailPage() {
       avertissements: string[]
     }[]
   >([])
-  const [affectRecherchant, setAffectRecherchant] = useState(false)
+  const [affectChargement, setAffectChargement] = useState(false)
   const [affectNotifier, setAffectNotifier] = useState(true)
   const [affectEnCours, setAffectEnCours] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -484,35 +484,40 @@ export default function EtudeDetailPage() {
     fetchData()
   }
 
-  // Recherche des comptes affectables, déclenchée après une courte pause de
-  // frappe pour ne pas interroger le serveur à chaque lettre.
+  // Comptes affectables chargés une seule fois à l'ouverture de la fenêtre :
+  // la recherche filtre ensuite cette liste dans le navigateur, sans appel
+  // serveur à chaque frappe.
   useEffect(() => {
     if (!affectMission) return
-    const terme = affectRecherche.trim()
-    if (terme.length < 2) {
-      setAffectResultats([])
-      return
-    }
     let annule = false
-    setAffectRecherchant(true)
-    const t = setTimeout(async () => {
-      const res = await rechercherIntervenantsAffectables(affectMission.id, terme)
+    setAffectChargement(true)
+    listerIntervenantsAffectables(affectMission.id).then((res) => {
       if (annule) return
-      setAffectRecherchant(false)
+      setAffectChargement(false)
       if ((res as any).error) { toast.error((res as any).error); return }
-      setAffectResultats((res as any).data ?? [])
-    }, 300)
-    return () => { annule = true; clearTimeout(t) }
-  }, [affectMission, affectRecherche])
+      setAffectComptes((res as any).data ?? [])
+    })
+    return () => { annule = true }
+  }, [affectMission])
+
+  const affectResultats = useMemo(
+    () => filtrerAffectables(affectComptes, affectRecherche),
+    [affectComptes, affectRecherche]
+  )
 
   const ouvrirAffectation = (m: any) => {
     setAffectMission(m)
     setAffectRecherche("")
-    setAffectResultats([])
+    setAffectComptes([])
     setAffectNotifier(true)
   }
 
-  const handleAffecter = async (p: { id: string; prenom: string | null; nom: string | null }) => {
+  const handleAffecter = async (p: {
+    id: string
+    prenom: string | null
+    nom: string | null
+    avertissements: string[]
+  }) => {
     if (!affectMission) return
     setAffectEnCours(p.id)
     const res = await affecterIntervenant(affectMission.id, p.id, { notifier: affectNotifier })
@@ -520,9 +525,8 @@ export default function EtudeDetailPage() {
     if ((res as any).error) { toast.error((res as any).error); return }
     const message =
       `${p.prenom ?? ""} ${p.nom ?? ""} affecté·e à la mission${affectNotifier ? " — email envoyé" : ""}`.trim()
-    const avertissements: string[] = (res as any).avertissements ?? []
-    if (avertissements.length > 0) {
-      toast.warning(message, { description: avertissements.join(" · ") })
+    if (p.avertissements.length > 0) {
+      toast.warning(message, { description: p.avertissements.join(" · ") })
     } else {
       toast.success(message)
     }
@@ -1309,13 +1313,13 @@ export default function EtudeDetailPage() {
               onChange={(e) => setAffectRecherche(e.target.value)}
             />
             <div className="max-h-72 overflow-y-auto rounded-md border border-border divide-y divide-border">
-              {affectRecherche.trim().length < 2 ? (
+              {affectChargement ? (
+                <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+                  <Loader2 className="inline h-3 w-3 mr-1 animate-spin" /> Chargement des comptes…
+                </p>
+              ) : affectRecherche.trim().length < 2 ? (
                 <p className="px-3 py-4 text-center text-xs text-muted-foreground">
                   Tapez au moins 2 caractères.
-                </p>
-              ) : affectRecherchant ? (
-                <p className="px-3 py-4 text-center text-xs text-muted-foreground">
-                  <Loader2 className="inline h-3 w-3 mr-1 animate-spin" /> Recherche…
                 </p>
               ) : affectResultats.length === 0 ? (
                 <p className="px-3 py-4 text-center text-xs text-muted-foreground">
