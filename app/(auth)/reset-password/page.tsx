@@ -34,17 +34,19 @@ function messageErreur(error: { code?: string; status?: number; message: string 
 
 export default function ResetPasswordPage() {
   const router = useRouter()
-  // "loading" tant qu'on n'a pas déterminé si une session de récupération existe.
-  const [state, setState] = useState<"loading" | "ready" | "invalid">("loading")
+  // "loading" tant qu'on n'a pas déterminé si une session de récupération existe ;
+  // "confirm" : un lien token_hash attend le clic du membre avant d'être consommé.
+  const [state, setState] = useState<"loading" | "confirm" | "ready" | "invalid">("loading")
   const [expired, setExpired] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  // Le token de récupération (token_hash/code) est à usage unique : si cet
-  // effet s'exécute deux fois pour le même chargement (double-invocation
-  // React Strict Mode en dev, remount, retour en arrière...), le deuxième
-  // verifyOtp/exchangeCodeForSession casse la session que le premier venait
-  // d'établir. Ce ref (contrairement à une variable locale à l'effet)
-  // survit à un cleanup+remount et garantit qu'on ne consomme le token
-  // qu'une seule fois.
+  const [confirming, setConfirming] = useState(false)
+  const [tokenHash, setTokenHash] = useState<string | null>(null)
+  // Le code PKCE est à usage unique : si cet effet s'exécute deux fois pour
+  // le même chargement (double-invocation React Strict Mode en dev, remount,
+  // retour en arrière...), le deuxième exchangeCodeForSession casse la
+  // session que le premier venait d'établir. Ce ref (contrairement à une
+  // variable locale à l'effet) survit à un cleanup+remount et garantit qu'on
+  // ne consomme le code qu'une seule fois.
   const tokenConsumedRef = useRef(false)
 
   useEffect(() => {
@@ -53,10 +55,25 @@ export default function ResetPasswordPage() {
 
     // Lien 72h rejeté côté serveur (route /api/password-reset/verify) : pas de
     // token à échanger, on affiche directement l'état invalide/expiré.
-    const errCode = new URL(window.location.href).searchParams.get("e")
+    const params = new URL(window.location.href).searchParams
+    const errCode = params.get("e")
     if (errCode) {
       setExpired(errCode === "expired")
       setState("invalid")
+      return
+    }
+
+    // Lien token_hash (mot de passe oublié, campagne 72h) : on NE consomme PAS
+    // le jeton au chargement. Les passerelles antivirus des boîtes Audencia
+    // ouvrent les liens — JavaScript compris — avant l'humain ; consommer ici
+    // grillait le jeton et le membre trouvait « lien expiré » (9 refus
+    // `otp_expired` en 24 h, 10/10/2026). Un robot ne clique pas sur le bouton.
+    // Pas d'écoute de session non plus : une session déjà ouverte dans ce
+    // navigateur (autre compte) ne doit pas sauter l'étape.
+    const th = params.get("token_hash")
+    if (th) {
+      setTokenHash(th)
+      setState("confirm")
       return
     }
 
@@ -81,17 +98,10 @@ export default function ResetPasswordPage() {
 
     ;(async () => {
       // Flux PKCE arrivé directement ici (?code=) : on échange explicitement.
-      const url = new URL(window.location.href)
-      const code = url.searchParams.get("code")
-      const tokenHash = url.searchParams.get("token_hash")
+      // Sans paramètre, la session vient du code saisi sur /mot-de-passe-oublie.
+      const code = params.get("code")
 
-      if (tokenHash) {
-        try {
-          await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" })
-        } catch {
-          /* géré via getSession ci-dessous */
-        }
-      } else if (code) {
+      if (code) {
         try {
           await supabase.auth.exchangeCodeForSession(code)
         } catch {
@@ -108,6 +118,26 @@ export default function ResetPasswordPage() {
       sub.subscription.unsubscribe()
     }
   }, [])
+
+  async function handleConfirm() {
+    if (!tokenHash) return
+    setConfirming(true)
+    const supabase = createClient()
+    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" })
+    setConfirming(false)
+    // Le jeton est consommé (ou mort) : on le retire de l'URL pour qu'un
+    // rechargement ne propose pas de le réutiliser.
+    window.history.replaceState(null, "", "/reset-password")
+    if (error) {
+      console.error("[reset-password] verifyOtp", {
+        code: (error as { code?: string }).code,
+        status: error.status,
+      })
+      setState("invalid")
+      return
+    }
+    setState("ready")
+  }
 
   async function handleSubmit(formData: FormData) {
     const password = (formData.get("password") as string) ?? ""
@@ -171,18 +201,29 @@ export default function ResetPasswordPage() {
         <p className="text-center text-sm text-muted-foreground">Vérification du lien…</p>
       )}
 
+      {state === "confirm" && (
+        <div className="space-y-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            Cliquez sur le bouton pour choisir votre nouveau mot de passe.
+          </p>
+          <Button onClick={handleConfirm} disabled={confirming} className="w-full">
+            {confirming ? "Vérification…" : "Continuer"}
+          </Button>
+        </div>
+      )}
+
       {state === "invalid" && (
         <div className="space-y-4 text-center">
           <p className="text-sm text-muted-foreground">
             {expired
-              ? "Ce lien a expiré (valable 72 heures). Demandez-en un nouveau."
-              : "Ce lien est invalide ou a expiré. Demandez-en un nouveau."}
+              ? "Ce lien a expiré (valable 72 heures). Demandez un code de réinitialisation."
+              : "Ce lien est invalide, déjà utilisé ou expiré. Si vous avez reçu un code par email, saisissez-le sur la page « Mot de passe oublié » ; sinon, demandez-en un nouveau."}
           </p>
           <Link
             href="/mot-de-passe-oublie"
             className="inline-block text-sm font-medium text-primary hover:underline"
           >
-            Renvoyer un lien
+            Recevoir ou saisir un code
           </Link>
         </div>
       )}

@@ -21,8 +21,11 @@ function brandedEmail(opts: {
   title: string
   intro: string
   details?: string[]
+  code?: string
+  codeHint?: string
   ctaLabel?: string
   ctaUrl?: string
+  outro?: string
 }): string {
   const details = (opts.details ?? [])
     .map(
@@ -38,6 +41,18 @@ function brandedEmail(opts: {
          </td></tr></table>`
       : ""
 
+  const code = opts.code
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;"><tr><td align="center" style="background:#f4f1ea;border:1px solid #ece7dc;border-radius:12px;padding:20px 16px;">
+         <span style="display:block;font-size:12px;color:#6b7280;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;">Votre code</span>
+         <span style="display:block;font-family:'SFMono-Regular',Consolas,'Courier New',monospace;font-size:32px;font-weight:700;letter-spacing:0.18em;color:#00236f;">${opts.code}</span>
+         ${opts.codeHint ? `<span style="display:block;font-size:12px;color:#6b7280;margin-top:8px;">${opts.codeHint}</span>` : ""}
+       </td></tr></table>`
+    : ""
+
+  const outro = opts.outro
+    ? `<p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#8a93a8;">${opts.outro}</p>`
+    : ""
+
   return `<!doctype html>
 <html lang="fr"><body style="margin:0;padding:0;background:#f4f1ea;font-family:'Segoe UI',Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f1ea;padding:32px 16px;">
@@ -51,7 +66,9 @@ function brandedEmail(opts: {
           <h1 style="margin:0 0 12px;font-size:20px;color:#0f1b3d;">${opts.title}</h1>
           <p style="margin:0;font-size:14px;line-height:1.6;color:#3f4a63;">${opts.intro}</p>
           ${details ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">${details}</table>` : ""}
+          ${code}
           ${cta}
+          ${outro}
         </td></tr>
         <tr><td style="padding:16px 32px;border-top:1px solid #eef1f6;">
           <p style="margin:0;font-size:12px;color:#8a93a8;">Email automatique envoyé par la plateforme BeFast — merci de ne pas y répondre.</p>
@@ -146,14 +163,24 @@ export function accountUnblockEmail(opts: {
   }
 }
 
-export function passwordResetEmail(opts: { prenom: string | null; link: string }) {
+/**
+ * « Mot de passe oublié » : le code est la voie principale (un robot antivirus
+ * qui ouvre les liens ne peut pas le taper). Le bouton reste pour qui lit le
+ * mail sur l'appareil où il veut se connecter ; la page d'arrivée demande un
+ * clic avant de consommer le jeton, pour la même raison.
+ */
+export function passwordResetEmail(opts: { prenom: string | null; code: string; link: string }) {
   return {
-    subject: "Réinitialisez votre mot de passe BeFast",
+    subject: "Votre code de réinitialisation BeFast",
     html: brandedEmail({
       title: `Réinitialisation de mot de passe`,
-      intro: `${opts.prenom ? `Bonjour ${esc(opts.prenom)}, ` : ""}vous avez demandé la réinitialisation de votre mot de passe BeFast. Cliquez sur le bouton ci-dessous pour en choisir un nouveau. Ce lien est personnel, à usage unique et expire après un court délai. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.`,
+      intro: `${opts.prenom ? `Bonjour ${esc(opts.prenom)}, ` : ""}vous avez demandé la réinitialisation de votre mot de passe BeFast. Saisissez le code ci-dessous sur la page « Mot de passe oublié », ou utilisez le bouton.`,
+      code: esc(opts.code),
+      codeHint: "Usage unique — utilisez-le dans l'heure. Seul le dernier code reçu est valable.",
       ctaLabel: "Réinitialiser mon mot de passe",
       ctaUrl: opts.link,
+      outro:
+        "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email : votre mot de passe actuel reste inchangé. Ne communiquez jamais ce code, l'équipe BeFast ne vous le demandera pas.",
     }),
   }
 }

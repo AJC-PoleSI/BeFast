@@ -10,6 +10,7 @@ import {
 } from "@/lib/auth/verification"
 import { issuedWithinCooldown } from "@/lib/auth/issue-verification"
 import { decideLogin } from "@/lib/auth/login-gate"
+import { formaterCodeRecuperation } from "@/lib/auth/recovery-code"
 import { sendEmail } from "@/lib/email/send"
 import {
   accountCreatedUserEmail,
@@ -341,13 +342,14 @@ export async function signOut() {
 const RESET_GENERIC =
   "Si un compte existe pour cette adresse, un email de réinitialisation vient d'être envoyé."
 
-// Le flux "mot de passe oublié" mint un lien à token_hash (verifyOtp côté
-// /reset-password) au lieu de s'appuyer sur resetPasswordForEmail + l'échange
-// PKCE de /auth/callback : ce dernier exige que le lien soit ouvert sur le
-// même navigateur que celui qui a fait la demande (le code_verifier PKCE est
-// local à ce navigateur), ce qui échoue silencieusement dès que le lien est
-// ouvert ailleurs (mail sur téléphone, autre navigateur…). token_hash est
-// vérifié côté serveur Supabase et fonctionne depuis n'importe quel appareil.
+// Le flux "mot de passe oublié" s'appuie sur generateLink (et non sur
+// resetPasswordForEmail + l'échange PKCE de /auth/callback, qui exige d'ouvrir
+// le lien dans le navigateur ayant fait la demande). Le même jeton Supabase
+// s'utilise de deux façons, au choix du membre :
+//  - le code (`email_otp`) tapé sur /mot-de-passe-oublie — voie principale,
+//    insensible aux antivirus qui ouvrent les liens avant l'humain ;
+//  - le lien token_hash vers /reset-password, qui attend un clic avant de
+//    consommer le jeton.
 export async function resetPassword(formData: FormData) {
   const email = ((formData.get("email") as string) ?? "").trim().toLowerCase()
   if (!email) return { success: RESET_GENERIC }
@@ -363,8 +365,9 @@ export async function resetPassword(formData: FormData) {
     const tokenHash = link?.properties?.action_link
       ? new URL(link.properties.action_link).searchParams.get("token")
       : null
+    const code = link?.properties?.email_otp ?? null
 
-    if (!error && tokenHash) {
+    if (!error && tokenHash && code) {
       const { data: rows } = await admin
         .from("personnes")
         .select("prenom")
@@ -372,8 +375,13 @@ export async function resetPassword(formData: FormData) {
         .limit(1)
 
       const resetLink = `${siteUrl()}/reset-password?token_hash=${tokenHash}&type=recovery`
-      const tpl = passwordResetEmail({ prenom: rows?.[0]?.prenom ?? null, link: resetLink })
-      await sendEmail({ to: email, subject: tpl.subject, html: tpl.html })
+      const tpl = passwordResetEmail({
+        prenom: rows?.[0]?.prenom ?? null,
+        code: formaterCodeRecuperation(code),
+        link: resetLink,
+      })
+      const sent = await sendEmail({ to: email, subject: tpl.subject, html: tpl.html })
+      if (!sent.ok) console.error("[resetPassword] envoi impossible", sent.error)
     }
   } catch (e) {
     console.error("[resetPassword]", e)
