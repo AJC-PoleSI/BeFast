@@ -3,10 +3,11 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   VERIFICATION_TTL_MS,
   generateVerificationToken,
+  siteUrl,
   verificationEmailHtml,
 } from "./verification"
 import { sendEmail } from "@/lib/email/send"
-import { ONBOARDING_BASE_URL } from "@/lib/integration/token"
+import { ONBOARDING_BASE_URL, ONBOARDING_ENABLED } from "@/lib/integration/token"
 
 export const VERIFICATION_SUBJECT = "Vérifiez votre adresse email — BeFast"
 
@@ -65,7 +66,10 @@ export async function issueAndSendVerification(
     subject: VERIFICATION_SUBJECT,
     html: verificationEmailHtml({
       prenom: person.prenom ?? null,
-      link: `${ONBOARDING_BASE_URL}/verifier?token=${token}`,
+      // Hub coupé → lien natif Be Fast (/verify-email), qui vérifie sans passer par RH.
+      link: ONBOARDING_ENABLED
+        ? `${ONBOARDING_BASE_URL}/verifier?token=${token}`
+        : `${siteUrl()}/verify-email?token=${token}`,
     }),
   })
 

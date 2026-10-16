@@ -1,5 +1,5 @@
 import "server-only"
-import { postSigned, RH_BASE_URL } from "./token"
+import { postSigned, RH_BASE_URL, RH_ENABLED } from "./token"
 
 // Appels signés Befast → RH Manager (Befast est le maître).
 
@@ -11,6 +11,7 @@ export async function provisionRhCandidate(input: {
   befastPersonId: string
   source: string
 }): Promise<{ ok: boolean; candidateId?: string; error?: string }> {
+  if (!RH_ENABLED) return { ok: false, error: "Intégration RH désactivée." }
   try {
     const res = await postSigned(`${RH_BASE_URL}/api/internal/provision`, {
       email: input.email,
@@ -40,6 +41,7 @@ export async function pushDocumentsToRh(input: {
   documents: CuratedDocument[]
   complete: boolean
 }): Promise<{ ok: boolean; error?: string }> {
+  if (!RH_ENABLED) return { ok: false, error: "Intégration RH désactivée." }
   try {
     const res = await postSigned(`${RH_BASE_URL}/api/internal/documents`, {
       email: input.email,

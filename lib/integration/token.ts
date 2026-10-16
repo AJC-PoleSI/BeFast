@@ -22,6 +22,17 @@ export const ONBOARDING_BASE_URL = (
   process.env.ONBOARDING_BASE_URL ?? "http://localhost:3002"
 ).replace(/\/+$/, "")
 
+// Intégration coupable : si RH Manager ou le hub d'onboarding sont arrêtés
+// (projet Supabase RH en pause, etc.), on retire la variable d'environnement
+// correspondante — ou on la met à "off" via RH_INTEGRATION / ONBOARDING_INTEGRATION —
+// et Be Fast continue de fonctionner seul (liens de vérification natifs,
+// pas de SSO ni de push de documents vers RH).
+export const RH_ENABLED =
+  !!process.env.RH_BASE_URL && process.env.RH_INTEGRATION !== "off"
+
+export const ONBOARDING_ENABLED =
+  !!process.env.ONBOARDING_BASE_URL && process.env.ONBOARDING_INTEGRATION !== "off"
+
 const MAX_SKEW_MS = 5 * 60 * 1000
 const SSO_TTL_MS = 120 * 1000
 
