@@ -8,26 +8,13 @@ import { ETUDES_TAG, MEMBERS_TAG, CLIENTS_TAG, PROPOSALS_TAG } from "@/lib/cache
 import type { BudgetInput, PaiementModalites } from "@/lib/budget/compute"
 import { computeBudget } from "@/lib/budget/compute"
 import { repartirVersements } from "@/lib/facture/reconciliation"
+import { normaliserClasse } from "@/lib/missions/classe"
 
 // Couleurs de Gantt — identiques à la page étude pour une cohérence visuelle
 const GANTT_COLORS = [
   "#00236f", "#2563eb", "#0891b2", "#059669", "#65a30d",
   "#d97706", "#dc2626", "#db2777", "#7c3aed", "#475569",
 ]
-
-// Niveau intervenant (L3/M1/M2) -> classe mission (premaster/m1/m2)
-function niveauToClasse(niveau?: string | null): string | null {
-  switch ((niveau || "").toUpperCase()) {
-    case "L3":
-      return "premaster"
-    case "M1":
-      return "m1"
-    case "M2":
-      return "m2"
-    default:
-      return null
-  }
-}
 
 /**
  * Prochain numéro de classeur disponible pour l'année en cours (nomenclature
@@ -548,7 +535,7 @@ export async function signProposal(id: string) {
       etude_id: etudeId,
       nom: ph.name,
       type: "intervenant",
-      classe: niveauToClasse(ph.intervenants_niveau),
+      classe: normaliserClasse(ph.intervenants_niveau),
       description: ph.objectifs || null,
       nb_jeh: Number(ph.jeh_count || 0),
       nb_intervenants: Math.round(Number(ph.intervenants_count || 0)) || null,

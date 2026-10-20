@@ -43,6 +43,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { normaliserClasse } from "@/lib/missions/classe"
 import type {
   MissionWithEtude,
   CandidatureWithPersonne,
@@ -158,9 +159,11 @@ export default function MissionDetailPage() {
     }
     setSubmitting(true)
     
-    // Resolve class and force lowercase to match DB constraint ('premaster', 'm1', 'm2')
-    const rawClasse = classe || (profile as any)?.scolarite || (profile as any)?.classe || ""
-    const formattedClasse = rawClasse ? String(rawClasse).toLowerCase() : null
+    // La scolarité du profil ("Master 1"…) doit être traduite vers les codes
+    // acceptés par candidatures_classe_check ('premaster' | 'm1' | 'm2').
+    const formattedClasse = normaliserClasse(
+      classe || (profile as any)?.scolarite || (profile as any)?.classe
+    )
 
     const supabase = createClient()
     const { error } = await supabase.from("candidatures").insert({

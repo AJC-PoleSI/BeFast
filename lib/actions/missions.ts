@@ -19,6 +19,7 @@ import {
   avertissementsAffectation,
   STATUTS_AFFECTABLES,
 } from "@/lib/missions/affectation"
+import { normaliserClasse } from "@/lib/missions/classe"
 import { missingProfileFieldsFromRow, BA_REQUIRED_DOC_TYPES } from "@/lib/signature/ba"
 
 // Liste des missions — PAS de cache. Les utilisateurs créent/modifient
@@ -194,7 +195,7 @@ export async function candidaterMission(formData: {
       mission_id: formData.mission_id,
       personne_id: user.id,
       motivation: formData.motivation,
-      classe: formData.classe ? formData.classe.toLowerCase() : null,
+      classe: normaliserClasse(formData.classe),
       langues: formData.langues || [],
     })
     .select()
