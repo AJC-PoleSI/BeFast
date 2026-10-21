@@ -13,10 +13,20 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   try {
     const { id } = params
     const body = await request.json()
-    const { account_status, rejection_reason } = body
+    const { account_status } = body
 
     if (!account_status) {
       return NextResponse.json({ error: "account_status required" }, { status: 400 })
+    }
+
+    // Plus de rejet de compte : un compte non validé reste « en attente » et ne
+    // voit aucune donnée (RLS 082 + restriction applicative). Les rejets
+    // faits en bloc sous le compte partagé (sept. 2026) n'étaient pas traçables.
+    if (account_status === "rejected") {
+      return NextResponse.json(
+        { error: "Le rejet de compte n'existe plus : un compte non validé reste en attente." },
+        { status: 400 }
+      )
     }
 
     // Contrôle d'accès : permission `valider_comptes` (administrateurs et tout
@@ -26,17 +36,13 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
     const supabase = createAdminClient()
 
-    // Construit le patch en fonction du statut visé.
-    const patch: Record<string, unknown> = { account_status }
-    if (account_status === "rejected") {
-      patch.rejection_reason = rejection_reason?.trim() || null
-      patch.rejected_at = new Date().toISOString()
-      patch.rejected_by = guard.userId
-    } else {
-      // Validation / repassage en attente : on efface toute trace de rejet.
-      patch.rejection_reason = null
-      patch.rejected_at = null
-      patch.rejected_by = null
+    // Validation / repassage en attente : on efface toute trace de rejet
+    // (anciens comptes rejetés, restaurés le 19/10/2026).
+    const patch: Record<string, unknown> = {
+      account_status,
+      rejection_reason: null,
+      rejected_at: null,
+      rejected_by: null,
     }
 
     const { data, error } = await supabase
@@ -55,13 +61,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     // vit dans le profil mis en cache 5 min : on l'invalide tout de suite.
     revalidateTag(USER_PROFILE_TAG(id))
 
-    // Trace : `rejected_by` dit qui, jamais quand ni quoi pour les autres
-    // statuts. Sans ce journal, un balayage de la file de validation (160
-    // comptes les 17-18/09/2026) ne laisse aucune trace exploitable.
+    // Trace : chaque changement de statut est journalisé avec son auteur
+    // (un balayage de 160 comptes en sept. 2026 n'avait laissé aucune trace).
     await logAudit(createClient(), "personnes", "UPDATE", id, {
       account_status,
       is_candidate: data?.is_candidate ?? null,
-      rejection_reason: account_status === "rejected" ? (rejection_reason?.trim() || null) : null,
     })
 
     // Notification best-effort : un échec d'email ne doit pas faire échouer la validation.
