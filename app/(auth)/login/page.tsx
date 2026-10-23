@@ -142,6 +142,12 @@ export default function LoginPage() {
         >
           Politique de confidentialité
         </Link>
+        <Link
+          href="/cgu"
+          className="text-xs text-muted-foreground hover:text-primary hover:underline"
+        >
+          Conditions générales d&apos;utilisation
+        </Link>
       </div>
     </div>
   )

@@ -12,6 +12,7 @@ import { issuedWithinCooldown } from "@/lib/auth/issue-verification"
 import { decideLogin } from "@/lib/auth/login-gate"
 import { formaterCodeRecuperation } from "@/lib/auth/recovery-code"
 import { sendEmail } from "@/lib/email/send"
+import { CGU_VERSION } from "@/lib/legal/cgu"
 import {
   accountCreatedUserEmail,
   newAccountStaffNotificationEmail,
@@ -239,6 +240,14 @@ export async function signUp(formData: FormData) {
     }
   }
 
+  // Sans acceptation des CGU, aucun compte (la case HTML `required` se
+  // contourne : le contrôle est refait ici).
+  if (formData.get("cgu") !== "on") {
+    return {
+      error: "Vous devez accepter les conditions générales d'utilisation pour créer un compte.",
+    }
+  }
+
   // Création par l'API admin, comme le parcours candidat (/api/onboarding/
   // register), et non par `supabase.auth.signUp` : ce dernier faisait partir,
   // en plus de notre email, l'email de confirmation natif de Supabase (en
@@ -297,6 +306,13 @@ export async function signUp(formData: FormData) {
   }
 
   // The handle_new_user trigger has created the matching `personnes` row.
+  // Preuve d'acceptation des CGU (version + horodatage), conservée 5 ans.
+  const { error: cguErr } = await admin
+    .from("personnes")
+    .update({ cgu_version: CGU_VERSION, cgu_accepted_at: new Date().toISOString() })
+    .eq("id", data.user.id)
+  if (cguErr) console.error("[auth/signUp] cgu_accepted_at", cguErr.message)
+
   // Attach a verification token and send the email (best-effort).
   await issueVerification(data.user.id, email, prenom)
   // Notifie l'ouverture du compte : nouveau membre + admins + Responsable RH.

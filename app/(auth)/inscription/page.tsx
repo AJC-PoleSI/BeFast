@@ -88,6 +88,28 @@ export default function InscriptionPage() {
           />
         </div>
 
+        {/* Non pré-cochée : l'acceptation doit être un acte explicite. */}
+        <div className="flex items-start gap-2">
+          <input
+            id="cgu"
+            name="cgu"
+            type="checkbox"
+            required
+            className="mt-0.5 size-4 shrink-0 rounded border-input accent-primary"
+          />
+          <Label htmlFor="cgu" className="text-xs font-normal leading-snug text-muted-foreground">
+            J&apos;ai lu et j&apos;accepte les{" "}
+            <Link
+              href="/cgu"
+              target="_blank"
+              className="underline hover:text-primary"
+            >
+              conditions générales d&apos;utilisation
+            </Link>{" "}
+            de BeFast.
+          </Label>
+        </div>
+
         <Button type="submit" disabled={isPending} className="mt-2 w-full">
           {isPending ? "Création…" : "Créer mon compte"}
         </Button>

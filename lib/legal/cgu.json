@@ -1,0 +1,212 @@
+{
+  "version": "1.1",
+  "intro": "Les présentes conditions générales d’utilisation s’appliquent à toute personne qui crée un compte sur BeFast. Elles complètent les statuts et le règlement intérieur de l’Association, qui prévalent en cas de contradiction.",
+  "articles": [
+    {
+      "num": "1",
+      "title": "Objet et acceptation",
+      "blocks": [
+        { "p": "1.1 Les présentes conditions générales d’utilisation (« CGU ») définissent les règles d’accès et d’usage de BeFast (la « Plateforme »), l’outil de gestion interne d’Audencia Junior Conseil (l’« Association »)." },
+        { "p": "1.2 La Plateforme permet notamment de gérer les membres, les candidatures et les affectations, les études et les missions, la trésorerie, les bulletins de versement, la génération de documents et leur signature électronique, ainsi que la prospection commerciale. Elle est un outil interne : avoir un compte ne donne ni la qualité de membre de l’Association, ni le droit de réaliser une étude." },
+        { "p": "1.3 L’utilisation de la Plateforme suppose l’acceptation des CGU. L’acceptation résulte d’une case à cocher, non pré-cochée, à l’inscription, et/ou de la signature du présent document. L’Association conserve la preuve datée de cette acceptation (version des CGU, date et heure) pendant cinq ans. Sans acceptation, aucun accès n’est accordé." },
+        { "p": "1.4 Les statuts et le règlement intérieur de l’Association sont communiqués sur simple demande à contact@ajc-mail.com. Ils prévalent sur les CGU en cas de contradiction, et les règles de la Confédération Nationale des Junior-Entreprises (CNJE) prévalent sur toute règle interne qui leur serait contraire." }
+      ]
+    },
+    {
+      "num": "2",
+      "title": "Utilisateurs",
+      "blocks": [
+        { "p": "Est « Utilisateur » toute personne disposant d’un compte sur la Plateforme, quel que soit son profil :" },
+        { "ul": [
+          "Candidat : personne dont le compte est créé avant sa sélection ; elle ne peut que compléter son profil et déposer ses justificatifs ;",
+          "Intervenant : étudiant membre de l’Association qui postule aux missions et réalise des études pour les clients de l’Association ;",
+          "Membre de l’Association : adhérent de l’Association ;",
+          "Membre habilité : membre du bureau ou d’un pôle, titulaire d’un poste qui lui ouvre des droits supplémentaires (voir article 4) ;",
+          "Administrateur : personne disposant de tous les droits de gestion de la Plateforme."
+        ] },
+        { "p": "Seul peut être affecté à une étude et rétribué un étudiant de l’établissement d’implantation de l’Association, membre de l’Association et affilié au régime général de la Sécurité sociale, dont le dossier d’adhésion est complet et à jour (certificat de scolarité valable pour toute la durée de l’étude). Ces conditions sont vérifiées au dossier ; le compte ne les remplace pas." }
+      ]
+    },
+    {
+      "num": "3",
+      "title": "Création et gestion du compte",
+      "blocks": [
+        { "p": "3.1 L’inscription est ouverte aux personnes en lien avec l’Association qui disposent d’une adresse @audencia.com. Le compte est créé à partir d’informations exactes, complètes et tenues à jour par l’Utilisateur." },
+        { "p": "3.2 Tant que l’Association n’a pas validé le compte, l’accès se limite au profil et au dépôt des justificatifs. L’Association peut refuser ou suspendre un compte lorsqu’un doute légitime existe sur l’identité de la personne, sur son lien avec l’Association ou sur le respect des conditions de l’article 2, jamais pour un motif discriminatoire. La personne concernée peut présenter ses observations à contact@ajc-mail.com." },
+        { "p": "3.3 Le compte est strictement personnel. L’Utilisateur garde ses identifiants secrets, ne les communique à personne et ne se connecte pas avec ceux d’autrui. Toute action réalisée depuis un compte est réputée faite par son titulaire." },
+        { "p": "3.4 L’Utilisateur prévient sans délai l’Association (contact@ajc-mail.com) en cas de perte, de vol ou d’utilisation suspecte de ses identifiants, et change son mot de passe." },
+        { "p": "3.5 Une adresse e-mail de confiance est nécessaire : les liens de connexion, de réinitialisation et de signature y sont envoyés." }
+      ]
+    },
+    {
+      "num": "4",
+      "title": "Droits d’accès",
+      "blocks": [
+        { "p": "4.1 Les droits d’un Utilisateur dépendent de son rôle de base et, le cas échéant, des postes qu’il occupe au bureau ou dans un pôle ; ils s’additionnent. Ils sont contrôlés côté serveur et par la base de données." },
+        { "p": "4.2 L’Utilisateur n’accède qu’aux fonctions et aux données nécessaires à son rôle ou à son poste, même si un défaut technique lui permet d’aller plus loin. Il signale à l’Association toute donnée ou fonction accessible alors qu’elle ne devrait pas l’être, sans l’exploiter." },
+        { "p": "4.3 Les droits peuvent être modifiés, restreints ou retirés à tout moment, notamment en cas de changement de poste, de fin de mandat, de fin d’adhésion ou de manquement aux CGU. Un compte non validé est ramené à son profil et à ses documents." }
+      ]
+    },
+    {
+      "num": "5",
+      "title": "Engagements de l’Utilisateur",
+      "blocks": [
+        { "p": "L’Utilisateur s’engage à :" },
+        { "ul": [
+          "utiliser la Plateforme uniquement pour les besoins de l’Association et de ses missions ;",
+          "fournir des informations et des documents authentiques et exacts, et ne déposer que des pièces qui le concernent ;",
+          "ne pas partager, céder ou prêter son compte ;",
+          "ne pas tenter de contourner les droits d’accès, de lire des données auxquelles il n’a pas droit, d’altérer la Plateforme ou d’y introduire du code malveillant ;",
+          "ne pas réaliser d’extraction massive ou automatisée de données (copie en masse, collecte automatisée, robots) ;",
+          "ne conduire aucun test d’intrusion, de charge ou de sécurité sans l’accord écrit préalable de l’Association ;",
+          "ne déposer aucun contenu illicite, injurieux, discriminatoire ou portant atteinte aux droits de tiers ;",
+          "signaler sans délai tout incident de sécurité ou toute fuite de données dont il a connaissance."
+        ] }
+      ]
+    },
+    {
+      "num": "6",
+      "title": "Statut de Junior-Entreprise",
+      "blocks": [
+        { "p": "6.1 L’Association est une Junior-Entreprise : une association à but non lucratif, à vocation économique et à caractère pédagogique, adhérente à la CNJE. Elle agit sans avoir la qualité d’employeur. Les intervenants ne sont pas ses salariés : ils reçoivent une rétribution, justifiée par un bulletin de versement, et non une rémunération." },
+        { "p": "6.2 La Plateforme ne sert jamais à contrôler ou à diriger le travail d’un intervenant. Aucune fonction ne doit être utilisée pour lui imposer des horaires, un lieu de travail ou des ordres : l’intervenant reste libre de son organisation dès lors qu’il atteint les objectifs fixés par les documents d’étude, et ceux-ci ne comportent aucune contrainte d’organisation." },
+        { "p": "6.3 Les Membres habilités appliquent les règles de la CNJE (Code de la déontologie, référentiel Kiwi Légal), en particulier :" },
+        { "ul": [
+          "le jour-étude homme (JEH) est entier et indivisible dans tous les documents ; autant de JEH sont signés par le client que facturés et reversés à un intervenant ;",
+          "la prestation (charge de travail en JEH) est distincte des frais ;",
+          "la rétribution respecte le plafond par JEH et le plafond annuel par intervenant en vigueur, et n’est versée qu’après paiement du client, sur un bulletin de versement cohérent avec le récapitulatif de mission ;",
+          "le dossier de l’intervenant est complet avant toute affectation ;",
+          "l’étude est en lien avec un enseignement évalué, présente un caractère pédagogique et n’est ni une prospection ou une vente, ni une activité réglementée (conseil juridique, expertise comptable, etc.) ;",
+          "les documents d’étude sont cohérents entre eux, dans leur contenu, leur ordre d’émission et leurs dates de signature."
+        ] },
+        { "p": "6.4 Les paramètres et les blocages de la Plateforme (plafonds, minimums, champs obligatoires) traduisent ces règles. L’Utilisateur ne les contourne pas. En cas de doute, il consulte le Président ou le pôle Conseil de la CNJE avant d’agir." },
+        { "p": "6.5 L’Utilisateur emploie le vocabulaire de la Junior-Entreprise (intervenant, rétribution, étude, appel à compétences, sélection) et jamais celui du salariat (rémunération, consultant, recrutement), dans la Plateforme comme dans ses communications." },
+        { "p": "6.6 Tout membre, dirigeants compris, peut candidater à une étude, selon des critères annoncés à l’avance dont la trace d’évaluation est conservée. Un dirigeant ne signe jamais un contrat conclu entre l’Association et lui-même (son propre récapitulatif de mission, par exemple) : la personne désignée par les statuts pour le remplacer le signe." }
+      ]
+    },
+    {
+      "num": "7",
+      "title": "Prospection et communication",
+      "blocks": [
+        { "p": "7.1 Le module de prospection sert à contacter des clients potentiels pour le compte de l’Association. La communication est transparente et non agressive : l’Association se présente comme une association pédagogique de conseil, jamais comme un « cabinet de conseil » ; elle indique qu’il s’agit d’une association étudiante à but non lucratif et à vocation économique, aux études à caractère pédagogique, et que les intervenants sont des étudiants. Aucune comparaison de prix ou de qualité avec une entreprise ou une autre Junior n’est faite." },
+        { "p": "7.2 L’Utilisateur respecte les règles de prospection :" },
+        { "ul": [
+          "contact professionnel (adresse nominative professionnelle, numéro utilisé dans le cadre de l’emploi) : prospection possible, avec information et droit d’opposition simple ;",
+          "particulier : consentement préalable, libre, explicite et démontrable ; la prospection téléphonique d’un particulier est interdite de principe depuis août 2026, et les appels autorisés ont lieu du lundi au vendredi, de 10 h à 13 h et de 14 h à 20 h, hors jours fériés ;",
+          "toute opposition ou demande de retrait est enregistrée sans délai dans la Plateforme et respectée."
+        ] },
+        { "p": "7.3 L’Utilisateur ne diffuse aucune œuvre (photo, vidéo, musique, texte) dont l’Association n’a pas les droits, ni aucune image où une personne est reconnaissable sans son accord écrit préalable précisant l’usage et la durée." }
+      ]
+    },
+    {
+      "num": "8",
+      "title": "Confidentialité",
+      "blocks": [
+        { "p": "8.1 Les informations accessibles sur la Plateforme sont confidentielles : coordonnées et dossiers des membres, informations sur les clients et les prospects, contenu des études, prix et marges, rétributions, factures, documents de mission." },
+        { "p": "8.2 L’Utilisateur ne les divulgue à aucun tiers, ne les utilise pas à son profit personnel ou pour le compte d’une autre structure (notamment une entreprise concurrente ou une autre association), et ne les conserve pas hors de la Plateforme, sauf besoin strict d’une mission et dans la limite de ce besoin. Il respecte aussi les clauses de confidentialité signées avec les clients." },
+        { "p": "8.3 Les documents téléchargés depuis la Plateforme (conventions, bulletins, factures, justificatifs) sont supprimés des appareils personnels et des messageries une fois leur usage terminé. Les documents papier sont rangés sous clé, avec un accès limité au strict nécessaire." },
+        { "p": "8.4 Cette obligation de ne pas divulguer vaut pendant toute la durée d’utilisation de la Plateforme et après la fin de l’adhésion, de la mission ou du mandat : sans limitation de durée pour les données personnelles, et pendant cinq ans pour les autres informations. Elle est distincte de la durée de conservation des données par l’Association (article 9). Les Membres habilités signent en outre l’engagement renforcé de l’Annexe 1." }
+      ]
+    },
+    {
+      "num": "9",
+      "title": "Données personnelles",
+      "blocks": [
+        { "p": "9.1 L’Association est responsable du traitement des données personnelles collectées sur la Plateforme. Les finalités, bases légales, destinataires, durées de conservation et droits des personnes sont détaillés dans la politique de confidentialité, accessible sans connexion à l’adresse /politique-confidentialite." },
+        { "p": "9.2 Chaque Utilisateur qui accède aux données d’autres personnes agit sur instruction de l’Association, pour les seules finalités de ses fonctions. Il respecte le RGPD et la loi Informatique et Libertés." },
+        { "p": "9.3 Pour exercer ses droits (accès, rectification, effacement, limitation, opposition, portabilité, retrait du consentement), l’Utilisateur écrit à contact@ajc-mail.com ou utilise le lien « Demander la suppression de mon compte » en bas de son profil. Il peut saisir la CNIL (www.cnil.fr). L’effacement s’exerce sous réserve des documents que l’Association doit conserver (bulletins de versement, pièces comptables, documents justifiant l’application du statut de Junior-Entreprise)." },
+        { "p": "9.4 Une violation de données personnelles (perte, divulgation, accès non autorisé, publication non autorisée ou suppression accidentelle) est signalée immédiatement à l’Association. Celle-ci alerte sans délai le pôle Conseil de la CNJE et évalue la nécessité de notifier la CNIL et les personnes concernées." },
+        { "p": "9.5 Lorsqu’une étude implique des données personnelles du client, l’Association agit en sous-traitant. L’Utilisateur ne traite ces données que sur instruction documentée du client, signale à l’Association toute instruction qui lui paraît contraire au RGPD, et fournit les éléments nécessaires pour répondre à une demande d’exercice de droits." }
+      ]
+    },
+    {
+      "num": "10",
+      "title": "Documents et signature électronique",
+      "blocks": [
+        { "p": "10.1 La Plateforme génère des documents (conventions, récapitulatifs de mission, bulletins de versement, bulletins d’adhésion, factures) à partir des informations saisies. L’Utilisateur relit les informations avant génération et signale toute erreur. Il ne génère aucun document antidaté ni incohérent avec les documents déjà émis." },
+        { "p": "10.2 Lorsqu’un document est signé électroniquement par l’intermédiaire du prestataire de signature de l’Association, la signature est réputée émaner de son titulaire et engage celui-ci dans les conditions prévues par la loi (articles 1366 et 1367 du Code civil). L’Utilisateur ne signe que pour lui-même." },
+        { "p": "10.3 Un document signé ne se modifie pas : toute correction passe par un nouveau document, validé par le pôle compétent. Un document signé électroniquement est conservé dans son fichier numérique d’origine : il n’est ni imprimé puis scanné, ni signé à la fois à la main et électroniquement, ce qui lui ferait perdre sa valeur légale. Seuls les avenants par e-mail, dans des conditions conformes, échappent à ce formalisme." },
+        { "p": "10.4 Seul le Président, ou le membre en mandat auquel il a délégué sa signature par écrit, signe au nom de l’Association. Aucun autre Utilisateur ne signe au nom de l’Association." }
+      ]
+    },
+    {
+      "num": "11",
+      "title": "Propriété intellectuelle et image",
+      "blocks": [
+        { "p": "11.1 La Plateforme, son code, ses interfaces, ses bases de données et ses modèles de documents sont protégés. Les droits correspondants appartiennent à l’Association ou à ses concédants. L’Utilisateur reçoit un droit d’usage personnel, non exclusif et non transférable, limité à la durée de son accès." },
+        { "p": "11.2 Toute copie, reproduction, extraction, adaptation ou réutilisation de la Plateforme ou de ses modèles, en tout ou partie, est interdite sans accord écrit de l’Association." },
+        { "p": "11.3 L’Utilisateur conserve ses droits sur les contenus qu’il dépose (photo, pièces, documents) et autorise l’Association à les utiliser uniquement pour faire fonctionner la Plateforme, conformément à la politique de confidentialité." },
+        { "p": "11.4 La photo de profil n’est visible que des Utilisateurs habilités. Toute diffusion hors de la Plateforme (site internet, réseaux sociaux) exige l’accord écrit préalable de la personne, précisant l’usage et la durée ; le retrait est gratuit sur simple demande, sous un mois." }
+      ]
+    },
+    {
+      "num": "12",
+      "title": "Disponibilité et responsabilité",
+      "blocks": [
+        { "p": "12.1 L’Association s’efforce d’assurer l’accès continu à la Plateforme mais ne garantit ni sa disponibilité permanente ni l’absence d’erreur. Des interruptions peuvent survenir pour maintenance, mise à jour ou raison technique ou de sécurité." },
+        { "p": "12.2 L’Association ne répond pas des dommages résultant d’une faute de l’Utilisateur (identifiants divulgués, usage non conforme), d’un tiers, d’un cas de force majeure ou de la défaillance d’un prestataire d’hébergement ou de connexion. Cette limitation ne s’applique ni en cas de faute lourde ou de dol, ni pour les dommages corporels." },
+        { "p": "12.3 L’Utilisateur répond des dommages que son usage non conforme cause à l’Association ou à des tiers." }
+      ]
+    },
+    {
+      "num": "13",
+      "title": "Manquements, mesures et fin d’accès",
+      "blocks": [
+        { "p": "13.1 Mesure conservatoire. Lorsque la sécurité de la Plateforme ou des données l’exige, l’Association peut suspendre sans préavis, et à titre temporaire, l’accès ou les droits d’un Utilisateur. Il en est informé et peut présenter ses observations." },
+        { "p": "13.2 Mesures graduées. En cas de manquement aux CGU, l’Association prend, selon la gravité et la répétition des faits : un avertissement, une restriction de droits, la suspension, puis la suppression du compte." },
+        { "p": "13.3 Droits de la défense. Toute sanction qui touche la qualité de membre (exclusion) ou une mission en cours (arrêt pour faute) suit la procédure des statuts et du règlement intérieur : l’intéressé est informé suffisamment à l’avance des faits reprochés et de la sanction envisagée, avec les éléments de preuve, puis peut présenter sa défense avant la décision de l’organe compétent." },
+        { "p": "13.4 Ces mesures sont prises sans préjudice des poursuites civiles ou pénales que l’Association se réserve (notamment pour accès frauduleux à un système de traitement de données ou atteinte à la vie privée)." },
+        { "p": "13.5 Un membre peut quitter l’Association à tout moment. L’accès à la Plateforme prend fin avec la fin de l’adhésion, de la mission ou du mandat, ou à la demande de l’Utilisateur. Les données sont alors traitées selon la politique de confidentialité ; les obligations de confidentialité (article 8) continuent de s’appliquer." }
+      ]
+    },
+    {
+      "num": "14",
+      "title": "Modification des CGU",
+      "blocks": [
+        { "p": "L’Association peut modifier les CGU, notamment quand la Plateforme évolue ou que la réglementation change. Les Utilisateurs en sont informés par e-mail ou à la connexion, et la nouvelle version s’applique après un délai de quinze jours. En cas de changement substantiel, l’Association demande une nouvelle acceptation. Le numéro de version figure en tête du document, et les versions antérieures sont conservées cinq ans." }
+      ]
+    },
+    {
+      "num": "15",
+      "title": "Droit applicable et litiges",
+      "blocks": [
+        { "p": "Les CGU sont soumises au droit français. En cas de différend, les parties recherchent d’abord une solution amiable en écrivant à contact@ajc-mail.com. À défaut, le litige relève du tribunal judiciaire du ressort du siège de l’Association (Nantes), sous réserve des règles de compétence impératives. Aucun litige n’est porté devant le tribunal de commerce." }
+      ]
+    }
+  ],
+  "annexe": {
+    "title": "Annexe 1 — Engagement de confidentialité des postes habilités",
+    "intro": "À signer en plus des CGU par tout membre du bureau ou d’un pôle dont les droits donnent accès à des données sensibles. Cette annexe complète l’article 8 des CGU.",
+    "table": {
+      "title": "A. Données sensibles et postes habilités",
+      "head": ["Donnée sensible", "Pôle / poste habilité", "Usage autorisé"],
+      "rows": [
+        ["Numéro de sécurité sociale", "Pôle RH, Responsable RH", "Déclarations sociales et édition des bulletins de versement"],
+        ["IBAN / RIB", "Pôle Trésorerie, Trésorier·ère", "Paiement des rétributions et des notes de frais"],
+        ["Pièces justificatives (identité, carte étudiante, carte Vitale)", "Pôle RH, Responsable RH, Pôle Audit Qualité, Présidence", "Vérification de l’adhésion et des dossiers (RH) ; contrôle qualité des dossiers (Audit Qualité)"],
+        ["Données de rétribution, factures, trésorerie", "Pôle Trésorerie, Trésorier·ère, Présidence", "Gestion comptable et financière de l’Association"],
+        ["Comptes et rôles des membres", "Responsable RH (validation, changement de rôle de base)", "Validation des inscriptions et gestion des rôles"]
+      ],
+      "note": "Les droits réels de chaque poste sont paramétrés dans la Plateforme et peuvent évoluer ; cette liste n’est pas limitative. Seuls les droits nécessaires à la fonction sont ouverts, et l’accès à chaque donnée sensible reste limité à une ou deux personnes."
+    },
+    "engagements": {
+      "title": "B. Engagements",
+      "intro": "Je m’engage, pour toute la durée de mon poste et après sa fin, à :",
+      "items": [
+        "n’accéder aux données sensibles que pour les tâches de mon poste, et jamais par simple curiosité, y compris pour des données de personnes que je connais ;",
+        "ne consulter, télécharger ou exporter une pièce ou une donnée que lorsque c’est nécessaire, et en supprimer toute copie dès que l’usage est terminé ou que la durée de conservation est écoulée ;",
+        "ne pas transmettre de données sensibles par messagerie instantanée, par e-mail personnel ni par un service de stockage non validé par l’Association ;",
+        "ne pas enregistrer ces données sur un appareil personnel non protégé (code de verrouillage, chiffrement, antivirus à jour) et ranger sous clé tout document papier ;",
+        "verrouiller ma session à chaque absence, ne jamais me connecter depuis un poste partagé sans me déconnecter ensuite, et ne jamais enregistrer mon mot de passe dans un navigateur partagé ;",
+        "signaler immédiatement, et au plus tard sous 24 heures, à contact@ajc-mail.com toute perte, divulgation, erreur d’envoi ou accès suspect ;",
+        "ne pas utiliser ces données pour un autre usage que celui de l’Association (démarchage, recrutement pour une autre structure, usage personnel) ;",
+        "ne jamais établir ni modifier un document d’étude pour en changer la date ou l’ordre d’émission, ni signer au nom de l’Association sans délégation écrite ;",
+        "en fin de mandat ou de changement de poste, restituer ou supprimer toute donnée conservée, et accepter le retrait de mes droits d’accès."
+      ]
+    },
+    "consequences": {
+      "title": "C. Conséquences d’un manquement",
+      "text": "Un manquement à cette annexe expose son auteur aux mesures de l’article 13 des CGU (retrait des droits, sanctions statutaires dans le respect des droits de la défense) et, selon les faits, à des poursuites. La divulgation de données personnelles peut engager sa responsabilité civile et pénale."
+    }
+  }
+}
