@@ -305,14 +305,16 @@ export async function buildTemplateContext(
   scope: ScopeDocument,
   entityId: string,
   intervenantId?: string,
-  options?: { includeNss?: boolean }
+  options?: { includeNss?: boolean; rattachementVerifie?: boolean }
 ): Promise<Record<string, any>> {
   if (scope === "facture") return buildFactureContext(entityId)
 
   // Un intervenant explicitement choisi doit être rattaché à la mission (ou à
   // l'une des missions de l'étude) : sinon n'importe quel id de `personnes`
-  // ressortirait avec ses coordonnées déchiffrées.
-  if (intervenantId) {
+  // ressortirait avec ses coordonnées déchiffrées. `rattachementVerifie` :
+  // l'appelant (route de génération) fait ce contrôle lui-même, en parallèle
+  // du chargement, et jette le contexte s'il échoue.
+  if (intervenantId && !options?.rattachementVerifie) {
     const rattache =
       scope === "mission"
         ? await estIntervenantDeLaMission(entityId, intervenantId)
@@ -337,65 +339,196 @@ export async function buildTemplateContext(
   }
 
   if (scope === "mission") {
+    const shared = await chargerMissionPartagee(sb, entityId, paramsPromise, intervenantId ? [intervenantId] : [])
+    if (!shared) return base
+    return assemblerContexteMission(shared, base, intervenantId, options)
+  }
 
-    // Step 1: Fetch mission alone (no joins — most reliable)
-    const [{ data: m, error: mErr }, params] = await Promise.all([
-      sb.from("missions").select("*").eq("id", entityId).single(),
+  if (scope === "etude") {
+
+    // Step 1: Fetch etude alone (no joins)
+    const [{ data: e, error: eErr }, params] = await Promise.all([
+      sb.from("etudes").select("*").eq("id", entityId).single(),
       paramsPromise,
     ])
-    if (mErr || !m) {
+    if (eErr || !e) {
       return base
     }
+    const eAny = e as any
 
-    // Step 2: Fetch related data IN PARALLEL via separate queries
-    const [etudeRes, intervenantRes, blocsRes, rdmDocRes] = await Promise.all([
-      // Etude (if mission has etude_id)
-      m.etude_id
-        ? sb.from("etudes").select("*").eq("id", m.etude_id).single()
+    // Step 2: Fetch client, suiveurs, blocs, intervenant in PARALLEL
+    const [clientRes, suiveursRes, blocsRes, intervenantRes] = await Promise.all([
+      eAny.client_id
+        ? sb.from("clients").select("*").eq("id", eAny.client_id).single()
         : Promise.resolve({ data: null, error: null }),
-      // Intervenant: use explicit ID if provided, else mission.intervenant_id
-      (intervenantId || m.intervenant_id)
-        ? sb.from("personnes").select("*").eq("id", intervenantId || m.intervenant_id).single()
+      sb.from("etude_suiveurs").select("personnes(id, prenom, nom, email)").eq("etude_id", entityId),
+      sb.from("echeancier_blocs").select("*").eq("etude_id", entityId),
+      intervenantId
+        ? sb.from("personnes").select("*").eq("id", intervenantId).single()
         : Promise.resolve({ data: null, error: null }),
-      // Phases (echeancier_blocs) — only if mission has etude_id
-      m.etude_id
-        ? sb.from("echeancier_blocs").select("*").eq("etude_id", m.etude_id)
-        : Promise.resolve({ data: [], error: null }),
-      // RDM générés pour cette mission, du plus récent au plus ancien : on y
-      // choisit celui de l'intervenant (pour {mission.reference_recap_mission}).
-      sb
-        .from("generated_documents")
-        .select("file_name, intervenant_id, created_at, document_templates!inner(category)")
-        .eq("scope", "mission")
-        .eq("entity_id", entityId)
-        .eq("document_templates.category", "rdm")
-        .order("created_at", { ascending: false })
-        .limit(200),
-    ])
-
-    const etude: any = (etudeRes as any).data || {}
-    const selectedIntervenant: any = (intervenantRes as any).data
-    const blocs: any[] = (blocsRes as any).data || []
-    // RDM de CET intervenant (une mission peut en compter 26), jamais celui
-    // d'un autre : le BV et les avenants doivent citer le bon RM.
-    const referenceRecapMission = referenceRdmIntervenant(
-      ((rdmDocRes as any)?.data as any[]) || [],
-      intervenantId || m.intervenant_id
-    )
-
-
-    // Step 3: Fetch client and suiveurs for the etude (in parallel)
-    const [clientRes, suiveursRes] = await Promise.all([
-      etude.client_id
-        ? sb.from("clients").select("*").eq("id", etude.client_id).single()
-        : Promise.resolve({ data: null, error: null }),
-      etude.id
-        ? sb.from("etude_suiveurs").select("personnes(id, prenom, nom, email)").eq("etude_id", etude.id)
-        : Promise.resolve({ data: [], error: null }),
     ])
 
     const clientData: any = (clientRes as any).data || {}
     const suiveur = buildSuiveurContext(((suiveursRes as any).data ?? []).map((r: any) => r.personnes))
+    const blocs: any[] = (blocsRes as any).data || []
+    const selectedIntervenant: any = (intervenantRes as any).data
+
+    // budget_ht est saisi TTC-marge-comprise (la marge est déjà dedans) : on ne
+    // l'ajoute pas une seconde fois, marge_euros n'est qu'informatif.
+    const budget_ht = Number(eAny.budget_ht) || 0
+    const frais = Number(eAny.frais_dossier) || 0
+    const margePct = Number(eAny.marge_pct) || 0
+    const tarif = budget_ht + frais
+
+    const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(blocs)
+    const organigramme = buildOrganigramme(params)
+    const intervenantCtx = buildIntervenantContext(selectedIntervenant)
+
+    return {
+      ...base,
+      reference: numeroEtudeCourt(eAny.numero),
+      code_classeur: codeClasseurEtude(eAny.numero),
+      etude: {
+        ...e,
+        // etudes.numero stocke le code classeur ("2618") : {etude.numero} doit
+        // exposer le numéro d'étude seul, sur 2 chiffres.
+        numero: numeroEtudeCourt(eAny.numero),
+        numero_complet: codeClasseurEtude(eAny.numero),
+        code_classeur: codeClasseurEtude(eAny.numero),
+        date_debut: fmtDate(eAny.date_debut),
+        date_fin: fmtDate(eAny.date_fin),
+        date_debut_iso: eAny.date_debut || "",
+        date_fin_iso: eAny.date_fin || "",
+        prix: tarif.toFixed(2),
+        frais: frais.toFixed(2),
+        tarif_ht: tarif.toFixed(2),
+        marge_euros: (budget_ht * (margePct / 100)).toFixed(2),
+        nb_jeh,
+        nb_phases,
+        mention_avenant: buildMentionAvenant(eAny),
+      },
+      date_debut: fmtDate(eAny.date_debut),
+      date_fin: fmtDate(eAny.date_fin),
+      client: clientData,
+      entreprise: clientData,
+      signataire: buildSignataire(clientData),
+      suiveur,
+      intervenant: intervenantCtx,
+      etudiant: intervenantCtx,
+      "étudiant": intervenantCtx,
+      etudiant_prenom: intervenantCtx.prenom,
+      etudiant_nom: intervenantCtx.nom,
+      etudiant_adresse: intervenantCtx.adresse,
+      etudiant_code_postal: intervenantCtx.code_postal,
+      etudiant_ville: intervenantCtx.ville,
+      ...organigramme,
+      phases,
+      planning,
+      nb_jeh,
+      nb_phases,
+    }
+  }
+
+  // general scope
+  const params = await paramsPromise
+  const organigramme = buildOrganigramme(params)
+  return { ...base, ...organigramme }
+}
+
+/**
+ * Données d'une mission communes à tous ses intervenants (mission, étude,
+ * client, suiveurs, phases, RDM déjà générés, paramètres de structure) + les
+ * lignes `personnes` des intervenants demandés. Chargées UNE fois : générer 26
+ * avenants ne refait pas 26 fois les mêmes lectures.
+ */
+type MissionPartagee = {
+  m: any
+  etude: any
+  params: Record<string, string>
+  blocs: any[]
+  rdmDocs: { file_name?: string | null; intervenant_id?: string | null }[]
+  clientData: any
+  suiveur: ReturnType<typeof buildSuiveurContext>
+  personnes: Map<string, any>
+}
+
+async function chargerMissionPartagee(
+  sb: ReturnType<typeof createAdminClient>,
+  missionId: string,
+  paramsPromise: Promise<Record<string, string>>,
+  intervenantIds: string[]
+): Promise<MissionPartagee | null> {
+  // Step 1: Fetch mission alone (no joins — most reliable)
+  const [{ data: m, error: mErr }, params] = await Promise.all([
+    sb.from("missions").select("*").eq("id", missionId).single(),
+    paramsPromise,
+  ])
+  if (mErr || !m) return null
+
+  // Step 2: Fetch related data IN PARALLEL via separate queries
+  // Intervenants : ceux demandés + l'intervenant principal de la mission (repli
+  // quand aucun n'est désigné).
+  const ids = Array.from(new Set([...intervenantIds, m.intervenant_id].filter(Boolean))) as string[]
+  const [etudeRes, personnesRes, blocsRes, rdmDocRes] = await Promise.all([
+    m.etude_id
+      ? sb.from("etudes").select("*").eq("id", m.etude_id).single()
+      : Promise.resolve({ data: null, error: null }),
+    ids.length
+      ? sb.from("personnes").select("*").in("id", ids)
+      : Promise.resolve({ data: [], error: null }),
+    // Phases (echeancier_blocs) — only if mission has etude_id
+    m.etude_id
+      ? sb.from("echeancier_blocs").select("*").eq("etude_id", m.etude_id)
+      : Promise.resolve({ data: [], error: null }),
+    // RDM générés pour cette mission, du plus récent au plus ancien : on y
+    // choisit celui de l'intervenant (pour {mission.reference_recap_mission}).
+    sb
+      .from("generated_documents")
+      .select("file_name, intervenant_id, created_at, document_templates!inner(category)")
+      .eq("scope", "mission")
+      .eq("entity_id", missionId)
+      .eq("document_templates.category", "rdm")
+      .order("created_at", { ascending: false })
+      .limit(200),
+  ])
+
+  const etude: any = (etudeRes as any).data || {}
+
+  // Step 3: Fetch client and suiveurs for the etude (in parallel)
+  const [clientRes, suiveursRes] = await Promise.all([
+    etude.client_id
+      ? sb.from("clients").select("*").eq("id", etude.client_id).single()
+      : Promise.resolve({ data: null, error: null }),
+    etude.id
+      ? sb.from("etude_suiveurs").select("personnes(id, prenom, nom, email)").eq("etude_id", etude.id)
+      : Promise.resolve({ data: [], error: null }),
+  ])
+
+  return {
+    m,
+    etude,
+    params,
+    blocs: (blocsRes as any).data || [],
+    rdmDocs: ((rdmDocRes as any)?.data as any[]) || [],
+    clientData: (clientRes as any).data || {},
+    suiveur: buildSuiveurContext(((suiveursRes as any).data ?? []).map((r: any) => r.personnes)),
+    personnes: new Map<string, any>((((personnesRes as any).data as any[]) ?? []).map((p) => [p.id, p])),
+  }
+}
+
+/** Contexte d'UN intervenant à partir des données communes de la mission. */
+function assemblerContexteMission(
+  shared: MissionPartagee,
+  base: Record<string, any>,
+  intervenantId: string | undefined,
+  options?: { includeNss?: boolean }
+): Record<string, any> {
+    const { m, etude, params, blocs, clientData, suiveur } = shared
+    const intervenantRetenu: string | undefined = intervenantId || m.intervenant_id || undefined
+    const selectedIntervenant: any = intervenantRetenu ? shared.personnes.get(intervenantRetenu) : null
+    // RDM de CET intervenant (une mission peut en compter 26), jamais celui
+    // d'un autre : le BV et les avenants doivent citer le bon RM.
+    const referenceRecapMission = referenceRdmIntervenant(shared.rdmDocs, intervenantRetenu)
 
     const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(blocs)
 
@@ -508,97 +641,34 @@ export async function buildTemplateContext(
       nb_jeh,
       nb_phases,
     }
+}
+
+/**
+ * Contextes de plusieurs intervenants d'une même mission (génération groupée
+ * d'avenants, de RDM…) : les données communes sont chargées une seule fois.
+ *
+ * L'APPELANT doit avoir vérifié que chaque intervenant est rattaché à la
+ * mission (cf. intervenantsDeLaMission) — comme buildTemplateContext, ce
+ * module lit `personnes` avec le client admin.
+ */
+export async function buildMissionContexts(
+  missionId: string,
+  intervenantIds: string[],
+  options?: { includeNss?: boolean }
+): Promise<{ intervenantId: string; context: Record<string, any> }[]> {
+  const sb = createAdminClient()
+  const today = new Date()
+  const base: Record<string, any> = {
+    date: formatDateFR(today),
+    today: formatDateFR(today),
+    date_iso: today.toISOString().slice(0, 10),
+    annee: String(today.getFullYear()),
   }
-
-  if (scope === "etude") {
-
-    // Step 1: Fetch etude alone (no joins)
-    const [{ data: e, error: eErr }, params] = await Promise.all([
-      sb.from("etudes").select("*").eq("id", entityId).single(),
-      paramsPromise,
-    ])
-    if (eErr || !e) {
-      return base
-    }
-    const eAny = e as any
-
-    // Step 2: Fetch client, suiveurs, blocs, intervenant in PARALLEL
-    const [clientRes, suiveursRes, blocsRes, intervenantRes] = await Promise.all([
-      eAny.client_id
-        ? sb.from("clients").select("*").eq("id", eAny.client_id).single()
-        : Promise.resolve({ data: null, error: null }),
-      sb.from("etude_suiveurs").select("personnes(id, prenom, nom, email)").eq("etude_id", entityId),
-      sb.from("echeancier_blocs").select("*").eq("etude_id", entityId),
-      intervenantId
-        ? sb.from("personnes").select("*").eq("id", intervenantId).single()
-        : Promise.resolve({ data: null, error: null }),
-    ])
-
-    const clientData: any = (clientRes as any).data || {}
-    const suiveur = buildSuiveurContext(((suiveursRes as any).data ?? []).map((r: any) => r.personnes))
-    const blocs: any[] = (blocsRes as any).data || []
-    const selectedIntervenant: any = (intervenantRes as any).data
-
-    // budget_ht est saisi TTC-marge-comprise (la marge est déjà dedans) : on ne
-    // l'ajoute pas une seconde fois, marge_euros n'est qu'informatif.
-    const budget_ht = Number(eAny.budget_ht) || 0
-    const frais = Number(eAny.frais_dossier) || 0
-    const margePct = Number(eAny.marge_pct) || 0
-    const tarif = budget_ht + frais
-
-    const { phases, nb_jeh, nb_phases, planning } = buildPhasesContext(blocs)
-    const organigramme = buildOrganigramme(params)
-    const intervenantCtx = buildIntervenantContext(selectedIntervenant)
-
-    return {
-      ...base,
-      reference: numeroEtudeCourt(eAny.numero),
-      code_classeur: codeClasseurEtude(eAny.numero),
-      etude: {
-        ...e,
-        // etudes.numero stocke le code classeur ("2618") : {etude.numero} doit
-        // exposer le numéro d'étude seul, sur 2 chiffres.
-        numero: numeroEtudeCourt(eAny.numero),
-        numero_complet: codeClasseurEtude(eAny.numero),
-        code_classeur: codeClasseurEtude(eAny.numero),
-        date_debut: fmtDate(eAny.date_debut),
-        date_fin: fmtDate(eAny.date_fin),
-        date_debut_iso: eAny.date_debut || "",
-        date_fin_iso: eAny.date_fin || "",
-        prix: tarif.toFixed(2),
-        frais: frais.toFixed(2),
-        tarif_ht: tarif.toFixed(2),
-        marge_euros: (budget_ht * (margePct / 100)).toFixed(2),
-        nb_jeh,
-        nb_phases,
-        mention_avenant: buildMentionAvenant(eAny),
-      },
-      date_debut: fmtDate(eAny.date_debut),
-      date_fin: fmtDate(eAny.date_fin),
-      client: clientData,
-      entreprise: clientData,
-      signataire: buildSignataire(clientData),
-      suiveur,
-      intervenant: intervenantCtx,
-      etudiant: intervenantCtx,
-      "étudiant": intervenantCtx,
-      etudiant_prenom: intervenantCtx.prenom,
-      etudiant_nom: intervenantCtx.nom,
-      etudiant_adresse: intervenantCtx.adresse,
-      etudiant_code_postal: intervenantCtx.code_postal,
-      etudiant_ville: intervenantCtx.ville,
-      ...organigramme,
-      phases,
-      planning,
-      nb_jeh,
-      nb_phases,
-    }
-  }
-
-  // general scope
-  const params = await paramsPromise
-  const organigramme = buildOrganigramme(params)
-  return { ...base, ...organigramme }
+  const shared = await chargerMissionPartagee(sb, missionId, loadStructureParams(sb), intervenantIds)
+  return intervenantIds.map((intervenantId) => ({
+    intervenantId,
+    context: shared ? assemblerContexteMission(shared, base, intervenantId, options) : { ...base },
+  }))
 }
 
 /**

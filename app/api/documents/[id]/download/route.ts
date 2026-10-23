@@ -17,17 +17,20 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const { data: { user } } = await sb.auth.getUser()
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
+  // Ligne du document et profil sont indépendants : lus ensemble.
   const admin = createAdminClient()
-  const { data: doc, error } = await admin
-    .from("generated_documents")
-    .select(
-      "file_path, file_name, scope, entity_id, intervenant:personnes!generated_documents_intervenant_id_fkey(prenom, nom)"
-    )
-    .eq("id", params.id)
-    .single()
+  const [{ data: doc, error }, profile] = await Promise.all([
+    admin
+      .from("generated_documents")
+      .select(
+        "file_path, file_name, scope, entity_id, intervenant:personnes!generated_documents_intervenant_id_fkey(prenom, nom)"
+      )
+      .eq("id", params.id)
+      .single(),
+    getCachedProfile(user.id),
+  ])
   if (error || !doc) return NextResponse.json({ error: "Introuvable" }, { status: 404 })
 
-  const profile = await getCachedProfile(user.id)
   if (!(await canAccessEntityDocuments(profile, doc.scope, doc.entity_id))) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
   }

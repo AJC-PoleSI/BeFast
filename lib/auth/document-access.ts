@@ -120,3 +120,24 @@ export async function estIntervenantDeLEtude(etudeId: string, personneId: string
   }
   return false
 }
+
+/**
+ * Ids de tous les intervenants rattachés à une mission (principal,
+ * collaborations, candidatures acceptées) en 3 requêtes, quel que soit leur
+ * nombre : la génération groupée vérifie ainsi 26 intervenants d'un coup au
+ * lieu de 26 × 3 requêtes. Même source de vérité que `estIntervenantDeLaMission`.
+ */
+export async function intervenantsDeLaMission(missionId: string): Promise<Set<string>> {
+  const ids = new Set<string>()
+  if (!missionId) return ids
+  const admin = createAdminClient()
+  const [{ data: mission }, { data: collabs }, { data: candidatures }] = await Promise.all([
+    admin.from("missions").select("intervenant_id").eq("id", missionId).maybeSingle(),
+    admin.from("mission_collaborations").select("intervenant_id").eq("mission_id", missionId),
+    admin.from("candidatures").select("personne_id").eq("mission_id", missionId).eq("statut", "acceptee"),
+  ])
+  if (mission?.intervenant_id) ids.add(mission.intervenant_id)
+  for (const c of collabs ?? []) if ((c as any).intervenant_id) ids.add((c as any).intervenant_id)
+  for (const c of candidatures ?? []) if ((c as any).personne_id) ids.add((c as any).personne_id)
+  return ids
+}

@@ -2,51 +2,24 @@ export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { createAdminClient } from "@/lib/supabase/admin"
-import { renderTemplate } from "@/lib/docx/template-engine"
 import { buildTemplateContext, type ScopeDocument } from "@/lib/documents/context"
 import { champsManquantsBv, messageBvIncomplet } from "@/lib/bv/verification"
 import { requireApiAdmin } from "@/lib/auth/api-guards"
 import { estIntervenantDeLaMission, estIntervenantDeLEtude } from "@/lib/auth/document-access"
-import { numeroEtudeCourt, segmentRdmParent } from "@/lib/document-numbering"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { canEditEtude, hasPermission } from "@/lib/auth/permissions"
-
+import {
+  accesEtudeDe,
+  appliquerAvenant,
+  chargerAvenantsExistants,
+  chargerModele,
+  ouvrirCompteurs,
+  persisterDocument,
+} from "@/lib/documents/generation"
+import { CATEGORIES_AVENANT, type ValeursAvenant } from "@/lib/documents/avenants"
 
 // Allow up to 30 seconds for DOCX rendering
 export const maxDuration = 30
-
-// Map template category → CODE_TYPE used in filename, whether to suffix a counter,
-// et si le nom doit rappeler le RDM parent ("26 AV01 RDM01 18" — cf. nomenclature SDP).
-const CATEGORY_CODES: Record<string, { code: string; numbered: boolean; parentRdm?: boolean }> = {
-  accord_confidentialite: { code: "AC", numbered: false },
-  avant_projet: { code: "AP", numbered: false },
-  bon_commande: { code: "BC", numbered: false },
-  convention_cadre: { code: "CC", numbered: false },
-  convention_client: { code: "CCL", numbered: false },
-  convention_etude: { code: "CE", numbered: false },
-  fiche_selection: { code: "FS", numbered: false },
-  // Les PV sont numérotés par étude ("26 PVRI01 07") — cf. nomenclature SDP
-  pv_recette_final: { code: "PVF", numbered: true },
-  pv_recette_intermediaire: { code: "PVI", numbered: true },
-  avenant_mission: { code: "AVM", numbered: true },
-  rdm: { code: "RDM", numbered: true },
-  avenant_rdm: { code: "AV", numbered: true, parentRdm: true },
-  avenant_rupture_rdm: { code: "AVR", numbered: true, parentRdm: true },
-  bulletin_versement: { code: "BV", numbered: true },
-  questionnaire_satisfaction: { code: "QS", numbered: false },
-  rapport_pedagogique: { code: "RP", numbered: false },
-  // Les factures ont déjà leur propre numérotation (Trésorerie) — pas de compteur auto.
-  facture: { code: "FA", numbered: false },
-}
-
-function pad2(n: number): string {
-  return String(n).padStart(2, "0")
-}
-
-function sanitize(s: string): string {
-  return s.replace(/[^a-zA-Z0-9 _-]/g, "").replace(/\s+/g, " ").trim()
-}
 
 export async function POST(req: NextRequest) {
   const sb = createClient()
@@ -56,11 +29,13 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
   const body = await req.json()
-  const { template_id, scope, entity_id, intervenant_id } = body as {
+  const { template_id, scope, entity_id, intervenant_id, champs } = body as {
     template_id: string
     scope: ScopeDocument
     entity_id: string
     intervenant_id?: string
+    /** Champs saisis pour un avenant (cf. lib/documents/avenants.ts). */
+    champs?: ValeursAvenant
   }
 
   if (!template_id || !scope || !entity_id) {
@@ -74,12 +49,15 @@ export async function POST(req: NextRequest) {
   if (intervenant_id && typeof intervenant_id !== "string") {
     return NextResponse.json({ error: "intervenant_id invalide" }, { status: 400 })
   }
+  if (intervenant_id && scope !== "etude" && scope !== "mission") {
+    return NextResponse.json({ error: "intervenant_id n'est accepté que pour une étude ou une mission" }, { status: 400 })
+  }
 
-  const { data: tpl, error: tErr } = await sb
-    .from("document_templates")
-    .select("*")
-    .eq("id", template_id)
-    .single()
+  // Modèle et profil sont indépendants : lus ensemble.
+  const [{ data: tpl, error: tErr }, profile] = await Promise.all([
+    sb.from("document_templates").select("*").eq("id", template_id).single(),
+    getCachedProfile(user.id),
+  ])
   if (tErr || !tpl) return NextResponse.json({ error: "Template introuvable" }, { status: 404 })
 
   // Le Bulletin de Versement embarque le NSS déchiffré de l'intervenant :
@@ -93,81 +71,54 @@ export async function POST(req: NextRequest) {
   // Trésorerie (même permission que la page /tresorerie et les server
   // actions de lib/actions/tresorerie.ts — sans ce garde, n'importe quel
   // compte authentifié pouvait télécharger n'importe quelle facture).
-  if (scope === "facture") {
-    const profile = await getCachedProfile(user.id)
-    if (!hasPermission(profile, "voir_factures")) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
-    }
+  if (scope === "facture" && !hasPermission(profile, "voir_factures")) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
   }
 
   // Génération de documents liés à une étude/mission : réservée au créateur
   // de l'étude, à ses suiveurs (chefs de projet), au Pôle SI et aux admins —
-  // même règle que la modification de l'étude (canEditEtude). On lit via le
-  // client admin pour ne pas dépendre de la RLS "etudes read" (un non-interne,
-  // non-créateur ne verrait même pas la ligne, et le check tomberait toujours
-  // en échec sans distinction).
+  // même règle que la modification de l'étude (canEditEtude).
+  let etudeIdAutorise: string | null = null
   if (scope === "etude" || scope === "mission") {
-    const admin = createAdminClient()
-    let etudeId: string | null = null
-
-    if (scope === "etude") {
-      etudeId = entity_id
-    } else {
-      const { data: m } = await admin.from("missions").select("etude_id").eq("id", entity_id).single()
-      etudeId = m?.etude_id ?? null
-    }
-
-    let acces: { created_by: string | null; suiveurs: { id: string }[] } = {
-      created_by: null,
-      suiveurs: [],
-    }
-    if (etudeId) {
-      const { data: e } = await admin
-        .from("etudes")
-        .select("created_by, etude_suiveurs(personne_id)")
-        .eq("id", etudeId)
-        .single()
-      acces = {
-        created_by: e?.created_by ?? null,
-        suiveurs: (e?.etude_suiveurs ?? []).map((s: { personne_id: string }) => ({
-          id: s.personne_id,
-        })),
-      }
-    }
-
-    const profile = await getCachedProfile(user.id)
+    const { etudeId, acces } = await accesEtudeDe(scope, entity_id)
     if (!canEditEtude(profile, acces)) {
       return NextResponse.json(
         { error: "Seuls le créateur de l'étude, ses chefs de projet, le Pôle SI et les administrateurs peuvent générer ce document." },
         { status: 403 }
       )
     }
-
-    // L'intervenant choisi doit être rattaché à la mission (ou à l'étude) :
-    // sans ce contrôle, n'importe quel id de membre ressortait dans le
-    // document avec ses coordonnées déchiffrées.
-    if (intervenant_id) {
-      const rattache =
-        scope === "mission"
-          ? await estIntervenantDeLaMission(entity_id, intervenant_id)
-          : await estIntervenantDeLEtude(entity_id, intervenant_id)
-      if (!rattache) {
-        return NextResponse.json({ error: "Cet intervenant n'est pas rattaché à cette mission." }, { status: 403 })
-      }
-    }
-  } else if (intervenant_id) {
-    return NextResponse.json({ error: "intervenant_id n'est accepté que pour une étude ou une mission" }, { status: 400 })
+    etudeIdAutorise = etudeId
   }
 
-  // Téléchargement du fichier et construction du contexte en parallèle —
-  // les deux sont indépendants et représentent l'essentiel de la latence.
-  const [dlRes, context] = await Promise.all([
-    sb.storage.from("templates").download(tpl.file_path),
-    buildTemplateContext(scope, entity_id, intervenant_id, {
-      includeNss: tpl.category === "bulletin_versement",
-    }),
-  ])
-  if (dlRes.error || !dlRes.data) return NextResponse.json({ error: "DL template" }, { status: 500 })
+  // Rattachement de l'intervenant, téléchargement du modèle (en mémoire après
+  // la 1ʳᵉ fois) et construction du contexte : indépendants, donc lancés
+  // ensemble. L'intervenant choisi doit être rattaché à la mission (ou à
+  // l'étude) : sans ce contrôle, n'importe quel id de membre ressortait dans
+  // le document avec ses coordonnées déchiffrées. Si le contrôle échoue, le
+  // contexte déjà construit est jeté sans avoir quitté ce handler.
+  const rattachement: Promise<boolean> = !intervenant_id
+    ? Promise.resolve(true)
+    : scope === "mission"
+      ? estIntervenantDeLaMission(entity_id, intervenant_id)
+      : estIntervenantDeLEtude(entity_id, intervenant_id)
+  let templateBuf: Buffer
+  let context: Record<string, any>
+  let rattache: boolean
+  try {
+    ;[rattache, templateBuf, context] = await Promise.all([
+      rattachement,
+      chargerModele(sb, tpl.file_path, tpl.category),
+      buildTemplateContext(scope, entity_id, intervenant_id, {
+        includeNss: tpl.category === "bulletin_versement",
+        rattachementVerifie: !!intervenant_id,
+      }),
+    ])
+  } catch {
+    return NextResponse.json({ error: "DL template" }, { status: 500 })
+  }
+  if (!rattache) {
+    return NextResponse.json({ error: "Cet intervenant n'est pas rattaché à cette mission." }, { status: 403 })
+  }
 
   // Un BV doit porter toutes les informations exigées par la CNJE (identité,
   // adresse et n° de sécurité sociale de l'étudiant, référence de son RDM,
@@ -178,182 +129,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: messageBvIncomplet(manquants) }, { status: 422 })
     }
   }
-  const templateBuf = Buffer.from(await dlRes.data.arrayBuffer())
 
   // Ne jamais journaliser le contenu du contexte : il contient des données
   // personnelles (noms, adresses, coordonnées) qui finiraient dans les logs.
   console.log("[DOC-GEN] scope:", scope, "template:", tpl.category)
 
-  // Naming info — déjà présent dans le contexte, aucune requête supplémentaire
-  const etudeId: string | null =
-    scope === "etude" ? entity_id : (context as any).etude?.id || null
-  const etudeNumero: string = (context as any).reference || ""
-  const factureNumero: string = scope === "facture" ? (context as any).facturation?.numero || "" : ""
-  // Intervenant réellement utilisé pour remplir le document (sélection explicite
-  // ou, à défaut, missions.intervenant_id) : affiché dans les listes pour savoir
-  // qui le document concerne, sans l'ajouter au nom du fichier.
-  const intervenantConcerneId: string | null = (context as any).intervenant?.id || null
+  const etudeId: string | null = scope === "etude" ? entity_id : (context as any).etude?.id || etudeIdAutorise || null
 
-  // Year (last 2 digits) + étude number (toujours 2 chiffres — cf. nomenclature SDP)
-  const aa = String(new Date().getFullYear()).slice(-2)
-  const numEtude = numeroEtudeCourt(etudeNumero)
-  const codeInfo = CATEGORY_CODES[tpl.category as string] || { code: sanitize(tpl.category || "DOC").toUpperCase(), numbered: false }
-
-  // Un avenant rappelle le RDM qu'il modifie : on reprend le dernier RDM généré
-  // pour la mission (même source que {mission.reference_recap_mission}).
-  // Sans RDM généré, le segment est simplement omis.
-  const rdmParent = codeInfo.parentRdm
-    ? segmentRdmParent((context as any).mission?.reference_recap_mission)
-    : ""
-
-  const isPptx = tpl.file_path.endsWith(".pptx")
-  const ext = isPptx ? ".pptx" : ".docx"
-  const mimeType = isPptx
-    ? "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-
-  // Compteur + insertion en base sous forme de boucle de retry : deux
-  // générations concurrentes pour la même étude peuvent lire le même
-  // compteur avant que l'une des deux n'ait inséré sa ligne (condition de
-  // course confirmée par l'audit du 2026-09-07, deux documents avec la même
-  // référence "26 RDM01 18"). La contrainte UNIQUE (scope, entity_id,
-  // file_name) — migration 063 — fait échouer la 2ᵉ insertion avec le même
-  // nom : on recalcule alors le compteur et on retente.
-  let row: any = null
-  let lastErr: string | null = null
-  for (let attempt = 0; attempt < 5 && !row; attempt++) {
-    // Counter: pour un avenant, le compteur repart de 1 à chaque RDM parent
-    // ("AV01" du RDM08, "AV01" à nouveau du RDM09) — pas partagé avec le
-    // reste de l'étude. Pour les autres catégories numérotées, on compte
-    // across l'étude entière (étude-scoped + mission-scoped de cette étude).
-    let counter = 1
-    if (codeInfo.numbered && codeInfo.parentRdm) {
-      const { data: docs } = await sb
-        .from("generated_documents")
-        .select("file_name")
-        .eq("template_id", template_id)
-        .eq("scope", "mission")
-        .eq("entity_id", entity_id)
-      counter = (docs || []).filter((d: any) => segmentRdmParent(d.file_name) === rdmParent).length + 1
-    } else if (codeInfo.numbered && etudeId) {
-      const { data: missionsOfEtude } = await sb
-        .from("missions")
-        .select("id")
-        .eq("etude_id", etudeId)
-      const missionIds = (missionsOfEtude || []).map((x: any) => x.id)
-      const orFilters: string[] = [`and(scope.eq.etude,entity_id.eq.${etudeId})`]
-      if (missionIds.length) {
-        orFilters.push(`and(scope.eq.mission,entity_id.in.(${missionIds.join(",")}))`)
-      }
-      const { count } = await sb
-        .from("generated_documents")
-        .select("*", { count: "exact", head: true })
-        .eq("template_id", template_id)
-        .or(orFilters.join(","))
-      counter = (count || 0) + 1
+  // Avenants : les passages propres à l'avenant viennent du formulaire.
+  if (CATEGORIES_AVENANT.has(tpl.category as string)) {
+    if (!champs || typeof champs !== "object") {
+      return NextResponse.json({ error: "Renseignez les champs de l'avenant." }, { status: 422 })
     }
-    counter += attempt // en cas de retry, on saute la valeur qui vient d'entrer en conflit
-
-    // Build name: AA CODE[NN] [RDM_PARENT] NUMERO_ETUDE.ext
-    // Examples: "26 CE 07.docx", "26 RDM08 07.pptx", "26 AV01 RDM08 07.docx"
-    // Les factures utilisent directement leur propre numéro (Trésorerie), pas ce format.
-    const codePart = codeInfo.numbered ? `${codeInfo.code}${pad2(counter)}` : codeInfo.code
-    const baseName =
-      scope === "facture" && factureNumero
-        ? sanitize(factureNumero)
-        : [aa, codePart, rdmParent, numEtude].filter(Boolean).join(" ")
-    const outName = `${baseName}${ext}`
-    const outPath = `${scope}/${entity_id}/${Date.now()}_${attempt}_${outName}`
-
-    // Exposé aux templates ({numero_document}) au format "01", "02"…
-    context.numero_document = pad2(counter)
-    // Référence complète du document, identique au nom du fichier ("26 RDM01 18") :
-    // le document imprime ainsi exactement son propre nom, sans réassemblage manuel
-    // dans le template (source des décalages nom-interne / nom-de-fichier).
-    context.reference_document = baseName
-
-    let rendered: Buffer
-    try {
-      rendered = renderTemplate(templateBuf, context, isPptx)
-    } catch (e: any) {
-      console.error("[DOC-GEN] Template rendering failed:", e?.message)
-      return NextResponse.json(
-        { error: "Erreur génération: " + (e?.message || "render error") },
-        { status: 500 }
-      )
-    }
-
-    const { error: upErr } = await sb.storage.from("documents").upload(outPath, rendered, {
-      contentType: mimeType,
-      upsert: false,
-    })
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 })
-
-    const { data: inserted, error: insErr } = await sb
-      .from("generated_documents")
-      .insert({
-        template_id,
-        scope,
-        entity_id,
-        name: tpl.name,
-        file_path: outPath,
-        file_name: outName,
-        intervenant_id: intervenantConcerneId,
-        created_by: user.id,
-      })
-      .select()
-      .single()
-
-    if (!insErr) {
-      row = inserted
-      break
-    }
-
-    // Catégorie non numérotée (facture, convention, bon de commande…) : le nom
-    // de fichier ne dépend jamais du compteur, donc retenter avec un nouveau
-    // compteur ne changerait rien — la collision n'est pas une course entre
-    // deux générations concurrentes mais une RÉGÉNÉRATION normale du même
-    // document (correction, mise à jour). On remplace la ligne existante et
-    // son fichier au lieu d'échouer.
-    if ((insErr as { code?: string }).code === "23505" && !codeInfo.numbered) {
-      const { data: existing } = await sb
-        .from("generated_documents")
-        .select("id, file_path")
-        .eq("scope", scope)
-        .eq("entity_id", entity_id)
-        .eq("file_name", outName)
-        .maybeSingle()
-      if (existing) {
-        const { data: updated, error: updErr } = await sb
-          .from("generated_documents")
-          .update({
-            template_id,
-            name: tpl.name,
-            file_path: outPath,
-            intervenant_id: intervenantConcerneId,
-            created_by: user.id,
-            created_at: new Date().toISOString(),
-          })
-          .eq("id", existing.id)
-          .select()
-          .single()
-        if (!updErr) {
-          await sb.storage.from("documents").remove([existing.file_path])
-          row = updated
-          break
-        }
-        lastErr = updErr.message
-        await sb.storage.from("documents").remove([outPath])
-        break
-      }
-    }
-
-    // Nettoie le fichier orphelin de la tentative ratée avant de retenter.
-    await sb.storage.from("documents").remove([outPath])
-    lastErr = insErr.message
-    if ((insErr as { code?: string }).code !== "23505") break
+    const existants = await chargerAvenantsExistants(sb, tpl.category, scope, entity_id)
+    const erreur = appliquerAvenant(tpl.category, context, champs, existants)
+    if (erreur) return NextResponse.json({ error: erreur }, { status: 422 })
   }
-  if (!row) return NextResponse.json({ error: lastErr || "Erreur génération" }, { status: 500 })
 
-  return NextResponse.json({ data: row })
+  const sortie = await persisterDocument({
+    sb,
+    userId: user.id,
+    tpl,
+    templateBuf,
+    scope,
+    entityId: entity_id,
+    context,
+    // Relu à chaque tentative : un conflit d'unicité signifie qu'un autre
+    // document vient de prendre ce numéro.
+    compteur: async (rdmParent, tentative) => {
+      const compteurs = await ouvrirCompteurs(sb, tpl, scope, entity_id, etudeId)
+      return compteurs.suivant(rdmParent) + tentative
+    },
+  })
+  if ("error" in sortie) return NextResponse.json({ error: sortie.error }, { status: sortie.status })
+  return NextResponse.json({ data: sortie.data })
 }
