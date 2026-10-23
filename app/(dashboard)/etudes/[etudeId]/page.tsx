@@ -421,8 +421,7 @@ export default function EtudeDetailPage() {
     if ((res as any).error) { toast.error((res as any).error); return }
     setMissions(prev => prev.map(x => x.id === m.id ? { ...x, published: newPublished } as any : x))
     if (!newPublished) toast.success("Mission masquée aux intervenants")
-    else if ((etude as any)?.published) toast.success("Mission visible par les intervenants")
-    else toast.success("Mission publiée — elle sera visible dès que l'étude sera publiée")
+    else toast.success("Mission visible par les intervenants")
   }
 
   const handleConfirmDeleteMission = async () => {
@@ -757,6 +756,14 @@ export default function EtudeDetailPage() {
                               BROUILLON
                             </span>
                           )}
+                          {m.published && !(etude as any)?.published && (
+                            <span
+                              className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200"
+                              title="La mission est publiée mais son étude ne l'est pas : les intervenants ne la voient pas. Publiez l'étude."
+                            >
+                              INVISIBLE : ÉTUDE NON PUBLIÉE
+                            </span>
+                          )}
                           <span className="text-xs text-muted-foreground">
                             Intervenant
                           </span>
@@ -797,8 +804,10 @@ export default function EtudeDetailPage() {
                               m.published
                                 ? ((etude as any)?.published
                                     ? "Dépublier la mission"
-                                    : "Dépublier la mission (publiée, mais l'étude ne l'est pas encore)")
-                                : "Publier la mission"
+                                    : "Dépublier la mission (publiée, mais l'étude ne l'est pas)")
+                                : (etude as any)?.published
+                                  ? "Publier la mission"
+                                  : "Publiez d'abord l'étude pour pouvoir publier la mission"
                             }
                           >
                             {publishingMissionId === m.id

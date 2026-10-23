@@ -593,6 +593,24 @@ export async function toggleMissionPublished(id: string, published: boolean) {
     return { error: "Vous n'êtes pas autorisé à publier ou dépublier une mission." }
   }
 
+  // Une mission ne s'ouvre qu'une fois son étude publiée : publier d'abord
+  // l'étude, puis les missions voulues. On refuse plutôt que d'enregistrer une
+  // mission « publiée » que personne ne verrait.
+  if (published) {
+    const { data: m } = await supabase
+      .from("missions")
+      .select("etudes(published)")
+      .eq("id", id)
+      .maybeSingle()
+    const etude = (m as { etudes?: { published?: boolean | null } | null } | null)?.etudes
+    if (m && etude?.published !== true) {
+      return {
+        error:
+          "L'étude n'est pas publiée : publiez d'abord l'étude, puis ses missions. Sans cela, la mission resterait invisible pour les intervenants.",
+      }
+    }
+  }
+
   // `.select()` : sans ligne renvoyée, la RLS a filtré l'UPDATE en silence —
   // on le signale plutôt que d'afficher un œil ouvert qui ne l'est pas en base.
   const { data, error } = await supabase

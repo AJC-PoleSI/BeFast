@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest"
 import {
   motifRefusAffectation,
   missionComplete,
+  missionsOuvertesACandidature,
   estAffectationDirecte,
   avertissementsAffectation,
   filtrerAffectables,
@@ -112,5 +113,29 @@ describe("estAffectationDirecte", () => {
   it("faux pour une candidature déposée par l'intervenant lui-même", () => {
     expect(estAffectationDirecte({ personne_id: "u1", created_by: null })).toBe(false)
     expect(estAffectationDirecte({ personne_id: "u1", created_by: "u1" })).toBe(false)
+  })
+})
+
+describe("missionsOuvertesACandidature", () => {
+  const missions = [
+    { id: "a", nb_intervenants: 2 },
+    { id: "b", nb_intervenants: 1 },
+    { id: "c", nb_intervenants: null },
+  ]
+
+  it("masque les missions dont tous les intervenants sont retenus", () => {
+    const acceptees = new Map([["a", 2], ["b", 0], ["c", 1]])
+    expect(missionsOuvertesACandidature(missions, acceptees).map((m) => m.id)).toEqual(["b"])
+  })
+
+  it("garde une mission encore incomplète", () => {
+    const acceptees = new Map([["a", 1]])
+    expect(missionsOuvertesACandidature(missions, acceptees).map((m) => m.id)).toEqual(["a", "b", "c"])
+  })
+
+  it("masque une mission à 26 places dès que 26 candidats sont acceptés", () => {
+    const m = [{ id: "x", nb_intervenants: 26 }]
+    expect(missionsOuvertesACandidature(m, new Map([["x", 25]]))).toHaveLength(1)
+    expect(missionsOuvertesACandidature(m, new Map([["x", 26]]))).toHaveLength(0)
   })
 })

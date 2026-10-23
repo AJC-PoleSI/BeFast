@@ -11,6 +11,22 @@ export function missionComplete(accepteesCount: number, nbIntervenants: number |
 }
 
 /**
+ * Retire du catalogue les missions dont tous les intervenants sont retenus :
+ * on ne propose plus de candidater à une place qui n'existe plus. Le suivi de
+ * ses propres candidatures passe par « Mes candidatures », pas par le catalogue.
+ */
+export function missionsOuvertesACandidature<
+  M extends { id: string; nb_intervenants: number | null },
+>(
+  missions: M[],
+  accepteesParMission: Map<string, number>
+): M[] {
+  return missions.filter(
+    (m) => !missionComplete(accepteesParMission.get(m.id) ?? 0, m.nb_intervenants)
+  )
+}
+
+/**
  * Statuts de compte affectables. Un compte en attente de validation l'est
  * aussi : l'affectation passe, avec un avertissement (cf.
  * `avertissementsAffectation`). Un compte rejeté ou supprimé ne l'est pas.

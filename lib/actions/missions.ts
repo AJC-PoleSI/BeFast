@@ -17,6 +17,8 @@ import { estMissionPubliee } from "@/lib/mission-visibilite"
 import {
   motifRefusAffectation,
   avertissementsAffectation,
+  missionComplete,
+  missionsOuvertesACandidature,
   STATUTS_AFFECTABLES,
 } from "@/lib/missions/affectation"
 import { normaliserClasse } from "@/lib/missions/classe"
@@ -52,7 +54,56 @@ export async function getMissions(filters?: {
   if (error) return { error: error.message }
   // Étude publiée ET mission publiée (publication mission par mission).
   const filtered = (data ?? []).filter((m: any) => estMissionPubliee(m))
-  return { data: filtered }
+
+  // Une fois tous les intervenants retenus, la mission disparaît du catalogue
+  // des candidats. Le staff (RH, admin) continue de tout voir pour gérer.
+  const profile = await getCachedProfile(user.id)
+  if (hasAnyPermission(profile, ["selectionner_candidats", "assigner_intervenants"])) {
+    return { data: filtered }
+  }
+  if (filtered.length === 0) return { data: filtered }
+
+  // Les candidatures des autres sont invisibles pour un intervenant (RLS) :
+  // le décompte des acceptés passe par le client admin, sans rien exposer
+  // d'autre que la disparition de la mission.
+  const admin = createAdminClient()
+  const { data: cands, error: candsError } = await admin
+    .from("candidatures")
+    .select("mission_id, statut")
+    .in("mission_id", filtered.map((m: any) => m.id))
+  // En cas d'échec on préfère garder les missions visibles que les cacher à tort.
+  if (candsError) return { data: filtered }
+
+  const acceptees = new Map<string, number>()
+  for (const c of cands ?? []) {
+    if (c.statut === "acceptee") acceptees.set(c.mission_id, (acceptees.get(c.mission_id) ?? 0) + 1)
+  }
+  return { data: missionsOuvertesACandidature(filtered as any[], acceptees) }
+}
+
+/**
+ * Tous les intervenants de la mission sont-ils déjà retenus ? Lecture via le
+ * client admin : un candidat ne voit pas les candidatures des autres.
+ */
+export async function getMissionComplete(missionId: string): Promise<boolean> {
+  noStore()
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return false
+
+  const admin = createAdminClient()
+  const [{ data: mission }, { count }] = await Promise.all([
+    admin.from("missions").select("nb_intervenants").eq("id", missionId).maybeSingle(),
+    admin
+      .from("candidatures")
+      .select("id", { count: "exact", head: true })
+      .eq("mission_id", missionId)
+      .eq("statut", "acceptee"),
+  ])
+  if (!mission) return false
+  return missionComplete(count ?? 0, mission.nb_intervenants)
 }
 
 // Détail d'une mission — PAS de cache pour garantir la fraîcheur après modification.

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useUser } from "@/hooks/useUser"
 import { createClient } from "@/lib/supabase/client"
-import { repondreCandidature } from "@/lib/actions/missions"
+import { repondreCandidature, getMissionComplete } from "@/lib/actions/missions"
 import { hasPermission } from "@/lib/auth/permissions"
 import { estMissionPubliee } from "@/lib/mission-visibilite"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -86,6 +86,7 @@ export default function MissionDetailPage() {
   const [candidatures, setCandidatures] = useState<CandidatureWithPersonne[]>([])
   const [myCandidature, setMyCandidature] = useState<CandidatureWithMission | null>(null)
   const [loading, setLoading] = useState(true)
+  const [missionComplete, setMissionComplete] = useState(false)
   const [showCandidateModal, setShowCandidateModal] = useState(false)
   const [pendingDecision, setPendingDecision] = useState<{
     cand: CandidatureWithPersonne
@@ -122,6 +123,7 @@ export default function MissionDetailPage() {
       .single()
 
     setMission(m as MissionWithEtude | null)
+    setMissionComplete(await getMissionComplete(missionId))
 
     if (profile) {
       // Check if user already candidated
@@ -153,6 +155,12 @@ export default function MissionDetailPage() {
   }, [authLoading, profile, fetchData])
 
   const handleCandidate = async () => {
+    if (await getMissionComplete(missionId)) {
+      setMissionComplete(true)
+      setShowCandidateModal(false)
+      toast.error("Tous les intervenants ont déjà été retenus pour cette mission.")
+      return
+    }
     if (!motivation.trim()) {
       toast.error("Veuillez rédiger votre motivation")
       return
@@ -317,7 +325,7 @@ export default function MissionDetailPage() {
               )}
             </div>
 
-            {profile && mission.statut === "ouverte" && !myCandidature && !isSDP && estMissionPubliee(mission as any) && (
+            {profile && mission.statut === "ouverte" && !myCandidature && !missionComplete && !isSDP && estMissionPubliee(mission as any) && (
               <Button
                 onClick={() => setShowCandidateModal(true)}
                 className="bg-gold text-navy font-semibold hover:bg-gold/90"
