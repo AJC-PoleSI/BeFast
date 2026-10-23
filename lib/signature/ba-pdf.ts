@@ -1,6 +1,13 @@
 import "server-only"
 
-import { PDFDocument, StandardFonts, type PDFFont, type PDFTextField } from "pdf-lib"
+import {
+  PDFDocument,
+  PDFName,
+  PDFRef,
+  StandardFonts,
+  type PDFFont,
+  type PDFTextField,
+} from "pdf-lib"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { toWinAnsi } from "./ba-utils"
 
@@ -105,8 +112,33 @@ export async function fillBaPdf(
     }
   }
 
-  if (flatten) form.flatten()
+  if (flatten) {
+    form.flatten()
+    nettoyerApresAplatissement(pdf)
+  }
   return pdf.save()
+}
+
+/**
+ * `form.flatten()` de pdf-lib supprime les objets widget mais, sur ce template
+ * (/Annots des pages indirects, PDF balisé), laisse leurs références dans les
+ * /Annots : le fichier contient alors des références mortes (8 sur le BA) que
+ * poppler signale (« Invalid XRef entry ») et que les contrôleurs stricts comme
+ * LiveConsent refusent (« le PDF comporte une erreur »), alors qu'Acrobat ou
+ * Aperçu les tolèrent. On retire ces références, puis le dictionnaire
+ * /AcroForm vidé (et /NeedAppearances) : le PDF envoyé en signature ne doit
+ * plus contenir aucun formulaire, LiveConsent pose lui-même ses zones.
+ */
+function nettoyerApresAplatissement(pdf: PDFDocument) {
+  for (const page of pdf.getPages()) {
+    const annots = page.node.Annots()
+    if (!annots) continue
+    for (let i = annots.size() - 1; i >= 0; i--) {
+      const ref = annots.get(i)
+      if (ref instanceof PDFRef && !pdf.context.lookup(ref)) annots.remove(i)
+    }
+  }
+  pdf.catalog.delete(PDFName.of("AcroForm"))
 }
 
 /** Base64 (sans préfixe data:) à partir d'octets PDF — pour LiveConsent. */

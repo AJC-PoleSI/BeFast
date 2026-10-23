@@ -92,9 +92,11 @@ export async function GET(request: Request) {
     )
   }
 
-  return new NextResponse(Buffer.from(pdf), {
+  const body = Buffer.from(pdf)
+  return new NextResponse(body, {
     headers: {
       "Content-Type": "application/pdf",
+      "Content-Length": String(body.byteLength),
       "Content-Disposition": `attachment; filename="${baFileName(member)}"`,
       // Données personnelles : ni cache partagé, ni cache navigateur.
       "Cache-Control": "private, no-store",

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest"
-import { PDFDocument } from "pdf-lib"
+import { PDFDocument, PDFName, PDFRef } from "pdf-lib"
 
 vi.mock("server-only", () => ({}))
 
@@ -12,6 +12,16 @@ async function templateDeTest(): Promise<Uint8Array> {
   const form = pdf.getForm()
   form.createTextField("nom_complet").addToPage(page, { x: 140, y: 620, width: 150, height: 15 })
   form.createTextField("promo").addToPage(page, { x: 340, y: 560, width: 130, height: 15 })
+  return pdf.save()
+}
+
+/** Comme le vrai template : /Annots indirect, et un lien en plus des widgets. */
+async function templateAnnotsIndirects(): Promise<Uint8Array> {
+  const pdf = await PDFDocument.create()
+  const page = pdf.addPage([595, 842])
+  pdf.getForm().createTextField("nom_complet").addToPage(page, { x: 140, y: 620, width: 150, height: 15 })
+  const annots = page.node.Annots()!
+  page.node.set(PDFName.of("Annots"), pdf.context.register(annots))
   return pdf.save()
 }
 
@@ -56,5 +66,18 @@ describe("fillBaPdf", () => {
       { flatten: false }
     )
     expect((await relire(out)).getTextField("nom_complet").getText()).toBe("Lukasz Sahin")
+  })
+
+  it("ne laisse ni référence morte dans les /Annots ni /AcroForm une fois aplati", async () => {
+    const out = await fillBaPdf(await templateAnnotsIndirects(), { nom_complet: "Hélène d’Aubigné" })
+    const pdf = await PDFDocument.load(out)
+    expect(pdf.catalog.has(PDFName.of("AcroForm"))).toBe(false)
+    for (const page of pdf.getPages()) {
+      const annots = page.node.Annots()
+      for (let i = 0; i < (annots?.size() ?? 0); i++) {
+        const ref = annots!.get(i)
+        expect(ref instanceof PDFRef && pdf.context.lookup(ref)).toBeTruthy()
+      }
+    }
   })
 })
