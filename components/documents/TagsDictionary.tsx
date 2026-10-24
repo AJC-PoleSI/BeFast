@@ -42,6 +42,10 @@ const DEFAULT_DICTIONARY = [
       { name: "mission.nb_intervenants", desc: "Nombre d'intervenants sur la mission", example: "26" },
       { name: "mission.date_debut", desc: "Date de début", example: "10/05/2026" },
       { name: "mission.date_fin", desc: "Date de fin", example: "14/05/2026" },
+      { name: "mission.dates_fin_phases", desc: "Dates de fin des étapes (RDM, article 2)", example: "29/11/2026 (phase 1) et 31/01/2027 (phase 2)" },
+      { name: "mission.detail_phases", desc: "Rétribution par étape (RDM, article 3), vide si une seule étape", example: ", dont 146€ bruts au titre de la phase 1 et 165€ bruts au titre de la phase 2" },
+      { name: "mission.plusieurs_etapes", desc: "Vrai si plusieurs étapes : {#mission.plusieurs_etapes}…{/mission.plusieurs_etapes} n'affiche le paragraphe que dans ce cas", example: "" },
+      { name: "#etapes", desc: "Boucle sur une ligne de tableau, 1 étape par JEH : {intitule} {contenu} {jeh} {debut} {fin} {retribution}, fermée par {/etapes}", example: "Étape 1 : …" },
       { name: "mission.numero_etude", desc: "Numéro court de l'étude", example: "07" },
       { name: "numero_document", desc: "Numéro auto-incrémenté", example: "2" },
     ]

@@ -21,6 +21,7 @@ import { avecPIIEnClair, lireSecret } from "@/lib/pii/personne"
 import { estIntervenantDeLaMission, estIntervenantDeLEtude } from "@/lib/auth/document-access"
 import { numeroEtudeCourt, codeClasseurEtude, referenceConventionEtude, referenceRdmIntervenant } from "@/lib/document-numbering"
 import { remunerationParIntervenant, remunerationParJeh } from "@/lib/missions/remuneration"
+import { decouperEnEtapes, nomSansDates, resumeEtapes } from "@/lib/missions/etapes"
 import { contexteCotisationsBv } from "@/lib/bv/cotisations"
 
 // ============================================================
@@ -564,6 +565,16 @@ function assemblerContexteMission(
     const missionBareme = { ...m, nb_jeh: missionNbJeh }
     const missionRemuneration = remunerationParIntervenant(missionBareme)
     const missionDureeJours = computeDureeJours(m.date_debut, m.date_fin) || Number(m.nb_jours) || 0
+    // Étapes du RDM : une par JEH, dates et rétribution au prorata
+    // (lib/missions/etapes.ts) ; une seule ligne si 1 JEH ou sans dates.
+    const missionEtapes = decouperEnEtapes({
+      nom: m.nom,
+      description: m.description,
+      nbJeh: missionNbJeh,
+      remuneration: missionRemuneration,
+      dateDebut: m.date_debut,
+      dateFin: m.date_fin,
+    })
 
     return {
       ...base,
@@ -588,7 +599,11 @@ function assemblerContexteMission(
         duree_jours: missionDureeJours,
         duree_semaines: Math.ceil(missionDureeJours / 7),
         reference_recap_mission: referenceRecapMission,
+        nom_sans_dates: nomSansDates(m.nom),
+        ...resumeEtapes(missionEtapes),
       },
+      // Lignes du tableau « Définition de la mission » du RDM ({#etapes}…{/etapes})
+      etapes: missionEtapes,
       // Bulletin de Versement : tableau des cotisations URSSAF précalculé
       // (assiette forfaitaire ou 70 % du brut, taux des paramètres bv_*).
       bv: contexteCotisationsBv(params, missionNbJeh, missionRemuneration),

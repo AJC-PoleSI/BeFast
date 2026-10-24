@@ -61,6 +61,11 @@ export const DOCUMENT_FIELDS: FieldDef[] = [
   { placeholder: "mission.duree_semaines", label: "Durée en semaines", source: "calculé depuis date_debut/date_fin" },
   { placeholder: "mission.duree_jours", label: "Durée en jours calendaires", source: "calculé depuis date_debut/date_fin" },
   { placeholder: "mission.reference_recap_mission", label: "Référence du dernier RDM généré pour cette mission", source: "generated_documents" },
+  { placeholder: "mission.nom_sans_dates", label: "Nom de la mission sans les dates collées par l'import", source: "missions.nom", example: "Ambassadeurs digitaux - Création de contenus stratégiques" },
+  { placeholder: "mission.plusieurs_etapes", label: "Vrai si la mission compte plusieurs étapes (1 par JEH) — pour {#mission.plusieurs_etapes}…{/mission.plusieurs_etapes}", source: "calculé" },
+  { placeholder: "mission.dates_fin_phases", label: "Dates de fin des étapes (RDM, article 2)", source: "calculé", example: "29/11/2026 (phase 1) et 31/01/2027 (phase 2)" },
+  { placeholder: "mission.detail_phases", label: "Rétribution par étape (RDM, article 3), vide si une seule étape", source: "calculé", example: ", dont 146€ bruts au titre de la phase 1 et 165€ bruts au titre de la phase 2" },
+  { placeholder: "etapes", label: "Étapes de la mission (1 par JEH) : boucle {#etapes}{intitule} {contenu} {jeh} {debut} {fin} {retribution}{/etapes} sur une ligne de tableau", source: "calculé" },
 
   // ── Client / Entreprise ───────────────────────────────────
   { placeholder: "client.nom", label: "Nom du client", source: "clients.nom" },
