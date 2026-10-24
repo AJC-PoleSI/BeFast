@@ -2,11 +2,12 @@ import Link from "next/link"
 import { MailCheck, AlertTriangle } from "lucide-react"
 import { ResendForm } from "./ResendForm"
 
-export default function VerifierEmailPage({
-  searchParams,
-}: {
-  searchParams: { status?: string }
-}) {
+export default async function VerifierEmailPage(
+  props: {
+    searchParams: Promise<{ status?: string }>
+  }
+) {
+  const searchParams = await props.searchParams;
   const status = searchParams?.status
 
   const banner =

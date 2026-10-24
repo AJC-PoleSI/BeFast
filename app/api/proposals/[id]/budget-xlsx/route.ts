@@ -5,7 +5,8 @@ import { getProposalBudget } from "@/lib/actions/propositions"
 import { computeBudget } from "@/lib/budget/compute"
 import { buildBudgetWorkbook } from "@/lib/budget/xlsx"
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const res = await getProposalBudget(params.id)
   if ("error" in res || !res.data) {
     const msg = "error" in res ? res.error : "Introuvable"

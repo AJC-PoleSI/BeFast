@@ -8,13 +8,18 @@ import { AccessDenied } from "@/components/layout/AccessDenied"
  * que la page et que GET /api/profil?targetUserId.
  * Exception : consulter sa propre fiche par son id reste autorisé.
  */
-export default async function FicheMembreLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode
-  params: { userId: string }
-}) {
+export default async function FicheMembreLayout(
+  props: {
+    children: React.ReactNode
+    params: Promise<{ userId: string }>
+  }
+) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const ctx = await getPageProfile()
   if (ctx?.userId === params.userId) return <>{children}</>
 

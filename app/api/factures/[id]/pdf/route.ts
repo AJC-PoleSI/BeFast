@@ -19,7 +19,8 @@ export const maxDuration = 30
  * logique de calcul. Le .docx reste disponible pour les cas où le trésorier
  * doit retoucher le texte avant envoi.
  */
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = createClient()
   const {
     data: { user },

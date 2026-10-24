@@ -7,10 +7,8 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { requireApiPermission } from "@/lib/auth/api-guards"
 
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Valider/refuser un document est accessible à l'administrateur ET aux
     // postes (ex. Pôle RH) disposant de la permission voir_documents_membres,

@@ -4,7 +4,8 @@ import { getSignedDownloadUrl } from "@/lib/scaleway/client"
 import { getCachedProfile } from "@/lib/auth/cached-profile"
 import { hasPermission } from "@/lib/auth/permissions"
 
-export async function GET(req: NextRequest, { params }: { params: { type: string, id: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ type: string, id: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()

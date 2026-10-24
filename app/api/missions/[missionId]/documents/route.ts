@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server"
 import { PutObjectCommand } from "@aws-sdk/client-s3"
 import { scalewayS3, SCALEWAY_BUCKET } from "@/lib/scaleway/client"
 
-export async function POST(req: NextRequest, { params }: { params: { missionId: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ missionId: string }> }) {
+  const params = await props.params;
   try {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()

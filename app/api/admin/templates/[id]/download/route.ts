@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server"
 import { requireApiAnyPermission } from "@/lib/auth/api-guards"
 
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   // Les templates sont des documents internes (modèles de conventions, RDM…) :
   // le téléchargement est réservé aux admins, pas à tout compte authentifié.
   const guard = await requireApiAnyPermission(["administration", "gerer_parametres"])

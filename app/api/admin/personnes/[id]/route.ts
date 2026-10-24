@@ -9,7 +9,8 @@ import { deleteAccount } from "@/lib/account-deletion/delete-account"
 import { revalidateTag } from "next/cache"
 import { USER_PROFILE_TAG } from "@/lib/cache-tags"
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const { id } = params
     const body = await request.json()
@@ -85,7 +86,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 // Suppression d'un compte par un administrateur : accès coupé, données
 // personnelles purgées, identité anonymisée. La ligne `personnes` est conservée
 // pour ne pas emporter l'historique des missions et des frais.
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const { id } = params
 

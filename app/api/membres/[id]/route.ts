@@ -5,7 +5,8 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { lirePII, lireSecret } from "@/lib/pii/personne"
 import { NextRequest, NextResponse } from "next/server"
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const sb = createClient()
     const { data: { user }, error: authError } = await sb.auth.getUser()
