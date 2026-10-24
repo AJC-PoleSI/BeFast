@@ -3,7 +3,10 @@ import Link from "next/link"
 import { CGU, CGU_EDITEUR, CGU_VERSION, type CguBlock } from "@/lib/legal/cgu"
 
 export const metadata: Metadata = {
-  title: "Conditions générales d’utilisation — BeFast",
+  title: "Conditions générales d’utilisation — BeFast Audencia",
+  description:
+    "Conditions générales d’utilisation de BeFast, la plateforme d’Audencia Junior Conseil : accès, comptes, données et responsabilités.",
+  alternates: { canonical: "/cgu" },
 }
 
 // « 1.1 Texte » : le numéro passe en gras, le reste suit.

@@ -2,7 +2,10 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 export const metadata: Metadata = {
-  title: "Politique de confidentialité — BeFast",
+  title: "Politique de confidentialité — BeFast Audencia",
+  description:
+    "Comment BeFast, la plateforme d’Audencia Junior Conseil, collecte, protège et conserve vos données personnelles (RGPD).",
+  alternates: { canonical: "/politique-confidentialite" },
 }
 
 function Section({

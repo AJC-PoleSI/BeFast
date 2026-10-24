@@ -86,6 +86,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Seulement les routes qui ont besoin de la session auth — pas les API ni les assets
-    "/((?!_next/static|_next/image|favicon\\.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
   ],
 }

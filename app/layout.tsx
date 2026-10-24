@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"
+import { DEFAULT_DESCRIPTION, GOOGLE_SITE_VERIFICATION, SITE_NAME, SITE_URL } from "@/lib/seo"
 
 // Fonts auto-hébergées par next/font : zéro requête runtime vers Google,
 // zéro CSS bloquant le rendu, fallback ajusté (pas de layout shift).
@@ -21,8 +22,21 @@ const manrope = Manrope({
 })
 
 export const metadata: Metadata = {
-  title: "BeFast — Audencia Junior Conseil",
-  description: "Plateforme de gestion interne",
+  metadataBase: new URL(SITE_URL),
+  title: "BeFast Audencia — La plateforme d'Audencia Junior Conseil",
+  description: DEFAULT_DESCRIPTION,
+  applicationName: SITE_NAME,
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    siteName: SITE_NAME,
+    title: "BeFast Audencia — La plateforme d'Audencia Junior Conseil",
+    description: DEFAULT_DESCRIPTION,
+    images: [{ url: "/logo-ajc.png", alt: "Audencia Junior Conseil" }],
+  },
+  ...(GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: GOOGLE_SITE_VERIFICATION } }
+    : {}),
 }
 
 export default function RootLayout({
